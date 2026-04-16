@@ -89,6 +89,10 @@ pub fn view_router(state: ServerState) -> Router<ServerState> {
             "/login/oauth2_landing",
             get(login::view_login_oauth2_landing),
         )
+        .route(
+            "/login/provision",
+            get(login::view_login_provision_get).post(login::view_login_provision_post),
+        )
         .layer(from_fn_with_state(
             state,
             middleware::security_headers::csp_header_no_form_action_layer,

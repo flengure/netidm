@@ -1089,6 +1089,40 @@ pub enum Oauth2Opt {
     /// Enable the regular user consent prompt.
     #[clap(name = "enable-consent-prompt")]
     EnableConsentPrompt(Named),
+    /// Create a GitHub social login provider (OAuth2 client).
+    #[clap(name = "create-github")]
+    CreateGithub {
+        name: String,
+        #[clap(name = "client-id")]
+        client_id: String,
+        #[clap(name = "client-secret")]
+        client_secret: String,
+    },
+    /// Create a Google social login provider (OAuth2 client).
+    #[clap(name = "create-google")]
+    CreateGoogle {
+        name: String,
+        #[clap(name = "client-id")]
+        client_id: String,
+        #[clap(name = "client-secret")]
+        client_secret: String,
+    },
+    /// Enable Just-In-Time provisioning for an OAuth2 client provider.
+    #[clap(name = "enable-jit-provisioning")]
+    EnableJitProvisioning { name: String },
+    /// Disable Just-In-Time provisioning for an OAuth2 client provider.
+    #[clap(name = "disable-jit-provisioning")]
+    DisableJitProvisioning { name: String },
+    /// Map a Kanidm attribute to a provider claim for JIT provisioning.
+    /// kanidm-attr must be one of: name, displayname, mail.
+    #[clap(name = "set-identity-claim-map")]
+    SetIdentityClaimMap {
+        name: String,
+        #[clap(name = "kanidm-attr")]
+        kanidm_attr: String,
+        #[clap(name = "provider-claim")]
+        provider_claim: String,
+    },
 }
 
 #[derive(Args, Debug, Clone)]

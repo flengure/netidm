@@ -30,6 +30,7 @@ pub const COOKIE_BEARER_TOKEN: &str = "bearer";
 pub const COOKIE_CU_SESSION_TOKEN: &str = "cu-session-token";
 pub const COOKIE_USERNAME: &str = "username";
 pub const COOKIE_OAUTH2_REQ: &str = "o2-authreq";
+pub const COOKIE_OAUTH2_PROVISION_REQ: &str = "o2-provision-req";
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 /// This is a description of a linked or connected application for a user. This is

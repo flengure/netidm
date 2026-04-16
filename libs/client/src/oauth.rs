@@ -3,9 +3,13 @@ use kanidm_proto::attribute::Attribute;
 use kanidm_proto::constants::{
     ATTR_DISPLAYNAME, ATTR_KEY_ACTION_REVOKE, ATTR_KEY_ACTION_ROTATE, ATTR_NAME,
     ATTR_OAUTH2_ALLOW_INSECURE_CLIENT_DISABLE_PKCE, ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT,
-    ATTR_OAUTH2_CONSENT_PROMPT_ENABLE, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE,
-    ATTR_OAUTH2_PREFER_SHORT_USERNAME, ATTR_OAUTH2_RS_BASIC_SECRET, ATTR_OAUTH2_RS_ORIGIN,
-    ATTR_OAUTH2_RS_ORIGIN_LANDING, ATTR_OAUTH2_STRICT_REDIRECT_URI,
+    ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
+    ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME, ATTR_OAUTH2_CLIENT_ID,
+    ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
+    ATTR_OAUTH2_JIT_PROVISIONING, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE,
+    ATTR_OAUTH2_PREFER_SHORT_USERNAME, ATTR_OAUTH2_REQUEST_SCOPES, ATTR_OAUTH2_RS_BASIC_SECRET,
+    ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING, ATTR_OAUTH2_STRICT_REDIRECT_URI,
+    ATTR_OAUTH2_TOKEN_ENDPOINT, ATTR_OAUTH2_USERINFO_ENDPOINT,
 };
 use kanidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin};
 use kanidm_proto::v1::Entry;
@@ -511,5 +515,116 @@ impl KanidmClient {
         );
         self.perform_patch_request(format!("/v1/oauth2/{}", id).as_str(), update_oauth2_rs)
             .await
+    }
+
+    // ==== OAuth2 Client Provider (Kanidm as OAuth2 client to external providers)
+
+    pub async fn idm_oauth2_client_get(
+        &self,
+        name: &str,
+    ) -> Result<Option<Entry>, ClientError> {
+        self.perform_get_request(format!("/v1/oauth2/_client/{name}").as_str())
+            .await
+    }
+
+    pub async fn idm_oauth2_client_create_github(
+        &self,
+        name: &str,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry::default();
+        entry.attrs.insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry.attrs.insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry.attrs.insert(ATTR_OAUTH2_CLIENT_ID.to_string(), vec![client_id.to_string()]);
+        entry.attrs.insert(ATTR_OAUTH2_CLIENT_SECRET.to_string(), vec![client_secret.to_string()]);
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec!["https://github.com/login/oauth/authorize".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec!["https://github.com/login/oauth/access_token".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_USERINFO_ENDPOINT.to_string(),
+            vec!["https://api.github.com/user".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec!["read:user".to_string(), "user:email".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    pub async fn idm_oauth2_client_create_google(
+        &self,
+        name: &str,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry::default();
+        entry.attrs.insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry.attrs.insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry.attrs.insert(ATTR_OAUTH2_CLIENT_ID.to_string(), vec![client_id.to_string()]);
+        entry.attrs.insert(ATTR_OAUTH2_CLIENT_SECRET.to_string(), vec![client_secret.to_string()]);
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec!["https://accounts.google.com/o/oauth2/v2/auth".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec!["https://oauth2.googleapis.com/token".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec!["openid".to_string(), "email".to_string(), "profile".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    pub async fn idm_oauth2_client_enable_jit_provisioning(
+        &self,
+        id: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry { attrs: BTreeMap::new() };
+        entry.attrs.insert(
+            ATTR_OAUTH2_JIT_PROVISIONING.to_string(),
+            vec!["true".to_string()],
+        );
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
+    }
+
+    pub async fn idm_oauth2_client_disable_jit_provisioning(
+        &self,
+        id: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry { attrs: BTreeMap::new() };
+        entry.attrs.insert(
+            ATTR_OAUTH2_JIT_PROVISIONING.to_string(),
+            vec!["false".to_string()],
+        );
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
+    }
+
+    pub async fn idm_oauth2_client_set_claim_map(
+        &self,
+        id: &str,
+        kanidm_attr: &str,
+        provider_claim: &str,
+    ) -> Result<(), ClientError> {
+        let attr_key = match kanidm_attr {
+            "name" => ATTR_OAUTH2_CLAIM_MAP_NAME,
+            "displayname" => ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
+            "mail" | "email" => ATTR_OAUTH2_CLAIM_MAP_EMAIL,
+            other => {
+                return Err(ClientError::InvalidRequest(format!(
+                    "Unknown claim map attribute '{other}'; expected name, displayname, or mail"
+                )));
+            }
+        };
+        let mut entry = Entry { attrs: BTreeMap::new() };
+        entry.attrs.insert(attr_key.to_string(), vec![provider_claim.to_string()]);
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
     }
 }

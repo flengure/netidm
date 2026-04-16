@@ -9,7 +9,7 @@ pub mod application;
 pub(crate) mod applinks;
 pub mod audit;
 pub mod authentication;
-pub(crate) mod authsession;
+pub mod authsession;
 pub mod credupdatesession;
 pub mod delayed;
 pub mod event;

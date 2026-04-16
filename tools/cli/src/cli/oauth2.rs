@@ -53,7 +53,14 @@ impl Oauth2Opt {
                 let client = opt.to_client(OpType::Read).await;
                 match client.idm_oauth2_rs_get(nopt.name.as_str()).await {
                     Ok(Some(e)) => opt.output_mode.print_message(e),
-                    Ok(None) => opt.output_mode.print_message("No matching entries"),
+                    Ok(None) => {
+                        // Fall back to OAuth2 client provider lookup
+                        match client.idm_oauth2_client_get(nopt.name.as_str()).await {
+                            Ok(Some(e)) => opt.output_mode.print_message(e),
+                            Ok(None) => opt.output_mode.print_message("No matching entries"),
+                            Err(e) => handle_client_error(e, opt.output_mode),
+                        }
+                    }
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
@@ -492,6 +499,80 @@ impl Oauth2Opt {
                 let client = opt.to_client(OpType::Write).await;
                 match client
                     .idm_oauth2_rs_enable_consent_prompt(nopt.name.as_str())
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::CreateGithub {
+                name,
+                client_id,
+                client_secret,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_oauth2_client_create_github(
+                        name.as_str(),
+                        client_id.as_str(),
+                        client_secret.as_str(),
+                    )
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::CreateGoogle {
+                name,
+                client_id,
+                client_secret,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_oauth2_client_create_google(
+                        name.as_str(),
+                        client_id.as_str(),
+                        client_secret.as_str(),
+                    )
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::EnableJitProvisioning { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_oauth2_client_enable_jit_provisioning(name.as_str())
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::DisableJitProvisioning { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_oauth2_client_disable_jit_provisioning(name.as_str())
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::SetIdentityClaimMap {
+                name,
+                kanidm_attr,
+                provider_claim,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_oauth2_client_set_claim_map(
+                        name.as_str(),
+                        kanidm_attr.as_str(),
+                        provider_claim.as_str(),
+                    )
                     .await
                 {
                     Ok(_) => opt.output_mode.print_message("Success"),

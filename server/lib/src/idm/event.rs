@@ -520,6 +520,9 @@ impl std::fmt::Display for AuthResult {
             AuthState::Success(_jws_compact, auth_issue_session) => {
                 write!(f, "Success({})", auth_issue_session)
             }
+            AuthState::ProvisioningRequired { provider_uuid, .. } => {
+                write!(f, "ProvisioningRequired(provider={})", provider_uuid)
+            }
         }
     }
 }

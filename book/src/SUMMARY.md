@@ -46,6 +46,7 @@
     - [How does OAuth2 work?](integrations/oauth2/how_does_oauth2_work.md)
     - [Custom Claims](integrations/oauth2/custom_claims.md)
     - [Example Configurations](integrations/oauth2/examples.md)
+  - [Social Login (JIT Provisioning)](integrations/social_login.md)
   - [PAM and nsswitch](integrations/pam_and_nsswitch.md)
     - [FreeBSD](integrations/pam_and_nsswitch/freebsd.md)
     - [SUSE / OpenSUSE](integrations/pam_and_nsswitch/suse.md)

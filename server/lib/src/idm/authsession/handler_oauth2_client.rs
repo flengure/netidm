@@ -6,12 +6,29 @@ use crate::idm::oauth2_client::OAuth2ClientProvider;
 use crate::prelude::*;
 use crate::utils;
 use crate::value::{AuthType, SessionExtMetadata};
+use base64::{engine::general_purpose, Engine as _};
+use serde_json;
 use kanidm_proto::oauth2::{
     AccessTokenRequest, AccessTokenResponse, AuthorisationRequest, AuthorisationRequestOidc,
     GrantTypeReq, ResponseType,
 };
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
+
+/// Identity claims extracted from an external OAuth2/OIDC provider after token exchange.
+#[derive(Debug, Clone)]
+pub struct ExternalUserClaims {
+    /// Stable, provider-assigned subject identifier (required).
+    pub sub: String,
+    /// User's email address, if provided by the provider.
+    pub email: Option<String>,
+    /// Whether the email has been verified by the provider.
+    pub email_verified: Option<bool>,
+    /// User's display name from the provider (e.g. `name` claim).
+    pub display_name: Option<String>,
+    /// Username hint for account creation (e.g. GitHub `login`, Google email local-part).
+    pub username_hint: Option<String>,
+}
 
 pub struct CredHandlerOAuth2Client {
     // For logging - this is the trust provider we are using.
@@ -30,6 +47,9 @@ pub struct CredHandlerOAuth2Client {
     token_endpoint: Url,
     pkce_secret: PkceS256Secret,
     csrf_state: String,
+    userinfo_endpoint: Option<Url>,
+    jit_provisioning: bool,
+    claim_map: BTreeMap<Attribute, String>,
 }
 
 impl fmt::Debug for CredHandlerOAuth2Client {
@@ -66,6 +86,9 @@ impl CredHandlerOAuth2Client {
             token_endpoint: client_provider.token_endpoint.clone(),
             pkce_secret,
             csrf_state,
+            userinfo_endpoint: client_provider.userinfo_endpoint.clone(),
+            jit_provisioning: client_provider.jit_provisioning,
+            claim_map: client_provider.claim_map.clone(),
         }
     }
 
@@ -94,13 +117,16 @@ impl CredHandlerOAuth2Client {
         )
     }
 
-    pub fn validate(&self, cred: &AuthCredential, current_time: Duration) -> CredState {
+    pub(super) fn validate(&self, cred: &AuthCredential, current_time: Duration) -> CredState {
         match cred {
             AuthCredential::OAuth2AuthorisationResponse { code, state } => {
                 self.validate_authorisation_response(code, state.as_deref())
             }
             AuthCredential::OAuth2AccessTokenResponse { response } => {
                 self.validate_access_token_response(response, current_time)
+            }
+            AuthCredential::OAuth2UserinfoResponse { body } => {
+                self.validate_userinfo_response(body, current_time)
             }
             _ => CredState::Denied(BAD_AUTH_TYPE_MSG),
         }
@@ -138,23 +164,205 @@ impl CredHandlerOAuth2Client {
         response: &AccessTokenResponse,
         current_time: Duration,
     ) -> CredState {
-        // What is the credential id here? The provider id?
-        // How do we make sure that session plugin doesn't kill us?
         let cred_id = self.user_cred_id;
         let access_expires_at = current_time + Duration::from_secs(response.expires_in as u64);
 
-        // We need a way to bubble up extra session metadata now.
-        // Need to pass up the expiry, token, refresh token.
         let ext_session_metadata = SessionExtMetadata::OAuth2 {
             access_token: response.access_token.clone(),
             refresh_token: response.refresh_token.clone(),
             access_expires_at,
         };
 
+        if self.jit_provisioning {
+            if response.id_token.is_none() {
+                if let Some(ref userinfo_url) = self.userinfo_endpoint {
+                    return CredState::External(AuthExternal::OAuth2UserinfoRequest {
+                        userinfo_url: userinfo_url.clone(),
+                        access_token: response.access_token.clone(),
+                    });
+                }
+            }
+            if let Some(claims) = self.extract_claims(response) {
+                return CredState::ProvisioningRequired {
+                    provider_uuid: self.provider_id,
+                    claims,
+                };
+            }
+            warn!(
+                provider_id = ?self.provider_id,
+                "jit_provisioning is enabled but no claims could be extracted from the token response"
+            );
+        }
+
         CredState::Success {
             auth_type: AuthType::OAuth2Trust,
             cred_id,
             ext_session_metadata,
         }
+    }
+
+    fn validate_userinfo_response(
+        &self,
+        body: &serde_json::Value,
+        _current_time: Duration,
+    ) -> CredState {
+        let claims = Self::claims_from_userinfo_json(body, &self.claim_map);
+        match claims {
+            Some(claims) => CredState::ProvisioningRequired {
+                provider_uuid: self.provider_id,
+                claims,
+            },
+            None => {
+                warn!(
+                    provider_id = ?self.provider_id,
+                    "Could not extract required claims from userinfo response"
+                );
+                CredState::Denied("Failed to extract identity claims from provider")
+            }
+        }
+    }
+
+    /// Extract claims from a userinfo JSON body (GitHub, non-OIDC providers).
+    /// The `id` field is used as `sub` (numeric ID → string); `login` as `username_hint`.
+    fn claims_from_userinfo_json(
+        json: &serde_json::Value,
+        claim_map: &BTreeMap<Attribute, String>,
+    ) -> Option<ExternalUserClaims> {
+        let sub = json
+            .get("id")
+            .and_then(|v| v.as_i64().map(|n| n.to_string()).or_else(|| v.as_str().map(str::to_string)))?;
+
+        let email_claim = claim_map
+            .get(&Attribute::Mail)
+            .map(String::as_str)
+            .unwrap_or("email");
+        let email = json
+            .get(email_claim)
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(str::to_string);
+
+        let display_name_claim = claim_map
+            .get(&Attribute::DisplayName)
+            .map(String::as_str)
+            .unwrap_or("name");
+        let display_name = json
+            .get(display_name_claim)
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(str::to_string);
+
+        let username_hint = json
+            .get("login")
+            .and_then(|v| v.as_str())
+            .map(str::to_string)
+            .or_else(|| {
+                email
+                    .as_deref()
+                    .and_then(|e| e.split('@').next())
+                    .map(str::to_string)
+            });
+
+        Some(ExternalUserClaims {
+            sub,
+            email,
+            email_verified: None,
+            display_name,
+            username_hint,
+        })
+    }
+
+    /// Extract user identity claims from an access token response.
+    /// Tries the id_token JWT first (OIDC providers such as Google).  For
+    /// non-OIDC providers (e.g. GitHub), returns None — the caller must issue a
+    /// separate userinfo request to `userinfo_endpoint` using the access token.
+    fn extract_claims(&self, response: &AccessTokenResponse) -> Option<ExternalUserClaims> {
+        if let Some(id_token) = &response.id_token {
+            if let Some(claims) = Self::claims_from_id_token(id_token, &self.claim_map) {
+                return Some(claims);
+            }
+        }
+        if self.userinfo_endpoint.is_some() {
+            trace!(
+                provider_id = ?self.provider_id,
+                "No id_token present; userinfo endpoint available for follow-up fetch"
+            );
+        }
+        None
+    }
+
+    /// Decode an OIDC id_token JWT without verifying the signature and extract
+    /// identity claims.  The token was received directly from the token endpoint
+    /// over a TLS channel, so we trust the payload without re-verifying the
+    /// signature here.
+    fn claims_from_id_token(
+        id_token: &str,
+        claim_map: &BTreeMap<Attribute, String>,
+    ) -> Option<ExternalUserClaims> {
+        let mut parts = id_token.splitn(3, '.');
+        let _header = parts.next();
+        let Some(payload_b64) = parts.next() else {
+            warn!("id_token has fewer than 2 '.' separated parts");
+            return None;
+        };
+        let payload_bytes = general_purpose::URL_SAFE_NO_PAD
+            .decode(payload_b64)
+            .or_else(|_| general_purpose::URL_SAFE.decode(payload_b64))
+            .map_err(|e| {
+                warn!(?e, "Failed to base64-decode id_token payload");
+            })
+            .ok()?;
+
+        let json: serde_json::Value = serde_json::from_slice(&payload_bytes)
+            .map_err(|e| {
+                warn!(?e, "Failed to parse id_token payload as JSON");
+            })
+            .ok()?;
+
+        let sub = json
+            .get(
+                claim_map
+                    .get(&Attribute::Name)
+                    .map(String::as_str)
+                    .unwrap_or("sub"),
+            )
+            .or_else(|| json.get("sub"))
+            .and_then(|v| v.as_str())
+            .map(str::to_string)?;
+
+        let email_claim = claim_map
+            .get(&Attribute::Mail)
+            .map(String::as_str)
+            .unwrap_or("email");
+        let email = json
+            .get(email_claim)
+            .and_then(|v| v.as_str())
+            .map(str::to_string);
+
+        let email_verified = json
+            .get("email_verified")
+            .and_then(|v| v.as_bool());
+
+        let display_name_claim = claim_map
+            .get(&Attribute::DisplayName)
+            .map(String::as_str)
+            .unwrap_or("name");
+        let display_name = json
+            .get(display_name_claim)
+            .and_then(|v| v.as_str())
+            .map(str::to_string);
+
+        let username_hint = email
+            .as_deref()
+            .and_then(|e| e.split('@').next())
+            .map(str::to_string);
+
+        Some(ExternalUserClaims {
+            sub,
+            email,
+            email_verified,
+            display_name,
+            username_hint,
+        })
     }
 }

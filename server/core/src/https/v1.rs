@@ -2991,6 +2991,10 @@ fn auth_session_state_management(
                     debug!("🧩 -> AuthState::Denied");
                     Ok(ProtoAuthState::Denied(reason))
                 }
+                AuthState::ProvisioningRequired { .. } => {
+                    warn!("🧩 -> AuthState::ProvisioningRequired - not supported via API, use the web UI");
+                    Ok(ProtoAuthState::Denied("JIT provisioning requires the web UI.".into()))
+                }
             }
             .map(|state| AuthResponse { sessionid, state })
         }
@@ -3135,6 +3139,14 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
         .route(
             "/v1/oauth2/_public",
             post(super::v1_oauth2::oauth2_public_post),
+        )
+        .route(
+            "/v1/oauth2/_client",
+            post(super::v1_oauth2::oauth2_client_post),
+        )
+        .route(
+            "/v1/oauth2/_client/{name}",
+            get(super::v1_oauth2::oauth2_client_id_get),
         )
         .route(
             "/v1/oauth2/{rs_name}",

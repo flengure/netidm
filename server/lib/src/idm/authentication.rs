@@ -10,6 +10,7 @@ use kanidm_proto::{
         AuthStep as ProtoAuthStep,
     },
 };
+use serde_json::Value as JsonValue;
 use std::fmt;
 use webauthn_rs::prelude::PublicKeyCredential;
 
@@ -55,6 +56,12 @@ pub enum AuthExternal {
         client_secret: String,
         request: AccessTokenRequest,
     },
+    /// Fetch user identity claims from a provider's userinfo endpoint.
+    /// Used when the token response contains no id_token (e.g. GitHub).
+    OAuth2UserinfoRequest {
+        userinfo_url: Url,
+        access_token: String,
+    },
 }
 
 impl fmt::Debug for AuthExternal {
@@ -62,6 +69,7 @@ impl fmt::Debug for AuthExternal {
         match self {
             Self::OAuth2AuthorisationRequest { .. } => write!(f, "OAuth2AuthorisationRequest"),
             Self::OAuth2AccessTokenRequest { .. } => write!(f, "OAuth2AccessTokenRequest"),
+            Self::OAuth2UserinfoRequest { .. } => write!(f, "OAuth2UserinfoRequest"),
         }
     }
 }
@@ -80,6 +88,12 @@ pub enum AuthState {
     /// Denied authentication, with a reason.
     Denied(String),
     Success(Box<JwsCompact>, AuthIssueSession),
+    /// The user authenticated via a social provider for the first time and JIT provisioning
+    /// is enabled. Account creation is pending user confirmation.
+    ProvisioningRequired {
+        provider_uuid: uuid::Uuid,
+        claims: crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+    },
 }
 
 impl fmt::Debug for AuthState {
@@ -91,6 +105,9 @@ impl fmt::Debug for AuthState {
             AuthState::Denied(reason) => write!(f, "AuthState::Denied({reason:?})"),
             AuthState::Success(_token, issue) => {
                 write!(f, "AuthState::Success({})", issue)
+            }
+            AuthState::ProvisioningRequired { provider_uuid, .. } => {
+                write!(f, "AuthState::ProvisioningRequired(provider={provider_uuid})")
             }
         }
     }
@@ -107,6 +124,8 @@ pub enum AuthCredential {
     // Internal Credential Types
     OAuth2AuthorisationResponse { code: String, state: Option<String> },
     OAuth2AccessTokenResponse { response: AccessTokenResponse },
+    /// Raw JSON body from the provider's userinfo endpoint (for GitHub and similar).
+    OAuth2UserinfoResponse { body: JsonValue },
 }
 
 impl From<ProtoAuthCredential> for AuthCredential {
@@ -136,6 +155,9 @@ impl fmt::Debug for AuthCredential {
             }
             AuthCredential::OAuth2AccessTokenResponse { .. } => {
                 write!(fmt, "OAuth2AccessTokenResponse{{..}}")
+            }
+            AuthCredential::OAuth2UserinfoResponse { .. } => {
+                write!(fmt, "OAuth2UserinfoResponse{{..}}")
             }
         }
     }
