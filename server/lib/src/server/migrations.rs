@@ -67,6 +67,7 @@ impl QueryServer {
                 DOMAIN_LEVEL_13 => write_txn.migrate_domain_12_to_13()?,
                 DOMAIN_LEVEL_14 => write_txn.migrate_domain_13_to_14()?,
                 DOMAIN_LEVEL_15 => write_txn.migrate_domain_14_to_15()?,
+                DOMAIN_LEVEL_16 => write_txn.migrate_domain_15_to_16()?,
                 _ => {
                     error!("Invalid requested domain target level for server bootstrap");
                     debug_assert!(false);
@@ -937,6 +938,67 @@ impl QueryServerWriteTransaction<'_> {
         self.internal_delete_batch(
             "phase 8 - delete UUIDs",
             migration_data::dl15::phase_8_delete_uuids(),
+        )?;
+
+        self.reload()?;
+
+        Ok(())
+    }
+
+    #[instrument(level = "info", skip_all)]
+    pub(crate) fn migrate_domain_15_to_16(&mut self) -> Result<(), OperationError> {
+        if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_16 {
+            error!("Unable to raise domain level from 15 to 16.");
+            return Err(OperationError::MG0004DomainLevelInDevelopment);
+        }
+
+        self.internal_migrate_or_create_batch(
+            &format!("phase 1 - schema attrs target {}", DOMAIN_TGT_LEVEL),
+            migration_data::dl16::phase_1_schema_attrs(),
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 2 - schema classes",
+            migration_data::dl16::phase_2_schema_classes(),
+        )?;
+
+        self.reload()?;
+        self.reindex(false)?;
+        self.set_phase(ServerPhase::SchemaReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 3 - key provider",
+            migration_data::dl16::phase_3_key_provider(),
+        )?;
+
+        self.reload()?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 4 - dl16 system entries",
+            migration_data::dl16::phase_4_system_entries(),
+        )?;
+
+        self.reload()?;
+        self.set_phase(ServerPhase::DomainInfoReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 5 - builtin admin entries",
+            migration_data::dl16::phase_5_builtin_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 6 - builtin not admin entries",
+            migration_data::dl16::phase_6_builtin_non_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 7 - builtin access control profiles",
+            migration_data::dl16::phase_7_builtin_access_control_profiles(),
+        )?;
+
+        self.internal_delete_batch(
+            "phase 8 - delete UUIDs",
+            migration_data::dl16::phase_8_delete_uuids(),
         )?;
 
         self.reload()?;
