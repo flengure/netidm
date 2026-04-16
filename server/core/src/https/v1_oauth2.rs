@@ -569,3 +569,48 @@ pub(crate) async fn oauth2_id_image_post(
         ))),
     }
 }
+
+#[utoipa::path(
+    post,
+    path = "/v1/oauth2/_client",
+    request_body=ProtoEntry,
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "oauth2",
+    operation_id = "oauth2_client_post"
+)]
+/// Get the details of a given OAuth2 Client Provider.
+pub(crate) async fn oauth2_client_id_get(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<Option<ProtoEntry>>, WebError> {
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&name))
+    ]));
+    state
+        .qe_r_ref
+        .handle_internalsearch(client_auth_info, filter, None, kopid.eventid)
+        .await
+        .map(|mut r| r.pop())
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+/// Create a new OAuth2 Client Provider (Kanidm acts as the OAuth2 client to an external provider).
+pub(crate) async fn oauth2_client_post(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(obj): Json<ProtoEntry>,
+) -> Result<Json<()>, WebError> {
+    let classes = vec![
+        EntryClass::OAuth2Client.to_string(),
+        EntryClass::Object.to_string(),
+    ];
+    json_rest_event_post(state, classes, obj, kopid, client_auth_info).await
+}

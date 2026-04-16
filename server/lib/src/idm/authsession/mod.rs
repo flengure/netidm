@@ -33,7 +33,7 @@ use webauthn_rs::prelude::{
     SecurityKeyAuthentication, Webauthn,
 };
 
-mod handler_oauth2_client;
+pub mod handler_oauth2_client;
 
 // Each CredHandler takes one or more credentials and determines if the
 // handlers requirements can be 100% fulfilled. This is where MFA or other
@@ -66,7 +66,7 @@ enum AuthIntent {
 // We have to allow large enum variant here because else we can't match on External
 // due to boxing.
 #[allow(clippy::large_enum_variant)]
-enum CredState {
+pub(super) enum CredState {
     Success {
         auth_type: AuthType,
         cred_id: Uuid,
@@ -75,6 +75,10 @@ enum CredState {
     Continue(Box<NonEmpty<AuthAllowed>>),
     External(AuthExternal),
     Denied(&'static str),
+    ProvisioningRequired {
+        provider_uuid: Uuid,
+        claims: crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -1567,6 +1571,19 @@ impl AuthSession {
                     CredState::External(allowed) => {
                         security_info!(?allowed, "Request excternal credential continuation");
                         (None, Ok(AuthState::External(allowed)))
+                    }
+                    CredState::ProvisioningRequired {
+                        provider_uuid,
+                        claims,
+                    } => {
+                        security_info!(%provider_uuid, "JIT provisioning required for new user");
+                        (
+                            None,
+                            Ok(AuthState::ProvisioningRequired {
+                                provider_uuid,
+                                claims,
+                            }),
+                        )
                     }
                     CredState::Denied(reason) => {
                         if audit_tx

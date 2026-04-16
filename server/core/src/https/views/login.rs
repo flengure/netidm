@@ -19,7 +19,7 @@ use axum_extra::extract::cookie::{CookieJar, SameSite};
 use hyper::Uri;
 use kanidm_proto::internal::{
     UserAuthToken, COOKIE_AUTH_SESSION_ID, COOKIE_BEARER_TOKEN, COOKIE_CU_SESSION_TOKEN,
-    COOKIE_OAUTH2_REQ, COOKIE_USERNAME,
+    COOKIE_OAUTH2_PROVISION_REQ, COOKIE_OAUTH2_REQ, COOKIE_USERNAME,
 };
 use kanidm_proto::{
     oauth2::{AccessTokenRequest, AccessTokenResponse},
@@ -68,12 +68,16 @@ impl fmt::Display for ReauthPurpose {
 #[derive(Clone)]
 pub enum LoginError {
     InvalidUsername,
+    SessionExpired,
 }
 
 impl fmt::Display for LoginError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidUsername => write!(f, "Invalid username"),
+            Self::SessionExpired => {
+                write!(f, "Your session has expired. Please sign in again.")
+            }
         }
     }
 }
@@ -161,6 +165,33 @@ struct LoginDeniedView {
     display_ctx: LoginDisplayCtx,
     reason: String,
     operation_id: Uuid,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ProvisionCookieData {
+    #[serde(rename = "p")]
+    provider_uuid: Uuid,
+    #[serde(rename = "s")]
+    sub: String,
+    #[serde(rename = "e", default, skip_serializing_if = "Option::is_none")]
+    email: Option<String>,
+    #[serde(rename = "v", default, skip_serializing_if = "Option::is_none")]
+    email_verified: Option<bool>,
+    #[serde(rename = "d", default, skip_serializing_if = "Option::is_none")]
+    display_name: Option<String>,
+    #[serde(rename = "h", default, skip_serializing_if = "Option::is_none")]
+    username_hint: Option<String>,
+}
+
+#[derive(Template, WebTemplate)]
+#[template(path = "login_provision.html")]
+struct LoginProvisionView {
+    display_ctx: LoginDisplayCtx,
+    provider_name: String,
+    proposed_username: String,
+    display_name: Option<String>,
+    email: Option<String>,
+    error: Option<String>,
 }
 
 pub async fn view_logout_get(
@@ -352,11 +383,18 @@ pub fn view_oauth2_get(
         .into_response()
 }
 
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct LoginIndexQuery {
+    #[serde(default)]
+    reason: Option<String>,
+}
+
 pub async fn view_index_get(
     State(state): State<ServerState>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     DomainInfo(domain_info): DomainInfo,
     Extension(kopid): Extension<KOpId>,
+    Query(query): Query<LoginIndexQuery>,
     jar: CookieJar,
 ) -> Response {
     // If we are authenticated, redirect to the landing.
@@ -383,11 +421,16 @@ pub async fn view_index_get(
 
             let remember_me = !username.is_empty();
 
+            let flash_error = match query.reason.as_deref() {
+                Some("session_expired") => Some(LoginError::SessionExpired),
+                _ => None,
+            };
+
             let display_ctx = LoginDisplayCtx {
                 domain_info,
                 oauth2: None,
                 reauth: None,
-                error: None,
+                error: flash_error,
             };
 
             (
@@ -1025,6 +1068,24 @@ async fn view_login_step(
                         auth_state = inter.state;
                         continue;
                     }
+                    AuthExternal::OAuth2UserinfoRequest {
+                        userinfo_url,
+                        access_token,
+                    } => {
+                        let body = submit_userinfo_request(userinfo_url, access_token).await?;
+                        let auth_cred = AuthCredential::OAuth2UserinfoResponse { body };
+                        let inter = state
+                            .qe_r_ref
+                            .handle_auth(
+                                Some(sessionid),
+                                AuthStep::Cred(auth_cred),
+                                kopid.eventid,
+                                client_auth_info.clone(),
+                            )
+                            .await?;
+                        auth_state = inter.state;
+                        continue;
+                    }
                 }
             }
             AuthState::Success(token, issue) => {
@@ -1090,6 +1151,31 @@ async fn view_login_step(
                 }
                 .into_response();
             }
+            AuthState::ProvisioningRequired {
+                provider_uuid,
+                claims,
+            } => {
+                debug!("🧩 -> AuthState::ProvisioningRequired");
+                jar = cookies::destroy(jar, COOKIE_AUTH_SESSION_ID, &state);
+
+                let cookie_data = ProvisionCookieData {
+                    provider_uuid,
+                    sub: claims.sub.clone(),
+                    email: claims.email.clone(),
+                    email_verified: claims.email_verified,
+                    display_name: claims.display_name.clone(),
+                    username_hint: claims.username_hint.clone(),
+                };
+
+                if let Some(ck) = cookies::make_signed(&state, COOKIE_OAUTH2_PROVISION_REQ, &cookie_data) {
+                    jar = jar.add(ck);
+                } else {
+                    error!("Failed to sign provision cookie — cannot redirect to provision page");
+                    return Err(OperationError::InvalidState);
+                }
+
+                break Redirect::to("/ui/login/provision").into_response();
+            }
         }
     };
 
@@ -1153,4 +1239,228 @@ fn add_session_cookie(
             jar.add(cookie)
         })
         .ok_or(OperationError::InvalidSessionState)
+}
+
+async fn submit_userinfo_request(
+    userinfo_url: Url,
+    access_token: String,
+) -> Result<serde_json::Value, OperationError> {
+    let client = reqwest::ClientBuilder::new()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .map_err(|err| {
+            error!(?err, "Failed to build HTTP client for userinfo request");
+            OperationError::InvalidState
+        })?;
+
+    let res = client
+        .get(userinfo_url.as_str())
+        .bearer_auth(&access_token)
+        .header("User-Agent", "kanidm/1.0")
+        .send()
+        .await
+        .map_err(|err| {
+            error!(?err, ?userinfo_url, "Userinfo request failed");
+            OperationError::InvalidState
+        })?;
+
+    if res.status() == reqwest::StatusCode::OK {
+        res.json::<serde_json::Value>().await.map_err(|err| {
+            error!(?err, "Userinfo response was not valid JSON");
+            OperationError::InvalidState
+        })
+    } else {
+        error!(status = ?res.status(), "Userinfo request returned non-200 status");
+        Err(OperationError::InvalidState)
+    }
+}
+
+#[derive(Deserialize)]
+pub struct ProvisionForm {
+    username: String,
+}
+
+pub async fn view_login_provision_get(
+    State(state): State<ServerState>,
+    DomainInfo(domain_info): DomainInfo,
+    Extension(_kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    jar: CookieJar,
+) -> Response {
+    let Some(cookie_data) =
+        cookies::get_signed::<ProvisionCookieData>(&state, &jar, COOKIE_OAUTH2_PROVISION_REQ)
+    else {
+        return Redirect::to("/ui/login?reason=session_expired").into_response();
+    };
+
+    let display_ctx = LoginDisplayCtx {
+        domain_info,
+        oauth2: None,
+        reauth: None,
+        error: None,
+    };
+
+    use kanidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims;
+    let claims = ExternalUserClaims {
+        sub: cookie_data.sub.clone(),
+        email: cookie_data.email.clone(),
+        email_verified: cookie_data.email_verified,
+        display_name: cookie_data.display_name.clone(),
+        username_hint: cookie_data.username_hint.clone(),
+    };
+
+    let (proposed_username, username_notice) = match state
+        .qe_w_ref
+        .handle_derive_jit_username(claims, client_auth_info)
+        .await
+    {
+        Ok(derived) => {
+            let normalized_hint: String = cookie_data
+                .username_hint
+                .as_deref()
+                .unwrap_or("")
+                .to_lowercase()
+                .chars()
+                .map(|c| if c.is_alphanumeric() { c } else { '_' })
+                .collect();
+            let notice = if !normalized_hint.is_empty() && derived != normalized_hint {
+                Some("Username already taken — we've suggested an alternative".to_string())
+            } else {
+                None
+            };
+            (derived, notice)
+        }
+        Err(_) => (
+            cookie_data
+                .username_hint
+                .clone()
+                .unwrap_or_else(|| "user".to_string()),
+            None,
+        ),
+    };
+
+    LoginProvisionView {
+        display_ctx,
+        provider_name: cookie_data.provider_uuid.to_string(),
+        proposed_username,
+        display_name: cookie_data.display_name.clone(),
+        email: cookie_data.email.clone(),
+        error: username_notice,
+    }
+    .into_response()
+}
+
+pub async fn view_login_provision_post(
+    State(app_state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    DomainInfo(domain_info): DomainInfo,
+    mut jar: CookieJar,
+    Form(form): Form<ProvisionForm>,
+) -> Response {
+    let display_ctx = LoginDisplayCtx {
+        domain_info,
+        oauth2: None,
+        reauth: None,
+        error: None,
+    };
+
+    let Some(cookie_data) =
+        cookies::get_signed::<ProvisionCookieData>(&app_state, &jar, COOKIE_OAUTH2_PROVISION_REQ)
+    else {
+        return Redirect::to("/ui/login?reason=session_expired").into_response();
+    };
+
+    let username = form.username.trim().to_string();
+
+    // T046: inline format validation (lowercase alphanumeric + hyphens, 2-64 chars)
+    if username.is_empty() || username.len() < 2 || username.len() > 64 {
+        return LoginProvisionView {
+            display_ctx,
+            provider_name: cookie_data.provider_uuid.to_string(),
+            proposed_username: username,
+            display_name: cookie_data.display_name.clone(),
+            email: cookie_data.email.clone(),
+            error: Some("Username must be between 2 and 64 characters.".to_string()),
+        }
+        .into_response();
+    }
+    if !username
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-' || c == '_')
+    {
+        return LoginProvisionView {
+            display_ctx,
+            provider_name: cookie_data.provider_uuid.to_string(),
+            proposed_username: username,
+            display_name: cookie_data.display_name.clone(),
+            email: cookie_data.email.clone(),
+            error: Some(
+                "Username may only contain lowercase letters, digits, hyphens, and underscores."
+                    .to_string(),
+            ),
+        }
+        .into_response();
+    }
+
+    use kanidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims;
+    let claims = ExternalUserClaims {
+        sub: cookie_data.sub.clone(),
+        email: cookie_data.email.clone(),
+        email_verified: cookie_data.email_verified,
+        display_name: cookie_data.display_name.clone(),
+        username_hint: cookie_data.username_hint.clone(),
+    };
+
+    let result = app_state
+        .qe_w_ref
+        .handle_jit_provision_oauth2_account(
+            cookie_data.provider_uuid,
+            claims.clone(),
+            username.clone(),
+            kopid.eventid,
+            client_auth_info.clone(),
+        )
+        .await;
+
+    match result {
+        Ok(_account_uuid) => {
+            jar = cookies::destroy(jar, COOKIE_OAUTH2_PROVISION_REQ, &app_state);
+            (jar, Redirect::to("/ui/login")).into_response()
+        }
+        // T045: username taken at POST time — re-derive a suggestion and re-render
+        Err(OperationError::UniqueConstraintViolation) => {
+            let suggestion = app_state
+                .qe_w_ref
+                .handle_derive_jit_username(claims, client_auth_info)
+                .await
+                .unwrap_or(username);
+            LoginProvisionView {
+                display_ctx,
+                provider_name: cookie_data.provider_uuid.to_string(),
+                proposed_username: suggestion,
+                display_name: cookie_data.display_name.clone(),
+                email: cookie_data.email.clone(),
+                error: Some(
+                    "That username is already taken — we've suggested an alternative.".to_string(),
+                ),
+            }
+            .into_response()
+        }
+        Err(OperationError::InvalidAttribute(msg)) => LoginProvisionView {
+            display_ctx,
+            provider_name: cookie_data.provider_uuid.to_string(),
+            proposed_username: username,
+            display_name: cookie_data.display_name.clone(),
+            email: cookie_data.email.clone(),
+            error: Some(msg),
+        }
+        .into_response(),
+        Err(err_code) => UnrecoverableErrorView {
+            err_code,
+            operation_id: kopid.eventid,
+            domain_info: display_ctx.domain_info,
+        }
+        .into_response(),
+    }
 }

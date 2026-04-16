@@ -1,5 +1,5 @@
 mod access;
-pub(super) mod accounts;
+pub(crate) mod accounts;
 mod groups;
 mod key_providers;
 pub(crate) mod schema;

@@ -1,6 +1,6 @@
 use crate::idm::server::IdmServerProxyWriteTransaction;
 use crate::prelude::*;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
 // TODO: Move to constants once we have a good path here. Will probably need to be part
@@ -19,6 +19,10 @@ pub struct OAuth2ClientProvider {
     pub(crate) request_scopes: BTreeSet<String>,
     pub(crate) authorisation_endpoint: Url,
     pub(crate) token_endpoint: Url,
+    pub(crate) userinfo_endpoint: Option<Url>,
+    pub(crate) jit_provisioning: bool,
+    /// Maps a Kanidm attribute to the provider claim name used at JIT provisioning time.
+    pub(crate) claim_map: BTreeMap<Attribute, String>,
 }
 
 impl fmt::Debug for OAuth2ClientProvider {
@@ -64,6 +68,9 @@ impl OAuth2ClientProvider {
             request_scopes,
             authorisation_endpoint,
             token_endpoint,
+            userinfo_endpoint: None,
+            jit_provisioning: false,
+            claim_map: BTreeMap::new(),
         }
     }
 }
@@ -118,6 +125,34 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .map(str::to_string)
                 .collect();
 
+            let userinfo_endpoint = provider_entry
+                .get_ava_single_url(Attribute::OAuth2UserinfoEndpoint)
+                .cloned();
+
+            let jit_provisioning = provider_entry
+                .get_ava_single_bool(Attribute::OAuth2JitProvisioning)
+                .unwrap_or(false);
+
+            let mut claim_map = BTreeMap::new();
+            if let Some(v) = provider_entry
+                .get_ava_single_utf8(Attribute::OAuth2ClaimMapName)
+                .map(str::to_string)
+            {
+                claim_map.insert(Attribute::Name, v);
+            }
+            if let Some(v) = provider_entry
+                .get_ava_single_utf8(Attribute::OAuth2ClaimMapDisplayname)
+                .map(str::to_string)
+            {
+                claim_map.insert(Attribute::DisplayName, v);
+            }
+            if let Some(v) = provider_entry
+                .get_ava_single_utf8(Attribute::OAuth2ClaimMapEmail)
+                .map(str::to_string)
+            {
+                claim_map.insert(Attribute::Mail, v);
+            }
+
             let provider = OAuth2ClientProvider {
                 name,
                 uuid,
@@ -127,6 +162,9 @@ impl IdmServerProxyWriteTransaction<'_> {
                 request_scopes,
                 authorisation_endpoint,
                 token_endpoint,
+                userinfo_endpoint,
+                jit_provisioning,
+                claim_map,
             };
 
             oauth2_client_provider_structs.push((uuid, provider));

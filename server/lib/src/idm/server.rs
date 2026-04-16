@@ -2289,6 +2289,167 @@ impl IdmServerProxyWriteTransaction<'_> {
             .and_then(|application_set| self.applications.reload(application_set))
     }
 
+    /// Find a Kanidm account linked to a specific OAuth2 provider and provider-assigned subject ID.
+    /// Returns `None` if no account is linked, or `Some(Account)` if one exists.
+    pub fn find_account_by_oauth2_provider_and_user_id(
+        &mut self,
+        provider_uuid: Uuid,
+        sub: &str,
+    ) -> Result<Option<crate::idm::account::Account>, OperationError> {
+        let filter = filter_all!(f_and!([
+            f_eq(
+                Attribute::OAuth2AccountProvider,
+                PartialValue::Refer(provider_uuid)
+            ),
+            f_eq(
+                Attribute::OAuth2AccountUniqueUserId,
+                PartialValue::Utf8(sub.to_string())
+            ),
+        ]));
+
+        let mut entries = self.qs_write.internal_search(filter).map_err(|e| {
+            admin_error!(?e, "find_account_by_oauth2_provider_and_user_id search failed");
+            e
+        })?;
+
+        match entries.len() {
+            0 => Ok(None),
+            1 => {
+                let entry = entries
+                    .pop()
+                    .ok_or(OperationError::InvalidState)?;
+                crate::idm::account::Account::try_from_entry_rw(&entry, &mut self.qs_write)
+                    .map(Some)
+            }
+            _ => {
+                admin_error!(
+                    provider_uuid = ?provider_uuid,
+                    sub = %sub,
+                    count = entries.len(),
+                    "Multiple accounts matched provider+sub — data integrity violation"
+                );
+                Err(OperationError::InvalidState)
+            }
+        }
+    }
+
+    /// JIT-provision a new Kanidm account from external provider claims.
+    /// Returns the UUID of the newly created account.
+    pub fn jit_provision_oauth2_account(
+        &mut self,
+        provider_uuid: Uuid,
+        claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        desired_name: &str,
+    ) -> Result<Uuid, OperationError> {
+        if claims.sub.is_empty() {
+            return Err(OperationError::InvalidAttribute(
+                "Provider subject identifier (sub) is empty".to_string(),
+            ));
+        }
+
+        let display_name = claims
+            .display_name
+            .clone()
+            .unwrap_or_else(|| desired_name.to_string());
+
+        let new_account_uuid = Uuid::new_v4();
+        let cred_id = Uuid::new_v4();
+
+        let mut entry: Entry<EntryInit, EntryNew> = Entry::new();
+        entry.add_ava(Attribute::Class, EntryClass::Object.to_value());
+        entry.add_ava(Attribute::Class, EntryClass::Account.to_value());
+        entry.add_ava(Attribute::Class, EntryClass::Person.to_value());
+        entry.add_ava(Attribute::Class, EntryClass::OAuth2Account.to_value());
+        entry.add_ava(Attribute::Uuid, Value::Uuid(new_account_uuid));
+        entry.add_ava(Attribute::Name, Value::new_iname(desired_name));
+        entry.add_ava(Attribute::DisplayName, Value::new_utf8s(&display_name));
+        entry.add_ava(Attribute::OAuth2AccountProvider, Value::Refer(provider_uuid));
+        entry.add_ava(
+            Attribute::OAuth2AccountUniqueUserId,
+            Value::new_utf8s(&claims.sub),
+        );
+        entry.add_ava(Attribute::OAuth2AccountCredentialUuid, Value::Uuid(cred_id));
+        if let Some(ref email) = claims.email {
+            entry.add_ava(Attribute::Mail, Value::EmailAddress(email.clone(), true));
+        }
+
+        self.qs_write.internal_create(vec![entry]).map_err(|e| {
+            admin_error!(?e, "jit_provision_oauth2_account create failed");
+            e
+        })?;
+
+        Ok(new_account_uuid)
+    }
+
+    /// Derive a valid Kanidm account name from an external provider identity.
+    ///
+    /// Candidate order: `username_hint` → email local-part → first 8 hex chars of `sub`.
+    /// The candidate is normalised (lowercased, non-alphanumeric chars replaced with `_`,
+    /// leading digits prefixed with `u`).  If the name is already taken, a numeric suffix
+    /// `_2` … `_100` is appended until a free slot is found.  Returns an error when no
+    /// slot is available.
+    pub fn derive_jit_username(
+        &mut self,
+        claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+    ) -> Result<String, OperationError> {
+        let base = claims
+            .username_hint
+            .as_deref()
+            .filter(|s| !s.is_empty())
+            .or_else(|| {
+                claims
+                    .email
+                    .as_deref()
+                    .and_then(|e| e.split('@').next())
+                    .filter(|s| !s.is_empty())
+            })
+            .map(|s| {
+                let normalised: String = s
+                    .to_lowercase()
+                    .chars()
+                    .map(|c| if c.is_alphanumeric() { c } else { '_' })
+                    .collect();
+                if normalised.starts_with(|c: char| c.is_ascii_digit()) {
+                    format!("u{}", normalised)
+                } else {
+                    normalised
+                }
+            })
+            .unwrap_or_else(|| {
+                let fragment: String = claims
+                    .sub
+                    .chars()
+                    .filter(|c| c.is_alphanumeric())
+                    .take(8)
+                    .collect::<String>()
+                    .to_lowercase();
+                if fragment.starts_with(|c: char| c.is_ascii_digit()) {
+                    format!("u{}", fragment)
+                } else {
+                    fragment
+                }
+            });
+
+        let mut name_is_free = |name: &str| -> Result<bool, OperationError> {
+            let filter = filter_all!(f_eq(Attribute::Name, PartialValue::new_iname(name)));
+            self.qs_write.internal_search(filter).map(|res| res.is_empty())
+        };
+
+        if name_is_free(&base)? {
+            return Ok(base);
+        }
+        for suffix in 2u32..=100 {
+            let candidate = format!("{}_{}", base, suffix);
+            if name_is_free(&candidate)? {
+                return Ok(candidate);
+            }
+        }
+        Err(OperationError::InvalidAttribute(format!(
+            "No available username derived from hint '{}' (tried _2 through _100)",
+            base
+        )))
+    }
+
     fn reload_oauth2(&mut self) -> Result<(), OperationError> {
         let domain_level = self.qs_write.get_domain_version();
         self.qs_write.get_oauth2rs_set().and_then(|oauth2rs_set| {

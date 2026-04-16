@@ -1,0 +1,46 @@
+(% extends "login_base.html" %)
+
+(% block logincontainer %)
+<div class="mb-3">
+	<p class="text-muted small">
+		Welcome! You authenticated via <strong>(( provider_name ))</strong>.
+		Review the details below and confirm to create your Kanidm account.
+	</p>
+</div>
+<form id="provision" action="/ui/login/provision" method="post">
+	<div class="mb-3">
+		<label for="username" class="form-label">Username</label>
+		<input
+			autofocus=true
+			class="form-control"
+			id="username"
+			name="username"
+			type="text"
+			value="(( proposed_username ))"
+			required=true
+			autocomplete="username"
+		/>
+	</div>
+	(% if let Some(dn) = display_name %)
+	<div class="mb-3">
+		<label class="form-label">Display Name</label>
+		<input class="form-control" type="text" value="(( dn ))" readonly=true />
+	</div>
+	(% endif %)
+	(% if let Some(em) = email %)
+	<div class="mb-3">
+		<label class="form-label">Email</label>
+		<input class="form-control" type="email" value="(( em ))" readonly=true />
+	</div>
+	(% endif %)
+	(% if let Some(err) = error %)
+	<div class="alert alert-danger" role="alert">(( err ))</div>
+	(% endif %)
+	<div class="input-group mb-3 justify-content-md-center">
+		<button type="submit" class="btn btn-primary">Create Account</button>
+	</div>
+</form>
+<div class="text-center">
+	<a href="/ui/login">Cancel</a>
+</div>
+(% endblock %)

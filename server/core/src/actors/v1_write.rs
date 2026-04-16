@@ -1798,4 +1798,39 @@ impl QueryServerWriteV1 {
                 Ok(res)
             })
     }
+
+    #[instrument(
+        level = "info",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_jit_provision_oauth2_account(
+        &self,
+        provider_uuid: Uuid,
+        claims: kanidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        desired_name: String,
+        eventid: Uuid,
+        _client_auth_info: ClientAuthInfo,
+    ) -> Result<Uuid, OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+
+        idms_prox_write
+            .jit_provision_oauth2_account(provider_uuid, &claims, &desired_name)
+            .and_then(|uuid| idms_prox_write.commit().map(|_| uuid))
+    }
+
+    /// Derive a unique Kanidm username from external identity claims, performing
+    /// collision resolution (_2…_100 suffix) if the preferred name is taken.
+    pub async fn handle_derive_jit_username(
+        &self,
+        claims: kanidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        _client_auth_info: ClientAuthInfo,
+    ) -> Result<String, OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        idms_prox_write
+            .derive_jit_username(&claims)
+            .and_then(|name| idms_prox_write.commit().map(|_| name))
+    }
 }
