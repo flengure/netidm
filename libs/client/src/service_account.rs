@@ -1,14 +1,14 @@
 use std::collections::BTreeMap;
 
-use kanidm_proto::constants::{ATTR_DISPLAYNAME, ATTR_ENTRY_MANAGED_BY, ATTR_MAIL, ATTR_NAME};
-use kanidm_proto::internal::{ApiToken, CredentialStatus};
-use kanidm_proto::v1::{AccountUnixExtend, ApiTokenGenerate, Entry};
+use netidm_proto::constants::{ATTR_DISPLAYNAME, ATTR_ENTRY_MANAGED_BY, ATTR_MAIL, ATTR_NAME};
+use netidm_proto::internal::{ApiToken, CredentialStatus};
+use netidm_proto::v1::{AccountUnixExtend, ApiTokenGenerate, Entry};
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-use crate::{ClientError, KanidmClient};
+use crate::{ClientError, NetidmClient};
 
-impl KanidmClient {
+impl NetidmClient {
     pub async fn idm_service_account_list(&self) -> Result<Vec<Entry>, ClientError> {
         self.perform_get_request("/v1/service_account").await
     }
@@ -218,7 +218,7 @@ impl KanidmClient {
         &self,
         id: &str,
     ) -> Result<Vec<ApiToken>, ClientError> {
-        // This ends up at [kanidmd_core::actors::v1_write::QueryServerWriteV1::handle_service_account_api_token_generate]
+        // This ends up at [netidmd_core::actors::v1_write::QueryServerWriteV1::handle_service_account_api_token_generate]
         self.perform_get_request(format!("/v1/service_account/{id}/_api_token").as_str())
             .await
     }

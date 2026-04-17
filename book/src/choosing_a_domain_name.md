@@ -1,12 +1,12 @@
 # Choosing a Domain Name
 
-This book makes many references to a "domain name". This is the DNS domain name that you intend to use for Kanidm.
+This book makes many references to a "domain name". This is the DNS domain name that you intend to use for Netidm.
 
 This isn't always simple, and this chapter covers the key issues to consider when choosing a domain.
 
 > [!WARNING]
 >
-> **Bad choices** of domain name may have security impacts on your Kanidm instance, not limited to credential phishing,
+> **Bad choices** of domain name may have security impacts on your Netidm instance, not limited to credential phishing,
 > theft, session leaks and more.
 >
 > [**Changing** domain name is hard to do](./domain_rename.md) – it not only means reconfiguring all LDAP and OAuth
@@ -20,22 +20,22 @@ This isn't always simple, and this chapter covers the key issues to consider whe
 
 > [!TIP]
 >
-> We believe these practices are applicable _regardless_ of your organisation's size (even if your Kanidm instance is
+> We believe these practices are applicable _regardless_ of your organisation's size (even if your Netidm instance is
 > just for you!), or if you think your organisation is not "important enough" to be the target of attacks.
 >
-> While some suggestions may seem "extreme" or "paranoid", they generally come from Kanidm's authors' collective decades
+> While some suggestions may seem "extreme" or "paranoid", they generally come from Netidm's authors' collective decades
 > of experience managing, maintaining, and securing networks and systems at both very large and very small organisations
 > both inside and outside the technology industry.
 
 ## Recommendations
 
 If you have [strict security controls for all apps on your top-level domain](#subdomains-and-cross-origin-policy), you
-could run Kanidm on a subdomain of your main domain. If you owned `example.com` then you would use:
+could run Netidm on a subdomain of your main domain. If you owned `example.com` then you would use:
 
 - Origin: `https://idm.example.com`
 - Domain name: `idm.example.com`
 
-You must ensure no other services beside Kanidm use `idm.example.com` or subdomains of `idm.example.com`.
+You must ensure no other services beside Netidm use `idm.example.com` or subdomains of `idm.example.com`.
 `idm.example.com` would have DNS records that point to a load balancer, anycast IP or any other HA mechanism you may
 choose.
 
@@ -44,8 +44,8 @@ choose.
 > Using a subdomain is the **inverse** of the common Active Directory practice of using the organisation's primary
 > top-level domain directly, eg: `example.com`, where hosts would then register as `hostname.example.com`.
 
-Running Kanidm on a _separate_ top-level domain makes it much easier to restrict changes that _could_ affect your IDM
-infrastructure. For **maximum** security, your Kanidm domain name should be a subdomain of a top-level domain (or domain
+Running Netidm on a _separate_ top-level domain makes it much easier to restrict changes that _could_ affect your IDM
+infrastructure. For **maximum** security, your Netidm domain name should be a subdomain of a top-level domain (or domain
 under a [public suffix][ps]) that has no other services assigned it. In this example you own `example-auth.example`
 which you would operate in parallel to `example.com`. No other services should use this domain or subdomains:
 
@@ -108,7 +108,7 @@ certificate verification were disabled (or not configured correctly), this would
 <dd>
 
 Using the top-level domain directly allows any subdomain of that domain to access credentials and cookies intended for
-Kanidm.
+Netidm.
 
 </dd>
 
@@ -127,13 +127,13 @@ Kanidm.
 
 <dt>
 
-`idm.examplekanidm.example`
+`idm.examplenetidm.example`
 
 </dt>
 
 <dd>
 
-Kanidm is the brand for this project.
+Netidm is the brand for this project.
 
 </dd>
 
@@ -199,14 +199,14 @@ If your domain is on a ccTLD (country TLD), it may be de-registered should that 
 
 [dot-io]: https://www.theverge.com/2024/10/8/24265441/uk-treaty-end-io-domain-chagos-islands
 
-### Top-level domains containing "kanidm"
+### Top-level domains containing "netidm"
 
-We ask that you **do not** use the word `kanidm` as part of your instance's _top-level_ (or [public-suffix-level][ps])
-domain, eg: `contoso-kanidm.example`.
+We ask that you **do not** use the word `netidm` as part of your instance's _top-level_ (or [public-suffix-level][ps])
+domain, eg: `contoso-netidm.example`.
 
 Use something like `auth`, `idm`, `login` or `sso` instead – they're shorter, too!
 
-We're OK with you using `kanidm` in a _subdomain_ to point to your Kanidm instance, eg: `kanidm.example.com`.
+We're OK with you using `netidm` in a _subdomain_ to point to your Netidm instance, eg: `netidm.example.com`.
 
 We've worked hard to build this project, and using its name in conjunction with an organisation _not_ associated with
 the project dilutes the name's brand value.
@@ -255,7 +255,7 @@ Public suffix rules are _mostly_ predictable, but has some exceptional cases. Fo
 
 [nsw-optout]: https://bugzilla.mozilla.org/show_bug.cgi?id=547985
 
-This can be an issue if Kanidm shares a domain with:
+This can be an issue if Netidm shares a domain with:
 
 - applications which serve raw, user-supplied data in APIs (eg: blob/file storage and [Matrix homeservers][matrix-csp])
 - third-party servers _outside_ of your organisation's control (eg: SaaS apps)
@@ -266,13 +266,13 @@ This can be an issue if Kanidm shares a domain with:
 
 [matrix-csp]: https://github.com/element-hq/synapse/blob/develop/README.rst#security-note
 
-In most cases, hosting Kanidm on a subdomain of a separate top-level (or _existing_ [public-suffix level][ps]) domain
-(eg: `idm.contoso-auth.example`) is sufficient to isolate your Kanidm deployment's `Origin` from other applications and
+In most cases, hosting Netidm on a subdomain of a separate top-level (or _existing_ [public-suffix level][ps]) domain
+(eg: `idm.contoso-auth.example`) is sufficient to isolate your Netidm deployment's `Origin` from other applications and
 services.
 
 > [!WARNING]
 >
-> There is generally **no need** to request additions to [the public suffix list][ps] to deploy Kanidm securely, _even
+> There is generally **no need** to request additions to [the public suffix list][ps] to deploy Netidm securely, _even
 > for multi-environment deployments_.
 >
 > The **only** exception is to _remove_ an _existing_ opt-out that affects your domain where it must operate under a
@@ -289,18 +289,18 @@ services.
 > [!TIP]
 >
 > Web apps (and APIs) that authenticate with [OAuth 2.0/OpenID Connect](./integrations/oauth2.md) **never** need to
-> share cookies or Origin with Kanidm, so they **do not** need to be on the same top-level (or
+> share cookies or Origin with Netidm, so they **do not** need to be on the same top-level (or
 > [public-suffix-level][ps]) domain.
 >
 > Large public auth providers (eg: Google, Meta, Microsoft) work the same way with both first and third-party web apps.
 
-### Kanidm requires its own hostname
+### Netidm requires its own hostname
 
-Kanidm must be the _only_ thing running on a hostname, served from `/`, with all its paths served as-is.
+Netidm must be the _only_ thing running on a hostname, served from `/`, with all its paths served as-is.
 
 It cannot:
 
-- be run from a subdirectory (eg: `https://example.com/kanidm/`)
+- be run from a subdirectory (eg: `https://example.com/netidm/`)
 - have _other_ services accessible on the hostname in subdirectories (eg: `https://idm.example.com/wiki/`)
 - have _other_ services accessible over HTTP or HTTPS at the same hostname on a different port (eg:
   `https://idm.example.com:8080/`)
@@ -309,7 +309,7 @@ These introduce similar security risks to the [subdomain issues described above]
 
 One reasonable exception is to serve [ACME HTTP-01 challenges][acme-http] (for Let's Encrypt) at
 `http://${hostname}/.well-known/acme-challenge/`. You'll need a _separate_ HTTP server to respond to these challenges,
-and ensure that only authorised processes can request a certificate for Kanidm's hostname.
+and ensure that only authorised processes can request a certificate for Netidm's hostname.
 
 [acme-http]: https://letsencrypt.org/docs/challenge-types/#http-01-challenge
 
@@ -318,7 +318,7 @@ and ensure that only authorised processes can request a certificate for Kanidm's
 > The `/.well-known/` path ([RFC 8615][RFC 8615]) can be assigned security-sensitive meaning in other protocols, similar
 > to [ACME HTTP-01][acme-http].
 >
-> Kanidm currently uses this path for OpenID Connect Discovery, and may use it for other integrations in the future.
+> Netidm currently uses this path for OpenID Connect Discovery, and may use it for other integrations in the future.
 
 [RFC 8615]: https://datatracker.ietf.org/doc/html/rfc8615
 
@@ -329,8 +329,8 @@ CAs can issue wildcard TLS certificates, which apply to all subdomains in the sa
 This is used by some organisations to avoid leaking information about what services exist on a domain in certificate
 transparency logs. However, this information will exposed _anyway_ whenever a client makes a DNS query.
 
-If a service is issued a wildcard TLS certificate which _also_ covers a Kanidm installation on the same domain, any DNS
-hijacking could let that service impersonate Kanidm to those clients, and steal credentials.
+If a service is issued a wildcard TLS certificate which _also_ covers a Netidm installation on the same domain, any DNS
+hijacking could let that service impersonate Netidm to those clients, and steal credentials.
 
 While DNS-over-HTTPS generally prevents local hijacking, it's
 [possible for a network to disable it when automatically enabled][disable-doh], or just block it entirely.
@@ -342,13 +342,13 @@ the impact scope.
 
 ### Separate production and testing environments
 
-If running more than one instance of Kanidm, ensure that no two deployments share the same subdomain. This prevents
+If running more than one instance of Netidm, ensure that no two deployments share the same subdomain. This prevents
 credential and cookie transfers between the two environments. For example:
 
 - Production: `idm.example.com`
 - Testing: `idm-test.example.com`
 
-If you instead had an instance of Kanidm at `idm.example.com` for production and another at `test.idm.example.com` for
+If you instead had an instance of Netidm at `idm.example.com` for production and another at `test.idm.example.com` for
 testing, then the test instance could access the credentials and cookies of the production environment.
 
 This also prevents credentials intended for the test environment from being used in production (where there may be
@@ -356,7 +356,7 @@ stricter controls).
 
 ### Regional deployments
 
-You could have multiple instances of Kanidm configured with replication, with a single domain name and origin (eg:
+You could have multiple instances of Netidm configured with replication, with a single domain name and origin (eg:
 `idm.example.com`).
 
 You could then make regional instances accessible from different host names (eg: `au.idm.example.com` and

@@ -10,16 +10,16 @@ the same claim, the values of these maps are merged.
 To create or update a claim map on a client:
 
 ```shell
-kanidm system oauth2 update-claim-map <name> <claim_name> <kanidm_group_name> [values]...
-kanidm system oauth2 update-claim-map nextcloud account_role nextcloud_admins admin login ...
+netidm system oauth2 update-claim-map <name> <claim_name> <netidm_group_name> [values]...
+netidm system oauth2 update-claim-map nextcloud account_role nextcloud_admins admin login ...
 ```
 
 To change the join strategy for a claim name. Valid strategies are csv (comma separated value), ssv (space separated
 value) and array (a native json array). The default strategy is array.
 
 ```shell
-kanidm system oauth2 update-claim-map-join <name> <claim_name> [csv|ssv|array]
-kanidm system oauth2 update-claim-map-join nextcloud account_role csv
+netidm system oauth2 update-claim-map-join <name> <claim_name> [csv|ssv|array]
+netidm system oauth2 update-claim-map-join nextcloud account_role csv
 ```
 
 Example claim formats:
@@ -38,6 +38,6 @@ claim: ["value_a", "value_b"]
 To delete a group from a claim map
 
 ```shell
-kanidm system oauth2 delete-claim-map <name> <claim_name> <kanidm_group_name>
-kanidm system oauth2 delete-claim-map nextcloud account_role nextcloud_admins
+netidm system oauth2 delete-claim-map <name> <claim_name> <netidm_group_name>
+netidm system oauth2 delete-claim-map nextcloud account_role nextcloud_admins
 ```

@@ -36,8 +36,8 @@ use concread::arcache::{ARCacheBuilder, ARCacheReadTxn, ARCacheWriteTxn};
 use concread::cowcell::*;
 use crypto_glue::{hmac_s256::HmacSha256Key, s256::Sha256Output};
 use hashbrown::{HashMap, HashSet};
-use kanidm_proto::internal::{DomainInfo as ProtoDomainInfo, ImageValue, UiHint};
-use kanidm_proto::scim_v1::{
+use netidm_proto::internal::{DomainInfo as ProtoDomainInfo, ImageValue, UiHint};
+use netidm_proto::scim_v1::{
     server::{ScimListResponse, ScimOAuth2ClaimMap, ScimOAuth2ScopeMap, ScimReference},
     JsonValue, ScimEntryGetQuery, ScimFilter,
 };
@@ -959,7 +959,7 @@ pub trait QueryServerTransaction<'a> {
     fn resolve_scim_interim(
         &mut self,
         scim_value_intermediate: ScimValueIntermediate,
-    ) -> Result<Option<ScimValueKanidm>, OperationError> {
+    ) -> Result<Option<ScimValueNetidm>, OperationError> {
         match scim_value_intermediate {
             ScimValueIntermediate::References(uuids) => {
                 let scim_references = uuids
@@ -975,7 +975,7 @@ pub trait QueryServerTransaction<'a> {
                             })
                     })
                     .collect::<Result<Vec<_>, _>>()?;
-                Ok(Some(ScimValueKanidm::EntryReferences(scim_references)))
+                Ok(Some(ScimValueNetidm::EntryReferences(scim_references)))
             }
             ScimValueIntermediate::Oauth2ClaimMap(unresolved_maps) => {
                 let scim_claim_maps = unresolved_maps
@@ -1002,7 +1002,7 @@ pub trait QueryServerTransaction<'a> {
                     )
                     .collect::<Result<Vec<_>, _>>()?;
 
-                Ok(Some(ScimValueKanidm::OAuth2ClaimMap(scim_claim_maps)))
+                Ok(Some(ScimValueNetidm::OAuth2ClaimMap(scim_claim_maps)))
             }
 
             ScimValueIntermediate::Oauth2ScopeMap(unresolved_maps) => {
@@ -1021,7 +1021,7 @@ pub trait QueryServerTransaction<'a> {
                     })
                     .collect::<Result<Vec<_>, _>>()?;
 
-                Ok(Some(ScimValueKanidm::OAuth2ScopeMap(scim_claim_maps)))
+                Ok(Some(ScimValueNetidm::OAuth2ScopeMap(scim_claim_maps)))
             }
         }
     }
@@ -1560,7 +1560,7 @@ impl QueryServerReadTransaction<'_> {
         class: EntryClass,
         query: ScimEntryGetQuery,
         ident: Identity,
-    ) -> Result<ScimEntryKanidm, OperationError> {
+    ) -> Result<ScimEntryNetidm, OperationError> {
         let filter_intent = filter!(f_and!([
             f_eq(Attribute::Uuid, PartialValue::Uuid(uuid)),
             f_eq(Attribute::Class, class.into())
@@ -1586,7 +1586,7 @@ impl QueryServerReadTransaction<'_> {
 
         let mut vs = self.search_ext(&se)?;
         match vs.pop() {
-            Some(entry) if vs.is_empty() => entry.to_scim_kanidm(self),
+            Some(entry) if vs.is_empty() => entry.to_scim_netidm(self),
             _ => {
                 if vs.is_empty() {
                     Err(OperationError::NoMatchingEntries)
@@ -1697,7 +1697,7 @@ impl QueryServerReadTransaction<'_> {
 
         let resources = paginated_result_set
             .into_iter()
-            .map(|entry| entry.to_scim_kanidm(self))
+            .map(|entry| entry.to_scim_netidm(self))
             .collect::<Result<Vec<_>, _>>()?;
 
         Ok(ScimListResponse {
@@ -1858,7 +1858,7 @@ impl QueryServer {
             // here because the database is not started, so we cannot pull it from there.
             d_display: domain_name,
             // Automatically derive our current taint mode based on the PRERELEASE setting.
-            d_devel_taint: option_env!("KANIDM_PRE_RELEASE").is_some(),
+            d_devel_taint: option_env!("NETIDM_PRE_RELEASE").is_some(),
             d_ldap_allow_unix_pw_bind: false,
             d_allow_easter_eggs: false,
             d_image: None,
@@ -2511,7 +2511,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
         // If we have moved from stable to dev, this triggers the taint. If we
         // are moving from dev to stable, the db will be true triggering the
         // taint flag. If we are stable to stable this will be false.
-        let current_devel_flag = option_env!("KANIDM_PRE_RELEASE").is_some();
+        let current_devel_flag = option_env!("NETIDM_PRE_RELEASE").is_some();
         let domain_info_devel_taint = current_devel_flag
             || domain_info
                 .get_ava_single_bool(Attribute::DomainDevelopmentTaint)
@@ -2520,7 +2520,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
         let domain_allow_easter_eggs = domain_info
             .get_ava_single_bool(Attribute::DomainAllowEasterEggs)
             // This defaults to false for release versions, and true in development
-            .unwrap_or(option_env!("KANIDM_PRE_RELEASE").is_some());
+            .unwrap_or(option_env!("NETIDM_PRE_RELEASE").is_some());
 
         // We have to set the domain version here so that features which check for it
         // will now see it's been increased. This also prevents recursion during reloads
@@ -2563,7 +2563,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
             let valid_levels: Vec<_> =
                 (DOMAIN_MIN_REMIGRATION_LEVEL..DOMAIN_PREVIOUS_TGT_LEVEL).collect();
             error!("UNABLE TO PROCEED. You have requested an initial migration level which is lower than supported.");
-            error!("For more see: https://kanidm.github.io/kanidm/stable/support.html#upgrade-policy and https://kanidm.github.io/kanidm/stable/server_updates.html");
+            error!("For more see: https://netidm.github.io/netidm/stable/support.html#upgrade-policy and https://netidm.github.io/netidm/stable/server_updates.html");
             error!(domain_previous_version = ?previous_version, domain_target_version = ?domain_info_version);
             error!(domain_previous_patch_level = ?previous_patch_level, domain_target_patch_level = ?domain_info_patch_level);
             error!(?valid_levels);
@@ -2628,10 +2628,15 @@ impl<'a> QueryServerWriteTransaction<'a> {
             self.migrate_domain_16_to_17()?;
         }
 
+        if previous_version <= DOMAIN_LEVEL_17 && domain_info_version >= DOMAIN_LEVEL_18 {
+            // 1.13 -> 1.14
+            self.migrate_domain_17_to_18()?;
+        }
+
         // This is here to catch when we increase domain levels but didn't create the migration
         // hooks. If this fails it probably means you need to add another migration hook
         // in the above.
-        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_17) };
+        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_18) };
         debug_assert!(domain_info_version <= DOMAIN_MAX_LEVEL);
 
         Ok(())
@@ -2650,7 +2655,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
         let display_name = domain_entry
             .get_ava_single_utf8(Attribute::DomainDisplayName)
             .map(str::to_string)
-            .unwrap_or_else(|| format!("Kanidm {domain_name}"));
+            .unwrap_or_else(|| format!("Netidm {domain_name}"));
 
         let domain_ldap_allow_unix_pw_bind = domain_entry
             .get_ava_single_bool(Attribute::LdapAllowUnixPwBind)
@@ -2677,7 +2682,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
                 mut_d_info.d_name,
             );
             admin_warn!(
-                    "If you think this is an error, see https://kanidm.github.io/kanidm/master/domain_rename.html"
+                    "If you think this is an error, see https://netidm.github.io/netidm/master/domain_rename.html"
                 );
             mut_d_info.d_name = domain_name;
         }
@@ -3002,7 +3007,7 @@ impl<'a> QueryServerWriteTransaction<'a> {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use kanidm_proto::scim_v1::{
+    use netidm_proto::scim_v1::{
         server::{ScimListResponse, ScimReference},
         JsonValue, ScimEntryGetQuery, ScimFilter,
     };
@@ -3364,13 +3369,13 @@ mod tests {
 
         // Convert entry into scim
         let reduced = entry.as_ref().clone().into_reduced();
-        let scim_entry = reduced.to_scim_kanidm(&mut read_txn).unwrap();
+        let scim_entry = reduced.to_scim_netidm(&mut read_txn).unwrap();
 
         // Assert scim entry attributes are as expected
         assert_eq!(scim_entry.header.id, UUID_IDM_PEOPLE_SELF_NAME_WRITE);
         let name_scim = scim_entry.attrs.get(&Attribute::Name).unwrap();
         match name_scim {
-            ScimValueKanidm::String(name) => {
+            ScimValueNetidm::String(name) => {
                 assert_eq!(name.clone(), "idm_people_self_name_write")
             }
             _ => {
@@ -3381,7 +3386,7 @@ mod tests {
         // such as returning a new struct type for `members` attributes or `managed_by`
         let entry_managed_by_scim = scim_entry.attrs.get(&Attribute::EntryManagedBy).unwrap();
         match entry_managed_by_scim {
-            ScimValueKanidm::EntryReferences(managed_by) => {
+            ScimValueNetidm::EntryReferences(managed_by) => {
                 assert_eq!(
                     managed_by.first().unwrap().clone(),
                     ScimReference {
@@ -3397,7 +3402,7 @@ mod tests {
 
         let members_scim = scim_entry.attrs.get(&Attribute::Member).unwrap();
         match members_scim {
-            ScimValueKanidm::EntryReferences(members) => {
+            ScimValueNetidm::EntryReferences(members) => {
                 assert_eq!(
                     members.first().unwrap().clone(),
                     ScimReference {
@@ -3551,17 +3556,17 @@ mod tests {
         assert_eq!(base.items_per_page, None);
         assert_eq!(base.start_index, None);
 
-        let Some(ScimValueKanidm::String(testgroup_name_0)) =
+        let Some(ScimValueNetidm::String(testgroup_name_0)) =
             base.resources[0].attrs.get(&Attribute::Name)
         else {
             panic!("Invalid data in attribute.");
         };
-        let Some(ScimValueKanidm::String(testgroup_name_1)) =
+        let Some(ScimValueNetidm::String(testgroup_name_1)) =
             base.resources[1].attrs.get(&Attribute::Name)
         else {
             panic!("Invalid data in attribute.");
         };
-        let Some(ScimValueKanidm::String(testgroup_name_2)) =
+        let Some(ScimValueNetidm::String(testgroup_name_2)) =
             base.resources[2].attrs.get(&Attribute::Name)
         else {
             panic!("Invalid data in attribute.");
@@ -3590,7 +3595,7 @@ mod tests {
         assert_eq!(base.items_per_page, NonZeroU64::new(1));
         assert_eq!(base.start_index, NonZeroU64::new(1));
 
-        let Some(ScimValueKanidm::String(testgroup_name_0)) =
+        let Some(ScimValueNetidm::String(testgroup_name_0)) =
             base.resources[0].attrs.get(&Attribute::Name)
         else {
             panic!("Invalid data in attribute.");
@@ -3618,12 +3623,12 @@ mod tests {
         assert_eq!(base.items_per_page, NonZeroU64::new(2));
         assert_eq!(base.start_index, NonZeroU64::new(2));
 
-        let Some(ScimValueKanidm::String(testgroup_name_0)) =
+        let Some(ScimValueNetidm::String(testgroup_name_0)) =
             base.resources[0].attrs.get(&Attribute::Name)
         else {
             panic!("Invalid data in attribute.");
         };
-        let Some(ScimValueKanidm::String(testgroup_name_1)) =
+        let Some(ScimValueNetidm::String(testgroup_name_1)) =
             base.resources[1].attrs.get(&Attribute::Name)
         else {
             panic!("Invalid data in attribute.");

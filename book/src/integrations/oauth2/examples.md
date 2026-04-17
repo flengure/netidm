@@ -2,12 +2,12 @@
 
 > [!WARNING]
 >
-> Web applications that authenticate with Kanidm **must** be served over HTTPS.
+> Web applications that authenticate with Netidm **must** be served over HTTPS.
 
 > [!TIP]
 >
 > More examples can be found in the
-> [Show and tell category](https://github.com/kanidm/kanidm/discussions/categories/show-and-tell) of Kanidm's GitHub
+> [Show and tell category](https://github.com/netidm/netidm/discussions/categories/show-and-tell) of Netidm's GitHub
 > discussions.
 
 ## Apache `mod_auth_openidc`
@@ -64,49 +64,49 @@ In the virtual host, to protect a location/directory
 [Gitea](https://docs.gitea.com/) is a painless, self-hosted, all-in-one software development service. It has built in
 support for [external authentication](https://docs.gitea.com/administration/authentication) including OAuth2.
 
-To set up a Gitea instance to authenticate with Kanidm:
+To set up a Gitea instance to authenticate with Netidm:
 
-1. Add an email address to your regular Kanidm account, if it doesn't have one already:
-
-   ```sh
-   kanidm person update your_username -m your_username@example.com
-   ```
-
-2. Create a new Kanidm group for your Gitea users (`gitea_users`), and add your regular account to it:
+1. Add an email address to your regular Netidm account, if it doesn't have one already:
 
    ```sh
-   kanidm group create gitea_users
-   kanidm group add-members gitea_users your_username
+   netidm person update your_username -m your_username@example.com
    ```
 
-3. Create a new OAuth2 application configuration in Kanidm (`gitea`), configure the redirect URL, and scope access to
+2. Create a new Netidm group for your Gitea users (`gitea_users`), and add your regular account to it:
+
+   ```sh
+   netidm group create gitea_users
+   netidm group add-members gitea_users your_username
+   ```
+
+3. Create a new OAuth2 application configuration in Netidm (`gitea`), configure the redirect URL, and scope access to
    the `gitea_users` group:
 
    ```sh
-   kanidm system oauth2 create gitea Gitea https://gitea.example.com/user/login
-   kanidm system oauth2 add-redirect-url gitea https://gitea.example.com/user/oauth2/kanidm/callback
-   kanidm system oauth2 update-scope-map gitea gitea_users email openid profile groups
+   netidm system oauth2 create gitea Gitea https://gitea.example.com/user/login
+   netidm system oauth2 add-redirect-url gitea https://gitea.example.com/user/oauth2/netidm/callback
+   netidm system oauth2 update-scope-map gitea gitea_users email openid profile groups
    ```
 
 4. Gitea currently [does not support PKCE](https://github.com/go-gitea/gitea/issues/21376) in their OIDC implementation.
    If you do not perform this step, you will see an error like
-   `No PKCE code challenge was provided with client in enforced PKCE mode.` in your Kanidm server logs. Therefore, we
+   `No PKCE code challenge was provided with client in enforced PKCE mode.` in your Netidm server logs. Therefore, we
    have to disable PKCE for Gitea:
 
    ```sh
-   kanidm system oauth2 warning-insecure-client-disable-pkce gitea
+   netidm system oauth2 warning-insecure-client-disable-pkce gitea
    ```
 
-5. Get the `gitea` OAuth2 client secret from Kanidm:
+5. Get the `gitea` OAuth2 client secret from Netidm:
 
    ```sh
-   kanidm system oauth2 show-basic-secret gitea
+   netidm system oauth2 show-basic-secret gitea
    ```
 
 6. Log in to Gitea with an administrator account and go to Site Administration -> Identity & Access -> Authentication
    Sources, and "Add Authentication Source", then provide the following details:
    - **Type**: `OAuth2`
-   - **Name**: `kanidm`, in case you want to choose a different name, make sure to update `kanidm` in the redirect URL
+   - **Name**: `netidm`, in case you want to choose a different name, make sure to update `netidm` in the redirect URL
      in step 3. The full redirect URL is provided at the bottom of the current configuration page in Gitea.
    - **OAuth2 Provider**: `OpenID Connect`
    - **Client ID (key)**: `gitea`
@@ -119,20 +119,20 @@ To set up a Gitea instance to authenticate with Kanidm:
    ```sh
    gitea admin auth add-oauth \
        --provider=openidConnect \
-       --name=kanidm \
+       --name=netidm \
        --key=gitea \
        --secret=[from show-basic-secret above] \
        --auto-discover-url=https://idm.example.com/oauth2/openid/gitea/.well-known/openid-configuration \
    ```
 
-You should now see a "Sign in with Kanidm" button on your Gitea login page.
+You should now see a "Sign in with Netidm" button on your Gitea login page.
 
 You may additionally want to configure:
 
-- A Gitea themed icon in Kanidm for the `gitea` OAuth2 application:
+- A Gitea themed icon in Netidm for the `gitea` OAuth2 application:
   ```sh
   curl -LO https://gitea.example.com/assets/img/logo.svg
-  kanidm system oauth2 set-image gitea logo.svg svg
+  netidm system oauth2 set-image gitea logo.svg svg
   rm logo.svg
   ```
 
@@ -152,37 +152,37 @@ You may additionally want to configure:
 [supports OpenID Connect](https://docs.gitlab.com/ee/administration/auth/oidc.html) on
 [self-managed installations](https://docs.gitlab.com/ee/install/) _only_ (ie: **not** GitLab.com).
 
-To set up a self-managed GitLab instance to authenticate with Kanidm:
+To set up a self-managed GitLab instance to authenticate with Netidm:
 
-1. Add an email address to your regular Kanidm account, if it doesn't have one already:
-
-   ```sh
-   kanidm person update your_username -m your_username@example.com
-   ```
-
-2. Create a new Kanidm group for your GitLab users (`gitlab_users`), and add your regular account to it:
+1. Add an email address to your regular Netidm account, if it doesn't have one already:
 
    ```sh
-   kanidm group create gitlab_users
-   kanidm group add-members gitlab_users your_username
+   netidm person update your_username -m your_username@example.com
    ```
 
-3. Create a new OAuth2 application configuration in Kanidm (`gitlab`), configure the redirect URL, and scope access to
+2. Create a new Netidm group for your GitLab users (`gitlab_users`), and add your regular account to it:
+
+   ```sh
+   netidm group create gitlab_users
+   netidm group add-members gitlab_users your_username
+   ```
+
+3. Create a new OAuth2 application configuration in Netidm (`gitlab`), configure the redirect URL, and scope access to
    the `gitlab_users` group:
 
    ```sh
-   kanidm system oauth2 create gitlab GitLab https://gitlab.example.com/users/sign_in
-   kanidm system oauth2 add-redirect-url gitlab https://gitlab.example.com/users/auth/openid_connect/callback
-   kanidm system oauth2 update-scope-map gitlab gitlab_users email openid profile groups
+   netidm system oauth2 create gitlab GitLab https://gitlab.example.com/users/sign_in
+   netidm system oauth2 add-redirect-url gitlab https://gitlab.example.com/users/auth/openid_connect/callback
+   netidm system oauth2 update-scope-map gitlab gitlab_users email openid profile groups
    ```
 
-4. Get the `gitlab` OAuth2 client secret from Kanidm:
+4. Get the `gitlab` OAuth2 client secret from Netidm:
 
    ```sh
-   kanidm system oauth2 show-basic-secret gitlab
+   netidm system oauth2 show-basic-secret gitlab
    ```
 
-5. Configure GitLab to authenticate to Kanidm with OpenID Connect in `/etc/gitlab/gitlab.rb`:
+5. Configure GitLab to authenticate to Netidm with OpenID Connect in `/etc/gitlab/gitlab.rb`:
 
    ```ruby
    # Allow OpenID Connect for single sign on
@@ -191,34 +191,34 @@ To set up a self-managed GitLab instance to authenticate with Kanidm:
    # Automatically approve any account from an OmniAuth provider.
    #
    # This is insecure if you *don't* control *all* the providers in use.
-   # For example, if you allowed sign in Kanidm *and* with some public identity
+   # For example, if you allowed sign in Netidm *and* with some public identity
    # provider, it will let anyone with an account sign in to your GitLab
    # instance.
    gitlab_rails['omniauth_block_auto_created_users'] = false
 
-   # Automatically link existing users to Kanidm by email address.
+   # Automatically link existing users to Netidm by email address.
    #
    # This is insecure if users are allowed to change their own email address
-   # in Kanidm (disabled by default), or any provider doesn't validate
+   # in Netidm (disabled by default), or any provider doesn't validate
    # ownership of email addresses.
    gitlab_rails['omniauth_auto_link_user'] = ['openid_connect']
 
-   # Update the user's profile with info from Kanidm whenever they log in.
+   # Update the user's profile with info from Netidm whenever they log in.
    # GitLab locks these fields when sync is enabled.
    gitlab_rails['omniauth_sync_profile_from_provider'] = ['openid_connect']
    gitlab_rails['omniauth_sync_profile_attributes'] = ['name', 'email']
 
-   # Connect to Kanidm
+   # Connect to Netidm
    gitlab_rails['omniauth_providers'] = [
      {
        name: "openid_connect",
-       label: "Kanidm",
+       label: "Netidm",
        icon: "https://idm.example.com/pkg/img/logo-192.png",
        args: {
          name: "openid_connect",
          scope: ["openid","profile","email"],
          response_type: "code",
-         # Point this at your Kanidm host. "gitlab" is the OAuth2 client ID.
+         # Point this at your Netidm host. "gitlab" is the OAuth2 client ID.
          # Don't include a trailing slash!
          issuer: "https://idm.example.com/oauth2/openid/gitlab",
          discovery: true,
@@ -229,7 +229,7 @@ To set up a self-managed GitLab instance to authenticate with Kanidm:
          client_options: {
            # OAuth2 client ID
            identifier: "gitlab",
-           secret: "YOUR KANIDM BASIC SECRET HERE",
+           secret: "YOUR NETIDM BASIC SECRET HERE",
            redirect_uri: "https://gitlab.example.com/users/auth/openid_connect/callback"
          }
        },
@@ -244,7 +244,7 @@ To set up a self-managed GitLab instance to authenticate with Kanidm:
 
 6. Restart GitLab (`gitlab-ctl reconfigure`), and wait for it to come back up again (this may take several minutes).
 
-Once GitLab is up and running, you should now see a "Kanidm" option on your GitLab sign-in page below the normal login
+Once GitLab is up and running, you should now see a "Netidm" option on your GitLab sign-in page below the normal login
 form.
 
 Once you've got everything working, you may wish configure GitLab to:
@@ -281,38 +281,38 @@ limitations:
 - JetBrains Hub does not support using an auto-configuration URL, which means you have to set a lot of options manually
   (which this guide will describe).
 
-To set up YouTrack (with its built-in JetBrains Hub) to authenticate with Kanidm using OAuth2:
+To set up YouTrack (with its built-in JetBrains Hub) to authenticate with Netidm using OAuth2:
 
-1. Add an email address to your regular Kanidm account, if it doesn't have one already:
-
-   ```sh
-   kanidm person update your_username -m your_username@example.com
-   ```
-
-2. Create a new Kanidm group for your YouTrack users (`youtrack_users`), and add your regular account to it:
+1. Add an email address to your regular Netidm account, if it doesn't have one already:
 
    ```sh
-   kanidm group create youtrack_users
-   kanidm group add-members youtrack_users your_username
+   netidm person update your_username -m your_username@example.com
    ```
 
-3. Create a new OAuth2 application configuration in Kanidm (`youtrack`), disable the PKCE requirement
+2. Create a new Netidm group for your YouTrack users (`youtrack_users`), and add your regular account to it:
+
+   ```sh
+   netidm group create youtrack_users
+   netidm group add-members youtrack_users your_username
+   ```
+
+3. Create a new OAuth2 application configuration in Netidm (`youtrack`), disable the PKCE requirement
    ([this is insecure][pkce-disable-security], but YouTrack doesn't support it), and scope access to the
    `youtrack_users` group:
 
    ```sh
-   kanidm system oauth2 create youtrack YouTrack https://youtrack.example.com
-   kanidm system oauth2 warning-insecure-client-disable-pkce youtrack
-   kanidm system oauth2 update-scope-map gitlab gitlab_users email openid profile groups
+   netidm system oauth2 create youtrack YouTrack https://youtrack.example.com
+   netidm system oauth2 warning-insecure-client-disable-pkce youtrack
+   netidm system oauth2 update-scope-map gitlab gitlab_users email openid profile groups
    ```
 
-4. **(optional)** By default, Kanidm presents the account's full SPN (eg: `your_username@idm.example.com`) as its
+4. **(optional)** By default, Netidm presents the account's full SPN (eg: `your_username@idm.example.com`) as its
    "preferred username".
 
    You can set `youtrack` to use a short username (eg: `your_username`) with:
 
    ```sh
-   kanidm system oauth2 prefer-short-username youtrack
+   netidm system oauth2 prefer-short-username youtrack
    ```
 
 5. Log in to YouTrack with an account that has full system administrator rights.
@@ -322,18 +322,18 @@ To set up YouTrack (with its built-in JetBrains Hub) to authenticate with Kanidm
 
 7. Click <kbd>New module</kbd> → <kbd>OAuth2</kbd>, and enter the following details:
 
-   - Name: `Kanidm`
+   - Name: `Netidm`
    - Authorization URL: `https://idm.example.com/ui/oauth2`
 
    Click Create, and you'll be taken to the Auth Module's settings page.
 
-8. Copy the <kbd>Redirect URI</kbd> from YouTrack and set it in Kanidm:
+8. Copy the <kbd>Redirect URI</kbd> from YouTrack and set it in Netidm:
 
    ```sh
-   kanidm system oauth2 add-redirect-url youtrack https://youtrack.example.com/hub/...
+   netidm system oauth2 add-redirect-url youtrack https://youtrack.example.com/hub/...
    ```
 
-9. Configure the Kanidm Auth Module as follows:
+9. Configure the Netidm Auth Module as follows:
 
    <dl>
 
@@ -341,7 +341,7 @@ To set up YouTrack (with its built-in JetBrains Hub) to authenticate with Kanidm
 
    <dd>
 
-   Upload a Kanidm or other organisational logo.
+   Upload a Netidm or other organisational logo.
 
    This will appear on the login form (with no text) to prompt users to sign in.
 
@@ -364,7 +364,7 @@ To set up YouTrack (with its built-in JetBrains Hub) to authenticate with Kanidm
    Copy the secret from the output of this command:
 
    ```sh
-   kanidm system oauth2 show-basic-secret youtrack
+   netidm system oauth2 show-basic-secret youtrack
    ```
 
    </dd>
@@ -476,12 +476,12 @@ To set up YouTrack (with its built-in JetBrains Hub) to authenticate with Kanidm
 
 11. Click <kbd>Enable module</kbd> at the top of the page.
 
-12. Click <kbd>Test login...</kbd> at the top of the page to try logging in with Kanidm.
+12. Click <kbd>Test login...</kbd> at the top of the page to try logging in with Netidm.
 
     You may need to allow pop-ups for YouTrack in your browser for this to work.
 
-YouTrack's log in page should now have show the button image you set for Kanidm below the normal log in form – which you
-can use to log in with Kanidm.
+YouTrack's log in page should now have show the button image you set for Netidm below the normal log in form – which you
+can use to log in with Netidm.
 
 [pkce-disable-security]: ../../frequently_asked_questions.md#why-is-disabling-pkce-considered-insecure
 
@@ -506,7 +506,7 @@ the Apps section of your deployment as "OpenID Connect user backend".
 In the `Administration settings > OpenID Connect` settings menu of Nextcloud, configure the discovery URL and client ID
 and secret.
 
-If your Kanidm server is hosted on a local network top-level domain from RFC 6762 (for example: `.home`, `.local`,
+If your Netidm server is hosted on a local network top-level domain from RFC 6762 (for example: `.home`, `.local`,
 `.internal`, …) or resolves to a local address, you need to allow remote servers with local addresses in Nextcloud's
 `config.php`:
 
@@ -547,25 +547,25 @@ Prepare the environment. Due to a
 basic client.
 
 ```bash
-kanidm system oauth2 create webapp 'webapp.example.com' 'https://webapp.example.com'
-kanidm system oauth2 add-redirect-url webapp 'https://webapp.example.com/oauth2/callback'
-kanidm system oauth2 update-scope-map webapp webapp_admin email openid
-kanidm system oauth2 get webapp
-kanidm system oauth2 show-basic-secret webapp
+netidm system oauth2 create webapp 'webapp.example.com' 'https://webapp.example.com'
+netidm system oauth2 add-redirect-url webapp 'https://webapp.example.com/oauth2/callback'
+netidm system oauth2 update-scope-map webapp webapp_admin email openid
+netidm system oauth2 get webapp
+netidm system oauth2 show-basic-secret webapp
 <SECRET>
 ```
 
 Create a user group.
 
 ```bash
-kanidm group create 'webapp_admin'
+netidm group create 'webapp_admin'
 ```
 
 Setup the claim-map to add `webapp_group` to the userinfo claim.
 
 ```bash
-kanidm system oauth2 update-claim-map-join 'webapp' 'webapp_group' array
-kanidm system oauth2 update-claim-map 'webapp' 'webapp_group' 'webapp_admin' 'webapp_admin'
+netidm system oauth2 update-claim-map-join 'webapp' 'webapp_group' array
+netidm system oauth2 update-claim-map 'webapp' 'webapp_group' 'webapp_admin' 'webapp_admin'
 ```
 
 Authorize users for the application. Additionally OAuth2 Proxy requires all users have an email, reference this issue
@@ -574,8 +574,8 @@ for more details:
 - <https://github.com/oauth2-proxy/oauth2-proxy/issues/2667>
 
 ```bash
-kanidm person update '<user>' --legalname 'Personal Name' --mail 'user@example.com'
-kanidm group add-members 'webapp_admin' '<user>'
+netidm person update '<user>' --legalname 'Personal Name' --mail 'user@example.com'
+netidm group add-members 'webapp_admin' '<user>'
 ```
 
 And add the following to your OAuth2 Proxy config.
@@ -583,17 +583,17 @@ And add the following to your OAuth2 Proxy config.
 ```toml
 provider = "oidc"
 scope = "openid email"
-# change to match your kanidm domain and client id
+# change to match your netidm domain and client id
 oidc_issuer_url = "https://idm.example.com/oauth2/openid/webapp"
-# client ID from `kanidm system oauth2 create`
+# client ID from `netidm system oauth2 create`
 client_id = "webapp"
-# redirect URL from `kanidm system oauth2 add-redirect-url webapp`
+# redirect URL from `netidm system oauth2 add-redirect-url webapp`
 redirect_url = "https://webapp.example.com/oauth2/callback"
-# claim name from `kanidm system oauth2 update-claim-map-join`
+# claim name from `netidm system oauth2 update-claim-map-join`
 oidc_groups_claim = "webapp_group"
-# user group from `kanidm group create`
+# user group from `netidm group create`
 allowed_groups = ["webapp_admin"]
-# secret from `kanidm system oauth2 show-basic-secret webapp`
+# secret from `netidm system oauth2 show-basic-secret webapp`
 client_secret = "<SECRET>"
 ```
 
@@ -604,38 +604,38 @@ project. It enables SSH to be used with OpenID Connect allowing access to be man
 `alice@example.com` instead of long-lived private keys. It does not replace SSH, but instead generates private keys on
 the fly, and augments the verification process on the server side.
 
-To set up OPKSSH to authenticate with Kanidm:
+To set up OPKSSH to authenticate with Netidm:
 
-1. Add an email address to your regular Kanidm account, if it doesn't have one already:
-
-   ```sh
-   kanidm person update alice -m alice@example.com
-   ```
-
-2. Create a new Kanidm group for your OPKSSH users (`opkssh_users`), and add your regular account to it:
+1. Add an email address to your regular Netidm account, if it doesn't have one already:
 
    ```sh
-   kanidm group create opkssh_users
-   kanidm group add-members opkssh_users alice
+   netidm person update alice -m alice@example.com
    ```
 
-3. Create a new OAuth2 application configuration in Kanidm (`opkssh`), configure the redirect URL, and scope access to
+2. Create a new Netidm group for your OPKSSH users (`opkssh_users`), and add your regular account to it:
+
+   ```sh
+   netidm group create opkssh_users
+   netidm group add-members opkssh_users alice
+   ```
+
+3. Create a new OAuth2 application configuration in Netidm (`opkssh`), configure the redirect URL, and scope access to
    the `opkssh_users` group:
 
    ```sh
    # The redirect origin is set to localhost for local callbacks
-   kanidm system oauth2 create-public opkssh opkssh http://localhost:3000
+   netidm system oauth2 create-public opkssh opkssh http://localhost:3000
 
    # Add the specific redirect URIs used by OPKSSH
-   kanidm system oauth2 add-redirect-url opkssh http://localhost:3000/login-callback
-   kanidm system oauth2 add-redirect-url opkssh http://localhost:10001/login-callback
-   kanidm system oauth2 add-redirect-url opkssh http://localhost:11110/login-callback
+   netidm system oauth2 add-redirect-url opkssh http://localhost:3000/login-callback
+   netidm system oauth2 add-redirect-url opkssh http://localhost:10001/login-callback
+   netidm system oauth2 add-redirect-url opkssh http://localhost:11110/login-callback
 
    # Explicitly allow localhost redirects for this client
-   kanidm system oauth2 enable-localhost-redirects opkssh
+   netidm system oauth2 enable-localhost-redirects opkssh
 
    # Map the group created earlier to the required OIDC scopes
-   kanidm system oauth2 update-scope-map opkssh opkssh_users email openid profile groups
+   netidm system oauth2 update-scope-map opkssh opkssh_users email openid profile groups
    ```
 
 4. On the SSH server side, [install opkssh](https://github.com/openpubkey/opkssh#installing-on-a-server) and allow your
@@ -646,7 +646,7 @@ To set up OPKSSH to authenticate with Kanidm:
    sudo opkssh add user alice@example.com https://idm.example.com/oauth2/openid/opkssh
    ```
 
-5. On the SSH client side, [install opkssh](https://github.com/openpubkey/opkssh#getting-started) and login via Kanidm:
+5. On the SSH client side, [install opkssh](https://github.com/openpubkey/opkssh#getting-started) and login via Netidm:
 
    ```sh
    opkssh login --provider=https://idm.example.com/oauth2/openid/opkssh,opkssh
@@ -678,58 +678,58 @@ Self-hosted [Outline supports authentication with OpenID Connect][outline-oidc],
 
   It will set the user's preferred name on _first_ log in _only_.
 
-To set up a _new_ self-hosted Outline instance to authenticate with Kanidm:
+To set up a _new_ self-hosted Outline instance to authenticate with Netidm:
 
-1. Add an email address to your regular Kanidm account, if it doesn't have one already:
+1. Add an email address to your regular Netidm account, if it doesn't have one already:
 
    ```sh
-   kanidm person update your_username -m your_username@example.com
+   netidm person update your_username -m your_username@example.com
    ```
 
-2. Create a new Kanidm group for your Outline users (`outline_users`), and **only** add your regular account to it:
+2. Create a new Netidm group for your Outline users (`outline_users`), and **only** add your regular account to it:
 
    ```sh
-   kanidm group create outline
-   kanidm group add-members outline_users your_username
+   netidm group create outline
+   netidm group add-members outline_users your_username
    ```
 
    **Warning:** don't add any other users when first setting up Outline. The first user who logs in will gain
    administrative rights.
 
-3. Create a new OAuth2 application configuration in Kanidm (`outline`), configure the redirect URL, and scope access to
+3. Create a new OAuth2 application configuration in Netidm (`outline`), configure the redirect URL, and scope access to
    the `outline_users` group:
 
    ```sh
-   kanidm system oauth2 create outline Outline https://outline.example.com
-   kanidm system oauth2 add-redirect-url outline https://outline.example.com/auth/oidc.callback
-   kanidm system oauth2 update-scope-map outline outline_users email openid profile groups
+   netidm system oauth2 create outline Outline https://outline.example.com
+   netidm system oauth2 add-redirect-url outline https://outline.example.com/auth/oidc.callback
+   netidm system oauth2 update-scope-map outline outline_users email openid profile groups
    ```
 
-4. Get the `outline` OAuth2 client secret from Kanidm:
+4. Get the `outline` OAuth2 client secret from Netidm:
 
    ```sh
-   kanidm system oauth2 show-basic-secret outline
+   netidm system oauth2 show-basic-secret outline
    ```
 
-5. Configure Outline to authenticate to Kanidm with OpenID Connect in Outline's environment file (`docker.env` /
+5. Configure Outline to authenticate to Netidm with OpenID Connect in Outline's environment file (`docker.env` /
    `.env`):
 
    ```ini
    OIDC_CLIENT_ID=outline
-   OIDC_CLIENT_SECRET=YOUR KANIDM BASIC SECRET HERE
+   OIDC_CLIENT_SECRET=YOUR NETIDM BASIC SECRET HERE
    # Use OIDC discovery with PKCE support
    OIDC_ISSUER_URL=https://idm.example.com/oauth2/openid/outline
    # Prevent redirect loop on logout
    OIDC_DISABLE_REDIRECT=true
    # Outline doesn't seem to actually use this.
    OIDC_USERNAME_CLAIM=preferred_username
-   OIDC_DISPLAY_NAME=Kanidm
+   OIDC_DISPLAY_NAME=Netidm
    OIDC_SCOPES=openid profile email
    ```
 
 6. Restart Outline and wait for it to come back up again.
 
-Outline's login form should now show a <kbd>Continue with Kanidm</kbd> button, which can be used to sign in.
+Outline's login form should now show a <kbd>Continue with Netidm</kbd> button, which can be used to sign in.
 
 ### Migrating between Outline authentication providers
 
@@ -745,7 +745,7 @@ Outline's login form should now show a <kbd>Continue with Kanidm</kbd> button, w
 Each Outline user only has a single credential associated with it (provider + `sub`), even if Outline is configured to
 use multiple identity providers. This is set to the last-used credential on login (detailed below).
 
-When using Kanidm, `sub` is the user's UUID, and is stable even if their Kanidm account is renamed or changes email
+When using Netidm, `sub` is the user's UUID, and is stable even if their Netidm account is renamed or changes email
 address – but Outline will only update the email address automatically.
 
 When a user authenticates to Outline, it will attempt to match the credential with an Outline user:
@@ -786,46 +786,46 @@ Outline has _no UI_ for managing or displaying external credentials, so it's dif
 
 > These instructions were tested with ownCloud 10.15.10.
 
-To set up an ownCloud instance to authenticate with Kanidm:
+To set up an ownCloud instance to authenticate with Netidm:
 
 1. Install the [ownCloud OpenID Connect app](https://marketplace.owncloud.com/apps/openidconnect) (for web auth) **and**
    [ownCloud OAuth2 app][owncloud-oauth2-app] (for desktop and mobile app auth) from the ownCloud Market.
 
-2. Add an email address to your regular Kanidm account, if it doesn't have one already:
+2. Add an email address to your regular Netidm account, if it doesn't have one already:
 
    ```sh
-   kanidm person update your_username -m your_username@example.com
+   netidm person update your_username -m your_username@example.com
    ```
 
-3. Create a new Kanidm group for your ownCloud users (`owncloud_users`), and add your regular account to it:
+3. Create a new Netidm group for your ownCloud users (`owncloud_users`), and add your regular account to it:
 
    ```sh
-   kanidm group create owncloud_users
-   kanidm group add-members owncloud_users your_username
+   netidm group create owncloud_users
+   netidm group add-members owncloud_users your_username
    ```
 
-4. Create a new OAuth2 application configuration in Kanidm (`owncloud`), allow use of legacy crypto
+4. Create a new OAuth2 application configuration in Netidm (`owncloud`), allow use of legacy crypto
    ([ownCloud does not support `ES256`](https://github.com/owncloud/openidconnect/issues/313)), configure the redirect
    URLs, and scope access to the `owncloud_users` group:
 
    ```sh
-   kanidm system oauth2 create owncloud ownCloud https://owncloud.example.com
-   kanidm system oauth2 warning-enable-legacy-crypto owncloud
-   kanidm system oauth2 add-redirect-url owncloud https://owncloud.example.com/apps/openidconnect/redirect
-   kanidm system oauth2 update-scope-map owncloud owncloud_users email openid profile groups
+   netidm system oauth2 create owncloud ownCloud https://owncloud.example.com
+   netidm system oauth2 warning-enable-legacy-crypto owncloud
+   netidm system oauth2 add-redirect-url owncloud https://owncloud.example.com/apps/openidconnect/redirect
+   netidm system oauth2 update-scope-map owncloud owncloud_users email openid profile groups
    ```
 
-5. **(optional)** By default, Kanidm presents the account's full SPN (eg: `your_username@idm.example.com`) as its
+5. **(optional)** By default, Netidm presents the account's full SPN (eg: `your_username@idm.example.com`) as its
    "preferred username". You can set `owncloud` to use a short username (eg: `your_username`) with:
 
    ```sh
-   kanidm system oauth2 prefer-short-username owncloud
+   netidm system oauth2 prefer-short-username owncloud
    ```
 
-6. Get the `owncloud` OAuth2 client secret from Kanidm:
+6. Get the `owncloud` OAuth2 client secret from Netidm:
 
    ```sh
-   kanidm system oauth2 show-basic-secret owncloud
+   netidm system oauth2 show-basic-secret owncloud
    ```
 
 7. Set [ownCloud's session cookie `SameSite` value to `Lax`][owncloud-samesite]:
@@ -834,11 +834,11 @@ To set up an ownCloud instance to authenticate with Kanidm:
    - For Docker installations, set the `OWNCLOUD_HTTP_COOKIE_SAMESITE` environment variable to `Lax`, then stop and
      start the container.
 
-   When ownCloud and Kanidm are on different top-level domains
+   When ownCloud and Netidm are on different top-level domains
    ([as we recommend](../../choosing_a_domain_name.md#subdomains-and-cross-origin-policy)), ownCloud's default
-   `SameSite=Strict` session cookie policy causes browsers to drop the session cookie when Kanidm redirects back to
-   ownCloud, which then causes their OIDC library to [send an invalid token request to Kanidm][owncloud-session-bug],
-   which Kanidm (correctly) rejects.
+   `SameSite=Strict` session cookie policy causes browsers to drop the session cookie when Netidm redirects back to
+   ownCloud, which then causes their OIDC library to [send an invalid token request to Netidm][owncloud-session-bug],
+   which Netidm (correctly) rejects.
 
 8. Create a JSON configuration file (`oidc-config.json`) for ownCloud's OIDC App.
 
@@ -850,7 +850,7 @@ To set up an ownCloud instance to authenticate with Kanidm:
      "provider-url": "https://idm.example.com/oauth2/openid/owncloud",
      "client-id": "owncloud",
      "client-secret": "YOUR CLIENT SECRET HERE",
-     "loginButtonName": "Kanidm",
+     "loginButtonName": "Netidm",
      "mode": "userid",
      "search-attribute": "sub",
      "auto-provision": {
@@ -889,13 +889,13 @@ ownCloud's login page should now show "Alternative logins" below the normal logi
 > ownCloud – **this breaks the ownCloud desktop and mobile clients**.
 >
 > The ownCloud desktop and mobile clients use [hard coded secrets][owncloud-secrets] which **cannot** be entered into
-> Kanidm, because this is a security risk.
+> Netidm, because this is a security risk.
 >
 > With the [ownCloud OAuth2 app][owncloud-oauth2-app] installed, the ownCloud clients will instead authenticate to
 > ownCloud Server as an OAuth provider (which has [the hard coded secrets][owncloud-secrets] installed by default),
-> which then in turn can authenticate to ownCloud locally or to Kanidm with your own client ID/secret.
+> which then in turn can authenticate to ownCloud locally or to Netidm with your own client ID/secret.
 >
-> To use OIDC Service Discovery with the ownCloud clients, you'd need to create OAuth2 client configurations in Kanidm
+> To use OIDC Service Discovery with the ownCloud clients, you'd need to create OAuth2 client configurations in Netidm
 > for the ownCloud Android, desktop and iOS apps, and get those secrets added to the clients either by:
 >
 > - modifying and recompiling the apps yourself from source, or,
@@ -930,7 +930,7 @@ GUI:
 Velociraptor does not support PKCE. You will need to run the following:
 
 ```bash
-kanidm system oauth2 warning-insecure-client-disable-pkce <client name>
+netidm system oauth2 warning-insecure-client-disable-pkce <client name>
 ```
 
 Initial users are mapped via their email in the Velociraptor server.config.yaml config:
@@ -945,9 +945,9 @@ Accounts require the `openid` and `email` scopes to be authenticated. It is reco
 a scope map due to Velociraptors high impact.
 
 ```bash
-# kanidm group create velociraptor_users
-# kanidm group add_members velociraptor_users ...
-kanidm system oauth2 create_scope_map <client name> velociraptor_users openid email
+# netidm group create velociraptor_users
+# netidm group add_members velociraptor_users ...
+netidm system oauth2 create_scope_map <client name> velociraptor_users openid email
 ```
 
 ## Grafana
@@ -958,38 +958,38 @@ when connected to supported data source.
 Create Grafana user groups:
 
 ```bash
-kanidm group create 'grafana_superadmins'
-kanidm group create 'grafana_admins'
-kanidm group create 'grafana_editors'
-kanidm group create 'grafana_users'
+netidm group create 'grafana_superadmins'
+netidm group create 'grafana_admins'
+netidm group create 'grafana_editors'
+netidm group create 'grafana_users'
 ```
 
 Prepare the environment:
 
 ```bash
-kanidm system oauth2 create grafana "grafana.domain.name" https://grafana.domain.name
-kanidm system oauth2 set-landing-url grafana 'https://grafana.domain.name/login/generic_oauth'
-kanidm system oauth2 update-scope-map grafana grafana_users email openid profile groups
-kanidm system oauth2 enable-pkce grafana
-kanidm system oauth2 get grafana
-kanidm system oauth2 show-basic-secret grafana
+netidm system oauth2 create grafana "grafana.domain.name" https://grafana.domain.name
+netidm system oauth2 set-landing-url grafana 'https://grafana.domain.name/login/generic_oauth'
+netidm system oauth2 update-scope-map grafana grafana_users email openid profile groups
+netidm system oauth2 enable-pkce grafana
+netidm system oauth2 get grafana
+netidm system oauth2 show-basic-secret grafana
 <SECRET>
 ```
 
 Setup the claim-map that will set what role each group will map to in Grafana:
 
 ```bash
-kanidm system oauth2 update-claim-map-join 'grafana' 'grafana_role' array
-kanidm system oauth2 update-claim-map 'grafana' 'grafana_role' 'grafana_superadmins' 'GrafanaAdmin'
-kanidm system oauth2 update-claim-map 'grafana' 'grafana_role' 'grafana_admins' 'Admin'
-kanidm system oauth2 update-claim-map 'grafana' 'grafana_role' 'grafana_editors' 'Editor'
+netidm system oauth2 update-claim-map-join 'grafana' 'grafana_role' array
+netidm system oauth2 update-claim-map 'grafana' 'grafana_role' 'grafana_superadmins' 'GrafanaAdmin'
+netidm system oauth2 update-claim-map 'grafana' 'grafana_role' 'grafana_admins' 'Admin'
+netidm system oauth2 update-claim-map 'grafana' 'grafana_role' 'grafana_editors' 'Editor'
 ```
 
 Don't forget that every Grafana user needs be member of one of above group and have name and e-mail:
 
 ```bash
-kanidm person update <user> --legalname "Personal Name" --mail "user@example.com"
-kanidm group add-members 'grafana_users' 'my_user_group_or_user_name'
+netidm person update <user> --legalname "Personal Name" --mail "user@example.com"
+netidm group add-members 'grafana_users' 'my_user_group_or_user_name'
 ```
 
 And add the following to your Grafana config:
@@ -997,7 +997,7 @@ And add the following to your Grafana config:
 ```ini
 [auth.generic_oauth]
 enabled = true
-name = Kanidm
+name = Netidm
 client_id = grafana
 client_secret = <SECRET>
 scopes = openid,profile,email,groups
@@ -1034,20 +1034,20 @@ Vouch Proxy supports multiple OAuth and OIDC login providers. To configure it yo
 
 ```yaml
 oauth:
-  auth_url: https://idm.wherekanidmruns.com/ui/oauth2
+  auth_url: https://idm.wherenetidmruns.com/ui/oauth2
   callback_url: https://login.wherevouchproxyruns.com/auth
-  client_id: <name> # Found in kanidm system oauth2 get XXXX (should be the same as XXXX)
-  client_secret: <oauth2_rs_basic_secret> # Found in kanidm system oauth2 get XXXX
+  client_id: <name> # Found in netidm system oauth2 get XXXX (should be the same as XXXX)
+  client_secret: <oauth2_rs_basic_secret> # Found in netidm system oauth2 get XXXX
   code_challenge_method: S256
   provider: oidc
   scopes:
     - email # Required due to vouch proxy reliance on mail as a primary identifier
-  token_url: https://idm.wherekanidmruns.com/oauth2/token
-  user_info_url: https://idm.wherekanidmruns.com/oauth2/openid/<name>/userinfo
+  token_url: https://idm.wherenetidmruns.com/oauth2/token
+  user_info_url: https://idm.wherenetidmruns.com/oauth2/openid/<name>/userinfo
 ```
 
 The `email` scope needs to be passed and thus the mail attribute needs to exist on the account:
 
 ```bash
-kanidm person update <ID> --mail "YYYY@somedomain.com" --name idm_admin
+netidm person update <ID> --mail "YYYY@somedomain.com" --name idm_admin
 ```

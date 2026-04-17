@@ -2,46 +2,46 @@
 
 ## Check POSIX-status of Group and Configuration
 
-If authentication is failing via PAM, make sure that you enabled the Kanidm provider and that a list of valid groups is
-configured in `/etc/kanidm/unixd`. The `[kanidm]` line is important!
+If authentication is failing via PAM, make sure that you enabled the Netidm provider and that a list of valid groups is
+configured in `/etc/netidm/unixd`. The `[netidm]` line is important!
 
 You can check the provider status, the second line is only shown if enabled:
 
 ```bash
-> kanidm-unix status
+> netidm-unix status
 system: online
-Kanidm: online
+Netidm: online
 ```
 
-Example of a minimum `/etc/kanidm/unixd` config:
+Example of a minimum `/etc/netidm/unixd` config:
 
 ```toml
-[kanidm]
+[netidm]
 pam_allowed_login_groups = ["example_group"]
 ```
 
-Check the status of the group with `kanidm group posix show example_group`. If you get something similar to the
+Check the status of the group with `netidm group posix show example_group`. If you get something similar to the
 following example:
 
 ```bash
-> kanidm group posix show example_group
+> netidm group posix show example_group
 Using cached token for name idm_admin
 Error -> Http(500, Some(InvalidAccountState("Missing class: account && posixaccount OR group && posixgroup")),
     "b71f137e-39f3-4368-9e58-21d26671ae24")
 ```
 
-POSIX-enable the group with `kanidm group posix set example_group`. You should get a result similar to this when you
+POSIX-enable the group with `netidm group posix set example_group`. You should get a result similar to this when you
 search for your group name:
 
 ```bash
-> kanidm group posix show example_group
-[ spn: example_group@kanidm.example.com, gidnumber: 3443347205 name: example_group, uuid: b71f137e-39f3-4368-9e58-21d26671ae24 ]
+> netidm group posix show example_group
+[ spn: example_group@netidm.example.com, gidnumber: 3443347205 name: example_group, uuid: b71f137e-39f3-4368-9e58-21d26671ae24 ]
 ```
 
 Also, ensure the target user is in the group by running:
 
 ```bash
->  kanidm group list_members example_group
+>  netidm group list_members example_group
 ```
 
 ## Increase Logging
@@ -49,40 +49,40 @@ Also, ensure the target user is in the group by running:
 For the unixd daemon, you can increase the logging with:
 
 ```bash
-systemctl edit kanidm-unixd.service
+systemctl edit netidm-unixd.service
 ```
 
 And add the lines:
 
 ```ini
 [Service]
-Environment="RUST_LOG=kanidm=debug"
+Environment="RUST_LOG=netidm=debug"
 ```
 
-Then restart the kanidm-unixd.service.
+Then restart the netidm-unixd.service.
 
-The same pattern is true for the kanidm-unixd-tasks.service daemon.
+The same pattern is true for the netidm-unixd-tasks.service daemon.
 
 To debug the pam module interactions add `debug` to the module arguments such as:
 
 ```text
-auth sufficient pam_kanidm.so debug
+auth sufficient pam_netidm.so debug
 ```
 
 ## Check the Socket Permissions
 
-Check that the `/var/run/kanidm-unixd/sock` has permissions mode 777, and that non-root readers can see it with ls or
+Check that the `/var/run/netidm-unixd/sock` has permissions mode 777, and that non-root readers can see it with ls or
 other tools.
 
-Ensure that `/var/run/kanidm-unixd/task_sock` has permissions mode 700, and that it is owned by the kanidm unixd process
+Ensure that `/var/run/netidm-unixd/task_sock` has permissions mode 700, and that it is owned by the netidm unixd process
 user.
 
-## Verify that You Can Access the Kanidm Server
+## Verify that You Can Access the Netidm Server
 
 You can check this with the client tools:
 
 ```bash
-kanidm self whoami --name anonymous
+netidm self whoami --name anonymous
 ```
 
 ## Ensure the Libraries are Correct
@@ -90,11 +90,11 @@ kanidm self whoami --name anonymous
 You should have:
 
 ```bash
-/usr/lib64/libnss_kanidm.so.2
-/usr/lib64/security/pam_kanidm.so
+/usr/lib64/libnss_netidm.so.2
+/usr/lib64/security/pam_netidm.so
 ```
 
-The exact path _may_ change depending on your distribution, `pam_unixd.so` should be co-located with pam_kanidm.so. Look
+The exact path _may_ change depending on your distribution, `pam_unixd.so` should be co-located with pam_netidm.so. Look
 for it with the find command:
 
 ```bash
@@ -113,7 +113,7 @@ By increasing the cache_timeout, you will need to refresh less often, but it may
 change until cache_timeout takes effect. Note that this has security implications:
 
 ```toml
-# /etc/kanidm/unixd
+# /etc/netidm/unixd
 # Seconds
 conn_timeout = 8
 # Cache timeout
@@ -122,20 +122,20 @@ cache_timeout = 60
 
 ## Invalidate or Clear the Cache
 
-You can invalidate the kanidm_unixd cache with:
+You can invalidate the netidm_unixd cache with:
 
 ```bash
-kanidm-unix cache-invalidate
+netidm-unix cache-invalidate
 ```
 
 You can clear (wipe) the cache with:
 
 ```bash
-kanidm-unix cache-clear
+netidm-unix cache-clear
 ```
 
 There is an important distinction between these two - invalidated cache items may still be yielded to a client request
-if the communication to the main Kanidm server is not possible. For example, you may have your laptop in a park without
+if the communication to the main Netidm server is not possible. For example, you may have your laptop in a park without
 wifi.
 
 Clearing the cache, however, completely wipes all local data about all accounts and groups. If you are relying on this

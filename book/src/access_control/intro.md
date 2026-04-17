@@ -1,7 +1,7 @@
 # Access Control
 
-While Kanidm exists to make authorisation decisions on behalf of other services, internally it must make decisions about
-writes operations to the entries within its database. To make these choices, Kanidm has an internal set of access
+While Netidm exists to make authorisation decisions on behalf of other services, internally it must make decisions about
+writes operations to the entries within its database. To make these choices, Netidm has an internal set of access
 controls which are the rules describing who may perform what actions.
 
 ## Default Permissions
@@ -10,13 +10,13 @@ The project ships default access controls which are designed to limit and isolat
 possible.
 
 This separation is the reason why `admins` and `idm_admins` exist as separate groups. There are two distinct access
-silos within Kanidm. Access to manage Kanidm as a service (such as application integrations and domain naming) and
+silos within Netidm. Access to manage Netidm as a service (such as application integrations and domain naming) and
 access to manage people and groups. This is to limit the possible harm that an attacker may make if they gain access to
 these roles.
 
 ## Assigning Permissions to Persons
 
-Kanidm supports [privilege access mode](../accounts/authentication_and_credentials.md) so that high-level permissions
+Netidm supports [privilege access mode](../accounts/authentication_and_credentials.md) so that high-level permissions
 can be assigned to users who must reauthenticate before using those privileges. The privileges then are only accessible
 for a short period of time. This can allow you to assign high level permissions to regular person accounts rather than
 requiring separate privilege access accounts (PAA) or privileged access workstations (PAW).
@@ -24,18 +24,18 @@ requiring separate privilege access accounts (PAA) or privileged access workstat
 ## Assigning Permissions to Service Accounts
 
 Service account tokens can be issued with read-only or read-write flags, where read-only tokens are unable to modify
-content of Kanidm. This can allow the service account to have higher level permissions assigned but only usable with a
+content of Netidm. This can allow the service account to have higher level permissions assigned but only usable with a
 short lived or isolated read-write token.
 
 ## Permission Delegation
 
-A number of types in Kanidm allow permission delegation such as groups and service accounts. This allows entries to be
+A number of types in Netidm allow permission delegation such as groups and service accounts. This allows entries to be
 assigned an entry manager who has write access to that entity but not all entities of the same class.
 
 ## High Privilege Groups
 
-Kanidm has a special group called `idm_high_privilege`. This acts as a "taint" on its members to indicate that they have
-an elevated level of access within Kanidm or other systems.
+Netidm has a special group called `idm_high_privilege`. This acts as a "taint" on its members to indicate that they have
+an elevated level of access within Netidm or other systems.
 
 This taint flag exists to prevent lateral movement from other roles that have higher levels of privilege.
 
@@ -49,8 +49,8 @@ You may add other groups to `idm_high_privilege` to achieve the same taint effec
 
 ## Default Permission Groups
 
-Kanidm ships with default permission groups. You can use these to enable (or disable) accounts to performing certain
-actions or tasks within Kanidm as required by modifying the memberships of these groups.
+Netidm ships with default permission groups. You can use these to enable (or disable) accounts to performing certain
+actions or tasks within Netidm as required by modifying the memberships of these groups.
 
 | group name                   | description                                                                  |
 | ---------------------------- | ---------------------------------------------------------------------------- |
@@ -76,11 +76,11 @@ actions or tasks within Kanidm as required by modifying the memberships of these
 
 ## Default Roles
 
-Kanidm ships with 3 high level permission groups. These roles have no inherent permissions, they are created by being
+Netidm ships with 3 high level permission groups. These roles have no inherent permissions, they are created by being
 members of the default permission groups.
 
 | group name         | description                                              |
 | ------------------ | -------------------------------------------------------- |
 | `idm_admins`       | manage persons and their groups                          |
 | `idm_service_desk` | assist persons with credential resets or other queries   |
-| `system_admins`    | manage the operation of Kanidm as a database and service |
+| `system_admins`    | manage the operation of Netidm as a database and service |

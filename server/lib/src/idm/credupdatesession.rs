@@ -11,11 +11,11 @@ use compact_jwt::compact::JweCompact;
 use compact_jwt::jwe::JweBuilder;
 use core::ops::Deref;
 use hashbrown::HashSet;
-use kanidm_proto::internal::{
+use netidm_proto::internal::{
     CUCredState, CUExtPortal, CURegState, CURegWarning, CUStatus, CredentialDetail, PasskeyDetail,
     PasswordFeedback, TotpSecret,
 };
-use kanidm_proto::v1::OutboundMessage;
+use netidm_proto::v1::OutboundMessage;
 use serde::{Deserialize, Serialize};
 use sshkey_attest::proto::PublicKey as SshPublicKey;
 use std::collections::BTreeMap;
@@ -2805,9 +2805,9 @@ mod tests {
     use crate::value::CredentialType;
     use crate::valueset::ValueSetEmailAddress;
     use compact_jwt::JwsCompact;
-    use kanidm_proto::internal::{CUExtPortal, CredentialDetailType, PasswordFeedback};
-    use kanidm_proto::v1::OutboundMessage;
-    use kanidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech, UnixUserToken};
+    use netidm_proto::internal::{CUExtPortal, CredentialDetailType, PasswordFeedback};
+    use netidm_proto::v1::OutboundMessage;
+    use netidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech, UnixUserToken};
     use sshkey_attest::proto::PublicKey as SshPublicKey;
     use std::time::Duration;
     use time::OffsetDateTime;

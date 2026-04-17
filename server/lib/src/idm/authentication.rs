@@ -2,7 +2,7 @@ use crate::prelude::{OperationError, Url};
 use crate::server::identity::Source;
 use compact_jwt::JwsCompact;
 use crypto_glue::{s256::Sha256Output, x509::Certificate};
-use kanidm_proto::{
+use netidm_proto::{
     internal::UserAuthToken,
     oauth2::{AccessTokenRequest, AccessTokenResponse, AuthorisationRequest},
     v1::{
@@ -93,6 +93,7 @@ pub enum AuthState {
     ProvisioningRequired {
         provider_uuid: uuid::Uuid,
         claims: crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        email_link_accounts: bool,
     },
 }
 

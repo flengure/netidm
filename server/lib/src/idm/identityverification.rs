@@ -5,7 +5,7 @@ use crate::server::identity::Identity;
 use crate::server::keys::KeyProvidersTransaction;
 use crate::server::QueryServerTransaction;
 use crypto_glue::hmac_s256::HmacSha256Key;
-use kanidm_proto::internal::IdentifyUserResponse;
+use netidm_proto::internal::IdentifyUserResponse;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -215,7 +215,7 @@ mod test {
         IdentifyUserDisplayCodeEvent, IdentifyUserStartEvent, IdentifyUserSubmitCodeEvent,
     };
     use crate::prelude::*;
-    use kanidm_proto::internal::IdentifyUserResponse;
+    use netidm_proto::internal::IdentifyUserResponse;
 
     #[idm_test]
     async fn test_identity_verification_unavailable(

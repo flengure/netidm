@@ -4,7 +4,7 @@ use crypto_glue::{
     hmac_s512::{HmacSha512, HmacSha512Key},
     traits::Mac,
 };
-use kanidm_proto::internal::{TotpAlgo as ProtoTotpAlgo, TotpSecret as ProtoTotp};
+use netidm_proto::internal::{TotpAlgo as ProtoTotpAlgo, TotpSecret as ProtoTotp};
 use rand::RngExt;
 use std::convert::{TryFrom, TryInto};
 use std::time::{Duration, SystemTime};

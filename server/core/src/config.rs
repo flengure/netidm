@@ -5,10 +5,10 @@
 //! or domain entries that are able to be replicated.
 
 use cidr::IpCidr;
-use kanidm_proto::backup::BackupCompression;
-use kanidm_proto::config::ServerRole;
-use kanidm_proto::constants::DEFAULT_SERVER_ADDRESS;
-use kanidm_proto::internal::FsType;
+use netidm_proto::backup::BackupCompression;
+use netidm_proto::config::ServerRole;
+use netidm_proto::constants::DEFAULT_SERVER_ADDRESS;
+use netidm_proto::internal::FsType;
 use serde::Deserialize;
 use serde_with::{formats::PreferOne, serde_as, OneOrMany};
 use sketching::LogLevel;
@@ -86,7 +86,7 @@ pub struct OnlineBackup {
 impl Default for OnlineBackup {
     fn default() -> Self {
         OnlineBackup {
-            path: None, // This makes it revert to the kanidm_db path
+            path: None, // This makes it revert to the netidm_db path
             schedule: default_online_backup_schedule(),
             versions: default_online_backup_versions(),
             enabled: default_online_backup_enabled(),
@@ -253,21 +253,21 @@ impl Display for HttpAddressInfo {
 ///
 /// Fields noted as "REQUIRED" are required for the server to start, even if they show as optional due to how file parsing works.
 ///
-/// If you want to set these as environment variables, prefix them with `KANIDM_` and they will be picked up. This does not include replication peer config.
+/// If you want to set these as environment variables, prefix them with `NETIDM_` and they will be picked up. This does not include replication peer config.
 ///
 /// NOTE: not all flags or values from the internal [Configuration] object are exposed via this structure
 /// to prevent certain settings being set (e.g. integration test modes)
 #[derive(Debug, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
 pub struct ServerConfig {
-    /// *REQUIRED* - Kanidm Domain, eg `kanidm.example.com`.
+    /// *REQUIRED* - Netidm Domain, eg `netidm.example.com`.
     domain: Option<String>,
     /// *REQUIRED* - The user-facing HTTPS URL for this server, eg <https://idm.example.com>
     origin: Option<Url>,
     /// File path of the database file
     db_path: Option<PathBuf>,
     /// The filesystem type, either "zfs" or "generic". Defaults to "generic" if unset. I you change this, run a database vacuum.
-    db_fs_type: Option<kanidm_proto::internal::FsType>,
+    db_fs_type: Option<netidm_proto::internal::FsType>,
 
     ///  *REQUIRED* - The file path to the TLS Certificate Chain
     tls_chain: Option<PathBuf>,
@@ -279,7 +279,7 @@ pub struct ServerConfig {
 
     /// The listener address for the HTTPS server.
     ///
-    /// eg. `[::]:8443` or `127.0.0.1:8443`. Defaults to [kanidm_proto::constants::DEFAULT_SERVER_ADDRESS]
+    /// eg. `[::]:8443` or `127.0.0.1:8443`. Defaults to [netidm_proto::constants::DEFAULT_SERVER_ADDRESS]
     bindaddress: Option<String>,
     /// The listener address for the LDAP server.
     ///
@@ -320,12 +320,12 @@ pub struct ServerConfig {
 }
 
 impl ServerConfigUntagged {
-    /// loads the configuration file from the path specified, then overlays fields from environment variables starting with `KANIDM_``
+    /// loads the configuration file from the path specified, then overlays fields from environment variables starting with `NETIDM_``
     pub fn new<P: AsRef<Path>>(config_path: P) -> Result<Self, std::io::Error> {
         // see if we can load it from the config file you asked for
         let mut f: File = File::open(config_path.as_ref()).inspect_err(|e| {
             eprintln!("Unable to open config file [{e:?}] 🥺");
-            let diag = kanidm_lib_file_permissions::diagnose_path(config_path.as_ref());
+            let diag = netidm_lib_file_permissions::diagnose_path(config_path.as_ref());
             eprintln!("{diag}");
         })?;
 
@@ -333,7 +333,7 @@ impl ServerConfigUntagged {
 
         f.read_to_string(&mut contents).inspect_err(|e| {
             eprintln!("unable to read contents {e:?}");
-            let diag = kanidm_lib_file_permissions::diagnose_path(config_path.as_ref());
+            let diag = netidm_lib_file_permissions::diagnose_path(config_path.as_ref());
             eprintln!("{diag}");
         })?;
 
@@ -376,7 +376,7 @@ pub struct ServerConfigV2 {
     domain: Option<String>,
     origin: Option<Url>,
     db_path: Option<PathBuf>,
-    db_fs_type: Option<kanidm_proto::internal::FsType>,
+    db_fs_type: Option<netidm_proto::internal::FsType>,
     tls_chain: Option<PathBuf>,
     tls_key: Option<PathBuf>,
     tls_client_ca: Option<PathBuf>,
@@ -461,7 +461,7 @@ impl Configuration {
             bindaddress: None,
             ldapbindaddress: None,
             // set by build profiles
-            adminbindpath: env!("KANIDM_SERVER_ADMIN_BIND_PATH").to_string(),
+            adminbindpath: env!("NETIDM_SERVER_ADMIN_BIND_PATH").to_string(),
             threads: std::thread::available_parallelism()
                 .map(|t| t.get())
                 .unwrap_or_else(|_e| {
@@ -493,7 +493,7 @@ impl Configuration {
         Configuration {
             address: vec![DEFAULT_SERVER_ADDRESS.to_string()],
             ldapbindaddress: None,
-            adminbindpath: env!("KANIDM_SERVER_ADMIN_BIND_PATH").to_string(),
+            adminbindpath: env!("NETIDM_SERVER_ADMIN_BIND_PATH").to_string(),
             threads: 1,
             db_path: None,
             db_fs_type: None,
@@ -628,7 +628,7 @@ pub struct ConfigurationBuilder {
 
 impl ConfigurationBuilder {
     #![allow(clippy::needless_pass_by_value)]
-    pub fn add_cli_config(mut self, cli_config: &kanidm_proto::cli::KanidmdCli) -> Self {
+    pub fn add_cli_config(mut self, cli_config: &netidm_proto::cli::NetidmdCli) -> Self {
         // logging
         if let Some(log_level) = &cli_config.log_level {
             self.log_level = Some(*log_level);

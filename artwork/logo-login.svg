@@ -36,7 +36,7 @@
   <defs
      id="defs1081" />
   <g
-     inkscape:label="Kanidm Login Logo"
+     inkscape:label="Netidm Login Logo"
      inkscape:groupmode="layer"
      id="layer1"
      transform="translate(-44.452119,-54.465481)">
@@ -199,12 +199,12 @@
          y="128.62389"
          id="text1127"
          transform="rotate(-29.176231,143.73222,16.419399)"
-         inkscape:label="KANIDM"><tspan
+         inkscape:label="NETIDM"><tspan
            sodipodi:role="line"
            id="tspan1125"
            x="93.162766"
            y="128.62389"
-           style="fill:#cccccc;stroke-width:0.0676183">KANIDM</tspan></text>
+           style="fill:#cccccc;stroke-width:0.0676183">NETIDM</tspan></text>
     </g>
     <path
        d="m 145.61485,98.730679 c 3.50932,-3.1137 4.19635,-7.01138 3.17635,-11.38324 l -7.3914,3.83317 z"

@@ -3,7 +3,7 @@ use crate::schema::SchemaAttribute;
 use crate::value::NSUNIQUEID_RE;
 use crate::valueset::ScimResolveStatus;
 use crate::valueset::{DbValueSetV2, ValueSet, ValueSetResolveStatus, ValueSetScimPut};
-use kanidm_proto::scim_v1::JsonValue;
+use netidm_proto::scim_v1::JsonValue;
 
 use smolset::SmolSet;
 

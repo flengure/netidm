@@ -1,6 +1,6 @@
 use crate::OpType;
-use crate::{KanidmClientParser, OutputMode, RawOpt};
-use kanidm_proto::scim_v1::{
+use crate::{NetidmClientParser, OutputMode, RawOpt};
+use netidm_proto::scim_v1::{
     client::{ScimEntryPostGeneric, ScimEntryPutGeneric},
     ScimEntryGetQuery,
 };
@@ -18,7 +18,7 @@ fn read_file<T: DeserializeOwned, P: AsRef<Path>>(path: P) -> Result<T, Box<dyn 
 }
 
 impl RawOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             RawOpt::Search { filter } => {
                 let client = opt.to_client(OpType::Read).await;

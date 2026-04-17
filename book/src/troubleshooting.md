@@ -63,7 +63,7 @@ matches to the UUID's in the logs allowing you to precisely locate the server lo
 Try running commands with `RUST_LOG=debug` to get more information:
 
 ```shell
-RUST_LOG=debug kanidm login --name anonymous
+RUST_LOG=debug netidm login --name anonymous
 ```
 
 ## Reverse Proxies not sending HTTP/1.1 requests

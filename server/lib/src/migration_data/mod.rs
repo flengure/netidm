@@ -6,9 +6,10 @@ pub(crate) mod dl14;
 pub(crate) mod dl15;
 pub(crate) mod dl16;
 pub(crate) mod dl17;
+pub(crate) mod dl18;
 
 #[cfg(test)]
-pub(crate) use dl17 as latest;
+pub(crate) use dl18 as latest;
 
 mod types;
 
@@ -21,7 +22,7 @@ pub(crate) use latest::accounts::BUILTIN_ACCOUNT_ANONYMOUS_DL6 as BUILTIN_ACCOUN
 /// Builtin System Admin account.
 #[cfg(test)]
 pub static BUILTIN_ACCOUNT_TEST_PERSON: BuiltinAccount = BuiltinAccount {
-    account_type: kanidm_proto::v1::AccountType::Person,
+    account_type: netidm_proto::v1::AccountType::Person,
     entry_managed_by: None,
     name: "test_person",
     uuid: crate::constants::uuids::UUID_TESTPERSON_1,

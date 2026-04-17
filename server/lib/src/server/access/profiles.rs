@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 
 use crate::filter::{Filter, FilterValid, FilterValidResolved};
 
-use kanidm_proto::internal::Filter as ProtoFilter;
+use netidm_proto::internal::Filter as ProtoFilter;
 
 // =========================================================================
 // PARSE ENTRY TO ACP, AND ACP MANAGEMENT

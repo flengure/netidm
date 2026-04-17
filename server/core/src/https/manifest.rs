@@ -127,7 +127,7 @@ pub fn manifest_data(host_req: Option<&str>, domain_display_name: String) -> Man
     };
 
     Manifest {
-        short_name: "Kanidm".to_string(),
+        short_name: "Netidm".to_string(),
         name: domain_display_name,
         start_url,
         display_mode: DisplayMode::MinimalUi,

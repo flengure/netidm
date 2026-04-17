@@ -67,13 +67,13 @@ struct ProfileConfig {
 }
 
 pub fn apply_profile() {
-    println!("cargo:rerun-if-env-changed=KANIDM_BUILD_PROFILE");
-    println!("cargo:rerun-if-env-changed=KANIDM_BUILD_PROFILE_TOML");
+    println!("cargo:rerun-if-env-changed=NETIDM_BUILD_PROFILE");
+    println!("cargo:rerun-if-env-changed=NETIDM_BUILD_PROFILE_TOML");
 
     // transform any requested paths for our server. We do this by reading
     // our profile that we have been provided.
-    let profile = env!("KANIDM_BUILD_PROFILE");
-    let contents = env!("KANIDM_BUILD_PROFILE_TOML");
+    let profile = env!("NETIDM_BUILD_PROFILE");
+    let contents = env!("NETIDM_BUILD_PROFILE_TOML");
 
     let data = general_purpose::STANDARD
         .decode(contents)
@@ -89,30 +89,30 @@ pub fn apply_profile() {
     // now. This relies on the profile build.rs to get the commit rev if present, but
     // we combine it with the local package version
     println!("cargo:rerun-if-env-changed=CARGO_PKG_VERSION");
-    println!("cargo:rerun-if-env-changed=KANIDM_PKG_COMMIT_REV");
+    println!("cargo:rerun-if-env-changed=NETIDM_PKG_COMMIT_REV");
 
-    let kanidm_pkg_version = match option_env!("KANIDM_PKG_COMMIT_REV") {
+    let netidm_pkg_version = match option_env!("NETIDM_PKG_COMMIT_REV") {
         Some(commit_rev) => format!("{} {}", env!("CARGO_PKG_VERSION"), commit_rev),
         None => env!("CARGO_PKG_VERSION").to_string(),
     };
 
-    println!("cargo:rustc-env=KANIDM_PKG_VERSION={kanidm_pkg_version}");
+    println!("cargo:rustc-env=NETIDM_PKG_VERSION={netidm_pkg_version}");
 
-    // KANIDM_PKG_VERSION_HASH is used for cache busting in the web UI
-    let mut kanidm_pkg_version_hash = sha2::Sha256::new();
-    kanidm_pkg_version_hash.update(kanidm_pkg_version.as_bytes());
-    let kanidm_pkg_version_hash = &BASE64_STANDARD.encode(kanidm_pkg_version_hash.finalize())[..8];
-    println!("cargo:rustc-env=KANIDM_PKG_VERSION_HASH={kanidm_pkg_version_hash}");
+    // NETIDM_PKG_VERSION_HASH is used for cache busting in the web UI
+    let mut netidm_pkg_version_hash = sha2::Sha256::new();
+    netidm_pkg_version_hash.update(netidm_pkg_version.as_bytes());
+    let netidm_pkg_version_hash = &BASE64_STANDARD.encode(netidm_pkg_version_hash.finalize())[..8];
+    println!("cargo:rustc-env=NETIDM_PKG_VERSION_HASH={netidm_pkg_version_hash}");
 
     let version_pre = env!("CARGO_PKG_VERSION_PRE");
     if version_pre == "dev" {
-        println!("cargo:rustc-env=KANIDM_PRE_RELEASE=1");
+        println!("cargo:rustc-env=NETIDM_PRE_RELEASE=1");
     }
 
     // For some checks we only want the series (i.e. exclude the patch version).
     let version_major = env!("CARGO_PKG_VERSION_MAJOR");
     let version_minor = env!("CARGO_PKG_VERSION_MINOR");
-    println!("cargo:rustc-env=KANIDM_PKG_SERIES={version_major}.{version_minor}");
+    println!("cargo:rustc-env=NETIDM_PKG_SERIES={version_major}.{version_minor}");
 
     match profile_cfg.cpu_flags {
         CpuOptLevel::apple_m1 => println!("cargo:rustc-env=RUSTFLAGS=-Ctarget-cpu=apple_m1"),
@@ -125,38 +125,38 @@ pub fn apply_profile() {
         CpuOptLevel::x86_64_v2 => println!("cargo:rustc-env=RUSTFLAGS=-Ctarget-cpu=x86-64-v2"),
         CpuOptLevel::x86_64_v3 => println!("cargo:rustc-env=RUSTFLAGS=-Ctarget-cpu=x86-64-v3"),
     }
-    println!("cargo:rustc-env=KANIDM_PROFILE_NAME={profile}");
-    println!("cargo:rustc-env=KANIDM_CPU_FLAGS={}", profile_cfg.cpu_flags);
+    println!("cargo:rustc-env=NETIDM_PROFILE_NAME={profile}");
+    println!("cargo:rustc-env=NETIDM_CPU_FLAGS={}", profile_cfg.cpu_flags);
     println!(
-        "cargo:rustc-env=KANIDM_SERVER_UI_PKG_PATH={}",
+        "cargo:rustc-env=NETIDM_SERVER_UI_PKG_PATH={}",
         profile_cfg.server_ui_pkg_path
     );
     println!(
-        "cargo:rustc-env=KANIDM_SERVER_ADMIN_BIND_PATH={}",
+        "cargo:rustc-env=NETIDM_SERVER_ADMIN_BIND_PATH={}",
         profile_cfg.server_admin_bind_path
     );
     println!(
-        "cargo:rustc-env=KANIDM_SERVER_CONFIG_PATH={}",
+        "cargo:rustc-env=NETIDM_SERVER_CONFIG_PATH={}",
         profile_cfg.server_config_path
     );
     println!(
-        "cargo:rustc-env=KANIDM_SERVER_MIGRATION_PATH={}",
+        "cargo:rustc-env=NETIDM_SERVER_MIGRATION_PATH={}",
         profile_cfg.server_migration_path
     );
     println!(
-        "cargo:rustc-env=KANIDM_CLIENT_CONFIG_PATH={}",
+        "cargo:rustc-env=NETIDM_CLIENT_CONFIG_PATH={}",
         profile_cfg.client_config_path
     );
     println!(
-        "cargo:rustc-env=KANIDM_RESOLVER_CONFIG_PATH={}",
+        "cargo:rustc-env=NETIDM_RESOLVER_CONFIG_PATH={}",
         profile_cfg.resolver_config_path
     );
     println!(
-        "cargo:rustc-env=KANIDM_RESOLVER_SERVICE_ACCOUNT_TOKEN_PATH={}",
+        "cargo:rustc-env=NETIDM_RESOLVER_SERVICE_ACCOUNT_TOKEN_PATH={}",
         profile_cfg.resolver_service_account_token_path
     );
     println!(
-        "cargo:rustc-env=KANIDM_RESOLVER_UNIX_SHELL_PATH={}",
+        "cargo:rustc-env=NETIDM_RESOLVER_UNIX_SHELL_PATH={}",
         profile_cfg.resolver_unix_shell_path
     );
 }

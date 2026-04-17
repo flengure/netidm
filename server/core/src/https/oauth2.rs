@@ -20,21 +20,21 @@ use axum::{
     Extension, Form, Json, Router,
 };
 use axum_macros::debug_handler;
-use kanidm_proto::constants::uri::{
+use netidm_proto::constants::uri::{
     OAUTH2_AUTHORISE, OAUTH2_AUTHORISE_PERMIT, OAUTH2_AUTHORISE_REJECT,
 };
-use kanidm_proto::constants::APPLICATION_JSON;
-use kanidm_proto::oauth2::AuthorisationResponse;
+use netidm_proto::constants::APPLICATION_JSON;
+use netidm_proto::oauth2::AuthorisationResponse;
 
 #[cfg(feature = "dev-oauth2-device-flow")]
-use kanidm_proto::oauth2::DeviceAuthorizationResponse;
-use kanidmd_lib::idm::oauth2::{
+use netidm_proto::oauth2::DeviceAuthorizationResponse;
+use netidmd_lib::idm::oauth2::{
     AccessTokenIntrospectRequest, AccessTokenRequest, AuthorisationRequest, AuthoriseResponse,
     ErrorResponse, Oauth2Error, TokenRevokeRequest,
 };
-use kanidmd_lib::prelude::f_eq;
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::value::PartialValue;
+use netidmd_lib::prelude::f_eq;
+use netidmd_lib::prelude::*;
+use netidmd_lib::value::PartialValue;
 use serde::{Deserialize, Serialize};
 use serde_with::formats::CommaSeparator;
 use serde_with::{serde_as, StringWithSeparator};
@@ -137,10 +137,10 @@ pub(crate) async fn oauth2_image_get(
 //     Note: The lines illustrating steps (A), (B), and (C) are broken into
 //     two parts as they pass through the user-agent.
 //
-//  In this diagram, kanidm is the authorisation server. Each step is handled by:
+//  In this diagram, netidm is the authorisation server. Each step is handled by:
 //
 //  * Client Identifier  A)  oauth2_authorise_get
-//  * User authenticates B)  normal kanidm auth flow
+//  * User authenticates B)  normal netidm auth flow
 //  * Authorization Code C)  oauth2_authorise_permit_get
 //                           oauth2_authorise_reject_get
 //  * Authorization Code / Access Token
@@ -149,9 +149,9 @@ pub(crate) async fn oauth2_image_get(
 //  These functions appear stateless, but the state is managed through encrypted
 //  tokens transmitted in the responses of this flow. This is because in a HA setup
 //  we can not guarantee that the User-Agent or the Resource Server (client) will
-//  access the same Kanidm instance, and we can not rely on replication in these
+//  access the same Netidm instance, and we can not rely on replication in these
 //  cases. As a result, we must have our state in localised tokens so that any
-//  valid Kanidm instance in the topology can handle these request.
+//  valid Netidm instance in the topology can handle these request.
 //
 
 #[instrument(level = "debug", skip(state, kopid))]

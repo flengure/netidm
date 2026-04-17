@@ -22,7 +22,7 @@ static ALLOC: dhat::Alloc = dhat::Alloc;
 use std::os::unix::fs::MetadataExt;
 
 #[cfg(target_family = "unix")]
-use kanidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
+use netidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
 
 #[cfg(target_family = "windows")] // for windows builds
 use whoami;
@@ -32,12 +32,12 @@ use std::fs::{metadata, File};
 use clap::{Args, Parser, Subcommand};
 use fs4::fs_std::FileExt;
 use futures::{SinkExt, StreamExt};
-use kanidmd_core::admin::{
+use netidmd_core::admin::{
     AdminTaskRequest, AdminTaskResponse, ClientCodec, ProtoDomainInfo,
     ProtoDomainUpgradeCheckReport, ProtoDomainUpgradeCheckStatus,
 };
-use kanidmd_core::config::{Configuration, ServerConfigUntagged};
-use kanidmd_core::{
+use netidmd_core::config::{Configuration, ServerConfigUntagged};
+use netidmd_core::{
     backup_server_core, cert_generate_core, create_server_core, dbscan_get_id2entry_core,
     dbscan_list_id2entry_core, dbscan_list_index_analysis_core, dbscan_list_index_core,
     dbscan_list_indexes_core, dbscan_list_quarantined_core, dbscan_quarantine_id2entry_core,
@@ -168,7 +168,7 @@ async fn submit_admin_req_human(path: &str, req: AdminTaskRequest) -> ExitCode {
         Ok(s) => s,
         Err(e) => {
             error!(err = ?e, %path, "Unable to connect to socket path");
-            let diag = kanidm_lib_file_permissions::diagnose_path(path.as_ref());
+            let diag = netidm_lib_file_permissions::diagnose_path(path.as_ref());
             info!(%diag);
             return ExitCode::FAILURE;
         }
@@ -319,7 +319,7 @@ async fn submit_admin_req_human(path: &str, req: AdminTaskRequest) -> ExitCode {
 }
 
 /// Check what we're running as and various filesystem permissions.
-fn check_file_ownership(opt: &KanidmdParser) -> Result<(), ExitCode> {
+fn check_file_ownership(opt: &NetidmdParser) -> Result<(), ExitCode> {
     // Get info about who we are.
     #[cfg(target_family = "unix")]
     let (cuid, ceuid) = {
@@ -357,7 +357,7 @@ fn check_file_ownership(opt: &KanidmdParser) -> Result<(), ExitCode> {
                     None
                 }
             } {
-                if !kanidm_lib_file_permissions::readonly(&cfg_meta) {
+                if !netidm_lib_file_permissions::readonly(&cfg_meta) {
                     warn!("permissions on {} may not be secure. Should be readonly to running uid. This could be a security risk ...",
                         cfg_path.to_str().unwrap_or("invalid file path"));
                 }
@@ -500,7 +500,7 @@ async fn scripting_command(cmd: ScriptingCommand, config: Configuration) -> Exit
 }
 
 // We have to do this because we can't use tracing until we've started the logging pipeline, and we can't start the logging pipeline until the tokio runtime's doing its thing.
-async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
+async fn start_daemon(opt: NetidmdParser, config: Configuration) -> ExitCode {
     // if we have a server config and it has an OTEL URL, then we'll start the logging pipeline now.
 
     // TODO: only send to stderr when we're not in a TTY
@@ -525,7 +525,7 @@ async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
     // ************************************************
     // HERE'S WHERE YOU CAN START USING THE LOGGER
     // ************************************************
-    info!(version = %env!("KANIDM_PKG_VERSION"), "Starting Kanidmd");
+    info!(version = %env!("NETIDM_PKG_VERSION"), "Starting Netidmd");
 
     // guard which shuts down the logging/tracing providers when we close out
     let _otelguard = TracingPipelineGuard(provider);
@@ -547,7 +547,7 @@ async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
                     "DB folder {} may not exist, server startup may FAIL!",
                     db_parent_path.to_str().unwrap_or("invalid file path")
                 );
-                let diag = kanidm_lib_file_permissions::diagnose_path(&db_pathbuf);
+                let diag = netidm_lib_file_permissions::diagnose_path(&db_pathbuf);
                 info!(%diag);
             }
 
@@ -571,7 +571,7 @@ async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
                 return ExitCode::FAILURE;
             }
 
-            if kanidm_lib_file_permissions::readonly(&i_meta) {
+            if netidm_lib_file_permissions::readonly(&i_meta) {
                 warn!("WARNING: DB folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", db_par_path_buf.to_str().unwrap_or("invalid file path"));
             }
             #[cfg(not(target_os = "windows"))]
@@ -586,24 +586,24 @@ async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
 
     let lock_was_setup = match &opt.commands {
         // we aren't going to touch the DB so we can carry on
-        KanidmdOpt::ShowReplicationCertificate
-        | KanidmdOpt::RenewReplicationCertificate
-        | KanidmdOpt::RefreshReplicationConsumer { .. }
-        | KanidmdOpt::RecoverAccount { .. }
-        | KanidmdOpt::DisableAccount { .. } => None,
+        NetidmdOpt::ShowReplicationCertificate
+        | NetidmdOpt::RenewReplicationCertificate
+        | NetidmdOpt::RefreshReplicationConsumer { .. }
+        | NetidmdOpt::RecoverAccount { .. }
+        | NetidmdOpt::DisableAccount { .. } => None,
         _ => {
             // Okay - Lets now create our lock and go.
             #[allow(clippy::expect_used)]
             let klock_path = match config.db_path.clone() {
                 Some(val) => val.with_extension("klock"),
-                None => std::env::temp_dir().join("kanidmd.klock"),
+                None => std::env::temp_dir().join("netidmd.klock"),
             };
 
             let flock = match File::create(&klock_path) {
                 Ok(flock) => flock,
                 Err(err) => {
                     error!(
-                        "ERROR: Refusing to start - unable to create kanidmd exclusive lock at {}",
+                        "ERROR: Refusing to start - unable to create netidmd exclusive lock at {}",
                         klock_path.display()
                     );
                     error!(?err);
@@ -612,18 +612,18 @@ async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
             };
 
             match flock.try_lock_exclusive() {
-                Ok(true) => debug!("Acquired kanidm exclusive lock"),
+                Ok(true) => debug!("Acquired netidm exclusive lock"),
                 Ok(false) => {
                     error!(
-                        "ERROR: Refusing to start - unable to lock kanidmd exclusive lock at {}",
+                        "ERROR: Refusing to start - unable to lock netidmd exclusive lock at {}",
                         klock_path.display()
                     );
-                    error!("Is another kanidmd process running?");
+                    error!("Is another netidmd process running?");
                     return ExitCode::FAILURE;
                 }
                 Err(err) => {
                     error!(
-                        "ERROR: Refusing to start - unable to lock kanidmd exclusive lock at {}",
+                        "ERROR: Refusing to start - unable to lock netidmd exclusive lock at {}",
                         klock_path.display()
                     );
                     error!(?err);
@@ -635,13 +635,13 @@ async fn start_daemon(opt: KanidmdParser, config: Configuration) -> ExitCode {
         }
     };
 
-    let result_code = kanidm_main(config, opt).await;
+    let result_code = netidm_main(config, opt).await;
 
     if let Some(klock_path) = lock_was_setup {
         if let Err(reason) = std::fs::remove_file(&klock_path) {
             warn!(
                 ?reason,
-                "WARNING: Unable to clean up kanidmd exclusive lock at {}",
+                "WARNING: Unable to clean up netidmd exclusive lock at {}",
                 klock_path.display()
             );
         }
@@ -666,20 +666,20 @@ fn main() -> ExitCode {
     let _profiler = dhat::Profiler::builder().trim_backtraces(Some(40)).build();
 
     // Read CLI args, determine what the user has asked us to do.
-    let opt = KanidmdParser::parse();
+    let opt = NetidmdParser::parse();
 
     // print the app version and bail
-    if let KanidmdOpt::Version = &opt.commands {
-        println!("kanidmd {}", env!("KANIDM_PKG_VERSION"));
+    if let NetidmdOpt::Version = &opt.commands {
+        println!("netidmd {}", env!("NETIDM_PKG_VERSION"));
         return ExitCode::SUCCESS;
     };
 
-    if env!("KANIDM_SERVER_CONFIG_PATH").is_empty() {
-        eprintln!("CRITICAL: Kanidmd was not built correctly and is missing a valid KANIDM_SERVER_CONFIG_PATH value");
+    if env!("NETIDM_SERVER_CONFIG_PATH").is_empty() {
+        eprintln!("CRITICAL: Netidmd was not built correctly and is missing a valid NETIDM_SERVER_CONFIG_PATH value");
         return ExitCode::FAILURE;
     }
 
-    let default_config_path = PathBuf::from(env!("KANIDM_SERVER_CONFIG_PATH"));
+    let default_config_path = PathBuf::from(env!("NETIDM_SERVER_CONFIG_PATH"));
 
     let maybe_config_path = if let Some(p) = &opt.config_path {
         Some(p.clone())
@@ -708,11 +708,11 @@ fn main() -> ExitCode {
         None
     };
 
-    let is_server = matches!(&opt.commands, KanidmdOpt::Server);
+    let is_server = matches!(&opt.commands, NetidmdOpt::Server);
 
     let config = Configuration::build()
         .add_opt_toml_config(maybe_sconfig)
-        .add_cli_config(&opt.kanidmd_options)
+        .add_cli_config(&opt.netidmd_options)
         // set threads to 1 unless it's the main server.
         .is_server_mode(is_server)
         .finish();
@@ -735,7 +735,7 @@ fn main() -> ExitCode {
     let maybe_rt = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(config.threads)
         .enable_all()
-        .thread_name("kanidmd-thread-pool")
+        .thread_name("netidmd-thread-pool")
         // .thread_stack_size(8 * 1024 * 1024)
         // If we want a hook for thread start.
         // .on_thread_start()
@@ -753,7 +753,7 @@ fn main() -> ExitCode {
 
     // Choose where we go.
 
-    if let KanidmdOpt::Scripting { command } = opt.commands {
+    if let NetidmdOpt::Scripting { command } = opt.commands {
         rt.block_on(scripting_command(command, config))
     } else {
         rt.block_on(start_daemon(opt, config))
@@ -762,10 +762,10 @@ fn main() -> ExitCode {
 
 /// Build and execute the main server. The ServerConfig are the configuration options
 /// that we are processing into the config for the main server.
-async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
+async fn netidm_main(config: Configuration, opt: NetidmdParser) -> ExitCode {
     match &opt.commands {
-        KanidmdOpt::Server | KanidmdOpt::ConfigTest => {
-            let config_test = matches!(&opt.commands, KanidmdOpt::ConfigTest);
+        NetidmdOpt::Server | NetidmdOpt::ConfigTest => {
+            let config_test = matches!(&opt.commands, NetidmdOpt::ConfigTest);
             if config_test {
                 info!("Running in server configuration test mode ...");
             } else {
@@ -784,12 +784,12 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                                 e
                             );
                             let diag =
-                                kanidm_lib_file_permissions::diagnose_path(&tls_config.chain);
+                                netidm_lib_file_permissions::diagnose_path(&tls_config.chain);
                             info!(%diag);
                             return ExitCode::FAILURE;
                         }
                     };
-                    if !kanidm_lib_file_permissions::readonly(&i_meta) {
+                    if !netidm_lib_file_permissions::readonly(&i_meta) {
                         warn!("permissions on {} may not be secure. Should be readonly to running uid. This could be a security risk ...", tls_config.chain.display());
                     }
                 }
@@ -803,12 +803,12 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                                 tls_config.key.display(),
                                 e
                             );
-                            let diag = kanidm_lib_file_permissions::diagnose_path(&tls_config.key);
+                            let diag = netidm_lib_file_permissions::diagnose_path(&tls_config.key);
                             info!(%diag);
                             return ExitCode::FAILURE;
                         }
                     };
-                    if !kanidm_lib_file_permissions::readonly(&i_meta) {
+                    if !netidm_lib_file_permissions::readonly(&i_meta) {
                         warn!("permissions on {} may not be secure. Should be readonly to running uid. This could be a security risk ...", tls_config.key.display());
                     }
                     #[cfg(not(target_os = "windows"))]
@@ -825,7 +825,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                             "TLS CA folder {} does not exist, server startup will FAIL!",
                             ca_dir.display()
                         );
-                        let diag = kanidm_lib_file_permissions::diagnose_path(&ca_dir_path);
+                        let diag = netidm_lib_file_permissions::diagnose_path(&ca_dir_path);
                         info!(%diag);
                     }
 
@@ -837,7 +837,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                                 ca_dir.display(),
                                 e
                             );
-                            let diag = kanidm_lib_file_permissions::diagnose_path(&ca_dir_path);
+                            let diag = netidm_lib_file_permissions::diagnose_path(&ca_dir_path);
                             info!(%diag);
                             return ExitCode::FAILURE;
                         }
@@ -849,7 +849,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                         );
                         return ExitCode::FAILURE;
                     }
-                    if kanidm_lib_file_permissions::readonly(&i_meta) {
+                    if netidm_lib_file_permissions::readonly(&i_meta) {
                         warn!("WARNING: TLS Client CA folder permissions on {} indicate it may not be RW. This could cause the server start up to fail!", ca_dir.display());
                     }
                     #[cfg(not(target_os = "windows"))]
@@ -866,7 +866,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                 unsafe {
                     let _ = sd_notify::notify_and_unset_env(&[sd_notify::NotifyState::Ready]);
                     let _ = sd_notify::notify_and_unset_env(&[sd_notify::NotifyState::Status(
-                        "Started Kanidm 🦀",
+                        "Started Netidm 🦀",
                     )]);
                 }
 
@@ -950,30 +950,30 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                 info!("Stopped 🛑 ");
             }
         }
-        KanidmdOpt::CertGenerate => {
+        NetidmdOpt::CertGenerate => {
             info!("Running in certificate generate mode ...");
             cert_generate_core(&config);
         }
-        KanidmdOpt::Database {
+        NetidmdOpt::Database {
             commands: DbCommands::Backup(bopt),
         } => {
             info!("Running in backup mode ...");
 
             backup_server_core(&config, Some(&bopt.path));
         }
-        KanidmdOpt::Database {
+        NetidmdOpt::Database {
             commands: DbCommands::Restore(ropt),
         } => {
             info!("Running in restore mode ...");
             restore_server_core(&config, &ropt.path).await;
         }
-        KanidmdOpt::Database {
+        NetidmdOpt::Database {
             commands: DbCommands::Verify,
         } => {
             info!("Running in db verification mode ...");
             verify_server_core(&config).await;
         }
-        KanidmdOpt::ShowReplicationCertificate => {
+        NetidmdOpt::ShowReplicationCertificate => {
             info!("Running show replication certificate ...");
             submit_admin_req_human(
                 config.adminbindpath.as_str(),
@@ -981,7 +981,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             )
             .await;
         }
-        KanidmdOpt::ShowReplicationCertificateMetadata => {
+        NetidmdOpt::ShowReplicationCertificateMetadata => {
             info!("Running show replication certificate metadata ...");
             submit_admin_req_human(
                 config.adminbindpath.as_str(),
@@ -990,7 +990,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             .await;
         }
 
-        KanidmdOpt::RenewReplicationCertificate => {
+        NetidmdOpt::RenewReplicationCertificate => {
             info!("Running renew replication certificate ...");
             submit_admin_req_human(
                 config.adminbindpath.as_str(),
@@ -998,7 +998,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             )
             .await;
         }
-        KanidmdOpt::RefreshReplicationConsumer { proceed } => {
+        NetidmdOpt::RefreshReplicationConsumer { proceed } => {
             info!("Running refresh replication consumer ...");
             if !proceed {
                 error!("Unwilling to proceed. Check --help.");
@@ -1010,7 +1010,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                 .await;
             }
         }
-        KanidmdOpt::RecoverAccount { name } => {
+        NetidmdOpt::RecoverAccount { name } => {
             info!("Running account recovery ...");
 
             submit_admin_req_human(
@@ -1021,7 +1021,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             )
             .await;
         }
-        KanidmdOpt::DisableAccount { name } => {
+        NetidmdOpt::DisableAccount { name } => {
             info!("Running account disable ...");
 
             submit_admin_req_human(
@@ -1032,72 +1032,72 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             )
             .await;
         }
-        KanidmdOpt::Database {
+        NetidmdOpt::Database {
             commands: DbCommands::Reindex,
         } => {
             info!("Running in reindex mode ...");
             reindex_server_core(&config).await;
         }
-        KanidmdOpt::DbScan {
+        NetidmdOpt::DbScan {
             commands: DbScanOpt::ListIndexes,
         } => {
             info!("👀 db scan - list indexes");
             dbscan_list_indexes_core(&config);
         }
-        KanidmdOpt::DbScan {
+        NetidmdOpt::DbScan {
             commands: DbScanOpt::ListId2Entry,
         } => {
             info!("👀 db scan - list id2entry");
             dbscan_list_id2entry_core(&config);
         }
-        KanidmdOpt::DbScan {
+        NetidmdOpt::DbScan {
             commands: DbScanOpt::ListIndexAnalysis,
         } => {
             info!("👀 db scan - list index analysis");
             dbscan_list_index_analysis_core(&config);
         }
-        KanidmdOpt::DbScan {
+        NetidmdOpt::DbScan {
             commands: DbScanOpt::ListIndex(dopt),
         } => {
             info!("👀 db scan - list index content - {}", dopt.index_name);
             dbscan_list_index_core(&config, dopt.index_name.as_str());
         }
-        KanidmdOpt::DbScan {
+        NetidmdOpt::DbScan {
             commands: DbScanOpt::GetId2Entry(dopt),
         } => {
             info!("👀 db scan - get id2 entry - {}", dopt.id);
             dbscan_get_id2entry_core(&config, dopt.id);
         }
 
-        KanidmdOpt::DbScan {
+        NetidmdOpt::DbScan {
             commands: DbScanOpt::QuarantineId2Entry { id },
         } => {
             info!("☣️  db scan - quarantine id2 entry - {}", id);
             dbscan_quarantine_id2entry_core(&config, *id);
         }
 
-        KanidmdOpt::DbScan {
+        NetidmdOpt::DbScan {
             commands: DbScanOpt::ListQuarantined,
         } => {
             info!("☣️  db scan - list quarantined");
             dbscan_list_quarantined_core(&config);
         }
 
-        KanidmdOpt::DbScan {
+        NetidmdOpt::DbScan {
             commands: DbScanOpt::RestoreQuarantined { id },
         } => {
             info!("☣️  db scan - restore quarantined entry - {}", id);
             dbscan_restore_quarantined_core(&config, *id);
         }
 
-        KanidmdOpt::DomainSettings {
+        NetidmdOpt::DomainSettings {
             commands: DomainSettingsCmds::Change,
         } => {
             info!("Running in domain name change mode ... this may take a long time ...");
             domain_rename_core(&config).await;
         }
 
-        KanidmdOpt::DomainSettings {
+        NetidmdOpt::DomainSettings {
             commands: DomainSettingsCmds::Show,
         } => {
             info!("Running domain show ...");
@@ -1106,7 +1106,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                 .await;
         }
 
-        KanidmdOpt::DomainSettings {
+        NetidmdOpt::DomainSettings {
             commands: DomainSettingsCmds::UpgradeCheck,
         } => {
             info!("Running domain upgrade check ...");
@@ -1118,7 +1118,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             .await;
         }
 
-        KanidmdOpt::DomainSettings {
+        NetidmdOpt::DomainSettings {
             commands: DomainSettingsCmds::Raise,
         } => {
             info!("Running domain raise ...");
@@ -1127,7 +1127,7 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
                 .await;
         }
 
-        KanidmdOpt::DomainSettings {
+        NetidmdOpt::DomainSettings {
             commands: DomainSettingsCmds::Remigrate { level },
         } => {
             info!("⚠️  Running domain remigrate ...");
@@ -1139,13 +1139,13 @@ async fn kanidm_main(config: Configuration, opt: KanidmdParser) -> ExitCode {
             .await;
         }
 
-        KanidmdOpt::Database {
+        NetidmdOpt::Database {
             commands: DbCommands::Vacuum,
         } => {
             info!("Running in vacuum mode ...");
             vacuum_server_core(&config);
         }
-        KanidmdOpt::Scripting { .. } | KanidmdOpt::Version => {}
+        NetidmdOpt::Scripting { .. } | NetidmdOpt::Version => {}
     }
     ExitCode::SUCCESS
 }

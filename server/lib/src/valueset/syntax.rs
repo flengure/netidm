@@ -3,7 +3,7 @@ use crate::schema::SchemaAttribute;
 use crate::valueset::{
     DbValueSetV2, ScimResolveStatus, ValueSet, ValueSetResolveStatus, ValueSetScimPut,
 };
-use kanidm_proto::scim_v1::JsonValue;
+use netidm_proto::scim_v1::JsonValue;
 use smolset::SmolSet;
 
 #[derive(Debug, Clone)]
@@ -134,7 +134,7 @@ impl ValueSetT for ValueSetSyntax {
         self.set
             .iter()
             .next()
-            .map(|u| ScimResolveStatus::Resolved(ScimValueKanidm::from(u.to_string())))
+            .map(|u| ScimResolveStatus::Resolved(ScimValueNetidm::from(u.to_string())))
     }
 
     fn to_db_valueset_v2(&self) -> DbValueSetV2 {

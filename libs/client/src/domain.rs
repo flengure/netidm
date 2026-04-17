@@ -1,9 +1,9 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::constants::ATTR_DOMAIN_ALLOW_EASTER_EGGS;
-use kanidm_proto::internal::ImageValue;
+use crate::{ClientError, NetidmClient};
+use netidm_proto::constants::ATTR_DOMAIN_ALLOW_EASTER_EGGS;
+use netidm_proto::internal::ImageValue;
 use reqwest::multipart;
 
-impl KanidmClient {
+impl NetidmClient {
     /// Clear the current domain logo/image
     pub async fn idm_domain_delete_image(&self) -> Result<(), ClientError> {
         self.perform_delete_request("/v1/domain/_image").await

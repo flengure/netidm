@@ -22,8 +22,8 @@ use crypto_glue::{
 use futures::pin_mut;
 use hyper::body::Incoming;
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
-use kanidm_proto::{config::ServerRole, constants::KSESSIONID, internal::COOKIE_AUTH_SESSION_ID};
-use kanidmd_lib::{idm::authentication::ClientCertInfo, status::StatusActor};
+use netidm_proto::{config::ServerRole, constants::KSESSIONID, internal::COOKIE_AUTH_SESSION_ID};
+use netidmd_lib::{idm::authentication::ClientCertInfo, status::StatusActor};
 use serde::de::DeserializeOwned;
 use sketching::*;
 use std::fmt::Write;
@@ -99,7 +99,7 @@ pub struct ServerState {
     /// So that we can work out which ID to use for spans
     pub(crate) logging_pipeline: LoggerType,
     /// Live WireGuard interface manager.
-    pub(crate) wg_manager: Arc<kanidmd_wg::WgManager>,
+    pub(crate) wg_manager: Arc<netidmd_wg::WgManager>,
 }
 
 impl ServerState {
@@ -121,7 +121,7 @@ impl ServerState {
                         // it can occur if the load balancer isn't sticking sessions to the correct
                         // node. That can cause this error. So we want to specifically call it out
                         // to admins so they can investigate that the fault is occurring *outside*
-                        // of kanidm.
+                        // of netidm.
                         warn!("Invalid Signature errors can occur if your instance restarted recently, if a load balancer is not configured for sticky sessions, or a session was tampered with.");
                     }
                     None
@@ -157,7 +157,7 @@ pub(crate) fn get_js_files(role: ServerRole) -> Result<Vec<JavaScriptFile>, ()> 
 
     if !matches!(role, ServerRole::WriteReplicaNoUI) {
         // let's set up the list of js module hashes
-        let pkg_path = env!("KANIDM_SERVER_UI_PKG_PATH").to_owned();
+        let pkg_path = env!("NETIDM_SERVER_UI_PKG_PATH").to_owned();
 
         let filelist = [
             "external/bootstrap.bundle.min.js",
@@ -199,7 +199,7 @@ async fn handler_404() -> Response {
 pub struct ServerServices {
     pub maybe_tls_acceptor: Option<TlsAcceptor>,
     pub tls_acceptor_reload_tx: broadcast::Sender<TlsAcceptor>,
-    pub wg_manager: Arc<kanidmd_wg::WgManager>,
+    pub wg_manager: Arc<netidmd_wg::WgManager>,
 }
 
 pub async fn create_https_server(
@@ -340,11 +340,11 @@ pub async fn create_https_server(
     let app = match config.role {
         ServerRole::WriteReplicaNoUI => app,
         ServerRole::WriteReplica | ServerRole::ReadOnlyReplica => {
-            let pkg_path = PathBuf::from(env!("KANIDM_SERVER_UI_PKG_PATH"));
+            let pkg_path = PathBuf::from(env!("NETIDM_SERVER_UI_PKG_PATH"));
             if !pkg_path.exists() {
                 eprintln!(
                     "Couldn't find htmx UI package path: ({}), quitting.",
-                    env!("KANIDM_SERVER_UI_PKG_PATH")
+                    env!("NETIDM_SERVER_UI_PKG_PATH")
                 );
                 std::process::exit(1);
             }

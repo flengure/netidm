@@ -1,8 +1,8 @@
 use crate::OpType;
-use crate::{handle_client_error, KanidmClientParser, RecycleOpt};
+use crate::{handle_client_error, NetidmClientParser, RecycleOpt};
 
 impl RecycleOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             RecycleOpt::List => {
                 let client = opt.to_client(OpType::Read).await;

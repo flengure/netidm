@@ -4,16 +4,16 @@ Remote Authentication Dial In User Service (RADIUS) is a network protocol that i
 devices or Virtual Private Networks (VPNs). While it should not be a sole point of trust/authentication to an identity,
 it's still an important control for protecting network resources.
 
-Kanidm has a philosophy that each account can have multiple credentials which are related to their devices, and limited
+Netidm has a philosophy that each account can have multiple credentials which are related to their devices, and limited
 to specific resources. RADIUS is no exception and has a separate credential for each account to use for RADIUS access.
 
 ## Disclaimer
 
-It's worth noting some disclaimers about Kanidm's RADIUS integration.
+It's worth noting some disclaimers about Netidm's RADIUS integration.
 
 ### One Credential - One Account
 
-Kanidm normally attempts to have credentials for each _device_ and _application_ rather than the legacy model of one to
+Netidm normally attempts to have credentials for each _device_ and _application_ rather than the legacy model of one to
 one.
 
 The RADIUS protocol is only able to attest a _single_ password based credential in an authentication attempt, which
@@ -22,7 +22,7 @@ improves the situation by isolating the RADIUS credential from the primary or ap
 This solves many common security concerns around credential loss or disclosure, and prevents rogue devices from locking
 out accounts as they attempt to authenticate to Wi-Fi with expired credentials.
 
-Alternatelly, Kanidm supports mapping users with special configuration of certificates allowing some systems to use
+Alternatelly, Netidm supports mapping users with special configuration of certificates allowing some systems to use
 EAP-TLS for RADIUS authentication. This returns to the "per device" credential model.
 
 ### Cleartext Credential Storage
@@ -39,7 +39,7 @@ Due to this requirement, we must store the RADIUS material as clear text or NTLM
 NTLM is secure as it relies on the obsolete and deprecated MD4 cryptographic hash, providing only an illusion of
 security.
 
-This means Kanidm stores RADIUS credentials in the database as clear text.
+This means Netidm stores RADIUS credentials in the database as clear text.
 
 We believe this is a reasonable decision and is a low risk to security because:
 
@@ -61,19 +61,19 @@ For an account to use RADIUS they must first generate a RADIUS secret unique to 
 can self-create this secret.
 
 ```bash
-kanidm person radius generate-secret --name william william
-kanidm person radius show-secret --name william william
+netidm person radius generate-secret --name william william
+netidm person radius show-secret --name william william
 ```
 
 ## Account Group Configuration
 
-In Kanidm, accounts which can authenticate to RADIUS must be a member of an allowed group. This allows you to define
+In Netidm, accounts which can authenticate to RADIUS must be a member of an allowed group. This allows you to define
 which users or groups may use a Wi-Fi or VPN infrastructure, and provides a path for revoking access to the resources
 through group management. The key point of this is that service accounts should not be part of this group:
 
 ```bash
-kanidm group create --name idm_admin radius_access_allowed
-kanidm group add-members --name idm_admin radius_access_allowed william
+netidm group create --name idm_admin radius_access_allowed
+netidm group add-members --name idm_admin radius_access_allowed william
 ```
 
 ## RADIUS Server Service Account
@@ -84,14 +84,14 @@ assigned through the group "idm_radius_servers", which is provided by default.
 First, create the service account and add it to the group:
 
 ```bash
-kanidm service-account create --name idm_admin radius_service_account "Radius Service Account" idm_admin
-kanidm group add-members --name idm_admin idm_radius_servers radius_service_account
+netidm service-account create --name idm_admin radius_service_account "Radius Service Account" idm_admin
+netidm group add-members --name idm_admin idm_radius_servers radius_service_account
 ```
 
 Now reset the account password, using the `admin` account:
 
 ```bash
-kanidm service-account api-token generate --name idm_admin radius_service_account radius1
+netidm service-account api-token generate --name idm_admin radius_service_account radius1
 ```
 
 ## Deploying a RADIUS Container
@@ -107,7 +107,7 @@ with the following files mounted in `/data`. (Modifiable in the configuration)
 | radius.toml | The configuration file                     |
 
 The configuration file (which you should mount at `/data/radius.toml`, or specify its path with the environment variable
-`KANIDM_RLM_CONFIG`) has the following template:
+`NETIDM_RLM_CONFIG`) has the following template:
 
 ```toml
 {{#rustdoc_include ../../../examples/radius.toml}}
@@ -141,9 +141,9 @@ docker run --name radiusd \
     -p 1812:1812 \
     -p 1812:1812/udp \
     --interactive --tty \
-    --mount "type=bind,src=$(pwd)/examples/radius.toml,target=/data/kanidm" \
-    --mount "type=bind,src=/tmp/kanidm,target=/data" \
-    kanidm/radius:latest
+    --mount "type=bind,src=$(pwd)/examples/radius.toml,target=/data/netidm" \
+    --mount "type=bind,src=/tmp/netidm,target=/data" \
+    netidm/radius:latest
 ```
 
 In this example we're running it from the root of the repository and loading an example config, and using the

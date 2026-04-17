@@ -2,22 +2,22 @@
 
 ## Supported Version Upgrades
 
-When upgrading, Kanidm requires you to upgrade through each server version in sequence. For example, if you have a 1.5
+When upgrading, Netidm requires you to upgrade through each server version in sequence. For example, if you have a 1.5
 instance, and you want to upgrade to 1.7, you must upgrade from 1.5 to 1.6, and then 1.6 to 1.7. Skip upgrades such as
 1.5 to 1.7 are not supported.
 
-More details about supported versions of Kanidm can be found in our [support](support.md) page.
+More details about supported versions of Netidm can be found in our [support](support.md) page.
 
 ## General Update Notes
 
-During some upgrades the Kanidm project must apply new constraints or limits on your data. If we are unable to migrate
+During some upgrades the Netidm project must apply new constraints or limits on your data. If we are unable to migrate
 these without disruption, we rely on administrators to make informed choices before the upgrade can proceed.
 
 When these are required, we will give you one release cycle ahead of time to make changes. To check for changes that
 will affect your instance you should run.
 
 ```bash
-kanidmd domain upgrade-check
+netidmd domain upgrade-check
 
 # Running domain upgrade check ...
 # domain_name            : localhost
@@ -38,7 +38,7 @@ it with a newer version. This document will help walk you through that process.
 
 > [!TIP]
 >
-> You should have documented and preserved your Kanidm container create / run command from the server preparation guide.
+> You should have documented and preserved your Netidm container create / run command from the server preparation guide.
 > If not, you'll need to use `docker inspect` to work out how to recreate these parameters.
 
 ### Upgrade Check
@@ -47,7 +47,7 @@ Perform the pre-upgrade check.
 
 ```bash
 docker exec -i -t <container name> \
-  kanidmd domain upgrade-check
+  netidmd domain upgrade-check
 
 # Running domain upgrade check ...
 # domain_name            : localhost
@@ -62,18 +62,18 @@ docker exec -i -t <container name> \
 You may wish to preserve the previous image before updating. This is useful if an issue is encountered in upgrades.
 
 ```bash
-docker tag kanidm/server:latest kanidm/server:<DATE>
-docker tag kanidm/server:latest kanidm/server:2022-10-24
+docker tag netidm/server:latest netidm/server:<DATE>
+docker tag netidm/server:latest netidm/server:2022-10-24
 ```
 
 ### Update your Image
 
-Pull the latest version of Kanidm.
+Pull the latest version of Netidm.
 
 ```bash
-docker pull kanidm/server:latest
-docker pull kanidm/radius:latest
-docker pull kanidm/tools:latest
+docker pull netidm/server:latest
+docker pull netidm/radius:latest
+docker pull netidm/tools:latest
 ```
 
 ### Perform a backup
@@ -96,16 +96,16 @@ docker stop <previous instance name>
 You can test that your configuration is correct with the new version, and the server should correctly start.
 
 ```bash
-docker run --rm -i -t -v kanidmd:/data \
-    kanidm/server:latest /sbin/kanidmd configtest
+docker run --rm -i -t -v netidmd:/data \
+    netidm/server:latest /sbin/netidmd configtest
 ```
 
 You can then follow through with the upgrade by running the create / run command with your existing volume.
 
 ```bash
-docker run [Your Arguments Here] -v kanidmd:/data \
+docker run [Your Arguments Here] -v netidmd:/data \
     OTHER_CUSTOM_OPTIONS \
-    kanidm/server:latest
+    netidm/server:latest
 ```
 
 Once you confirm the upgrade is successful you can delete the previous instance
@@ -125,9 +125,9 @@ docker start <previous instance name>
 If you deleted the previous instance, you can recreate it from your preserved tag instead.
 
 ```bash
-docker run [Your Arguments Here] -v kanidmd:/data \
+docker run [Your Arguments Here] -v netidmd:/data \
     OTHER_CUSTOM_OPTIONS \
-    kanidm/server:<DATE>
+    netidm/server:<DATE>
 ```
 
 In rare and exceptional cases, if the server from your previous version fails to start, you will need to restore from

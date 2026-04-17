@@ -2,7 +2,7 @@ Downgrades
 ----------
 
 It's inevitable that someone will find some issue that requires them to downgrade
-their working copy of kanidmd - that means we have to understand that process,
+their working copy of netidmd - that means we have to understand that process,
 and at least advertise or document how it should be done.
 
 A major barrier for us to have a downgrade process is the nature of our inplace

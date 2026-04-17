@@ -1,10 +1,10 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::constants::{ATTR_DESCRIPTION, ATTR_NAME};
-use kanidm_proto::v1::Entry;
+use crate::{ClientError, NetidmClient};
+use netidm_proto::constants::{ATTR_DESCRIPTION, ATTR_NAME};
+use netidm_proto::v1::Entry;
 use std::collections::BTreeMap;
 use url::Url;
 
-impl KanidmClient {
+impl NetidmClient {
     pub async fn idm_sync_account_list(&self) -> Result<Vec<Entry>, ClientError> {
         self.perform_get_request("/v1/sync_account").await
     }

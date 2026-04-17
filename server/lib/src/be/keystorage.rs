@@ -14,7 +14,7 @@ use std::collections::BTreeMap;
 use std::hash::Hash;
 
 /// These are key handles for storing keys related to various cryptographic components
-/// within Kanidm. Generally these are for keys that are "static", as in have known
+/// within Netidm. Generally these are for keys that are "static", as in have known
 /// long term uses. This could be the servers private replication key, a TPM Storage
 /// Root Key, or the Duplicable Storage Key. In future these may end up being in
 /// a HSM or similar, but we'll always need a way to persist serialised forms of these.

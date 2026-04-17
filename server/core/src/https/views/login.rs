@@ -17,18 +17,18 @@ use axum::{
 };
 use axum_extra::extract::cookie::{CookieJar, SameSite};
 use hyper::Uri;
-use kanidm_proto::internal::{
+use netidm_proto::internal::{
     UserAuthToken, COOKIE_AUTH_SESSION_ID, COOKIE_BEARER_TOKEN, COOKIE_CU_SESSION_TOKEN,
     COOKIE_OAUTH2_PROVISION_REQ, COOKIE_OAUTH2_REQ, COOKIE_USERNAME,
 };
-use kanidm_proto::{
+use netidm_proto::{
     oauth2::{AccessTokenRequest, AccessTokenResponse},
     v1::{AuthAllowed, AuthIssueSession, AuthMech},
 };
-use kanidmd_lib::idm::authentication::{AuthCredential, AuthExternal, AuthState, AuthStep};
-use kanidmd_lib::idm::event::AuthResult;
-use kanidmd_lib::prelude::OperationError;
-use kanidmd_lib::prelude::*;
+use netidmd_lib::idm::authentication::{AuthCredential, AuthExternal, AuthState, AuthStep};
+use netidmd_lib::idm::event::AuthResult;
+use netidmd_lib::prelude::OperationError;
+use netidmd_lib::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::str::FromStr;
@@ -1154,9 +1154,43 @@ async fn view_login_step(
             AuthState::ProvisioningRequired {
                 provider_uuid,
                 claims,
+                email_link_accounts,
             } => {
                 debug!("🧩 -> AuthState::ProvisioningRequired");
                 jar = cookies::destroy(jar, COOKIE_AUTH_SESSION_ID, &state);
+
+                // Attempt email-based account linking when the provider and domain both permit
+                // it and the provider has asserted the email is verified.
+                if email_link_accounts
+                    && claims.email_verified == Some(true)
+                    && claims.email.is_some()
+                {
+                    match state
+                        .qe_w_ref
+                        .handle_link_account_by_email(
+                            provider_uuid,
+                            claims.clone(),
+                            kopid.eventid,
+                            client_auth_info.clone(),
+                        )
+                        .await
+                    {
+                        Ok(Some(_linked_uuid)) => {
+                            security_info!(
+                                %provider_uuid,
+                                "OAuth2 email-link: linked existing account — redirecting to login"
+                            );
+                            break Redirect::to("/ui/login").into_response();
+                        }
+                        Ok(None) => {
+                            // No existing account with that email; fall through to provision.
+                            debug!("OAuth2 email-link: no matching account found, proceeding to provision");
+                        }
+                        Err(e) => {
+                            warn!(?e, "OAuth2 email-link: link attempt failed, proceeding to provision");
+                        }
+                    }
+                }
 
                 let cookie_data = ProvisionCookieData {
                     provider_uuid,
@@ -1256,7 +1290,7 @@ async fn submit_userinfo_request(
     let res = client
         .get(userinfo_url.as_str())
         .bearer_auth(&access_token)
-        .header("User-Agent", "kanidm/1.0")
+        .header("User-Agent", "netidm/1.0")
         .send()
         .await
         .map_err(|err| {
@@ -1300,7 +1334,7 @@ pub async fn view_login_provision_get(
         error: None,
     };
 
-    use kanidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims;
+    use netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims;
     let claims = ExternalUserClaims {
         sub: cookie_data.sub.clone(),
         email: cookie_data.email.clone(),
@@ -1403,7 +1437,7 @@ pub async fn view_login_provision_post(
         .into_response();
     }
 
-    use kanidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims;
+    use netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims;
     let claims = ExternalUserClaims {
         sub: cookie_data.sub.clone(),
         email: cookie_data.email.clone(),

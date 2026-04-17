@@ -6,9 +6,9 @@ use crate::value::{Address, VALIDATE_EMAIL_RE};
 use crate::valueset::{
     DbValueSetV2, ScimResolveStatus, ValueSet, ValueSetResolveStatus, ValueSetScimPut,
 };
-use kanidm_proto::scim_v1::client::ScimAddress as ScimAddressClient;
-use kanidm_proto::scim_v1::JsonValue;
-use kanidm_proto::scim_v1::{server::ScimAddress, ScimMail};
+use netidm_proto::scim_v1::client::ScimAddress as ScimAddressClient;
+use netidm_proto::scim_v1::JsonValue;
+use netidm_proto::scim_v1::{server::ScimAddress, ScimMail};
 use smolset::SmolSet;
 use std::collections::BTreeSet;
 
@@ -176,7 +176,7 @@ impl ValueSetT for ValueSetAddress {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.set
                 .iter()
                 .map(|a| ScimAddress {
@@ -504,7 +504,7 @@ impl ValueSetT for ValueSetEmailAddress {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.set
                 .iter()
                 .map(|mail| {

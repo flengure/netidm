@@ -19,7 +19,7 @@ fn main() {
         Some(outdir) => outdir,
     };
 
-    // Will be the form /Volumes/ramdisk/rs/debug/build/kanidm-8aadc4b0821e9fe7/out
+    // Will be the form /Volumes/ramdisk/rs/debug/build/netidm-8aadc4b0821e9fe7/out
     // We want to get to /Volumes/ramdisk/rs/debug/completions
     let comp_dir = PathBuf::from(outdir)
         .ancestors()
@@ -34,8 +34,8 @@ fn main() {
     for shell in [Shell::Bash, Shell::Elvish, Shell::Fish, Shell::Zsh] {
         generate_to(
             shell,
-            &mut KanidmdParser::command(),
-            "kanidmd",
+            &mut NetidmdParser::command(),
+            "netidmd",
             comp_dir.clone(),
         )
         .ok();

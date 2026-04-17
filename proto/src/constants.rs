@@ -4,8 +4,8 @@ pub mod uri;
 
 use std::time::Duration;
 
-/// The default location for the `kanidm` CLI tool's token cache.
-pub const CLIENT_TOKEN_CACHE: &str = "~/.cache/kanidm_tokens";
+/// The default location for the `netidm` CLI tool's token cache.
+pub const CLIENT_TOKEN_CACHE: &str = "~/.cache/netidm_tokens";
 
 /// Content type string for jpeg
 pub const CONTENT_TYPE_JPG: &str = "image/jpeg";
@@ -29,15 +29,15 @@ pub const VALID_IMAGE_UPLOAD_CONTENT_TYPES: [&str; 5] = [
 
 pub const APPLICATION_JSON: &str = "application/json";
 
-/// The "system" path for Kanidm client config
-pub const DEFAULT_CLIENT_CONFIG_PATH: &str = env!("KANIDM_CLIENT_CONFIG_PATH");
-/// The user-owned path for Kanidm client config
-pub const DEFAULT_CLIENT_CONFIG_PATH_HOME: &str = "~/.config/kanidm";
+/// The "system" path for Netidm client config
+pub const DEFAULT_CLIENT_CONFIG_PATH: &str = env!("NETIDM_CLIENT_CONFIG_PATH");
+/// The user-owned path for Netidm client config
+pub const DEFAULT_CLIENT_CONFIG_PATH_HOME: &str = "~/.config/netidm";
 
-/// The default HTTPS bind address for the Kanidm server
+/// The default HTTPS bind address for the Netidm server
 pub const DEFAULT_SERVER_ADDRESS: &str = "127.0.0.1:8443";
 pub const DEFAULT_SERVER_LOCALHOST: &str = "localhost:8443";
-/// The default LDAP bind address for the Kanidm client
+/// The default LDAP bind address for the Netidm client
 pub const DEFAULT_LDAP_LOCALHOST: &str = "localhost:636";
 /// The default amount of attributes that can be queried in LDAP
 pub const DEFAULT_LDAP_MAXIMUM_QUERYABLE_ATTRIBUTES: usize = 48;
@@ -197,6 +197,9 @@ pub const ATTR_OAUTH2_JIT_PROVISIONING: &str = "oauth2_jit_provisioning";
 pub const ATTR_OAUTH2_CLAIM_MAP_NAME: &str = "oauth2_claim_map_name";
 pub const ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME: &str = "oauth2_claim_map_displayname";
 pub const ATTR_OAUTH2_CLAIM_MAP_EMAIL: &str = "oauth2_claim_map_email";
+// DL18 — OAuth2 email-based account linking
+pub const ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS: &str = "oauth2_email_link_accounts";
+pub const ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS: &str = "oauth2_domain_email_link_accounts";
 // DL16 — WireGuard
 pub const ATTR_WG_INTERFACE: &str = "wg_interface";
 pub const ATTR_WG_LISTEN_PORT: &str = "wg_listen_port";
@@ -332,11 +335,11 @@ pub const TEST_ATTR_NOTALLOWED: &str = "notallowed";
 pub const TEST_ENTRYCLASS_TEST_CLASS: &str = "testclass";
 
 /// HTTP Header containing an auth session ID for when you're going through an auth flow
-pub const KSESSIONID: &str = "X-KANIDM-AUTH-SESSION-ID";
+pub const KSESSIONID: &str = "X-NETIDM-AUTH-SESSION-ID";
 /// HTTP Header containing the backend operation ID
-pub const KOPID: &str = "X-KANIDM-OPID";
-/// HTTP Header containing the Kanidm server version
-pub const KVERSION: &str = "X-KANIDM-VERSION";
+pub const KOPID: &str = "X-NETIDM-OPID";
+/// HTTP Header containing the Netidm server version
+pub const KVERSION: &str = "X-NETIDM-VERSION";
 
 /// X-Forwarded-For header
 pub const X_FORWARDED_FOR: &str = "x-forwarded-for";

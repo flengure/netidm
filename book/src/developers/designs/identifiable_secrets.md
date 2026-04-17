@@ -1,24 +1,24 @@
 # Identifiable Secrets
 
-Kanidm tokens should have a unique pattern, making them easy to recognize. This is crucial for security systems that aim
+Netidm tokens should have a unique pattern, making them easy to recognize. This is crucial for security systems that aim
 to prevent incorrect credential storage. Without a distinct pattern, like with bare JWTs that look like any
 base64-encoded data, we risk false alarms.
 
-## The Kanidm pattern
+## The Netidm pattern
 
 ```text
-kanidm_<CREDENTIAL>
+netidm_<CREDENTIAL>
 ```
 
 Where:
 
 - `<CREDENTIAL>` is the actual credential.
 
-We can make this compatible with current validators by checking if the submitted token starts with `kanidm_`. If it
+We can make this compatible with current validators by checking if the submitted token starts with `netidm_`. If it
 does, we remove that part and continue with validation.
 
 Regular expressions should NOT be used. Credentials are valid only in context, so the auth check knows it's looking for
-`kanidm_<CREDENTIAL>`. A simple string match and split is more efficient in this case.
+`netidm_<CREDENTIAL>`. A simple string match and split is more efficient in this case.
 
 ## Other implementations
 

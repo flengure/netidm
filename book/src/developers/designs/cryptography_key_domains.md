@@ -1,6 +1,6 @@
 # Cryptography Key Domains
 
-Within Kanidm we have to manage a number of private keys with various cryptographic purposes. In the current design, we
+Within Netidm we have to manage a number of private keys with various cryptographic purposes. In the current design, we
 have evolved where for each purposes keys are managed in unique ways. However we need to improve this for a number
 reasons including shared keys for OAuth2 domains and a future integration with PKCS11.
 
@@ -186,7 +186,7 @@ class: oauth2_rs
 key_object: Refer( ... )
 ```
 
-This allows access to the keyObject from the primary store. Due to kanidm's transactions, it's guaranteed that any
+This allows access to the keyObject from the primary store. Due to netidm's transactions, it's guaranteed that any
 reference to a keyObject must be valid with a key in the keyObject store. Care must still be taken at run time in the
 extremely unlikely case this no longer holds true.
 

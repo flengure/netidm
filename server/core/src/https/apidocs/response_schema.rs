@@ -2,7 +2,7 @@
 //!
 //! These are used to generate the OpenAPI schema definitions.
 //!
-use kanidm_proto::constants::APPLICATION_JSON;
+use netidm_proto::constants::APPLICATION_JSON;
 use std::collections::BTreeMap;
 use utoipa::{
     openapi::{Content, RefOr, Response, ResponseBuilder, ResponsesBuilder},

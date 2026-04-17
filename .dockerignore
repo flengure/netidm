@@ -6,7 +6,7 @@
 *.md
 **/__pycache__/**
 docs
-kanidmd/sampledata
+netidmd/sampledata
 Makefile
 target
 test.db

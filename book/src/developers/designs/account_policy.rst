@@ -46,7 +46,7 @@ Rate Limiting is the process of delaying authentication responses to slow the nu
 against an account to deter attackers. This is often used to prevent attackers from bruteforcing
 passwords at a high rate.
 
-The best defence again these attacks is Multi-factor authentication (MFA). Due to the design of Kanidm,
+The best defence again these attacks is Multi-factor authentication (MFA). Due to the design of Netidm,
 the second factor (ie the webauthn token or the OTP) is always checked *before* the password,
 meaning that the attacker is unable to attack the password *unless* they also have
 the corresponding MFA token.
@@ -57,7 +57,7 @@ limited according to [NIST SP800-63B](https://pages.nist.gov/800-63-3/sp800-63b.
 Webauthn does *not* require rate-limiting as a single factor or multi factor device.
 
 As an account can only have a single proceeding authentication session at a time, this provides
-serialisation and rate limiting per account of the service. However, as Kanidm will in the future
+serialisation and rate limiting per account of the service. However, as Netidm will in the future
 support multiple, distributed replicas, we must consider an architecture that allows eventually
 consistent behaviour.
 

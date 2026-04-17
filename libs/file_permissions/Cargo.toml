@@ -1,7 +1,7 @@
 [package]
-name = "kanidm_lib_file_permissions"
-description = "Kanidm File Permissions Library"
-# documentation = "https://docs.rs/kanidm_proto/latest/kanidm_proto/"
+name = "netidm_lib_file_permissions"
+description = "Netidm File Permissions Library"
+# documentation = "https://docs.rs/netidm_proto/latest/netidm_proto/"
 version = { workspace = true }
 authors = { workspace = true }
 rust-version = { workspace = true }
@@ -17,4 +17,4 @@ doctest = false
 [dependencies]
 
 [target.'cfg(not(target_family = "windows"))'.dependencies]
-kanidm_utils_users = { workspace = true }
+netidm_utils_users = { workspace = true }

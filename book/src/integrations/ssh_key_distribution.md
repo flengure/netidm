@@ -1,16 +1,16 @@
 # SSH Key Distribution
 
 To support SSH authentication securely to a large set of hosts running SSH, we support distribution of SSH public keys
-via the Kanidm server. Both persons and service accounts support SSH public keys on their accounts.
+via the Netidm server. Both persons and service accounts support SSH public keys on their accounts.
 
 ## Configuring Accounts
 
 To view the current SSH public keys on accounts, you can use:
 
 ```bash
-kanidm person|service-account \
+netidm person|service-account \
     ssh list-publickeys --name <login user> <account to view>
-kanidm person|service-account \
+netidm person|service-account \
     ssh list-publickeys --name idm_admin william
 ```
 
@@ -18,23 +18,23 @@ All users by default can self-manage their SSH public keys. To upload a key, a c
 so:
 
 ```bash
-kanidm person|service-account \
+netidm person|service-account \
     ssh add-publickey --name william william 'test-key' "`cat ~/.ssh/id_ecdsa.pub`"
 ```
 
 To remove (revoke) an SSH public key, delete them by the tag name:
 
 ```bash
-kanidm person|service-account ssh delete-publickey --name william william 'test-key'
+netidm person|service-account ssh delete-publickey --name william william 'test-key'
 ```
 
 ## Security Notes
 
-As a security feature, Kanidm validates _all_ public keys to ensure they are valid SSH public keys. Uploading a private
+As a security feature, Netidm validates _all_ public keys to ensure they are valid SSH public keys. Uploading a private
 key or other data will be rejected. For example:
 
 ```bash
-kanidm person|service-account ssh add-publickey --name william william 'test-key' "invalid"
+netidm person|service-account ssh add-publickey --name william william 'test-key' "invalid"
 Enter password:
   ... Some(SchemaViolation(InvalidAttributeSyntax)))' ...
 ```
@@ -43,17 +43,17 @@ Enter password:
 
 ### Public Key Caching Configuration
 
-If you have `kanidm_unixd` running and have enabled the Kanidm provider, you can use it to locally cache SSH public
-keys. This means you can still SSH into your machines, even if your network is down, you move away from Kanidm, or some
+If you have `netidm_unixd` running and have enabled the Netidm provider, you can use it to locally cache SSH public
+keys. This means you can still SSH into your machines, even if your network is down, you move away from Netidm, or some
 other interruption occurs.
 
-The `kanidm_ssh_authorizedkeys` command is part of the `kanidm-unix-clients` package, so should be installed on the
-servers. It communicates to `kanidm_unixd`, so you should have a configured PAM/nsswitch setup as well.
+The `netidm_ssh_authorizedkeys` command is part of the `netidm-unix-clients` package, so should be installed on the
+servers. It communicates to `netidm_unixd`, so you should have a configured PAM/nsswitch setup as well.
 
 You can test this is configured correctly by running:
 
 ```bash
-kanidm_ssh_authorizedkeys <account name>
+netidm_ssh_authorizedkeys <account name>
 ```
 
 If the account has SSH public keys you should see them listed, one per line.
@@ -63,7 +63,7 @@ To configure servers to accept these keys, you must change their `/etc/ssh/sshd_
 ```text
 PubkeyAuthentication yes
 UsePAM yes
-AuthorizedKeysCommand /usr/sbin/kanidm_ssh_authorizedkeys %u
+AuthorizedKeysCommand /usr/sbin/netidm_ssh_authorizedkeys %u
 AuthorizedKeysCommandUser nobody
 ```
 
@@ -86,29 +86,29 @@ KerberosAuthentication no
 
 > [!WARNING]
 >
-> If you are using `ssh_config.d` drop in files, the `kanidm` configuration must be _before_ the systemd-userdbd
+> If you are using `ssh_config.d` drop in files, the `netidm` configuration must be _before_ the systemd-userdbd
 > configuration. This is because `20-systemd-userdb.conf` contains `AuthorizedKeysCommand` and `sshd_config` respects
-> the _first_ directive found. We recommend you use the filename `10-kanidm.conf` to ensure your settings take
+> the _first_ directive found. We recommend you use the filename `10-netidm.conf` to ensure your settings take
 > precedence over systemd-userdbd.
 
 ### Direct Communication Configuration
 
-In this mode, the authorised keys commands will contact Kanidm directly.
+In this mode, the authorised keys commands will contact Netidm directly.
 
 > [!NOTE]
 >
-> As Kanidm is being contacted directly there is no SSH public key cache. Any network outage or communication loss may
+> As Netidm is being contacted directly there is no SSH public key cache. Any network outage or communication loss may
 > prevent you accessing your systems. You should only use this version if you have a requirement for it.
 
-The `kanidm_ssh_authorizedkeys_direct` command is part of the kanidm-clients package, so should be installed on the
+The `netidm_ssh_authorizedkeys_direct` command is part of the netidm-clients package, so should be installed on the
 servers.
 
-To configure the tool, you should edit /etc/kanidm/config, as documented in [clients](../client_tools.md)
+To configure the tool, you should edit /etc/netidm/config, as documented in [clients](../client_tools.md)
 
 You can test this is configured correctly by running:
 
 ```bash
-kanidm_ssh_authorizedkeys_direct -D anonymous <account name>
+netidm_ssh_authorizedkeys_direct -D anonymous <account name>
 ```
 
 If the account has SSH public keys you should see them listed, one per line.
@@ -118,7 +118,7 @@ To configure servers to accept these keys, you must change their /etc/ssh/sshd\_
 ```text
 PubkeyAuthentication yes
 UsePAM yes
-AuthorizedKeysCommand /usr/bin/kanidm_ssh_authorizedkeys_direct -D anonymous %u
+AuthorizedKeysCommand /usr/bin/netidm_ssh_authorizedkeys_direct -D anonymous %u
 AuthorizedKeysCommandUser nobody
 ```
 

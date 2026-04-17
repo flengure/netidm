@@ -1,15 +1,15 @@
 use crate::OpType;
 use crate::{
-    handle_client_error, GraphCommonOpt, GraphType, KanidmClientParser, ObjectType, OutputMode,
+    handle_client_error, GraphCommonOpt, GraphType, NetidmClientParser, ObjectType, OutputMode,
 };
-use kanidm_proto::constants::{
+use netidm_proto::constants::{
     ATTR_CLASS, ATTR_MEMBER, ATTR_SPN, ATTR_UUID, ENTRYCLASS_ACCOUNT, ENTRYCLASS_GROUP,
     ENTRYCLASS_PERSON, ENTRYCLASS_SERVICE_ACCOUNT,
 };
-use kanidm_proto::internal::Filter::{Eq, Or};
+use netidm_proto::internal::Filter::{Eq, Or};
 
 impl GraphCommonOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         let gopt: &GraphCommonOpt = self;
         let client = opt.to_client(OpType::Read).await;
         let graph_type = &gopt.graph_type;

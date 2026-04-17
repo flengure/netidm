@@ -50,7 +50,7 @@ pub enum OrcaOpt {
         idm_admin_password: String,
 
         #[clap(long)]
-        /// Update the Kanidm URI
+        /// Update the Netidm URI
         control_uri: String,
 
         #[clap(long)]
@@ -88,7 +88,7 @@ pub enum OrcaOpt {
 
     #[clap(name = "generate")]
     /// Create a new state file that is populated with a complete dataset, ready
-    /// to be loaded into a kanidm instance.
+    /// to be loaded into a netidm instance.
     GenerateData {
         #[clap(flatten)]
         common: CommonOpt,
@@ -101,7 +101,7 @@ pub enum OrcaOpt {
     },
 
     #[clap(name = "populate")]
-    /// Populate the data for the test into the Kanidm instance.
+    /// Populate the data for the test into the Netidm instance.
     PopulateData {
         #[clap(flatten)]
         common: CommonOpt,

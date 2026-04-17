@@ -1,4 +1,4 @@
-# This builds the kanidm CLI tools
+# This builds the netidm CLI tools
 ARG BASE_IMAGE=opensuse/tumbleweed:latest
 # ARG BASE_IMAGE=opensuse/leap:15.5
 
@@ -7,12 +7,12 @@ ADD ../scripts/zypper_fixing.sh /zypper_fixing.sh
 RUN --mount=type=cache,id=zypp,target=/var/cache/zypp /zypper_fixing.sh
 
 FROM repos AS builder
-ARG KANIDM_FEATURES
-ARG KANIDM_BUILD_PROFILE
-ARG KANIDM_BUILD_OPTIONS=""
+ARG NETIDM_FEATURES
+ARG NETIDM_BUILD_PROFILE
+ARG NETIDM_BUILD_OPTIONS=""
 
 # Set the build profile
-ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
+ENV NETIDM_BUILD_PROFILE=${NETIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
 
 RUN \
@@ -31,9 +31,9 @@ RUN \
         sqlite3-devel \
         rsync
 
-COPY . /usr/src/kanidm
+COPY . /usr/src/netidm
 
-WORKDIR /usr/src/kanidm/
+WORKDIR /usr/src/netidm/
 
 # build the CLI
 RUN \
@@ -43,27 +43,27 @@ RUN \
     export SCCACHE_DIR=/sccache; \
     export RUSTC_WRAPPER=/usr/bin/sccache; \
     export CC="/usr/bin/clang"; \
-    cargo auditable build --locked -p kanidm_tools ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kanidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+    cargo auditable build --locked -p netidm_tools ${NETIDM_BUILD_OPTIONS} \
+        --target-dir="/usr/src/netidm/target/" \
+        --features="${NETIDM_FEATURES}" \
         --release && \
-    cargo auditable build --locked -p kanidm-ipa-sync ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kanidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+    cargo auditable build --locked -p netidm-ipa-sync ${NETIDM_BUILD_OPTIONS} \
+        --target-dir="/usr/src/netidm/target/" \
+        --features="${NETIDM_FEATURES}" \
         --release && \
-    cargo auditable build --locked -p kanidm-ldap-sync ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kanidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+    cargo auditable build --locked -p netidm-ldap-sync ${NETIDM_BUILD_OPTIONS} \
+        --target-dir="/usr/src/netidm/target/" \
+        --features="${NETIDM_FEATURES}" \
         --release && \
-    cargo auditable build --locked -p kanidm-mail-sender ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kanidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+    cargo auditable build --locked -p netidm-mail-sender ${NETIDM_BUILD_OPTIONS} \
+        --target-dir="/usr/src/netidm/target/" \
+        --features="${NETIDM_FEATURES}" \
         --release && \
     cargo auditable install \
-        --git https://github.com/kanidm/webauthn-rs.git \
+        --git https://github.com/netidm/webauthn-rs.git \
         --rev 2ac5ff0e20f323cd904856a38a15899adf13fa5b \
         --force fido-mds-tool \
-        --target-dir="/usr/src/kanidm/target/" && \
+        --target-dir="/usr/src/netidm/target/" && \
     sccache -s
 
 # == Construct the tools container
@@ -77,16 +77,16 @@ RUN \
         timezone \
         openssl-3
 
-COPY --from=builder /usr/src/kanidm/target/release/kanidm /sbin/
-COPY --from=builder /usr/src/kanidm/target/release/kanidm-ipa-sync /sbin/
-COPY --from=builder /usr/src/kanidm/target/release/kanidm-ldap-sync /sbin/
-COPY --from=builder /usr/src/kanidm/target/release/fido-mds-tool /sbin/
-RUN chmod +x /sbin/kanidm
-RUN chmod +x /sbin/kanidm-ipa-sync
-RUN chmod +x /sbin/kanidm-ldap-sync
+COPY --from=builder /usr/src/netidm/target/release/netidm /sbin/
+COPY --from=builder /usr/src/netidm/target/release/netidm-ipa-sync /sbin/
+COPY --from=builder /usr/src/netidm/target/release/netidm-ldap-sync /sbin/
+COPY --from=builder /usr/src/netidm/target/release/fido-mds-tool /sbin/
+RUN chmod +x /sbin/netidm
+RUN chmod +x /sbin/netidm-ipa-sync
+RUN chmod +x /sbin/netidm-ldap-sync
 RUN chmod +x /sbin/fido-mds-tool
 
-RUN mkdir /etc/kanidm && \
-    touch /etc/kanidm/config
+RUN mkdir /etc/netidm && \
+    touch /etc/netidm/config
 
-CMD [ "/sbin/kanidm", "-h" ]
+CMD [ "/sbin/netidm", "-h" ]

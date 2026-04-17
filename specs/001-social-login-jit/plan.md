@@ -5,15 +5,15 @@
 
 ## Summary
 
-Add GitHub and Google as social login providers to Kanidm with Just-In-Time (JIT) account provisioning. When a user authenticates via a social provider for the first time, Kanidm automatically creates their account from the provider's identity claims, presents a confirmation page for username review, and then logs them in — all within a single flow. Returning users are recognised by a stable provider subject identifier and logged into their existing account.
+Add GitHub and Google as social login providers to Netidm with Just-In-Time (JIT) account provisioning. When a user authenticates via a social provider for the first time, Netidm automatically creates their account from the provider's identity claims, presents a confirmation page for username review, and then logs them in — all within a single flow. Returning users are recognised by a stable provider subject identifier and logged into their existing account.
 
 The existing `OAuth2ClientProvider` + `CredHandlerOAuth2Client` + `OAuth2AccountCredential` machinery handles the PKCE redirect flow; this feature extends it with claim extraction, a new `CredState::ProvisioningRequired` variant, a JIT provisioning write transaction, and two new UI routes.
 
 ## Technical Context
 
 **Language/Version**: Rust (stable, current toolchain — check `rust-toolchain.toml`)
-**Primary Dependencies**: Internal Kanidm crates; `reqwest` for userinfo HTTP calls; `jsonwebtoken`/existing JWT handling for Google `id_token` verification; `serde_json` for claim parsing
-**Storage**: Kanidm's internal B+ tree database (QueryServer) — no external DB. New DL15 schema migration adds 5 optional attributes.
+**Primary Dependencies**: Internal Netidm crates; `reqwest` for userinfo HTTP calls; `jsonwebtoken`/existing JWT handling for Google `id_token` verification; `serde_json` for claim parsing
+**Storage**: Netidm's internal B+ tree database (QueryServer) — no external DB. New DL15 schema migration adds 5 optional attributes.
 **Testing**: `cargo test` — all tests must pass on a clean checkout. Integration tests in `server/lib/src/` test module.
 **Target Platform**: Linux server (existing deployment target)
 **Project Type**: Server daemon / identity provider — extending existing auth flow
@@ -25,13 +25,13 @@ The existing `OAuth2ClientProvider` + `CredHandlerOAuth2Client` + `OAuth2Account
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-Evaluated against Kanidm developer principles (from `book/src/developers/readme.md` and `developer_ethics.md`):
+Evaluated against Netidm developer principles (from `book/src/developers/readme.md` and `developer_ethics.md`):
 
 | Gate | Status | Notes |
 |---|---|---|
 | `cargo test` passes on clean checkout | ✅ | New tests must be added; existing tests must not break |
 | Humans first — no burden on user to correct poor design | ✅ | Confirmation page + username suggestion handles collision gracefully |
-| User data self-control | ✅ | Provisioned account uses standard Kanidm account — user can change name/email/delete at any time |
+| User data self-control | ✅ | Provisioned account uses standard Netidm account — user can change name/email/delete at any time |
 | Data minimisation | ✅ | Only `sub`, `display_name`, `email` captured at creation. No ongoing sync. |
 | Correct & simple — no hidden external dependencies | ✅ | GitHub userinfo call is a single GET; provider is configured, not hardcoded |
 | Hierarchy of controls — security-sensitive path | ✅ | Invalid tokens → hard deny; `sub` re-link → hard deny; confirmation required before account creation |
@@ -82,7 +82,7 @@ server/core/src/
 
 tools/cli/src/
 └── opt/
-    └── kanidm.rs                             # Add 5 new Oauth2Opt variants + exec() implementations
+    └── netidm.rs                             # Add 5 new Oauth2Opt variants + exec() implementations
 ```
 
 **Structure Decision**: This is an extension to an existing Rust workspace. No new crates are created. All changes are additive (new fields on existing structs, new variants on existing enums, new functions in existing modules, new optional schema attributes).
@@ -117,13 +117,13 @@ Add to `OAuth2ClientProvider`:
 ```rust
 pub(crate) userinfo_endpoint: Option<Url>,
 pub(crate) jit_provisioning: bool,
-pub(crate) claim_map: HashMap<KanidmAttr, String>,
+pub(crate) claim_map: HashMap<NetidmAttr, String>,
 ```
 
 Update `reload_oauth2_client_providers()` to extract:
 - `userinfo_endpoint` via `get_ava_single_url(Attribute::OAuth2UserinfoEndpoint)` → `Option<Url>`
 - `jit_provisioning` via `get_ava_single_bool(Attribute::OAuth2JitProvisioning)` → `bool` (default false if absent)
-- `claim_map`: extract each of the 3 claim map attributes into a `HashMap<KanidmAttr, String>`
+- `claim_map`: extract each of the 3 claim map attributes into a `HashMap<NetidmAttr, String>`
 
 ---
 
@@ -137,7 +137,7 @@ Add to `CredHandlerOAuth2Client`:
 ```rust
 userinfo_endpoint: Option<Url>,
 jit_provisioning: bool,
-claim_map: HashMap<KanidmAttr, String>,
+claim_map: HashMap<NetidmAttr, String>,
 ```
 
 Modify `validate_access_token_response()` to:
@@ -233,7 +233,7 @@ Edge cases:
 
 ### Step 8 — CLI Commands
 
-**File**: `tools/cli/src/opt/kanidm.rs`
+**File**: `tools/cli/src/opt/netidm.rs`
 
 Add to `Oauth2Opt` enum:
 ```rust
@@ -251,7 +251,7 @@ EnableJitProvisioning { name: String },
 DisableJitProvisioning { name: String },
 SetIdentityClaimMap {
     name: String,
-    kanidm_attr: String,
+    netidm_attr: String,
     provider_claim: String,
 },
 ```
@@ -259,7 +259,7 @@ SetIdentityClaimMap {
 Implement `exec()` for each variant:
 - `CreateGithub`/`CreateGoogle`: call existing `oauth2_client_create()` API with pre-filled defaults, then set new JIT-specific attributes
 - `EnableJitProvisioning`/`DisableJitProvisioning`: single attribute write to `oauth2_jit_provisioning`
-- `SetIdentityClaimMap`: validate `kanidm_attr` ∈ {name, displayname, email}, write appropriate `oauth2_claim_map_*` attribute
+- `SetIdentityClaimMap`: validate `netidm_attr` ∈ {name, displayname, email}, write appropriate `oauth2_claim_map_*` attribute
 
 ---
 

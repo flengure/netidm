@@ -36,7 +36,7 @@ use self::profiles::{
     AccessControlSearchResolved, AccessControlTarget, AccessControlTargetCondition,
 };
 
-use kanidm_proto::scim_v1::server::ScimAttributeEffectiveAccess;
+use netidm_proto::scim_v1::server::ScimAttributeEffectiveAccess;
 
 use self::create::{apply_create_access, CreateResult};
 use self::delete::{apply_delete_access, DeleteResult};

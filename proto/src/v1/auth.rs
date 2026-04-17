@@ -7,7 +7,7 @@ use uuid::Uuid;
 use webauthn_rs_proto::PublicKeyCredential;
 use webauthn_rs_proto::RequestChallengeResponse;
 
-/// Authentication to Kanidm is a stepped process.
+/// Authentication to Netidm is a stepped process.
 ///
 /// The session is first initialised with the requested username.
 ///

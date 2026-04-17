@@ -7,9 +7,9 @@ affect OAuth things.
 
 ```shell
 OAUTH_HOSTNAME=test-oauth2.example.com \
-KANIDM_HOSTNAME=test-kanidm.example.com \
-KANIDM_CLIENT_SECRET=1234Hq5d1J5GG9VNae3bRMFGDVFR3bUyyXg3RPRSefJLNhee \
-KANIDM_PORT=443 \
+NETIDM_HOSTNAME=test-netidm.example.com \
+NETIDM_CLIENT_SECRET=1234Hq5d1J5GG9VNae3bRMFGDVFR3bUyyXg3RPRSefJLNhee \
+NETIDM_PORT=443 \
 make
 ```
 

@@ -17,9 +17,9 @@ will refer to the combination of both client and resource server as a service.
 It's important for you to know _how_ your service will interact with OAuth2. For example, does it rely on OpenID connect
 for identity information, or does it support RFC7662 token introspection?
 
-In general, Kanidm **requires** that your service supports three things:
+In general, Netidm **requires** that your service supports three things:
 
-- HTTP basic authentication to the authorisation server (Kanidm)
+- HTTP basic authentication to the authorisation server (Netidm)
 
 - PKCE `S256` code verification (`code_challenge_methods_supported`)
 
@@ -28,7 +28,7 @@ In general, Kanidm **requires** that your service supports three things:
 If your service doesn't support PKCE or only supports `RS256` token signatures, see
 [extended options for legacy clients](#extended-options-for-legacy-clients).
 
-Kanidm issues tokens which are [RFC 9068 JWTs](https://datatracker.ietf.org/doc/html/rfc9068), allowing service
+Netidm issues tokens which are [RFC 9068 JWTs](https://datatracker.ietf.org/doc/html/rfc9068), allowing service
 introspection.
 
 > [!NOTE]
@@ -36,9 +36,9 @@ introspection.
 > Previous versions of this document incorrectly described "clients" as "resource servers" due to clarity issues in the
 > OAuth2 RFC.
 
-## Kanidm's OAuth2 URLs
+## Netidm's OAuth2 URLs
 
-Kanidm will expose its OAuth2 APIs at the following URLs, substituting `:client_id:` with an OAuth2 client ID.
+Netidm will expose its OAuth2 APIs at the following URLs, substituting `:client_id:` with an OAuth2 client ID.
 
 <!-- markdownlint-disable MD033 -->
 
@@ -51,11 +51,11 @@ Kanidm will expose its OAuth2 APIs at the following URLs, substituting `:client_
 
 `https://idm.example.com/oauth2/openid/:client_id:/.well-known/openid-configuration`
 
-This document includes all the URLs and attributes an app needs to be able to authenticate using OIDC with Kanidm,
+This document includes all the URLs and attributes an app needs to be able to authenticate using OIDC with Netidm,
 _except_ for the `client_id` and `client_secret`.
 
 Use this document wherever possible, as it will allow you to easily build and/or configure an interoperable OIDC client
-without needing to code or configure anything special for Kanidm (or another provider).
+without needing to code or configure anything special for Netidm (or another provider).
 
 **Note:** some apps automatically append `/.well-known/openid-configuration` to the end of an OIDC Discovery URL, so you
 may need to omit that.
@@ -190,31 +190,31 @@ Token signing public key
 
 ## Configuration
 
-### Create the Kanidm Configuration
+### Create the Netidm Configuration
 
 By default, members of the `idm_admins` or `idm_oauth2_admins` groups are able to create or manage OAuth2 client
 integrations.
 
 You can create a new client by specifying its client name, application display name and the landing page (home page) of
-the client. The landing page is where users will be redirected to from the Kanidm application portal.
+the client. The landing page is where users will be redirected to from the Netidm application portal.
 
 ```bash
-kanidm system oauth2 create <name> <displayname> <landing page url>
-kanidm system oauth2 create nextcloud "Nextcloud Production" https://nextcloud.example.com
+netidm system oauth2 create <name> <displayname> <landing page url>
+netidm system oauth2 create nextcloud "Nextcloud Production" https://nextcloud.example.com
 ```
 
 You must now configure the redirect URL where the application expects OAuth2 requests to be sent.
 
 ```bash
-kanidm system oauth2 add-redirect-url <name> <redirect url>
-kanidm system oauth2 add-redirect-url nextcloud https://nextcloud.example.com/oauth2/handler
+netidm system oauth2 add-redirect-url <name> <redirect url>
+netidm system oauth2 add-redirect-url nextcloud https://nextcloud.example.com/oauth2/handler
 ```
 
 You can create a scope map with:
 
 ```bash
-kanidm system oauth2 update-scope-map <name> <kanidm_group_name> [scopes]...
-kanidm system oauth2 update-scope-map nextcloud nextcloud_users email profile openid
+netidm system oauth2 update-scope-map <name> <netidm_group_name> [scopes]...
+netidm system oauth2 update-scope-map nextcloud nextcloud_users email profile openid
 ```
 
 > [!TIP]
@@ -232,7 +232,7 @@ kanidm system oauth2 update-scope-map nextcloud nextcloud_users email profile op
 > - **groups_name** - groups (name only)
 > - **groups_spn** - groups (spn only)
 >
-> In addition Kanidm supports some vendor specific scopes that can include additional claims.
+> In addition Netidm supports some vendor specific scopes that can include additional claims.
 >
 > - **ssh_publickeys** - ssh_publickeys (an array of the user's keys)
 
@@ -244,20 +244,20 @@ kanidm system oauth2 update-scope-map nextcloud nextcloud_users email profile op
 > this, OpenID Connect clients **WILL NOT WORK**!
 >
 > ```bash
-> kanidm system oauth2 update-scope-map nextcloud nextcloud_users openid
+> netidm system oauth2 update-scope-map nextcloud nextcloud_users openid
 > ```
 
 You can create a supplemental scope map with:
 
 ```bash
-kanidm system oauth2 update-sup-scope-map <name> <kanidm_group_name> [scopes]...
-kanidm system oauth2 update-sup-scope-map nextcloud nextcloud_admins admin
+netidm system oauth2 update-sup-scope-map <name> <netidm_group_name> [scopes]...
+netidm system oauth2 update-sup-scope-map nextcloud nextcloud_admins admin
 ```
 
 Once created you can view the details of the client.
 
 ```bash
-kanidm system oauth2 get nextcloud
+netidm system oauth2 get nextcloud
 ---
 name: nextcloud
 class: oauth2_resource_server
@@ -272,14 +272,14 @@ oauth2_rs_token_key: hidden
 You can see the value of `oauth2_rs_basic_secret` with:
 
 ```bash
-kanidm system oauth2 show-basic-secret nextcloud
+netidm system oauth2 show-basic-secret nextcloud
 ---
 <secret>
 ```
 
 ### Configure the Client/Resource Server
 
-On your client, you should configure the client ID as the `name` from Kanidm, and the password to be the value shown in
+On your client, you should configure the client ID as the `name` from Netidm, and the password to be the value shown in
 `oauth2_rs_basic_secret`. Ensure that the code challenge/verification method is set to S256.
 
 You should now be able to test authorisation to the client.
@@ -287,14 +287,14 @@ You should now be able to test authorisation to the client.
 ## Scope Relationships
 
 For an authorisation to proceed, the client will request a list of scopes. For example, when a user wishes to login to
-the admin panel of the resource server, it may request the "admin" scope from Kanidm for authorisation. But when a user
-wants to login, it may only request "access" as a scope from Kanidm.
+the admin panel of the resource server, it may request the "admin" scope from Netidm for authorisation. But when a user
+wants to login, it may only request "access" as a scope from Netidm.
 
-As each service may have its own scopes and understanding of these, Kanidm isolates scopes to each service connected to
-Kanidm. Kanidm has two methods of granting scopes to accounts (users).
+As each service may have its own scopes and understanding of these, Netidm isolates scopes to each service connected to
+Netidm. Netidm has two methods of granting scopes to accounts (users).
 
-The first is scope mappings. These provide a set of scopes if a user is a member of a specific group within Kanidm. This
-allows you to create a relationship between the scopes of a service, and the groups/roles in Kanidm which can be
+The first is scope mappings. These provide a set of scopes if a user is a member of a specific group within Netidm. This
+allows you to create a relationship between the scopes of a service, and the groups/roles in Netidm which can be
 specific to that service.
 
 For an authorisation to proceed, all scopes requested by the client must be available in the final scope set that is
@@ -302,17 +302,17 @@ granted to the account.
 
 The second part is supplemental scope mappings. These function the same as scope maps where membership of a group
 provides a set of scopes to the account. However these scopes are NOT consulted during authorisation decisions made by
-Kanidm. These scopes exist to allow optional properties to be provided (such as personal information about a subset of
+Netidm. These scopes exist to allow optional properties to be provided (such as personal information about a subset of
 accounts to be revealed) or so that the service may make its own authorisation decisions based on the provided scopes.
 
 This use of scopes is the primary means to control who can access what resources. These access decisions can take place
-either on Kanidm or the service.
+either on Netidm or the service.
 
 For example, if you have a client that always requests a scope of "read", then users with scope maps that supply the
-read scope will be allowed by Kanidm to proceed to the service. Kanidm can then provide the supplementary scopes into
+read scope will be allowed by Netidm to proceed to the service. Netidm can then provide the supplementary scopes into
 provided tokens, so that the service can use these to choose if it wishes to display UI elements. If a user has a
 supplemental "admin" scope, then that user may be able to access an administration panel of the service. In this way
-Kanidm is still providing the authorisation information, but the control is then exercised by the service.
+Netidm is still providing the authorisation information, but the control is then exercised by the service.
 
 ## Public Client Configuration
 
@@ -326,8 +326,8 @@ disabled for public clients for this reason.
 To create an OAuth2 public client:
 
 ```bash
-kanidm system oauth2 create-public <name> <displayname> <origin>
-kanidm system oauth2 create-public mywebapp "My Web App" https://webapp.example.com
+netidm system oauth2 create-public <name> <displayname> <origin>
+netidm system oauth2 create-public mywebapp "My Web App" https://webapp.example.com
 ```
 
 ## Native Applications
@@ -339,14 +339,14 @@ the rules for this.
 First allow localhost redirects:
 
 ```bash
-kanidm system oauth2 enable-localhost-redirects <name>
-kanidm system oauth2 disable-localhost-redirects <name>
-kanidm system oauth2 enable-localhost-redirects mywebapp
+netidm system oauth2 enable-localhost-redirects <name>
+netidm system oauth2 disable-localhost-redirects <name>
+netidm system oauth2 enable-localhost-redirects mywebapp
 ```
 
 > [!WARNING]
 >
-> Kanidm only allows these to be enabled on public clients where PKCE is enforced.
+> Netidm only allows these to be enabled on public clients where PKCE is enforced.
 
 ## Alternate Redirect URLs
 
@@ -354,13 +354,13 @@ Some services may have a website URL as well as native applications with opaque 
 require alternate redirection URLs to be configured so that after an OAuth2 exchange, the system can redirect to the
 native application.
 
-To support this Kanidm allows supplemental opaque origins to be configured on clients.
+To support this Netidm allows supplemental opaque origins to be configured on clients.
 
 ```bash
-kanidm system oauth2 add-redirect-url <name> <url>
-kanidm system oauth2 remove-redirect-url <name> <url>
+netidm system oauth2 add-redirect-url <name> <url>
+netidm system oauth2 remove-redirect-url <name> <url>
 
-kanidm system oauth2 add-redirect-url nextcloud app://ios-nextcloud
+netidm system oauth2 add-redirect-url nextcloud app://ios-nextcloud
 ```
 
 Supplemental URLs are shown in the OAuth2 client configuration in the `oauth2_rs_origin` attribute.
@@ -371,22 +371,22 @@ Supplemental URLs are shown in the OAuth2 client configuration in the `oauth2_rs
 >
 > You **MUST NOT** share a single OAuth2 client definition between multiple applications.
 >
-> The ability to configure multiple redirect URLs is **NOT** intended to allow you to share a single Kanidm client
+> The ability to configure multiple redirect URLs is **NOT** intended to allow you to share a single Netidm client
 > definition between multiple OAuth2 clients.
 >
 > Sharing OAuth2 client configurations between applications **FUNDAMENTALLY BREAKS** the OAuth2 security model and is
-> **NOT SUPPORTED** as a configuration. The Kanidm Project **WILL NOT** support you if you attempt this.
+> **NOT SUPPORTED** as a configuration. The Netidm Project **WILL NOT** support you if you attempt this.
 >
 > Multiple origins are **ONLY** to allow supplemental redirects within the _same_ client application.
 
 ## Short names
 
-By default Kanidm will use SPN as a display username for users. In some cases you may want to use the user's `name`
+By default Netidm will use SPN as a display username for users. In some cases you may want to use the user's `name`
 instead. To change this setting:
 
 ```
-kanidm system oauth2 prefer-short-username <client name>
-kanidm system oauth2 prefer-spn-username <client name>
+netidm system oauth2 prefer-short-username <client name>
+netidm system oauth2 prefer-spn-username <client name>
 ```
 
 ## Extended Options for Legacy Clients
@@ -403,16 +403,16 @@ a per-client basis. Disabling these on one client will not affect others. These 
 To disable PKCE for a confidential client:
 
 ```bash
-kanidm system oauth2 warning-insecure-client-disable-pkce <client name>
+netidm system oauth2 warning-insecure-client-disable-pkce <client name>
 ```
 
 To use the legacy RSA PKCS1-5 SHA256 cryptographic algorithm (`id_token_signing_alg_values_supported` = `RS256`):
 
 ```bash
-kanidm system oauth2 warning-enable-legacy-crypto <client name>
+netidm system oauth2 warning-enable-legacy-crypto <client name>
 ```
 
-In this mode, Kanidm will not offer `ES256` support for the client at all.
+In this mode, Netidm will not offer `ES256` support for the client at all.
 
 ## Resetting Client Security Material
 
@@ -420,7 +420,7 @@ In the case of disclosure of the basic secret or some other security event where
 active sessions/tokens. You can reset the secret material of the server with:
 
 ```bash
-kanidm system oauth2 reset-secrets
+netidm system oauth2 reset-secrets
 ```
 
 Each client has unique signing keys and access secrets, so this is limited to each service.
@@ -434,19 +434,19 @@ It can be used by a WebFinger client to [discover the OIDC Issuer URL][webfinger
 hostname alone, and seems to be intended to support dynamic client registration flows for large public identity
 providers.
 
-Kanidm v1.5.1 and later can respond to WebFinger requests, using a user's SPN as part of [an `acct` URI][rfc7565] (eg:
+Netidm v1.5.1 and later can respond to WebFinger requests, using a user's SPN as part of [an `acct` URI][rfc7565] (eg:
 `acct:user@idm.example.com`). While SPNs and `acct` URIs look like email addresses, [as per RFC 7565][rfc7565s4], there
 is no guarantee that it is valid for any particular application protocol, unless an administrator explicitly provides
 for it.
 
-When setting up an application to authenticate with Kanidm, WebFinger **does not add any security** over configuring an
+When setting up an application to authenticate with Netidm, WebFinger **does not add any security** over configuring an
 OIDC Discovery URL directly. In an OIDC context, the specification makes a number of flawed assumptions which make it
-difficult to use with Kanidm:
+difficult to use with Netidm:
 
 - WebFinger assumes that an identity provider will use the same Issuer URL and OIDC Discovery document (which contains
   endpoint URLs and token signing keys) for _all_ OAuth 2.0/OIDC clients.
 
-  Kanidm uses _client-specific_ Issuer URLs, endpoint URLs and token signing keys. This ensures that tokens can only be
+  Netidm uses _client-specific_ Issuer URLs, endpoint URLs and token signing keys. This ensures that tokens can only be
   used with their intended service.
 
 - WebFinger endpoints must be served at the _root_ of the domain of a user's SPN (ie: information about the user with
@@ -456,10 +456,10 @@ difficult to use with Kanidm:
   Unlike OIDC Discovery, WebFinger clients do not report their OAuth 2.0/OIDC client ID in the request, so there is no
   way to tell them apart.
 
-  As a result, Kanidm _does not_ provide a WebFinger endpoint at its root URL, because it could report an incorrect
+  As a result, Netidm _does not_ provide a WebFinger endpoint at its root URL, because it could report an incorrect
   Issuer URL and lead the client to an incorrect OIDC Discovery document.
 
-  You will need a load balancer in front of Kanidm's HTTPS server to send a HTTP 307 redirect to the appropriate
+  You will need a load balancer in front of Netidm's HTTPS server to send a HTTP 307 redirect to the appropriate
   `/oauth2/openid/:client_id:/.well-known/webfinger` URL, _while preserving all query parameters_. For example, with
   Caddy:
 
@@ -474,15 +474,15 @@ difficult to use with Kanidm:
   If you have _multiple_ WebFinger clients, it will need to map some other property of the request (such as a source IP
   address or `User-Agent` header) to a client ID, and redirect to the appropriate WebFinger URL for that client.
 
-- Kanidm responds to _all_ WebFinger queries with [an Identity Provider Discovery for OIDC URL][webfinger-oidc],
+- Netidm responds to _all_ WebFinger queries with [an Identity Provider Discovery for OIDC URL][webfinger-oidc],
   **ignoring** [`rel` parameter(s)][webfinger-rel].
 
-  If you want to use WebFinger in any _other_ context on Kanidm's hostname, you'll need a load balancer in front of
-  Kanidm which matches on some property of the request.
+  If you want to use WebFinger in any _other_ context on Netidm's hostname, you'll need a load balancer in front of
+  Netidm which matches on some property of the request.
 
-  WebFinger clients _may_ omit the `rel=` parameter, so if you host another service with relations for a Kanidm
+  WebFinger clients _may_ omit the `rel=` parameter, so if you host another service with relations for a Netidm
   [`acct:` entity][rfc7565s4] and a client _does not_ supply the `rel=` parameter, your load balancer will need to merge
-  JSON responses from Kanidm and the other service(s).
+  JSON responses from Netidm and the other service(s).
 
 Because of these issues, we recommend that applications support _directly_ configuring OIDC using a Discovery URL or
 OAuth 2.0 Authorisation Server Metadata URL instead of WebFinger.
@@ -498,14 +498,14 @@ WebFinger document for that client instead.
 
 ## Disabling the consent prompt in enterprise environments
 
-By default Kanidm will present the user with a consent prompt when they first authorize an app or when the requested
+By default Netidm will present the user with a consent prompt when they first authorize an app or when the requested
 scopes change - this is a requried part of the OIDC spec ([Section 3.1.2.4][oidc-consent]).
 
 In some cases, such as an enterprise deployment, this consent can be gathered by other means (eg. employee contract) and
 the interactive prompt is not necessary. To disable it:
 
 ```bash
-kanidm system oauth2 disable-consent-prompt <name>
+netidm system oauth2 disable-consent-prompt <name>
 ```
 
 It should **not** be disabled if consent isn't granted non-interactively.

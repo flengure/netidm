@@ -3,7 +3,7 @@ use crate::schema::SchemaAttribute;
 use crate::valueset::{
     DbValueSetV2, ScimResolveStatus, ValueSet, ValueSetResolveStatus, ValueSetScimPut,
 };
-use kanidm_proto::scim_v1::{client::ScimDateTime, JsonValue};
+use netidm_proto::scim_v1::{client::ScimDateTime, JsonValue};
 use smolset::SmolSet;
 use time::OffsetDateTime;
 

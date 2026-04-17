@@ -11,20 +11,20 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use kanidm_client::{ClientError, KanidmClient, KanidmClientBuilder};
+use netidm_client::{ClientError, NetidmClient, NetidmClientBuilder};
 use tracing::error;
 
 include!("opt/ssh_authorizedkeys.rs");
 
 #[cfg(not(test))]
-fn k_client_builder() -> Result<KanidmClientBuilder, ()> {
-    use kanidm_proto::constants::{DEFAULT_CLIENT_CONFIG_PATH, DEFAULT_CLIENT_CONFIG_PATH_HOME};
+fn k_client_builder() -> Result<NetidmClientBuilder, ()> {
+    use netidm_proto::constants::{DEFAULT_CLIENT_CONFIG_PATH, DEFAULT_CLIENT_CONFIG_PATH_HOME};
     use tracing::debug;
 
     let config_path: String = shellexpand::tilde(DEFAULT_CLIENT_CONFIG_PATH_HOME).into_owned();
 
     debug!("Attempting to use config {}", DEFAULT_CLIENT_CONFIG_PATH);
-    KanidmClientBuilder::new()
+    NetidmClientBuilder::new()
         .read_options_from_optional_config(DEFAULT_CLIENT_CONFIG_PATH)
         .and_then(|cb| {
             debug!("Attempting to use config {}", config_path);
@@ -36,13 +36,13 @@ fn k_client_builder() -> Result<KanidmClientBuilder, ()> {
 }
 
 #[cfg(test)]
-fn k_client_builder() -> Result<KanidmClientBuilder, ()> {
-    Ok(KanidmClientBuilder::new())
+fn k_client_builder() -> Result<NetidmClientBuilder, ()> {
+    Ok(NetidmClientBuilder::new())
 }
 
-pub(crate) fn build_configured_client(opt: &SshAuthorizedOpt) -> Result<KanidmClient, ()> {
+pub(crate) fn build_configured_client(opt: &SshAuthorizedOpt) -> Result<NetidmClient, ()> {
     if opt.debug {
-        ::std::env::set_var("RUST_LOG", "kanidm=debug,kanidm_client=debug");
+        ::std::env::set_var("RUST_LOG", "netidm=debug,netidm_client=debug");
     }
     #[cfg(not(test))]
     tracing_subscriber::fmt::init();
@@ -73,7 +73,7 @@ pub(crate) fn build_configured_client(opt: &SshAuthorizedOpt) -> Result<KanidmCl
 
 // For now we lift a few things from the main.rs to use.
 //
-// usage: AuthorizedKeysCommand /usr/sbin/kanidm_ssh_authorizedkeys %u -H URL -D anonymous -C /etc/kanidm/ca.pem
+// usage: AuthorizedKeysCommand /usr/sbin/netidm_ssh_authorizedkeys %u -H URL -D anonymous -C /etc/netidm/ca.pem
 //
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), ()> {
@@ -94,7 +94,7 @@ async fn main() -> Result<(), ()> {
     if r.is_err() {
         match r {
             Err(ClientError::Transport(value)) => {
-                error!("Failed to connect to Kanidm server: {}", value.to_string());
+                error!("Failed to connect to Netidm server: {}", value.to_string());
             }
             _ => error!("Error during authentication phase: {:?}", r),
         }
@@ -139,7 +139,7 @@ mod tests {
         let opt = SshAuthorizedOpt {
             debug: false,
             addr: None,
-            ca_path: Some(PathBuf::from("/etc/kanidm/ca.pem")),
+            ca_path: Some(PathBuf::from("/etc/netidm/ca.pem")),
             username: "anonymous".to_string(),
             account_id: "anonymous".to_string(),
         };

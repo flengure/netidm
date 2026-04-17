@@ -76,7 +76,7 @@ Body:
 1. Read and verify `COOKIE_OAUTH2_PROVISION_REQ`. If invalid → redirect to `/ui/login` with error.
 2. Validate the submitted `username`:
    - Non-empty
-   - Valid Kanidm iname format (lowercase alphanumeric + hyphens, 2–64 chars)
+   - Valid Netidm iname format (lowercase alphanumeric + hyphens, 2–64 chars)
    - Not already taken (check via account lookup)
 3. If username taken → re-render confirmation page with error: "That username is already taken. Please choose another."
 4. Call `jit_provision_oauth2_account(provider_uuid, claims, username)`.

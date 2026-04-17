@@ -1,4 +1,4 @@
-use kanidm_unix_resolver::{check_nsswitch_has_kanidm, parse_nsswitch_contents_return_missing};
+use netidm_unix_resolver::{check_nsswitch_has_netidm, parse_nsswitch_contents_return_missing};
 
 #[test]
 fn parse_nsswitch_contents() {
@@ -13,10 +13,10 @@ fn parse_nsswitch_contents() {
 
     let contents = r#"
     # this is a comment
-        passwd: files kanidm
-        group: files kanidm
+        passwd: files netidm
+        group: files netidm
     "#;
     let tempfile = tempfile::NamedTempFile::new().expect("failed to create temp file");
     std::fs::write(tempfile.path(), contents).expect("failed to write to temp file");
-    assert!(check_nsswitch_has_kanidm(Some(tempfile.path().into())));
+    assert!(check_nsswitch_has_netidm(Some(tempfile.path().into())));
 }

@@ -10,7 +10,7 @@ SCCACHE_SERVER_UDS="/tmp/sccache.sock" sccache --start-server
 # to set up sccache etc
 if [ "$(grep -c "devcontainer_poststart" ~/.bashrc)" -eq 0 ]; then
     echo "adding devcontainer_poststart to bashrc"
-    echo "source /workspaces/kanidm/scripts/devcontainer_poststart.sh" >> ~/.bashrc
+    echo "source /workspaces/netidm/scripts/devcontainer_poststart.sh" >> ~/.bashrc
 fi
 export RUSTC_WRAPPER="sccache"
 export CC="sccache /usr/bin/clang"

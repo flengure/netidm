@@ -1,6 +1,6 @@
 # Supported Features
 
-This is a list of supported features and standards within Kanidm.
+This is a list of supported features and standards within Netidm.
 
 # Authorisation
 

@@ -8,7 +8,7 @@ To renew this run the command:
 
 ```bash
 docker exec -i -t <container name> \
-  kanidmd renew-replication-certificate
+  netidmd renew-replication-certificate
 # certificate: "MII....."
 ```
 
@@ -27,5 +27,5 @@ You can manually perform this on the affected node.
 
 ```bash
 docker exec -i -t <container name> \
-  kanidmd refresh-replication-consumer
+  netidmd refresh-replication-consumer
 ```

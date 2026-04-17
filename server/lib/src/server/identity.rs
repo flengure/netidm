@@ -6,7 +6,7 @@
 use crate::be::Limits;
 use crate::prelude::*;
 use crate::value::Session;
-use kanidm_proto::internal::{ApiTokenPurpose, UatPurpose};
+use netidm_proto::internal::{ApiTokenPurpose, UatPurpose};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::hash::Hash;

@@ -1,6 +1,6 @@
 # Access Profiles Rework 2022
 
-Access controls are critical for a project like Kanidm to determine who can access what on other entries. Our access
+Access controls are critical for a project like Netidm to determine who can access what on other entries. Our access
 controls have to be dynamic and flexible as administrators will want to define their own access controls. In almost
 every call in the server, they are consulted to determine if the action can be carried out. We also supply default
 access controls so that out of the box we are a complete and useful IDM.
@@ -51,7 +51,7 @@ targeted.
 
 A risk of filter based groups is "infinite churn" because of recursion. This can occur if you had a rule such a "and not
 memberof = self" on a dynamic group. Because of this, filters on dynamic groups may not use "memberof" unless they are
-internally provided by the kanidm project so that we can vet these rules as correct and without creating infinite
+internally provided by the netidm project so that we can vet these rules as correct and without creating infinite
 recursion scenarios.
 
 ### Access rules extracted to ACI entries on targets
@@ -88,7 +88,7 @@ Satisfied by:
 
 #### System Admin
 
-This role, also called "admins" is responsible to manage Kanidm as a service. It does NOT manage users or accounts.
+This role, also called "admins" is responsible to manage Netidm as a service. It does NOT manage users or accounts.
 
 The "admins" role is responsible to manage:
 

@@ -3,7 +3,7 @@ use crate::run::{EventDetail, EventRecord};
 use crate::state::*;
 use std::time::{Duration, Instant};
 
-use kanidm_client::{ClientError, KanidmClient};
+use netidm_client::{ClientError, NetidmClient};
 
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -72,13 +72,13 @@ impl ActorRole {
 pub trait ActorModel {
     async fn transition(
         &mut self,
-        client: &KanidmClient,
+        client: &NetidmClient,
         person: &Person,
     ) -> Result<Vec<EventRecord>, Error>;
 }
 
 pub async fn login(
-    client: &KanidmClient,
+    client: &NetidmClient,
     person: &Person,
 ) -> Result<(TransitionResult, Vec<EventRecord>), Error> {
     // Should we measure the time of each call rather than the time with multiple calls?
@@ -101,7 +101,7 @@ pub async fn login(
 }
 
 pub async fn person_set_self_mail(
-    client: &KanidmClient,
+    client: &NetidmClient,
     person: &Person,
     values: &[&str],
 ) -> Result<(TransitionResult, Vec<EventRecord>), Error> {
@@ -125,7 +125,7 @@ pub async fn person_set_self_mail(
 }
 
 pub async fn person_create_group(
-    client: &KanidmClient,
+    client: &NetidmClient,
     group_name: &str,
 ) -> Result<(TransitionResult, Vec<EventRecord>), Error> {
     let start = Instant::now();
@@ -143,7 +143,7 @@ pub async fn person_create_group(
 }
 
 pub async fn person_add_group_members(
-    client: &KanidmClient,
+    client: &NetidmClient,
     group_name: &str,
     group_members: &[&str],
 ) -> Result<(TransitionResult, Vec<EventRecord>), Error> {
@@ -164,7 +164,7 @@ pub async fn person_add_group_members(
 }
 
 pub async fn person_set_self_password(
-    client: &KanidmClient,
+    client: &NetidmClient,
     person: &Person,
     pw: &str,
 ) -> Result<(TransitionResult, Vec<EventRecord>), Error> {
@@ -188,7 +188,7 @@ pub async fn person_set_self_password(
 }
 
 pub async fn privilege_reauth(
-    client: &KanidmClient,
+    client: &NetidmClient,
     person: &Person,
 ) -> Result<(TransitionResult, Vec<EventRecord>), Error> {
     let start = Instant::now();
@@ -209,7 +209,7 @@ pub async fn privilege_reauth(
 }
 
 pub async fn logout(
-    client: &KanidmClient,
+    client: &NetidmClient,
     _person: &Person,
 ) -> Result<(TransitionResult, Vec<EventRecord>), Error> {
     let start = Instant::now();
@@ -225,7 +225,7 @@ pub async fn logout(
 }
 
 pub async fn person_get_self_account(
-    client: &KanidmClient,
+    client: &NetidmClient,
     person: &Person,
 ) -> Result<(TransitionResult, Vec<EventRecord>), Error> {
     let start = Instant::now();
@@ -240,7 +240,7 @@ pub async fn person_get_self_account(
 }
 
 pub async fn person_get_self_memberof(
-    client: &KanidmClient,
+    client: &NetidmClient,
     person: &Person,
 ) -> Result<(TransitionResult, Vec<EventRecord>), Error> {
     let start = Instant::now();

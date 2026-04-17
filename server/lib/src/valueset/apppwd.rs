@@ -5,7 +5,7 @@ use crate::schema::SchemaAttribute;
 use crate::valueset::ScimResolveStatus;
 use std::collections::BTreeMap;
 
-use kanidm_proto::scim_v1::server::ScimApplicationPasswordReference;
+use netidm_proto::scim_v1::server::ScimApplicationPasswordReference;
 
 #[derive(Debug, Clone)]
 pub struct ValueSetApplicationPassword {
@@ -185,7 +185,7 @@ impl ValueSetT for ValueSetApplicationPassword {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.map
                 .values()
                 .flatten()
@@ -253,7 +253,7 @@ mod tests {
     use crate::credential::{apppwd::ApplicationPassword, Password};
     use crate::prelude::*;
     use crate::valueset::ValueSetApplicationPassword;
-    use kanidm_lib_crypto::CryptoPolicy;
+    use netidm_lib_crypto::CryptoPolicy;
 
     // Test the remove operation, removing all application passwords for an
     // application should also remove the KV pair.

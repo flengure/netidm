@@ -3,19 +3,19 @@ use std::collections::BTreeMap;
 use std::str::FromStr;
 
 use compact_jwt::{JwkKeySet, JwsEs256Verifier, JwsVerifier, OidcToken, OidcUnverified};
-use kanidm_client::KanidmClient;
+use netidm_client::NetidmClient;
 
-use kanidm_proto::constants::uri::{OAUTH2_AUTHORISE, OAUTH2_AUTHORISE_PERMIT};
+use netidm_proto::constants::uri::{OAUTH2_AUTHORISE, OAUTH2_AUTHORISE_PERMIT};
 
-use kanidm_proto::internal::Oauth2ClaimMapJoin;
-use kanidm_proto::oauth2::{
+use netidm_proto::internal::Oauth2ClaimMapJoin;
+use netidm_proto::oauth2::{
     AccessTokenRequest, AccessTokenResponse, AuthorisationResponse, GrantTypeReq,
 };
 
-use kanidmd_lib::constants::NAME_IDM_ALL_ACCOUNTS;
-use kanidmd_lib::prelude::uri::{OAUTH2_AUTHORISE_DEVICE, OAUTH2_TOKEN_ENDPOINT};
-use kanidmd_lib::prelude::{Attribute, OAUTH2_SCOPE_EMAIL, OAUTH2_SCOPE_OPENID, OAUTH2_SCOPE_READ};
-use kanidmd_testkit::{
+use netidmd_lib::constants::NAME_IDM_ALL_ACCOUNTS;
+use netidmd_lib::prelude::uri::{OAUTH2_AUTHORISE_DEVICE, OAUTH2_TOKEN_ENDPOINT};
+use netidmd_lib::prelude::{Attribute, OAUTH2_SCOPE_EMAIL, OAUTH2_SCOPE_OPENID, OAUTH2_SCOPE_READ};
+use netidmd_testkit::{
     assert_no_cache, ADMIN_TEST_PASSWORD, ADMIN_TEST_USER, IDM_ADMIN_TEST_PASSWORD,
     IDM_ADMIN_TEST_USER, NOT_ADMIN_TEST_EMAIL, NOT_ADMIN_TEST_PASSWORD, NOT_ADMIN_TEST_USERNAME,
     TEST_INTEGRATION_RS_DISPLAY, TEST_INTEGRATION_RS_GROUP_ALL, TEST_INTEGRATION_RS_ID,
@@ -36,7 +36,7 @@ use url::Url;
 async fn http_client(
     request: HttpRequest,
 ) -> Result<HttpResponse, oauth2_ext::reqwest::Error<reqwest::Error>> {
-    // let ca_contents = std::fs::read("/tmp/kanidm/ca.pem")
+    // let ca_contents = std::fs::read("/tmp/netidm/ca.pem")
     //     .map_err(|err| oauth2::reqwest::Error::Other(err.to_string()))?;
 
     let client = Client::builder()
@@ -102,8 +102,8 @@ async fn http_client(
 }
 
 #[cfg(feature = "dev-oauth2-device-flow")]
-#[kanidmd_testkit::test]
-async fn oauth2_device_flow(rsclient: KanidmClient) {
+#[netidmd_testkit::test]
+async fn oauth2_device_flow(rsclient: NetidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -256,7 +256,7 @@ async fn oauth2_device_flow(rsclient: KanidmClient) {
 
     // first we need to get the device code.
 
-    // kanidm system oauth2 create-public device_flow device_flow 'https://deviceauth'
+    // netidm system oauth2 create-public device_flow device_flow 'https://deviceauth'
     let client = BasicClient::new(
         ClientId::new(TEST_INTEGRATION_RS_ID.to_string()),
         None,

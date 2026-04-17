@@ -7,7 +7,7 @@ use crate::prelude::*;
 use crate::value::{IndexType, Value};
 use hashbrown::HashMap;
 use idlset::v2::IDLBitRange;
-use kanidm_proto::internal::{ConsistencyError, OperationError};
+use netidm_proto::internal::{ConsistencyError, OperationError};
 use rusqlite::vtab::array::Array;
 use rusqlite::{Connection, OpenFlags, OptionalExtension};
 use std::collections::{BTreeMap, BTreeSet, VecDeque};

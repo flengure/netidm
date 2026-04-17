@@ -53,13 +53,13 @@ Certain information should not be displayed in the UI without reauthentication:
 
 ### SSH public keys
 
-Ssh public key entries in Kanidm consist of a:
+Ssh public key entries in Netidm consist of a:
 
-- label : practically the ID of the key in kanidm
+- label : practically the ID of the key in netidm
 - value : the public key
 
 A user may want to change their laptop ssh key by updating the value while keeping the label the same. // TODO: Should a
-user be allowed to relabel their kanidm ssh keys ?
+user be allowed to relabel their netidm ssh keys ?
 
 #### Displaying ssh keys
 
@@ -141,7 +141,7 @@ struct SshKeysPartialView {
 fn view_ssh_keys(...) {
     // ...
 
-    let ssh_keys_swapped_trigger = HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::ProfileSshKeysSwapped)]);
+    let ssh_keys_swapped_trigger = HxResponseTrigger::after_swap([HxEvent::from(NetidmHxEventName::ProfileSshKeysSwapped)]);
     Ok((
         ssh_keys_swapped_trigger,
         HxPushUrl("/ui/profile/ssh_keys".to_string()),

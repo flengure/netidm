@@ -4,7 +4,7 @@
 
 ## Summary
 
-Add a `server/wg/` Rust crate to kanidm that manages live WireGuard interfaces using the DL16 `WgTunnel`/`WgPeer` schema as its data store. At startup the daemon probes `/sys/module/wireguard`; if present it uses wireguard-control with the kernel backend, otherwise it embeds a boringtun userspace device. A new DL17 migration adds `WgToken` (registration token entry class) and `WgLastSeen` attribute. HTTP handlers in `server/core` expose tunnel/peer/token CRUD and a public `POST /v1/wg/connect` client endpoint. The Go wgdb (`~/wgdb/go/`) is the behavioral reference.
+Add a `server/wg/` Rust crate to netidm that manages live WireGuard interfaces using the DL16 `WgTunnel`/`WgPeer` schema as its data store. At startup the daemon probes `/sys/module/wireguard`; if present it uses wireguard-control with the kernel backend, otherwise it embeds a boringtun userspace device. A new DL17 migration adds `WgToken` (registration token entry class) and `WgLastSeen` attribute. HTTP handlers in `server/core` expose tunnel/peer/token CRUD and a public `POST /v1/wg/connect` client endpoint. The Go wgdb (`~/wgdb/go/`) is the behavioral reference.
 
 ## Technical Context
 
@@ -17,7 +17,7 @@ Add a `server/wg/` Rust crate to kanidm that manages live WireGuard interfaces u
 - `ipnet` — CIDR parsing and slot-based IP allocation
 - `utoipa` (workspace) — OpenAPI annotations on handlers and types
 
-**Storage**: Kanidm entry database (kanidmd_lib QueryServer)  
+**Storage**: Netidm entry database (netidmd_lib QueryServer)  
 **Testing**: `cargo test` — unit tests for IP allocator and token validation; integration tests require `CAP_NET_ADMIN` and are gated behind a feature flag  
 **Target Platform**: Linux (kernel WireGuard or boringtun userspace). macOS/Windows out of scope for this iteration.  
 **Performance Goals**: Tunnel bring-up < 5s; peer registration < 3s; handshake poll cycle ≤ 30s  
@@ -88,7 +88,7 @@ server/core/src/
 
 tools/cli/src/
 ├── cli/wg.rs                       ← CLI command dispatch for wg subcommands
-└── opt/kanidm.rs                   ← WgOpt enum: tunnel/peer/token subcommands
+└── opt/netidm.rs                   ← WgOpt enum: tunnel/peer/token subcommands
 
 proto/src/
 └── wg.rs                           ← WgTunnelCreate, WgConnectRequest, WgConnectResponse,
@@ -159,13 +159,13 @@ New class: `WgToken`
 
 `WgLastSeen` added to `WgPeer.systemmay`.
 
-## Background Tasks (kanidmd startup)
+## Background Tasks (netidmd startup)
 
 Two tokio tasks spawned after tunnel bring-up:
 
 1. **`wg_handshake_poller`** — every 30s: calls `backend.peer_handshakes(name)` for each live tunnel, writes `WgLastSeen` to each WgPeer entry via actor write path.
 
-2. **`wg_peer_watch`** — every 30s: queries Kanidm for WgPeer entries referencing each tunnel, diffs against the set known to the live interface, calls `backend.remove_peer()` for any that have been deleted.
+2. **`wg_peer_watch`** — every 30s: queries Netidm for WgPeer entries referencing each tunnel, diffs against the set known to the live interface, calls `backend.remove_peer()` for any that have been deleted.
 
 ## IP Allocation (server/wg/src/alloc.rs)
 
@@ -181,7 +181,7 @@ Slot-based allocation matching wgdb Go reference:
 2. Check: not expired, `WgTokenUsesLeft` > 0 (or absent), `WgTokenPrincipalRef` matches caller (or absent)
 3. Check: provided pubkey not already registered on this tunnel (unique constraint on `WgPubkey`)
 4. Allocate IPs via `IpAllocator`
-5. Create `WgPeer` entry in Kanidm (Name, WgPubkey, WgAllowedIps, WgTunnelRef, WgUserRef)
+5. Create `WgPeer` entry in Netidm (Name, WgPubkey, WgAllowedIps, WgTunnelRef, WgUserRef)
 6. Decrement `WgTokenUsesLeft`; if reaches 0, delete `WgToken` entry
 7. Hot-add peer to live interface via `backend.add_peer()`
 8. Return `WgConnectResponse` with serialised wg-quick config string
@@ -194,4 +194,4 @@ No constitution violations.
 
 - **Webhook?** No — `POST /v1/wg/connect` is a synchronous REST endpoint, not a callback.
 - **OpenAPI?** Use existing `utoipa` + `utoipa-swagger-ui` setup; register in `apidocs/mod.rs`.
-- **Token scope**: `WgToken` is always user-scoped — creating a peer requires a Kanidm authenticated session OR the token must carry `WgTokenPrincipalRef`. The `/v1/wg/connect` endpoint requires an authenticated Kanidm session (bearer token) in addition to the WG token secret, so the resulting `WgPeer.WgUserRef` is always set.
+- **Token scope**: `WgToken` is always user-scoped — creating a peer requires a Netidm authenticated session OR the token must carry `WgTokenPrincipalRef`. The `/v1/wg/connect` endpoint requires an authenticated Netidm session (bearer token) in addition to the WG token secret, so the resulting `WgPeer.WgUserRef` is always set.

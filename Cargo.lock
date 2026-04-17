@@ -1493,12 +1493,12 @@ dependencies = [
  "dhat",
  "fs4",
  "futures",
- "kanidm_build_profiles",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_utils_users",
- "kanidmd_core",
  "mimalloc",
+ "netidm_build_profiles",
+ "netidm_lib_file_permissions",
+ "netidm_proto",
+ "netidm_utils_users",
+ "netidmd_core",
  "prctl",
  "reqwest 0.13.2",
  "sd-notify",
@@ -4020,471 +4020,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kanidm-ipa-sync"
-version = "1.10.0-dev"
-dependencies = [
- "chrono",
- "clap",
- "clap_complete",
- "cron",
- "kanidm_client",
- "kanidm_lib_crypto",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_utils_users",
- "kanidmd_lib",
- "ldap3_client",
- "rustls",
- "serde",
- "serde_json",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "kanidm-ldap-sync"
-version = "1.10.0-dev"
-dependencies = [
- "chrono",
- "clap",
- "clap_complete",
- "cron",
- "kanidm_client",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_utils_users",
- "kanidmd_lib",
- "ldap3_client",
- "ldap3_proto",
- "rustls",
- "serde",
- "serde_json",
- "sketching",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "kanidm-mail-sender"
-version = "1.10.0-dev"
-dependencies = [
- "chrono",
- "clap",
- "clap_complete",
- "cron",
- "hashbrown 0.17.0",
- "kanidm_client",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_utils_users",
- "lettre",
- "serde",
- "time",
- "tokio",
- "toml",
- "tracing",
- "tracing-subscriber",
- "url",
- "uuid",
-]
-
-[[package]]
-name = "kanidm_build_profiles"
-version = "1.10.0-dev"
-dependencies = [
- "base64 0.22.1",
- "gix",
- "serde",
- "sha2 0.11.0-rc.5",
- "toml",
-]
-
-[[package]]
-name = "kanidm_client"
-version = "1.10.0-dev"
-dependencies = [
- "compact_jwt",
- "http",
- "hyper",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "reqwest 0.13.2",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "time",
- "tokio",
- "toml",
- "tracing",
- "url",
- "urlencoding",
- "uuid",
- "webauthn-rs-proto",
-]
-
-[[package]]
-name = "kanidm_device_flow"
-version = "1.10.0-dev"
-dependencies = [
- "anyhow",
- "kanidm_proto",
- "oauth2",
- "reqwest 0.13.2",
- "sketching",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "kanidm_lib_crypto"
-version = "1.10.0-dev"
-dependencies = [
- "base64 0.22.1",
- "base64urlsafedata 0.6.0-dev",
- "crypto-glue",
- "hex",
- "kanidm-hsm-crypto",
- "md-5",
- "md4",
- "rand 0.10.1",
- "rustls",
- "serde",
- "sha-crypt",
- "sha2 0.11.0-rc.5",
- "sketching",
- "tracing",
- "uuid",
- "x509-cert",
-]
-
-[[package]]
-name = "kanidm_lib_file_permissions"
-version = "1.10.0-dev"
-dependencies = [
- "kanidm_utils_users",
-]
-
-[[package]]
-name = "kanidm_proto"
-version = "1.10.0-dev"
-dependencies = [
- "base32",
- "base64 0.22.1",
- "clap",
- "crypto-glue",
- "enum-iterator",
- "kanidm_build_profiles",
- "num_enum",
- "peg",
- "scim_proto",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "serde_with",
- "sketching",
- "smartstring",
- "sshkey-attest",
- "sshkeys",
- "time",
- "url",
- "urlencoding",
- "utoipa",
- "uuid",
- "webauthn-rs-proto",
-]
-
-[[package]]
-name = "kanidm_tools"
-version = "1.10.0-dev"
-dependencies = [
- "anyhow",
- "clap",
- "clap_complete",
- "compact_jwt",
- "dialoguer",
- "kanidm_build_profiles",
- "kanidm_client",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "libc",
- "qrcode",
- "regex",
- "serde",
- "serde_json",
- "shellexpand",
- "sketching",
- "time",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "url",
- "uuid",
- "webauthn-authenticator-rs",
- "zxcvbn",
-]
-
-[[package]]
-name = "kanidm_unix_common"
-version = "1.10.0-dev"
-dependencies = [
- "bytes",
- "csv",
- "futures",
- "kanidm_build_profiles",
- "kanidm_proto",
- "kanidm_utils_users",
- "selinux",
- "serde",
- "serde_json",
- "serde_with",
- "sha-crypt",
- "time",
- "tokio",
- "tokio-util",
- "toml",
- "tracing",
- "tracing-subscriber",
- "yescrypt",
-]
-
-[[package]]
-name = "kanidm_unix_int"
-version = "1.10.0-dev"
-dependencies = [
- "async-trait",
- "clap",
- "clap_complete",
- "dhat",
- "dialoguer",
- "futures",
- "hashbrown 0.17.0",
- "kanidm-hsm-crypto",
- "kanidm_build_profiles",
- "kanidm_client",
- "kanidm_lib_crypto",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_unix_common",
- "kanidm_utils_users",
- "kanidmd_core",
- "kanidmd_testkit",
- "libc",
- "lru",
- "nix 0.31.2",
- "notify-debouncer-full",
- "prctl",
- "procfs",
- "rand 0.10.1",
- "rusqlite",
- "sd-notify",
- "serde",
- "serde_json",
- "sketching",
- "tempfile",
- "time",
- "tokio",
- "tokio-util",
- "tracing",
- "uuid",
- "walkdir",
-]
-
-[[package]]
-name = "kanidm_utils_users"
-version = "1.10.0-dev"
-dependencies = [
- "libc",
-]
-
-[[package]]
-name = "kanidmd_core"
-version = "1.10.0-dev"
-dependencies = [
- "askama",
- "askama_web",
- "axum",
- "axum-extra",
- "axum-htmx",
- "axum-macros",
- "base64 0.22.1",
- "bytes",
- "chrono",
- "cidr",
- "compact_jwt",
- "cron",
- "crypto-glue",
- "filetime",
- "futures",
- "futures-util",
- "haproxy-protocol",
- "hyper",
- "hyper-util",
- "kanidm_build_profiles",
- "kanidm_lib_crypto",
- "kanidm_lib_file_permissions",
- "kanidm_proto",
- "kanidm_utils_users",
- "kanidmd_lib",
- "kanidmd_wg",
- "ldap3_proto",
- "libc",
- "opentelemetry",
- "qrcode",
- "regex",
- "reqwest 0.13.2",
- "rustls",
- "serde",
- "serde-hjson",
- "serde_json",
- "serde_urlencoded",
- "serde_with",
- "sketching",
- "sshkey-attest",
- "sshkeys",
- "tempfile",
- "time",
- "tokio",
- "tokio-rustls",
- "tokio-util",
- "toml",
- "tower",
- "tower-http",
- "tracing",
- "tracing-opentelemetry",
- "url",
- "utoipa",
- "utoipa-swagger-ui",
- "uuid",
- "walkdir",
- "webauthn-rs",
-]
-
-[[package]]
-name = "kanidmd_lib"
-version = "1.10.0-dev"
-dependencies = [
- "base64 0.22.1",
- "base64urlsafedata 0.6.0-dev",
- "bitflags 2.11.0",
- "compact_jwt",
- "concread",
- "crypto-glue",
- "dhat",
- "dyn-clone",
- "flate2",
- "futures",
- "hashbrown 0.17.0",
- "hex",
- "idlset",
- "image",
- "ipnet",
- "itertools 0.14.0",
- "kanidm_build_profiles",
- "kanidm_lib_crypto",
- "kanidm_proto",
- "kanidmd_lib_macros",
- "kanidmd_wg",
- "ldap3_proto",
- "lodepng",
- "mimalloc",
- "nonempty",
- "num_enum",
- "rand 0.10.1",
- "regex",
- "rusqlite",
- "rustls",
- "serde",
- "serde_cbor_2",
- "serde_json",
- "serde_with",
- "sha2 0.11.0-rc.5",
- "sketching",
- "smolset",
- "sshkey-attest",
- "svg",
- "time",
- "tokio",
- "tracing",
- "url",
- "utoipa",
- "uuid",
- "webauthn-authenticator-rs",
- "webauthn-rs",
- "webauthn-rs-core",
- "whoami",
- "zxcvbn",
-]
-
-[[package]]
-name = "kanidmd_lib_macros"
-version = "1.10.0-dev"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "kanidmd_testkit"
-version = "1.10.0-dev"
-dependencies = [
- "cidr",
- "compact_jwt",
- "escargot",
- "futures",
- "hex",
- "http-body-util",
- "hyper",
- "hyper-util",
- "jsonschema",
- "kanidm_build_profiles",
- "kanidm_client",
- "kanidm_lib_crypto",
- "kanidm_proto",
- "kanidmd_core",
- "kanidmd_lib",
- "ldap3_client",
- "oauth2",
- "reqwest 0.13.2",
- "serde",
- "serde_json",
- "sketching",
- "testkit-macros",
- "time",
- "tokio",
- "tracing",
- "url",
- "uuid",
- "webauthn-authenticator-rs",
-]
-
-[[package]]
-name = "kanidmd_wg"
-version = "1.10.0-dev"
-dependencies = [
- "anyhow",
- "async-trait",
- "boringtun",
- "futures-util",
- "hashbrown 0.17.0",
- "ipnet",
- "rtnetlink",
- "tokio",
- "tracing",
- "tun2",
- "uuid",
- "wireguard-control",
-]
-
-[[package]]
 name = "kbkdf"
 version = "0.1.0-rc.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5021,6 +4556,471 @@ dependencies = [
 ]
 
 [[package]]
+name = "netidm-ipa-sync"
+version = "1.10.0-dev"
+dependencies = [
+ "chrono",
+ "clap",
+ "clap_complete",
+ "cron",
+ "ldap3_client",
+ "netidm_client",
+ "netidm_lib_crypto",
+ "netidm_lib_file_permissions",
+ "netidm_proto",
+ "netidm_utils_users",
+ "netidmd_lib",
+ "rustls",
+ "serde",
+ "serde_json",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "netidm-ldap-sync"
+version = "1.10.0-dev"
+dependencies = [
+ "chrono",
+ "clap",
+ "clap_complete",
+ "cron",
+ "ldap3_client",
+ "ldap3_proto",
+ "netidm_client",
+ "netidm_lib_file_permissions",
+ "netidm_proto",
+ "netidm_utils_users",
+ "netidmd_lib",
+ "rustls",
+ "serde",
+ "serde_json",
+ "sketching",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "netidm-mail-sender"
+version = "1.10.0-dev"
+dependencies = [
+ "chrono",
+ "clap",
+ "clap_complete",
+ "cron",
+ "hashbrown 0.17.0",
+ "lettre",
+ "netidm_client",
+ "netidm_lib_file_permissions",
+ "netidm_proto",
+ "netidm_utils_users",
+ "serde",
+ "time",
+ "tokio",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+]
+
+[[package]]
+name = "netidm_build_profiles"
+version = "1.10.0-dev"
+dependencies = [
+ "base64 0.22.1",
+ "gix",
+ "serde",
+ "sha2 0.11.0-rc.5",
+ "toml",
+]
+
+[[package]]
+name = "netidm_client"
+version = "1.10.0-dev"
+dependencies = [
+ "compact_jwt",
+ "http",
+ "hyper",
+ "netidm_lib_file_permissions",
+ "netidm_proto",
+ "reqwest 0.13.2",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "time",
+ "tokio",
+ "toml",
+ "tracing",
+ "url",
+ "urlencoding",
+ "uuid",
+ "webauthn-rs-proto",
+]
+
+[[package]]
+name = "netidm_device_flow"
+version = "1.10.0-dev"
+dependencies = [
+ "anyhow",
+ "netidm_proto",
+ "oauth2",
+ "reqwest 0.13.2",
+ "sketching",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "netidm_lib_crypto"
+version = "1.10.0-dev"
+dependencies = [
+ "base64 0.22.1",
+ "base64urlsafedata 0.6.0-dev",
+ "crypto-glue",
+ "hex",
+ "kanidm-hsm-crypto",
+ "md-5",
+ "md4",
+ "rand 0.10.1",
+ "rustls",
+ "serde",
+ "sha-crypt",
+ "sha2 0.11.0-rc.5",
+ "sketching",
+ "tracing",
+ "uuid",
+ "x509-cert",
+]
+
+[[package]]
+name = "netidm_lib_file_permissions"
+version = "1.10.0-dev"
+dependencies = [
+ "netidm_utils_users",
+]
+
+[[package]]
+name = "netidm_proto"
+version = "1.10.0-dev"
+dependencies = [
+ "base32",
+ "base64 0.22.1",
+ "clap",
+ "crypto-glue",
+ "enum-iterator",
+ "netidm_build_profiles",
+ "num_enum",
+ "peg",
+ "scim_proto",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "serde_with",
+ "sketching",
+ "smartstring",
+ "sshkey-attest",
+ "sshkeys",
+ "time",
+ "url",
+ "urlencoding",
+ "utoipa",
+ "uuid",
+ "webauthn-rs-proto",
+]
+
+[[package]]
+name = "netidm_tools"
+version = "1.10.0-dev"
+dependencies = [
+ "anyhow",
+ "clap",
+ "clap_complete",
+ "compact_jwt",
+ "dialoguer",
+ "libc",
+ "netidm_build_profiles",
+ "netidm_client",
+ "netidm_lib_file_permissions",
+ "netidm_proto",
+ "qrcode",
+ "regex",
+ "serde",
+ "serde_json",
+ "shellexpand",
+ "sketching",
+ "time",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "uuid",
+ "webauthn-authenticator-rs",
+ "zxcvbn",
+]
+
+[[package]]
+name = "netidm_unix_common"
+version = "1.10.0-dev"
+dependencies = [
+ "bytes",
+ "csv",
+ "futures",
+ "netidm_build_profiles",
+ "netidm_proto",
+ "netidm_utils_users",
+ "selinux",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "sha-crypt",
+ "time",
+ "tokio",
+ "tokio-util",
+ "toml",
+ "tracing",
+ "tracing-subscriber",
+ "yescrypt",
+]
+
+[[package]]
+name = "netidm_unix_int"
+version = "1.10.0-dev"
+dependencies = [
+ "async-trait",
+ "clap",
+ "clap_complete",
+ "dhat",
+ "dialoguer",
+ "futures",
+ "hashbrown 0.17.0",
+ "kanidm-hsm-crypto",
+ "libc",
+ "lru",
+ "netidm_build_profiles",
+ "netidm_client",
+ "netidm_lib_crypto",
+ "netidm_lib_file_permissions",
+ "netidm_proto",
+ "netidm_unix_common",
+ "netidm_utils_users",
+ "netidmd_core",
+ "netidmd_testkit",
+ "nix 0.31.2",
+ "notify-debouncer-full",
+ "prctl",
+ "procfs",
+ "rand 0.10.1",
+ "rusqlite",
+ "sd-notify",
+ "serde",
+ "serde_json",
+ "sketching",
+ "tempfile",
+ "time",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "uuid",
+ "walkdir",
+]
+
+[[package]]
+name = "netidm_utils_users"
+version = "1.10.0-dev"
+dependencies = [
+ "libc",
+]
+
+[[package]]
+name = "netidmd_core"
+version = "1.10.0-dev"
+dependencies = [
+ "askama",
+ "askama_web",
+ "axum",
+ "axum-extra",
+ "axum-htmx",
+ "axum-macros",
+ "base64 0.22.1",
+ "bytes",
+ "chrono",
+ "cidr",
+ "compact_jwt",
+ "cron",
+ "crypto-glue",
+ "filetime",
+ "futures",
+ "futures-util",
+ "haproxy-protocol",
+ "hyper",
+ "hyper-util",
+ "ldap3_proto",
+ "libc",
+ "netidm_build_profiles",
+ "netidm_lib_crypto",
+ "netidm_lib_file_permissions",
+ "netidm_proto",
+ "netidm_utils_users",
+ "netidmd_lib",
+ "netidmd_wg",
+ "opentelemetry",
+ "qrcode",
+ "regex",
+ "reqwest 0.13.2",
+ "rustls",
+ "serde",
+ "serde-hjson",
+ "serde_json",
+ "serde_urlencoded",
+ "serde_with",
+ "sketching",
+ "sshkey-attest",
+ "sshkeys",
+ "tempfile",
+ "time",
+ "tokio",
+ "tokio-rustls",
+ "tokio-util",
+ "toml",
+ "tower",
+ "tower-http",
+ "tracing",
+ "tracing-opentelemetry",
+ "url",
+ "utoipa",
+ "utoipa-swagger-ui",
+ "uuid",
+ "walkdir",
+ "webauthn-rs",
+]
+
+[[package]]
+name = "netidmd_lib"
+version = "1.10.0-dev"
+dependencies = [
+ "base64 0.22.1",
+ "base64urlsafedata 0.6.0-dev",
+ "bitflags 2.11.0",
+ "compact_jwt",
+ "concread",
+ "crypto-glue",
+ "dhat",
+ "dyn-clone",
+ "flate2",
+ "futures",
+ "hashbrown 0.17.0",
+ "hex",
+ "idlset",
+ "image",
+ "ipnet",
+ "itertools 0.14.0",
+ "ldap3_proto",
+ "lodepng",
+ "mimalloc",
+ "netidm_build_profiles",
+ "netidm_lib_crypto",
+ "netidm_proto",
+ "netidmd_lib_macros",
+ "netidmd_wg",
+ "nonempty",
+ "num_enum",
+ "rand 0.10.1",
+ "regex",
+ "rusqlite",
+ "rustls",
+ "serde",
+ "serde_cbor_2",
+ "serde_json",
+ "serde_with",
+ "sha2 0.11.0-rc.5",
+ "sketching",
+ "smolset",
+ "sshkey-attest",
+ "svg",
+ "time",
+ "tokio",
+ "tracing",
+ "url",
+ "utoipa",
+ "uuid",
+ "webauthn-authenticator-rs",
+ "webauthn-rs",
+ "webauthn-rs-core",
+ "whoami",
+ "zxcvbn",
+]
+
+[[package]]
+name = "netidmd_lib_macros"
+version = "1.10.0-dev"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+]
+
+[[package]]
+name = "netidmd_testkit"
+version = "1.10.0-dev"
+dependencies = [
+ "cidr",
+ "compact_jwt",
+ "escargot",
+ "futures",
+ "hex",
+ "http-body-util",
+ "hyper",
+ "hyper-util",
+ "jsonschema",
+ "ldap3_client",
+ "netidm_build_profiles",
+ "netidm_client",
+ "netidm_lib_crypto",
+ "netidm_proto",
+ "netidmd_core",
+ "netidmd_lib",
+ "oauth2",
+ "reqwest 0.13.2",
+ "serde",
+ "serde_json",
+ "sketching",
+ "testkit-macros",
+ "time",
+ "tokio",
+ "tracing",
+ "url",
+ "uuid",
+ "webauthn-authenticator-rs",
+]
+
+[[package]]
+name = "netidmd_wg"
+version = "1.10.0-dev"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "boringtun",
+ "futures-util",
+ "hashbrown 0.17.0",
+ "ipnet",
+ "rtnetlink",
+ "tokio",
+ "tracing",
+ "tun2",
+ "uuid",
+ "wireguard-control",
+]
+
+[[package]]
 name = "netlink-packet-core"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5267,13 +5267,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "nss_kanidm"
+name = "nss_netidm"
 version = "1.10.0-dev"
 dependencies = [
  "cc",
- "kanidm_unix_common",
  "libc",
  "libnss",
+ "netidm_unix_common",
 ]
 
 [[package]]
@@ -5636,10 +5636,10 @@ dependencies = [
  "csv",
  "hashbrown 0.17.0",
  "idlset",
- "kanidm_build_profiles",
- "kanidm_client",
  "mathru",
  "mimalloc",
+ "netidm_build_profiles",
+ "netidm_client",
  "rand 0.10.1",
  "rand_chacha 0.10.0",
  "serde",
@@ -5695,11 +5695,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "pam_kanidm"
+name = "pam_netidm"
 version = "1.10.0-dev"
 dependencies = [
- "kanidm_unix_common",
  "libc",
+ "netidm_unix_common",
  "pkg-config",
  "time",
  "tracing",

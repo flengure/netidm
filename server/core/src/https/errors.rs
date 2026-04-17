@@ -7,11 +7,11 @@ use axum::response::{IntoResponse, Response};
 use axum::Json;
 
 use hyper::header::WWW_AUTHENTICATE;
-use kanidm_proto::oauth2::ErrorResponse;
-use kanidmd_lib::idm::oauth2::Oauth2Error;
+use netidm_proto::oauth2::ErrorResponse;
+use netidmd_lib::idm::oauth2::Oauth2Error;
 use utoipa::ToSchema;
 
-use kanidm_proto::internal::OperationError;
+use netidm_proto::internal::OperationError;
 
 /// The web app's top level error type, this takes an `OperationError` and converts it into a HTTP response.
 #[derive(Debug, ToSchema)]
@@ -132,7 +132,7 @@ impl IntoResponse for WebError {
 
 #[cfg(test)]
 mod tests {
-    use kanidm_proto::attribute::Attribute;
+    use netidm_proto::attribute::Attribute;
 
     #[test]
     fn test_attributeuniqueness_error_response() {

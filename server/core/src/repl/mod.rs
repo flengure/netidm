@@ -4,10 +4,10 @@ use config::{RepNodeConfig, ReplicationConfiguration};
 use crypto_glue::{traits::EncodeDer, x509::Certificate};
 use futures_util::sink::SinkExt;
 use futures_util::stream::StreamExt;
-use kanidmd_lib::prelude::duration_from_epoch_now;
-use kanidmd_lib::prelude::IdmServer;
-use kanidmd_lib::repl::proto::ConsumerState;
-use kanidmd_lib::server::QueryServerTransaction;
+use netidmd_lib::prelude::duration_from_epoch_now;
+use netidmd_lib::prelude::IdmServer;
+use netidmd_lib::repl::proto::ConsumerState;
+use netidmd_lib::server::QueryServerTransaction;
 use rustls::{
     client::ClientConfig,
     pki_types::{CertificateDer, PrivateKeyDer, ServerName},

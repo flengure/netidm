@@ -262,10 +262,10 @@ pub struct ScimListSchemaAttribute {
 }
 
 #[derive(Serialize, Debug, Clone)]
-pub struct ScimEntryPutKanidm {
+pub struct ScimEntryPutNetidm {
     pub id: Uuid,
     #[serde(flatten)]
-    pub attrs: BTreeMap<Attribute, Option<super::server::ScimValueKanidm>>,
+    pub attrs: BTreeMap<Attribute, Option<super::server::ScimValueNetidm>>,
 }
 
 #[serde_as]
@@ -333,11 +333,11 @@ pub struct ScimEntryPutGeneric {
     pub attrs: BTreeMap<Attribute, Option<JsonValue>>,
 }
 
-impl TryFrom<ScimEntryPutKanidm> for ScimEntryPutGeneric {
+impl TryFrom<ScimEntryPutNetidm> for ScimEntryPutGeneric {
     type Error = serde_json::Error;
 
-    fn try_from(value: ScimEntryPutKanidm) -> Result<Self, Self::Error> {
-        let ScimEntryPutKanidm { id, attrs } = value;
+    fn try_from(value: ScimEntryPutNetidm) -> Result<Self, Self::Error> {
+        let ScimEntryPutNetidm { id, attrs } = value;
 
         let attrs = attrs
             .into_iter()

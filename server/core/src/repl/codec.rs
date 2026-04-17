@@ -1,5 +1,5 @@
 use bytes::{Buf, BufMut, BytesMut};
-use kanidmd_lib::repl::proto::{ReplIncrementalContext, ReplRefreshContext, ReplRuvRange};
+use netidmd_lib::repl::proto::{ReplIncrementalContext, ReplRefreshContext, ReplRuvRange};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::io;
 use tokio_util::codec::{Decoder, Encoder};

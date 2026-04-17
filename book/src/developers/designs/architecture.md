@@ -1,31 +1,31 @@
 ## Architecture
 
-Kanidm has a number of components and layers that make it up. As this project is continually evolving, if you have
+Netidm has a number of components and layers that make it up. As this project is continually evolving, if you have
 questions or notice discrepancies with this document please contact William (Firstyear) at any time.
 
 ## Tools
 
-Kanidm Tools are a set of command line clients that are intended to help administrators deploy, interact with, and
-support a Kanidm server installation. These tools may also be used for servers or machines to authenticate and identify
+Netidm Tools are a set of command line clients that are intended to help administrators deploy, interact with, and
+support a Netidm server installation. These tools may also be used for servers or machines to authenticate and identify
 users. This is the "human interaction" part of the server from a CLI perspective.
 
 ## Clients
 
-The `kanidm` client is a reference implementation of the client library, that others may consume or interact with to
-communicate with a Kanidm server instance. The tools above use this client library for all of its actions. This library
+The `netidm` client is a reference implementation of the client library, that others may consume or interact with to
+communicate with a Netidm server instance. The tools above use this client library for all of its actions. This library
 is intended to encapsulate some high level logic as an abstraction over the REST API.
 
 ## Proto
 
-The `kanidm` proto is a set of structures that are used by the REST and raw API's for HTTP communication. These are
+The `netidm` proto is a set of structures that are used by the REST and raw API's for HTTP communication. These are
 intended to be a reference implementation of the on-the-wire protocol, but importantly these are also how the server
 represents its communication. This makes this the authoritative source of protocol layouts with regard to REST or raw
 communication.
 
-## Kanidmd (main server)
+## Netidmd (main server)
 
-Kanidmd is intended to have minimal (thin) client tools, where the server itself contains most logic for operations,
-transformations and routing of requests to their relevant datatypes. As a result, the `kanidmd` section is the largest
+Netidmd is intended to have minimal (thin) client tools, where the server itself contains most logic for operations,
+transformations and routing of requests to their relevant datatypes. As a result, the `netidmd` section is the largest
 component of the project as it implements nearly everything required for IDM functionality to exist.
 
 # Search

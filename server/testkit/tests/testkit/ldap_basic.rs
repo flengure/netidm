@@ -1,8 +1,8 @@
-use kanidm_proto::scim_v1::{
+use netidm_proto::scim_v1::{
     client::{ScimEntryApplicationPost, ScimReference},
     ScimApplicationPasswordCreate,
 };
-use kanidmd_testkit::{
+use netidmd_testkit::{
     setup_account_passkey, AsyncTestEnvironment, IDM_ADMIN_TEST_PASSWORD, IDM_ADMIN_TEST_USER,
 };
 use ldap3_client::LdapClientBuilder;
@@ -11,7 +11,7 @@ use tracing::debug;
 const TEST_PERSON: &str = "user_mcuserton";
 const TEST_GROUP: &str = "group_mcgroupington";
 
-#[kanidmd_testkit::test(ldap = true)]
+#[netidmd_testkit::test(ldap = true)]
 async fn test_ldap_basic_unix_bind(test_env: &AsyncTestEnvironment) {
     let ldap_url = test_env.ldap_url.as_ref().unwrap();
 
@@ -28,7 +28,7 @@ async fn test_ldap_basic_unix_bind(test_env: &AsyncTestEnvironment) {
     assert_eq!(whoami, Some("u: anonymous@localhost".to_string()));
 }
 
-#[kanidmd_testkit::test(ldap = true)]
+#[netidmd_testkit::test(ldap = true)]
 async fn test_ldap_application_password_basic(test_env: &AsyncTestEnvironment) {
     const APPLICATION_1_NAME: &str = "test_application_1";
     const APPLICATION_2_NAME: &str = "test_application_2";

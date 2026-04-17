@@ -6,9 +6,9 @@ use crate::https::extractors::VerifiedClientInformation;
 use axum::extract::{Path, State};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
-use kanidm_proto::constants::APPLICATION_JSON;
-use kanidm_proto::internal::OperationError;
-use kanidm_proto::wg::{
+use netidm_proto::constants::APPLICATION_JSON;
+use netidm_proto::internal::OperationError;
+use netidm_proto::wg::{
     WgConnectRequest, WgConnectResponse, WgPeerResponse, WgTokenCreate, WgTokenCreatedResponse,
     WgTokenInfo, WgTunnelCreate, WgTunnelPatch, WgTunnelResponse,
 };

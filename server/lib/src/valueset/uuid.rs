@@ -4,7 +4,7 @@ use crate::valueset::{
     uuid_to_proto_string, DbValueSetV2, ScimResolveStatus, ScimValueIntermediate, ValueSet,
     ValueSetIntermediate, ValueSetResolveStatus, ValueSetScimPut,
 };
-use kanidm_proto::scim_v1::JsonValue;
+use netidm_proto::scim_v1::JsonValue;
 use smolset::SmolSet;
 use std::collections::BTreeSet;
 
@@ -135,7 +135,7 @@ impl ValueSetT for ValueSetUuid {
             .iter()
             .next()
             .copied()
-            .map(ScimValueKanidm::Uuid)
+            .map(ScimValueNetidm::Uuid)
             .map(ScimResolveStatus::Resolved)
     }
 
@@ -236,7 +236,7 @@ impl ValueSetRefer {
 
 impl ValueSetScimPut for ValueSetRefer {
     fn from_scim_json_put(value: JsonValue) -> Result<ValueSetResolveStatus, OperationError> {
-        use kanidm_proto::scim_v1::client::{ScimReference, ScimReferences};
+        use netidm_proto::scim_v1::client::{ScimReference, ScimReferences};
 
         // May be a single reference, lets wrap it in an array to proceed.
         let value = if !value.is_array() && value.is_object() {

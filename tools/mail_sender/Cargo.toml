@@ -1,8 +1,8 @@
 [package]
-name = "kanidm-mail-sender"
-default-run = "kanidm-mail-sender"
-description = "Kanidm Mail Sender Service"
-documentation = "https://kanidm.github.io/kanidm/stable/"
+name = "netidm-mail-sender"
+default-run = "netidm-mail-sender"
+description = "Netidm Mail Sender Service"
+documentation = "https://netidm.github.io/netidm/stable/"
 version.workspace = true
 authors.workspace = true
 rust-version.workspace = true
@@ -12,7 +12,7 @@ homepage.workspace = true
 repository.workspace = true
 
 [[bin]]
-name = "kanidm-mail-sender"
+name = "netidm-mail-sender"
 path = "src/main.rs"
 doc = false
 test = true
@@ -23,9 +23,9 @@ clap = { workspace = true, features = ["derive", "env"] }
 chrono = { workspace = true }
 cron = { workspace = true }
 hashbrown = { workspace = true }
-kanidm_client = { workspace = true }
-kanidm_proto = { workspace = true }
-kanidm_lib_file_permissions = { workspace = true }
+netidm_client = { workspace = true }
+netidm_proto = { workspace = true }
+netidm_lib_file_permissions = { workspace = true }
 lettre = { workspace = true, default-features = false, features = [
     "builder",
     "pool",
@@ -49,7 +49,7 @@ uuid = { workspace = true, features = ["serde"] }
 
 
 [target.'cfg(target_family = "unix")'.dependencies]
-kanidm_utils_users = { workspace = true }
+netidm_utils_users = { workspace = true }
 
 [build-dependencies]
 clap = { workspace = true, features = ["derive"] }

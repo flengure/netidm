@@ -9,7 +9,7 @@
 
 ```bash
 # Create a WireGuard tunnel
-kanidm system wg tunnel create \
+netidm system wg tunnel create \
   --name vpn0 \
   --interface wg0 \
   --private-key "$(wg genkey)" \
@@ -18,7 +18,7 @@ kanidm system wg tunnel create \
   --address 10.100.0.1/24
 
 # Issue a single-use registration token for a specific user
-kanidm system wg token create vpn0 \
+netidm system wg token create vpn0 \
   --uses 1 \
   --principal alice \
   --expiry 2026-05-01 \
@@ -34,7 +34,7 @@ kanidm system wg token create vpn0 \
 wg genkey | tee client.key | wg pubkey > client.pub
 
 # Register with the server token (POST /v1/wg/connect)
-curl -s -X POST https://kanidm.example.com/v1/wg/connect \
+curl -s -X POST https://netidm.example.com/v1/wg/connect \
   -H 'Content-Type: application/json' \
   -d "{\"token\": \"$(cat token-for-alice.txt)\", \"pubkey\": \"$(cat client.pub)\"}" \
   | jq -r '.config' \
@@ -51,7 +51,7 @@ wg-quick up wg0
 
 ```bash
 # List all peers on a tunnel with last-seen timestamps
-kanidm system wg peer list vpn0
+netidm system wg peer list vpn0
 
 # Example output:
 # NAME                 PUBKEY     ALLOWED_IPS        LAST_SEEN
@@ -65,7 +65,7 @@ kanidm system wg peer list vpn0
 
 ```bash
 # Delete the peer entry — daemon hot-removes within 30 seconds
-kanidm system wg peer delete vpn0 peer-alice-vpn0
+netidm system wg peer delete vpn0 peer-alice-vpn0
 ```
 
 ---
@@ -75,7 +75,7 @@ kanidm system wg peer delete vpn0 peer-alice-vpn0
 The daemon detects the absence of `/sys/module/wireguard` at startup and automatically selects the boringtun userspace backend. No configuration change required.
 
 ```
-[2026-04-17T00:00:00Z INFO  kanidmd::wg] kernel WireGuard module not available — using boringtun userspace backend
-[2026-04-17T00:00:00Z INFO  kanidmd::wg] bringing up tunnel vpn0 (wg0) via userspace backend
-[2026-04-17T00:00:00Z INFO  kanidmd::wg] tunnel vpn0 up — listening on :51820
+[2026-04-17T00:00:00Z INFO  netidmd::wg] kernel WireGuard module not available — using boringtun userspace backend
+[2026-04-17T00:00:00Z INFO  netidmd::wg] bringing up tunnel vpn0 (wg0) via userspace backend
+[2026-04-17T00:00:00Z INFO  netidmd::wg] tunnel vpn0 up — listening on :51820
 ```

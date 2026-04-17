@@ -154,7 +154,7 @@ pub enum OperationError {
     AU0007UserAuthTokenInvalid,
     AU0008ClientAuthInfoPrevalidation,
 
-    // Kanidm Generic Errors
+    // Netidm Generic Errors
     KG001TaskTimeout,
     KG002TaskCommFailure,
     KG003CacheClearFailed,

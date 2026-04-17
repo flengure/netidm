@@ -1,9 +1,9 @@
-use kanidm_client::KanidmClient;
-use kanidmd_lib::constants::NAME_IDM_ADMINS;
-use kanidmd_testkit::*;
+use netidm_client::NetidmClient;
+use netidmd_lib::constants::NAME_IDM_ADMINS;
+use netidmd_testkit::*;
 
-#[kanidmd_testkit::test]
-async fn account_id_unix_token(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn account_id_unix_token(rsclient: &NetidmClient) {
     login_put_admin_idm_admins(rsclient).await;
 
     create_user(rsclient, "group_manager", "idm_group_manage_priv").await;

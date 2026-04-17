@@ -6,18 +6,18 @@ generic versions, or may have customisations they wish to perform that are uniqu
 
 To achieve this we need a layer of separation - This effectively becomes an "extract, transform, load" process. In
 addition this process must be _stateful_ where it can be run multiple times or even continuously and it will bring
-kanidm into synchronisation.
+netidm into synchronisation.
 
 We refer to a "synchronisation" as meaning a complete successful extract, transform and load cycle.
 
-There are three expected methods of using the synchronisation tools for Kanidm
+There are three expected methods of using the synchronisation tools for Netidm
 
-- Kanidm as a "read only" portal allowing access to its specific features and integrations. This is less of a migration,
-  and more of a way to "feed" data into Kanidm without relying on its internal administration features.
+- Netidm as a "read only" portal allowing access to its specific features and integrations. This is less of a migration,
+  and more of a way to "feed" data into Netidm without relying on its internal administration features.
 - "Big Bang" migration. This is where all the data from another IDM is synchronised in a single execution and
-  applications are swapped to Kanidm. This is rare in larger deployments, but may be used in smaller sites.
-- Gradual migration. This is where data is synchronised to Kanidm and then both the existing IDM and Kanidm co-exist.
-  Applications gradually migrate to Kanidm. At some point a "final" synchronisation is performed where Kanidm 'gains
+  applications are swapped to Netidm. This is rare in larger deployments, but may be used in smaller sites.
+- Gradual migration. This is where data is synchronised to Netidm and then both the existing IDM and Netidm co-exist.
+  Applications gradually migrate to Netidm. At some point a "final" synchronisation is performed where Netidm 'gains
   authority' over all identity data and the existing IDM is disabled.
 
 In these processes there may be a need to "reset" the synchronised data. The diagram below shows the possible work flows
@@ -46,18 +46,18 @@ which account for the above.
                                                           │             │
                                                           └─────────────┘
 
-Kanidm starts in a "detached" state from the extern IDM source.
+Netidm starts in a "detached" state from the extern IDM source.
 
-For Kanidm as a "read only" application source the Initial synchronisation is performed followed by periodic active
+For Netidm as a "read only" application source the Initial synchronisation is performed followed by periodic active
 (partial) synchronisations. At anytime a full initial synchronisation can re-occur to reset the data of the provider.
-The provider can be reset and removed by a purge which reset's Kanidm to a detached state.
+The provider can be reset and removed by a purge which reset's Netidm to a detached state.
 
 For a gradual migration, this process is the same as the read only application. However when ready to perform the final
-cut over a final synchronisation is performed, which retains the data of the external system and grants Kanidm the
-authority over it. This then moves Kanidm back to the detached state, but with a full cope of the provider data.
+cut over a final synchronisation is performed, which retains the data of the external system and grants Netidm the
+authority over it. This then moves Netidm back to the detached state, but with a full cope of the provider data.
 
 A "big bang" migration is this same process, but the "final" synchronisation is the first and only step required, where
-all data is loaded and then immediately granted authority to Kanidm.
+all data is loaded and then immediately granted authority to Netidm.
 
 ## ETL process
 
@@ -66,7 +66,7 @@ all data is loaded and then immediately granted authority to Kanidm.
 First a user must be able to retrieve their data from their supplying IDM source. Initially we will target LDAP and
 systems with LDAP interfaces, but in the future there is no barrier to supporting other transports.
 
-To achieve this, we initially provide synchronisation primitives in the [ldap3 crate](https://github.com/kanidm/ldap3).
+To achieve this, we initially provide synchronisation primitives in the [ldap3 crate](https://github.com/netidm/ldap3).
 
 ### Transform
 
@@ -75,27 +75,27 @@ provide attribute mapping abilities so that we can allow some limited customisat
 
 ### Load
 
-Finally to load the data into Kanidm, we will make a SCIM interface available. SCIM is a "spiritual successor" to LDAP,
+Finally to load the data into Netidm, we will make a SCIM interface available. SCIM is a "spiritual successor" to LDAP,
 and aligns with Kani's design. SCIM allows structured data to be uploaded (unlike LDAP which is simply strings). Because
 of this SCIM will allow us to expose more complex types that previously we have not been able to provide.
 
-The largest benefit to SCIM's model is its ability to perform "batched" operations, which work with Kanidm's
+The largest benefit to SCIM's model is its ability to perform "batched" operations, which work with Netidm's
 transactional model to ensure that during load events, that content is always valid and correct.
 
-## Configuring a Synchronisation Provider in Kanidm
+## Configuring a Synchronisation Provider in Netidm
 
-Kanidm has a strict transactional model with full ACID compliance. Attempting to create an external model that needs to
-interoperate with Kanidm's model and ensure both are compliant is fraught with danger. As a result, Kanidm sync
+Netidm has a strict transactional model with full ACID compliance. Attempting to create an external model that needs to
+interoperate with Netidm's model and ensure both are compliant is fraught with danger. As a result, Netidm sync
 providers _should_ be stateless, acting only as an ETL bridge.
 
-Additionally syncproviders need permissions to access and write to content in Kanidm, so it also necessitates Kanidm
+Additionally syncproviders need permissions to access and write to content in Netidm, so it also necessitates Netidm
 being aware of the sync relationship.
 
 For this reason a syncprovider is a derivative of a service account, which also allows storage of the _state_ of the
 synchronisation operation. An example of this is that LDAP syncrepl provides a cookie defining the "state" of what has
 been "consumed up to" by the ETL bridge. During the load phase the modified entries _and_ the cookie are persisted. This
 means that if the operation fails the cookie also rolls back allowing a retry of the sync. If it succeeds the next sync
-knows that kanidm is in the correct state. Graphically:
+knows that netidm is in the correct state. Graphically:
 
     ┌────────────┐                    ┌────────────┐                   ┌────────────┐
     │            │                    │            │     Retrieve      │            │
@@ -105,7 +105,7 @@ knows that kanidm is in the correct state. Graphically:
     │            │                    │            │◀────Cookie────────│            │
     │            │   Sync Request     │            │                   │            │
     │  External  │◀───With Cookie─────│    ETL     │                   │            │
-    │    IDM     │                    │   Bridge   │                   │   Kanidm   │
+    │    IDM     │                    │   Bridge   │                   │   Netidm   │
     │            │   Sync Response    │            │                   │            │
     │            │────New Cookie─────▶│            │                   │            │
     │            │                    │            │                   │            │
@@ -122,7 +122,7 @@ has succeeded and persisted. A success really means it!
 
 ### Authentication to the endpoint
 
-This will be based on Kanidm's existing authentication infrastructure, allowing service accounts to use bearer tokens.
+This will be based on Netidm's existing authentication infrastructure, allowing service accounts to use bearer tokens.
 These tokens will internally bind that changes from the account MUST contain the associated state identifier (cookie).
 
 ### Batch Operations
@@ -134,14 +134,14 @@ batch request. Failure to do so will result in an error.
 
 ### Schema and Attributes
 
-SCIM defines a number of "generic" schemas for User's and Group's. Kanidm will provide its own schema definitions that
+SCIM defines a number of "generic" schemas for User's and Group's. Netidm will provide its own schema definitions that
 extend or replace these. TBD.
 
 ## Post Migration Concerns
 
 ### Reattaching a Provider Post Final Sync
 
-In the case that a provider is re-attached after it has been through a final synchronisation, entries that Kanidm now
+In the case that a provider is re-attached after it has been through a final synchronisation, entries that Netidm now
 has authority over will NOT be synced and will be highlighted as conflicts. The administrator then needs to decide how
 to proceed with these conflicts determining which data source is the authority on the information.
 
@@ -149,7 +149,7 @@ to proceed with these conflicts determining which data source is the authority o
 
 We have to consider in our batch updates that there are multiple stages of the update. This is because we need to
 consider that at any point the lifecycle of a presented entry may change within a single batch. Because of this, we have
-to treat the operation differently within kanidm to ensure a consistent outcome.
+to treat the operation differently within netidm to ensure a consistent outcome.
 
 Additionally we have to "fail fast". This means that on any conflict the sync will abort and the administrator must
 intervene.
@@ -159,7 +159,7 @@ To understand why we chose this, we have to look at what happens in a "soft fail
 In this example we have an account named X and a group named Y. The group contains X as a member.
 
 When we submit this for an initial sync, or after the account X is created, if we had a "soft" fail during the import of
-the account, we would reject it from being added to Kanidm but would then continue with the synchronisation. Then the
+the account, we would reject it from being added to Netidm but would then continue with the synchronisation. Then the
 group Y would be imported. Since the member pointing to X would not be valid, it would be silently removed.
 
 At this point we would have group Y imported, but it has no members and the account X would not have been imported. The

@@ -1,25 +1,26 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::attribute::Attribute;
-use kanidm_proto::constants::{
+use crate::{ClientError, NetidmClient};
+use netidm_proto::attribute::Attribute;
+use netidm_proto::constants::{
     ATTR_DISPLAYNAME, ATTR_KEY_ACTION_REVOKE, ATTR_KEY_ACTION_ROTATE, ATTR_NAME,
     ATTR_OAUTH2_ALLOW_INSECURE_CLIENT_DISABLE_PKCE, ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT,
     ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
     ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME, ATTR_OAUTH2_CLIENT_ID,
     ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
+    ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS,
     ATTR_OAUTH2_JIT_PROVISIONING, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE,
     ATTR_OAUTH2_PREFER_SHORT_USERNAME, ATTR_OAUTH2_REQUEST_SCOPES, ATTR_OAUTH2_RS_BASIC_SECRET,
     ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING, ATTR_OAUTH2_STRICT_REDIRECT_URI,
     ATTR_OAUTH2_TOKEN_ENDPOINT, ATTR_OAUTH2_USERINFO_ENDPOINT,
 };
-use kanidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin};
-use kanidm_proto::v1::Entry;
+use netidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin};
+use netidm_proto::v1::Entry;
 use reqwest::multipart;
 use std::collections::BTreeMap;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 use url::Url;
 
-impl KanidmClient {
+impl NetidmClient {
     // ==== Oauth2 resource server configuration
     #[instrument(level = "debug")]
     pub async fn idm_oauth2_rs_list(&self) -> Result<Vec<Entry>, ClientError> {
@@ -517,7 +518,7 @@ impl KanidmClient {
             .await
     }
 
-    // ==== OAuth2 Client Provider (Kanidm as OAuth2 client to external providers)
+    // ==== OAuth2 Client Provider (Netidm as OAuth2 client to external providers)
 
     pub async fn idm_oauth2_client_get(
         &self,
@@ -607,13 +608,53 @@ impl KanidmClient {
         self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
     }
 
+    pub async fn idm_oauth2_client_enable_email_link_accounts(
+        &self,
+        id: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry { attrs: BTreeMap::new() };
+        entry.attrs.insert(
+            ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS.to_string(),
+            vec!["true".to_string()],
+        );
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
+    }
+
+    pub async fn idm_oauth2_client_disable_email_link_accounts(
+        &self,
+        id: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry { attrs: BTreeMap::new() };
+        entry.attrs.insert(
+            ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS.to_string(),
+            vec!["false".to_string()],
+        );
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
+    }
+
+    pub async fn idm_oauth2_domain_enable_email_link_accounts(&self) -> Result<(), ClientError> {
+        self.perform_put_request(
+            &format!("/v1/domain/_attr/{ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS}"),
+            vec!["true"],
+        )
+        .await
+    }
+
+    pub async fn idm_oauth2_domain_disable_email_link_accounts(&self) -> Result<(), ClientError> {
+        self.perform_put_request(
+            &format!("/v1/domain/_attr/{ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS}"),
+            vec!["false"],
+        )
+        .await
+    }
+
     pub async fn idm_oauth2_client_set_claim_map(
         &self,
         id: &str,
-        kanidm_attr: &str,
+        netidm_attr: &str,
         provider_claim: &str,
     ) -> Result<(), ClientError> {
-        let attr_key = match kanidm_attr {
+        let attr_key = match netidm_attr {
             "name" => ATTR_OAUTH2_CLAIM_MAP_NAME,
             "displayname" => ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
             "mail" | "email" => ATTR_OAUTH2_CLAIM_MAP_EMAIL,

@@ -2,7 +2,7 @@
 
 use crate::https::LoggerType;
 use axum::http::Request;
-use kanidm_proto::constants::KOPID;
+use netidm_proto::constants::KOPID;
 use tower_http::trace::OnRequest;
 use tracing::{Level, Span};
 use tracing_opentelemetry::OpenTelemetrySpanExt;

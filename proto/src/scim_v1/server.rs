@@ -17,25 +17,25 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 /// A strongly typed ScimEntry that is for transmission to clients. This uses
-/// Kanidm internal strong types for values allowing direct serialisation and
+/// Netidm internal strong types for values allowing direct serialisation and
 /// transmission.
 #[serde_as]
 #[skip_serializing_none]
 #[derive(Serialize, Debug, Clone, ToSchema)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct ScimEntryKanidm {
+pub struct ScimEntryNetidm {
     #[serde(flatten)]
     pub header: ScimEntryHeader,
 
     pub ext_access_check: Option<ScimEffectiveAccess>,
     #[serde(flatten)]
-    pub attrs: BTreeMap<Attribute, ScimValueKanidm>,
+    pub attrs: BTreeMap<Attribute, ScimValueNetidm>,
 }
 
-impl ScimEntryKanidm {
+impl ScimEntryNetidm {
     fn get_string_attr(&self, attr: &Attribute) -> Option<&String> {
         self.attrs.get(attr).and_then(|v| match v {
-            ScimValueKanidm::String(s) => Some(s),
+            ScimValueNetidm::String(s) => Some(s),
             _ => None,
         })
     }
@@ -43,7 +43,7 @@ impl ScimEntryKanidm {
     fn get_scim_refs_attr(&self, attr: &Attribute) -> Option<&Vec<ScimReference>> {
         let option = self.attrs.get(attr);
         option.and_then(|v| match v {
-            ScimValueKanidm::EntryReferences(s) => Some(s),
+            ScimValueNetidm::EntryReferences(s) => Some(s),
             _ => None,
         })
     }
@@ -61,7 +61,7 @@ pub struct ScimListResponse {
     #[schema(value_type = u64)]
     pub start_index: Option<NonZeroU64>,
     #[schema(value_type = Vec<ScimEntry>)]
-    pub resources: Vec<ScimEntryKanidm>,
+    pub resources: Vec<ScimEntryNetidm>,
 }
 
 #[derive(Serialize, Debug, Clone, ToSchema)]
@@ -261,14 +261,14 @@ pub struct ScimReference {
     pub value: String,
 }
 
-/// This is a strongly typed ScimValue for Kanidm. It is for serialisation only
+/// This is a strongly typed ScimValue for Netidm. It is for serialisation only
 /// since on a deserialisation path we can not know the intent of the sender
 /// to how we deserialise strings. Additionally during deserialisation we need
 /// to accept optional or partial types too.
 #[serde_as]
 #[derive(Serialize, Debug, Clone, ToSchema)]
 #[serde(untagged)]
-pub enum ScimValueKanidm {
+pub enum ScimValueNetidm {
     Bool(bool),
     Uint32(u32),
     Int64(i64),
@@ -323,10 +323,10 @@ pub struct ScimPerson {
     pub groups: Vec<ScimReference>,
 }
 
-impl TryFrom<ScimEntryKanidm> for ScimPerson {
+impl TryFrom<ScimEntryNetidm> for ScimPerson {
     type Error = ();
 
-    fn try_from(scim_entry: ScimEntryKanidm) -> Result<Self, Self::Error> {
+    fn try_from(scim_entry: ScimEntryNetidm) -> Result<Self, Self::Error> {
         let uuid = scim_entry.header.id;
         let name = scim_entry
             .get_string_attr(&Attribute::Name)
@@ -346,7 +346,7 @@ impl TryFrom<ScimEntryKanidm> for ScimPerson {
             .attrs
             .get(&Attribute::Mail)
             .and_then(|v| match v {
-                ScimValueKanidm::Mail(m) => Some(m.clone()),
+                ScimValueNetidm::Mail(m) => Some(m.clone()),
                 _ => None,
             })
             .unwrap_or_default();
@@ -360,7 +360,7 @@ impl TryFrom<ScimEntryKanidm> for ScimPerson {
             .attrs
             .get(&Attribute::EntryManagedBy)
             .and_then(|v| match v {
-                ScimValueKanidm::EntryReference(v) => Some(v.clone()),
+                ScimValueNetidm::EntryReference(v) => Some(v.clone()),
                 _ => None,
             });
 
@@ -386,10 +386,10 @@ pub struct ScimGroup {
     pub members: Vec<ScimReference>,
 }
 
-impl TryFrom<ScimEntryKanidm> for ScimGroup {
+impl TryFrom<ScimEntryNetidm> for ScimGroup {
     type Error = ();
 
-    fn try_from(scim_entry: ScimEntryKanidm) -> Result<Self, Self::Error> {
+    fn try_from(scim_entry: ScimEntryNetidm) -> Result<Self, Self::Error> {
         let uuid = scim_entry.header.id;
         let name = scim_entry
             .get_string_attr(&Attribute::Name)
@@ -410,169 +410,169 @@ impl TryFrom<ScimEntryKanidm> for ScimGroup {
     }
 }
 
-impl From<bool> for ScimValueKanidm {
+impl From<bool> for ScimValueNetidm {
     fn from(b: bool) -> Self {
         Self::Bool(b)
     }
 }
 
-impl From<OffsetDateTime> for ScimValueKanidm {
+impl From<OffsetDateTime> for ScimValueNetidm {
     fn from(odt: OffsetDateTime) -> Self {
         Self::DateTime(odt)
     }
 }
 
-impl From<Vec<UiHint>> for ScimValueKanidm {
+impl From<Vec<UiHint>> for ScimValueNetidm {
     fn from(set: Vec<UiHint>) -> Self {
         Self::UiHints(set)
     }
 }
 
-impl From<Vec<OffsetDateTime>> for ScimValueKanidm {
+impl From<Vec<OffsetDateTime>> for ScimValueNetidm {
     fn from(set: Vec<OffsetDateTime>) -> Self {
         Self::ArrayDateTime(set)
     }
 }
 
-impl From<String> for ScimValueKanidm {
+impl From<String> for ScimValueNetidm {
     fn from(s: String) -> Self {
         Self::String(s)
     }
 }
 
-impl From<&str> for ScimValueKanidm {
+impl From<&str> for ScimValueNetidm {
     fn from(s: &str) -> Self {
         Self::String(s.to_string())
     }
 }
 
-impl From<Vec<String>> for ScimValueKanidm {
+impl From<Vec<String>> for ScimValueNetidm {
     fn from(set: Vec<String>) -> Self {
         Self::ArrayString(set)
     }
 }
 
-impl From<Uuid> for ScimValueKanidm {
+impl From<Uuid> for ScimValueNetidm {
     fn from(u: Uuid) -> Self {
         Self::Uuid(u)
     }
 }
 
-impl From<Vec<Uuid>> for ScimValueKanidm {
+impl From<Vec<Uuid>> for ScimValueNetidm {
     fn from(set: Vec<Uuid>) -> Self {
         Self::ArrayUuid(set)
     }
 }
 
-impl From<u32> for ScimValueKanidm {
+impl From<u32> for ScimValueNetidm {
     fn from(u: u32) -> Self {
         Self::Uint32(u)
     }
 }
 
-impl From<i64> for ScimValueKanidm {
+impl From<i64> for ScimValueNetidm {
     fn from(u: i64) -> Self {
         Self::Int64(u)
     }
 }
 
-impl From<u64> for ScimValueKanidm {
+impl From<u64> for ScimValueNetidm {
     fn from(u: u64) -> Self {
         Self::Uint64(u)
     }
 }
 
-impl From<Vec<ScimAddress>> for ScimValueKanidm {
+impl From<Vec<ScimAddress>> for ScimValueNetidm {
     fn from(set: Vec<ScimAddress>) -> Self {
         Self::Address(set)
     }
 }
 
-impl From<Vec<ScimMail>> for ScimValueKanidm {
+impl From<Vec<ScimMail>> for ScimValueNetidm {
     fn from(set: Vec<ScimMail>) -> Self {
         Self::Mail(set)
     }
 }
 
-impl From<Vec<ScimApplicationPasswordReference>> for ScimValueKanidm {
+impl From<Vec<ScimApplicationPasswordReference>> for ScimValueNetidm {
     fn from(set: Vec<ScimApplicationPasswordReference>) -> Self {
         Self::ApplicationPassword(set)
     }
 }
 
-impl From<Vec<ScimAuditString>> for ScimValueKanidm {
+impl From<Vec<ScimAuditString>> for ScimValueNetidm {
     fn from(set: Vec<ScimAuditString>) -> Self {
         Self::AuditString(set)
     }
 }
 
-impl From<Vec<ScimBinary>> for ScimValueKanidm {
+impl From<Vec<ScimBinary>> for ScimValueNetidm {
     fn from(set: Vec<ScimBinary>) -> Self {
         Self::ArrayBinary(set)
     }
 }
 
-impl From<Vec<ScimCertificate>> for ScimValueKanidm {
+impl From<Vec<ScimCertificate>> for ScimValueNetidm {
     fn from(set: Vec<ScimCertificate>) -> Self {
         Self::ArrayCertificate(set)
     }
 }
 
-impl From<Vec<ScimSshPublicKey>> for ScimValueKanidm {
+impl From<Vec<ScimSshPublicKey>> for ScimValueNetidm {
     fn from(set: Vec<ScimSshPublicKey>) -> Self {
         Self::SshPublicKey(set)
     }
 }
 
-impl From<Vec<ScimAuthSession>> for ScimValueKanidm {
+impl From<Vec<ScimAuthSession>> for ScimValueNetidm {
     fn from(set: Vec<ScimAuthSession>) -> Self {
         Self::AuthSession(set)
     }
 }
 
-impl From<Vec<ScimOAuth2Session>> for ScimValueKanidm {
+impl From<Vec<ScimOAuth2Session>> for ScimValueNetidm {
     fn from(set: Vec<ScimOAuth2Session>) -> Self {
         Self::OAuth2Session(set)
     }
 }
 
-impl From<Vec<ScimApiToken>> for ScimValueKanidm {
+impl From<Vec<ScimApiToken>> for ScimValueNetidm {
     fn from(set: Vec<ScimApiToken>) -> Self {
         Self::ApiToken(set)
     }
 }
 
-impl From<Vec<ScimIntentToken>> for ScimValueKanidm {
+impl From<Vec<ScimIntentToken>> for ScimValueNetidm {
     fn from(set: Vec<ScimIntentToken>) -> Self {
         Self::IntentToken(set)
     }
 }
 
-impl From<Vec<ScimOAuth2ScopeMap>> for ScimValueKanidm {
+impl From<Vec<ScimOAuth2ScopeMap>> for ScimValueNetidm {
     fn from(set: Vec<ScimOAuth2ScopeMap>) -> Self {
         Self::OAuth2ScopeMap(set)
     }
 }
 
-impl From<Vec<ScimOAuth2ClaimMap>> for ScimValueKanidm {
+impl From<Vec<ScimOAuth2ClaimMap>> for ScimValueNetidm {
     fn from(set: Vec<ScimOAuth2ClaimMap>) -> Self {
         Self::OAuth2ClaimMap(set)
     }
 }
 
-impl From<Vec<ScimKeyInternal>> for ScimValueKanidm {
+impl From<Vec<ScimKeyInternal>> for ScimValueNetidm {
     fn from(set: Vec<ScimKeyInternal>) -> Self {
         Self::KeyInternal(set)
     }
 }
 
-impl From<OutboundMessage> for ScimValueKanidm {
+impl From<OutboundMessage> for ScimValueNetidm {
     fn from(message: OutboundMessage) -> Self {
         Self::Message(message)
     }
 }
 
-impl From<Vec<Sha256Output>> for ScimValueKanidm {
+impl From<Vec<Sha256Output>> for ScimValueNetidm {
     fn from(set: Vec<Sha256Output>) -> Self {
         Self::Sha256(set)
     }

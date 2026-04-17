@@ -1,10 +1,10 @@
 use crate::OpType;
 
-use crate::{KanidmClientParser, MessageOpt, OutputMode};
-// use kanidm_proto::scim_v1::{ScimEntryGetQuery};
+use crate::{NetidmClientParser, MessageOpt, OutputMode};
+// use netidm_proto::scim_v1::{ScimEntryGetQuery};
 
 impl MessageOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             MessageOpt::List => {
                 let client = opt.to_client(OpType::Read).await;

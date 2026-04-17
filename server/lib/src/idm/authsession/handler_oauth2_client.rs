@@ -8,7 +8,7 @@ use crate::utils;
 use crate::value::{AuthType, SessionExtMetadata};
 use base64::{engine::general_purpose, Engine as _};
 use serde_json;
-use kanidm_proto::oauth2::{
+use netidm_proto::oauth2::{
     AccessTokenRequest, AccessTokenResponse, AuthorisationRequest, AuthorisationRequestOidc,
     GrantTypeReq, ResponseType,
 };
@@ -49,6 +49,7 @@ pub struct CredHandlerOAuth2Client {
     csrf_state: String,
     userinfo_endpoint: Option<Url>,
     jit_provisioning: bool,
+    email_link_accounts: bool,
     claim_map: BTreeMap<Attribute, String>,
 }
 
@@ -88,6 +89,7 @@ impl CredHandlerOAuth2Client {
             csrf_state,
             userinfo_endpoint: client_provider.userinfo_endpoint.clone(),
             jit_provisioning: client_provider.jit_provisioning,
+            email_link_accounts: client_provider.email_link_accounts,
             claim_map: client_provider.claim_map.clone(),
         }
     }
@@ -186,6 +188,7 @@ impl CredHandlerOAuth2Client {
                 return CredState::ProvisioningRequired {
                     provider_uuid: self.provider_id,
                     claims,
+                    email_link_accounts: self.email_link_accounts,
                 };
             }
             warn!(
@@ -211,6 +214,7 @@ impl CredHandlerOAuth2Client {
             Some(claims) => CredState::ProvisioningRequired {
                 provider_uuid: self.provider_id,
                 claims,
+                email_link_accounts: self.email_link_accounts,
             },
             None => {
                 warn!(

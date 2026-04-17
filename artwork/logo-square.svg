@@ -20,7 +20,7 @@
    xmlns:cc="http://creativecommons.org/ns#"
    xmlns:dc="http://purl.org/dc/elements/1.1/">
   <title
-     id="title332">Kanidm Square Logo</title>
+     id="title332">Netidm Square Logo</title>
   <sodipodi:namedview
      id="namedview39"
      pagecolor="#ffffff"
@@ -84,7 +84,7 @@
     <rdf:RDF>
       <cc:Work
          rdf:about="">
-        <dc:title>Kanidm Square Logo</dc:title>
+        <dc:title>Netidm Square Logo</dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -229,7 +229,7 @@
            id="tspan1125"
            x="93.162766"
            y="128.62389"
-           style="fill:#cccccc;stroke-width:0.0676183">KANIDM</tspan></text>
+           style="fill:#cccccc;stroke-width:0.0676183">NETIDM</tspan></text>
     </g>
     <path
        d="m 145.61485,98.730679 c 3.50932,-3.1137 4.19635,-7.01138 3.17635,-11.38324 l -7.3914,3.83317 z"

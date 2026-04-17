@@ -8,7 +8,7 @@ use crate::repl::ruv::ReplicationUpdateVectorTransaction;
 use crate::repl::ruv::{RangeDiffStatus, ReplicationUpdateVector};
 use crate::value::{AuthType, Session, SessionState};
 use crypto_glue::{traits::DecodePem, x509::Certificate};
-use kanidm_lib_crypto::CryptoPolicy;
+use netidm_lib_crypto::CryptoPolicy;
 use std::collections::BTreeMap;
 use time::OffsetDateTime;
 

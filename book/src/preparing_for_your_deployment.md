@@ -4,21 +4,21 @@
 
 We provide docker images for the server components. They can be found at:
 
-- <https://hub.docker.com/r/kanidm/server>
-- <https://hub.docker.com/r/kanidm/radius>
-- <https://hub.docker.com/r/kanidm/tools>
+- <https://hub.docker.com/r/netidm/server>
+- <https://hub.docker.com/r/netidm/radius>
+- <https://hub.docker.com/r/netidm/tools>
 
 You can fetch these by running the commands:
 
 ```bash
-docker pull kanidm/server:latest
-docker pull kanidm/radius:latest
-docker pull kanidm/tools:latest
+docker pull netidm/server:latest
+docker pull netidm/radius:latest
+docker pull netidm/tools:latest
 ```
 
 > [!NOTE]
 >
-> Our preferred deployment method is in containers, and this documentation assumes you're running in docker. Kanidm will
+> Our preferred deployment method is in containers, and this documentation assumes you're running in docker. Netidm will
 > alternately run as a daemon/service, and [community-supported builds](packaging/packaging.md#community-packages) are
 > available for multiple platforms if you prefer this option. You may need to adjust the example commands throughout
 > this document to suit your desired server type if you choose not to use containers.
@@ -26,14 +26,14 @@ docker pull kanidm/tools:latest
 ## Development Version
 
 If you are interested in running the latest code from development, you can do this by changing the docker tag to
-`kanidm/server:devel` instead. Many people run the development version, and it is extremely reliable, but occasional
+`netidm/server:devel` instead. Many people run the development version, and it is extremely reliable, but occasional
 rough patches may occur. If you report issues, we will make every effort to help resolve them.
 
 ## System Requirements
 
 ### CPU
 
-Kanidm relies on modern CPU optimisations for many operations. As a result your cpu must be either:
+Netidm relies on modern CPU optimisations for many operations. As a result your cpu must be either:
 
 - `x86_64` supporting `x86_64_v2` operations.
 - `aarch64` supporting `neon_v8` operations.
@@ -46,7 +46,7 @@ Older or unsupported CPUs may raise a `SIGILL` (Illegal Instruction) on hardware
 
 #### Memory
 
-Kanidm extensively uses memory caching, trading memory consumption to improve parallel throughput. You should expect to
+Netidm extensively uses memory caching, trading memory consumption to improve parallel throughput. You should expect to
 see 64KB of ram per entry in your database, depending on cache tuning and settings.
 
 #### Disk
@@ -61,10 +61,10 @@ For best performance, you should use non-volatile memory express (NVME), or othe
 You'll need a volume where you can place configuration, certificates and the database:
 
 ```bash
-docker volume create kanidmd
+docker volume create netidmd
 ```
 
-You should have a chain.pem and key.pem in your kanidmd volume. The reason for requiring Transport Layer Security (TLS,
+You should have a chain.pem and key.pem in your netidmd volume. The reason for requiring Transport Layer Security (TLS,
 which replaces the deprecated Secure Sockets Layer, SSL) is explained in
 [why tls](./frequently_asked_questions.md#why-tls). In summary, TLS is our root of trust between the server and clients,
 and a critical element of ensuring a secure system.
@@ -97,7 +97,7 @@ final certificate should be the CA root. For example:
 > [!NOTE]
 >
 > If you are using Let's Encrypt the provided files "fullchain.pem" and "privkey.pem" are already correctly formatted as
-> required for Kanidm.
+> required for Netidm.
 
 You can validate that the leaf certificate matches the key with the command:
 
@@ -133,16 +133,16 @@ openssl verify -untrusted fullchain.pem fullchain.pem
 > Here "-untrusted" flag means a list of further certificates in the chain to build up to the root is provided, but that
 > the system CA root should be consulted. Verification is NOT bypassed or allowed to be invalid.
 
-If these verifications pass you can now use these certificates with Kanidm. To put the certificates in place you can use
+If these verifications pass you can now use these certificates with Netidm. To put the certificates in place you can use
 a shell container that mounts the volume such as:
 
 ```bash
-docker run --rm -i -t -v kanidmd:/data -v /my/host/path/work:/work opensuse/leap:latest \
+docker run --rm -i -t -v netidmd:/data -v /my/host/path/work:/work opensuse/leap:latest \
     /bin/sh -c "cp /work/* /data/"
 ```
 
 OR for a shell into the volume:
 
 ```bash
-docker run --rm -i -t -v kanidmd:/data opensuse/leap:latest /bin/sh
+docker run --rm -i -t -v netidmd:/data opensuse/leap:latest /bin/sh
 ```

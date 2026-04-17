@@ -1,6 +1,6 @@
-//! These represent Kanidm's view of SCIM resources that a client will serialise
+//! These represent Netidm's view of SCIM resources that a client will serialise
 //! for transmission, and the server will deserialise to process them. In reverse
-//! Kanidm will send responses that a client can then process and use.
+//! Netidm will send responses that a client can then process and use.
 //!
 //! A challenge of this is that it creates an asymmetry between the client and server
 //! as SCIM contains very few strong types. Without awareness of what the client
@@ -87,15 +87,15 @@ pub struct ScimEntryGetQuery {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
 pub enum ScimSchema {
-    #[serde(rename = "urn:ietf:params:scim:schemas:kanidm:sync:1:account")]
+    #[serde(rename = "urn:ietf:params:scim:schemas:netidm:sync:1:account")]
     SyncAccountV1,
-    #[serde(rename = "urn:ietf:params:scim:schemas:kanidm:sync:1:group")]
+    #[serde(rename = "urn:ietf:params:scim:schemas:netidm:sync:1:group")]
     SyncV1GroupV1,
-    #[serde(rename = "urn:ietf:params:scim:schemas:kanidm:sync:1:person")]
+    #[serde(rename = "urn:ietf:params:scim:schemas:netidm:sync:1:person")]
     SyncV1PersonV1,
-    #[serde(rename = "urn:ietf:params:scim:schemas:kanidm:sync:1:posixaccount")]
+    #[serde(rename = "urn:ietf:params:scim:schemas:netidm:sync:1:posixaccount")]
     SyncV1PosixAccountV1,
-    #[serde(rename = "urn:ietf:params:scim:schemas:kanidm:sync:1:posixgroup")]
+    #[serde(rename = "urn:ietf:params:scim:schemas:netidm:sync:1:posixgroup")]
     SyncV1PosixGroupV1,
 }
 
@@ -460,17 +460,17 @@ mod tests {
     #[test]
     fn scim_rfc_to_generic() {
         // Assert that we can transition from the rfc generic entries to the
-        // kanidm types.
+        // netidm types.
     }
 
     #[test]
     fn scim_kani_to_generic() {
-        // Assert that a kanidm strong entry can convert to generic.
+        // Assert that a netidm strong entry can convert to generic.
     }
 
     #[test]
     fn scim_kani_to_rfc() {
-        // Assert that a kanidm strong entry can convert to rfc.
+        // Assert that a netidm strong entry can convert to rfc.
     }
 
     #[test]

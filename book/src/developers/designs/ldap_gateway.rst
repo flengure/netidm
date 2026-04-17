@@ -6,12 +6,12 @@ its complex nature, it has been the staple of authentication and authorisation f
 many enterprise or unix focused applications are guaranteed to integrate with LDAP (even contrast to
 newer systems like SAML/OAuth).
 
-We can not expect every application to update to use the Kanidm specific API's nor any other modern
-API we offer, so we should allow these applications to at least be able to read into Kanidm via
+We can not expect every application to update to use the Netidm specific API's nor any other modern
+API we offer, so we should allow these applications to at least be able to read into Netidm via
 an LDAP interface.
 
-A major use case is legacy systems that Kanidm's native unix services aren't available on, so these
-would be better served via LDAP - of course, the native kanidm unix integrations are better
+A major use case is legacy systems that Netidm's native unix services aren't available on, so these
+would be better served via LDAP - of course, the native netidm unix integrations are better
 than existing LDAP integration choices, so we prefer those over any other pam/nss provider.
 
 Limitations
@@ -21,23 +21,23 @@ LDAP is a complex protocol, with many esoteric options that the majority of clie
 or require. To become fully rfc4511 compliant, would be a large amount of time for very little
 gain.
 
-The majority of value is in a working search and bind operation set. The LDAP gateway to Kanidm
+The majority of value is in a working search and bind operation set. The LDAP gateway to Netidm
 will be Read Only as a result. The ability to write via LDAP will not be supported.
 
-Most LDAP servers offer their schema in a readonly interface. Translating Kanidm's schema into a way
+Most LDAP servers offer their schema in a readonly interface. Translating Netidm's schema into a way
 that clients could interpret is of little value as many clients do not request this, or parse it.
 
-While Kanidm is entry based, and NoSQL, similar to LDAP, our datamodel is subtly different enough
+While Netidm is entry based, and NoSQL, similar to LDAP, our datamodel is subtly different enough
 that not all attributes can be representing in LDAP. Some data transformation will need to occur as
 a result to expose data that LDAP clients expect. Not all data may be able to be presented, nor
-should it (ie radius_secret, you should use the kanidm radius integration instead of the LDAP
-interface, as the kanidm interface is more efficient).
+should it (ie radius_secret, you should use the netidm radius integration instead of the LDAP
+interface, as the netidm interface is more efficient).
 
 Security Considerations
 =======================
 
 LDAP has a number of security considerations associated, but we already have to address these
-in kanidm. These are:
+in netidm. These are:
 
 * Limits on query result sizes.
 * Limits on filter recursion or size.
@@ -46,7 +46,7 @@ in kanidm. These are:
 * Access controls related to entries.
 
 Due to this, LDAP as an interface does not yield greater risk as all of these concerns are already
-required to be addressed in the main Kanidm server core. Due to the architecture in Kanidm, all
+required to be addressed in the main Netidm server core. Due to the architecture in Netidm, all
 improvements to security in the core will impact LDAP as well.
 
 Design
@@ -58,7 +58,7 @@ the server core. These events will be limited to Bind and Search.
 Search Base
 ===========
 
-This is derived from the domain name. All entries are presented in a flat scope, the same as Kanidm
+This is derived from the domain name. All entries are presented in a flat scope, the same as Netidm
 to avoid trying to "create" a fake hierarchy.
 
 Access Controls
@@ -80,28 +80,28 @@ Some common LDAP filters for applications may be hardcoded or unable to change t
 This means we need to be able to map some common requests. These do not require any other changes
 beyond the attribute name:
 
-| Kanidm Attribute  | LDAP Attribute    |
+| Netidm Attribute  | LDAP Attribute    |
 | ----------------- | ----------------- |
 | name              | cn                |
 | spn               | uid               |
 | gidnumber         | uidnumber         |
 | class             | objectClass       |
 
-We will accept (and prefer) that Kanidm attribute names are provided in the LDAP filter for applications
+We will accept (and prefer) that Netidm attribute names are provided in the LDAP filter for applications
 that can be customised.
 
 Compatibility Attributes
 ========================
 
-Some attributes exist in LDAP that have no direct equivalent in Kanidm. These are often from existing
+Some attributes exist in LDAP that have no direct equivalent in Netidm. These are often from existing
 LDAP deployments and may need to be carried through else certain associations are broken. The major
 two are:
 
 * nsUniqueId
 * EntryUUID
 
-These should be provided through an ldapCompat class in kanidm, and require no other transformation. They
-may require generation from the server, as legacy applications expect their existence and kanidm created
+These should be provided through an ldapCompat class in netidm, and require no other transformation. They
+may require generation from the server, as legacy applications expect their existence and netidm created
 accounts would need the attributes to exist to work with these.
 
 Entry and Attribute Transformations
@@ -109,18 +109,18 @@ Entry and Attribute Transformations
 
 Some attributes and items will need transformation to "make sense" to clients. This includes:
 
-member/memberOf: Member in LDAP is a DN, where in Kanidm it's a reference type with SPN. We will need
+member/memberOf: Member in LDAP is a DN, where in Netidm it's a reference type with SPN. We will need
 to transform this in filters *and* in entries that are sent back.
 
 gecos: This needs synthesisation from displayname
 
-homeDirectory: This needs to match the rules in kanidm_unix_int, especially once trusts are added (likely to be uuid based).
+homeDirectory: This needs to match the rules in netidm_unix_int, especially once trusts are added (likely to be uuid based).
 
-Kanidm is closest to rfc2307bis due to the structure of its memberOf attributes and other
+Netidm is closest to rfc2307bis due to the structure of its memberOf attributes and other
 elements, so this is what we will "look like" but may not strictly conform to.
 
 
-Kanidm Required Changes (TODO list)
+Netidm Required Changes (TODO list)
 ===================================
 
 * The TCP gateway with options to enable/disable from CLI options

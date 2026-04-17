@@ -17,10 +17,10 @@ bindaddress = "[::]:443"
 # ldapbindaddress = "[::]:636"
 # ldapbindaddress = ["[::]:636", "0.0.0.0:636"]
 #
-#   The path to the kanidm database.
-db_path = "/var/lib/private/kanidm/kanidm.db"
+#   The path to the netidm database.
+db_path = "/var/lib/private/netidm/netidm.db"
 #
-#   If you have a known filesystem, kanidm can tune the
+#   If you have a known filesystem, netidm can tune the
 #   database page size to match. Valid choices are:
 #   [zfs, other]
 #   If you are unsure about this leave it as the default
@@ -44,8 +44,8 @@ db_path = "/var/lib/private/kanidm/kanidm.db"
 #   TLS chain and key in pem format. Both must be present.
 #   If the server receives a SIGHUP, these files will be
 #   re-read and reloaded if their content is valid.
-tls_chain = "/var/lib/private/kanidm/chain.pem"
-tls_key = "/var/lib/private/kanidm/key.pem"
+tls_chain = "/var/lib/private/netidm/chain.pem"
+tls_key = "/var/lib/private/netidm/key.pem"
 
 #   The path where entry migrations will be read from.
 #   This path should contain files that match the pattern
@@ -55,12 +55,12 @@ tls_key = "/var/lib/private/kanidm/key.pem"
 #   Migrations are applied in order. Migrations that fail
 #   to apply, or have invalid syntax are skipped without
 #   preventing server start up or reload.
-# migration_path = "/etc/kanidm/migrations.d"
+# migration_path = "/etc/netidm/migrations.d"
 
 #   The log level of the server. May be one of info, debug, trace
 #
 #   NOTE: this can be overridden by the environment variable
-#   `KANIDM_LOG_LEVEL` at runtime
+#   `NETIDM_LOG_LEVEL` at runtime
 #   Defaults to "info"
 # log_level = "info"
 
@@ -80,7 +80,7 @@ tls_key = "/var/lib/private/kanidm/key.pem"
 #   credentials for accounts including but not limited to
 #   webauthn, oauth tokens, and more.
 #   If you change this value you *must* run
-#   `kanidmd domain rename` immediately after.
+#   `netidmd domain rename` immediately after.
 domain = "idm.example.com"
 #
 #   The origin for webauthn. This is the url to the server,
@@ -136,7 +136,7 @@ origin = "https://idm.example.com"
 
 [online_backup]
 #   The path to the output folder for online backups
-path = "/var/lib/private/kanidm/backups/"
+path = "/var/lib/private/netidm/backups/"
 #   The schedule to run online backups (see https://crontab.guru/)
 #   every day at 22:00 UTC (default)
 schedule = "00 22 * * *"

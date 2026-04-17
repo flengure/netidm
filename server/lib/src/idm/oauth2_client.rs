@@ -14,14 +14,16 @@ pub struct OAuth2ClientProvider {
     pub(crate) uuid: Uuid,
     pub(crate) client_id: String,
     pub(crate) client_basic_secret: String,
-    /// This is the origin of THIS kanidm server.
+    /// This is the origin of THIS netidm server.
     pub(crate) client_redirect_uri: Url,
     pub(crate) request_scopes: BTreeSet<String>,
     pub(crate) authorisation_endpoint: Url,
     pub(crate) token_endpoint: Url,
     pub(crate) userinfo_endpoint: Option<Url>,
     pub(crate) jit_provisioning: bool,
-    /// Maps a Kanidm attribute to the provider claim name used at JIT provisioning time.
+    /// Effective email-link-accounts setting: per-provider if set, otherwise global domain default.
+    pub(crate) email_link_accounts: bool,
+    /// Maps a Netidm attribute to the provider claim name used at JIT provisioning time.
     pub(crate) claim_map: BTreeMap<Attribute, String>,
 }
 
@@ -70,6 +72,7 @@ impl OAuth2ClientProvider {
             token_endpoint,
             userinfo_endpoint: None,
             jit_provisioning: false,
+            email_link_accounts: false,
             claim_map: BTreeMap::new(),
         }
     }
@@ -89,6 +92,13 @@ impl IdmServerProxyWriteTransaction<'_> {
 
         let mut client_redirect_uri = self.origin.clone();
         client_redirect_uri.set_path(OAUTH2_CLIENT_AUTHORISATION_RESPONSE_PATH);
+
+        let global_email_link_accounts = self
+            .qs_write
+            .internal_search_uuid(UUID_DOMAIN_INFO)
+            .ok()
+            .and_then(|e| e.get_ava_single_bool(Attribute::OAuth2DomainEmailLinkAccounts))
+            .unwrap_or(false);
 
         for provider_entry in oauth2_client_provider_entries {
             let uuid = provider_entry.get_uuid();
@@ -133,6 +143,10 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .get_ava_single_bool(Attribute::OAuth2JitProvisioning)
                 .unwrap_or(false);
 
+            let email_link_accounts = provider_entry
+                .get_ava_single_bool(Attribute::OAuth2EmailLinkAccounts)
+                .unwrap_or(global_email_link_accounts);
+
             let mut claim_map = BTreeMap::new();
             if let Some(v) = provider_entry
                 .get_ava_single_utf8(Attribute::OAuth2ClaimMapName)
@@ -164,6 +178,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 token_endpoint,
                 userinfo_endpoint,
                 jit_provisioning,
+                email_link_accounts,
                 claim_map,
             };
 

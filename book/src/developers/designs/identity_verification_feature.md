@@ -20,7 +20,7 @@ Below you can find said subset along with an explanation for every response.
 ![generic api responses](diagrams/idv_generic_responses.drawio.svg)
 
 Here are the _IdentifyUserRequest_ and _IdentifyUserResponse_ enums just described as found inside the
-[source code](https://github.com/kanidm/kanidm/blob/05b35df413e017ca44cc4410cc255b63728ef373/proto/src/internal.rs#L32)
+[source code](https://github.com/netidm/netidm/blob/05b35df413e017ca44cc4410cc255b63728ef373/proto/src/internal.rs#L32)
 :
 
 ```rust
@@ -45,7 +45,7 @@ pub enum IdentifyUserResponse {
 ## The identity verification state machine
 
 Here is the idv state machine, built on top of the idv endpoint request/response types previously described. Since the
-protocol provided by kanidm is completely stateless and doesn’t involve any online communication, some extra work is
+protocol provided by netidm is completely stateless and doesn’t involve any online communication, some extra work is
 needed on the ui side to make things work. Specifically on the diagram you will notice some black arrows: they represent
 all the state transitions entirely driven by the ui without requiring any api call. You’ll also notice some empty
 rectangles with a red border: they represent the scenario in which the other user tells us that the code provided

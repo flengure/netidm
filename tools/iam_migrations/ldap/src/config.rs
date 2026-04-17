@@ -1,5 +1,5 @@
-use kanidm_proto::constants::{ATTR_UID, LDAP_ATTR_CN, LDAP_CLASS_GROUPOFNAMES};
-use kanidmd_lib::prelude::{Attribute, EntryClass};
+use netidm_proto::constants::{ATTR_UID, LDAP_ATTR_CN, LDAP_CLASS_GROUPOFNAMES};
+use netidmd_lib::prelude::{Attribute, EntryClass};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use url::Url;

@@ -1,12 +1,12 @@
 # Kubernetes Ingress
 
-Guard your Kubernetes ingress with Kanidm authentication and authorization.
+Guard your Kubernetes ingress with Netidm authentication and authorization.
 
 ## Prerequisites
 
 We recommend you have the following before continuing:
 
-- [Kanidm](../installing_the_server.md)
+- [Netidm](../installing_the_server.md)
 - [Kubernetes v1.23 or above](https://docs.k0sproject.io/v1.23.6+k0s.2/install/)
 - [Nginx Ingress](https://kubernetes.github.io/ingress-nginx/deploy/)
 - A fully qualified domain name with an A record pointing to your k8s ingress.
@@ -14,28 +14,28 @@ We recommend you have the following before continuing:
 
 ## Instructions
 
-1. Create a Kanidm account and group:
-   1. Create a Kanidm account. Please see the section [Creating Accounts](../accounts/intro.md).
+1. Create a Netidm account and group:
+   1. Create a Netidm account. Please see the section [Creating Accounts](../accounts/intro.md).
    2. Give the account a password. Please see the section
       [Resetting Account Credentials](../accounts/authentication_and_credentials.md).
    3. Make the account a person. Please see the section [People Accounts](../accounts/people_accounts.md).
-   4. Create a Kanidm group. Please see the section [Creating Accounts](../accounts/groups.md).
+   4. Create a Netidm group. Please see the section [Creating Accounts](../accounts/groups.md).
    5. Add the account you created to the group you create.
-2. Create a Kanidm OAuth2 resource:
+2. Create a Netidm OAuth2 resource:
    1. Create the OAuth2 resource for your domain. Please see the section
-      [Create the Kanidm Configuration](../integrations/oauth2.md).
+      [Create the Netidm Configuration](../integrations/oauth2.md).
    2. Add a scope mapping from the resource you created to the group you create with the openid, profile, and email
-      scopes. Please see the section [Create the Kanidm Configuration](../integrations/oauth2.md).
+      scopes. Please see the section [Create the Netidm Configuration](../integrations/oauth2.md).
 3. Create a `Cookie Secret` to for the placeholder `<COOKIE_SECRET>` in step 4:
 
    ```shell
    docker run -ti --rm python:3-alpine python -c 'import secrets,base64; print(base64.b64encode(base64.b64encode(secrets.token_bytes(16))).decode("utf-8"));'
    ```
 
-4. Create a file called `k8s.kanidm-nginx-auth-example.yaml` with the block below. Replace every `<string>` (drop the
+4. Create a file called `k8s.netidm-nginx-auth-example.yaml` with the block below. Replace every `<string>` (drop the
    `<>`) with appropriate values:
    1. `<FQDN>`: The fully qualified domain name with an A record pointing to your k8s ingress.
-   2. `<KANIDM_FQDN>`: The fully qualified domain name of your Kanidm deployment.
+   2. `<NETIDM_FQDN>`: The fully qualified domain name of your Netidm deployment.
    3. `<COOKIE_SECRET>`: The output from step 3.
    4. `<OAUTH2_RS_NAME>`: Please see the output from step 2.1 or [get](../integrations/oauth2.md) the OAuth2 resource
       you create from that step.
@@ -53,7 +53,7 @@ We recommend you have the following before continuing:
    apiVersion: v1
    kind: Namespace
    metadata:
-     name: kanidm-example
+     name: netidm-example
      labels:
        pod-security.kubernetes.io/enforce: restricted
 
@@ -61,7 +61,7 @@ We recommend you have the following before continuing:
    apiVersion: apps/v1
    kind: Deployment
    metadata:
-     namespace: kanidm-example
+     namespace: netidm-example
      name: website
      labels:
        app: website
@@ -95,7 +95,7 @@ We recommend you have the following before continuing:
    apiVersion: v1
    kind: Service
    metadata:
-     namespace: kanidm-example
+     namespace: netidm-example
      name: website
    spec:
      selector:
@@ -114,7 +114,7 @@ We recommend you have the following before continuing:
        nginx.ingress.kubernetes.io/auth-url: "https://$host/oauth2/auth"
        nginx.ingress.kubernetes.io/auth-signin: "https://$host/oauth2/start?rd=$escaped_request_uri"
      name: website
-     namespace: kanidm-example
+     namespace: netidm-example
    spec:
      ingressClassName: nginx
      tls:
@@ -140,7 +140,7 @@ We recommend you have the following before continuing:
      labels:
        k8s-app: oauth2-proxy
      name: oauth2-proxy
-     namespace: kanidm-example
+     namespace: netidm-example
    spec:
      replicas: 1
      selector:
@@ -157,7 +157,7 @@ We recommend you have the following before continuing:
                - --email-domain=*
                - --upstream=file:///dev/null
                - --http-address=0.0.0.0:4182
-               - --oidc-issuer-url=https://<KANIDM_FQDN>/oauth2/openid/<OAUTH2_RS_NAME>
+               - --oidc-issuer-url=https://<NETIDM_FQDN>/oauth2/openid/<OAUTH2_RS_NAME>
                - --code-challenge-method=S256
              env:
                - name: OAUTH2_PROXY_CLIENT_ID
@@ -187,7 +187,7 @@ We recommend you have the following before continuing:
      labels:
        k8s-app: oauth2-proxy
      name: oauth2-proxy
-     namespace: kanidm-example
+     namespace: netidm-example
    spec:
      ports:
        - name: http
@@ -202,7 +202,7 @@ We recommend you have the following before continuing:
    kind: Ingress
    metadata:
      name: oauth2-proxy
-     namespace: kanidm-example
+     namespace: netidm-example
    spec:
      ingressClassName: nginx
      rules:
@@ -225,15 +225,15 @@ We recommend you have the following before continuing:
 5. Apply the configuration by running the following command:
 
    ```bash
-   kubectl apply -f k8s.kanidm-nginx-auth-example.yaml
+   kubectl apply -f k8s.netidm-nginx-auth-example.yaml
    ```
 
 6. Check your deployment succeeded by running the following commands:
 
    ```bash
-   kubectl -n kanidm-example get all
-   kubectl -n kanidm-example get ingress
-   kubectl -n kanidm-example get Certificate
+   kubectl -n netidm-example get all
+   kubectl -n netidm-example get ingress
+   kubectl -n netidm-example get Certificate
    ```
 
    You may use kubectl's describe and log for troubleshooting. If there are ingress errors see the Ingress NGINX
@@ -249,10 +249,10 @@ We recommend you have the following before continuing:
 1. Remove the resources create for this example from k8s:
 
    ```bash
-   kubectl delete namespace kanidm-example
+   kubectl delete namespace netidm-example
    ```
 
-2. Remove the objects created for this example from Kanidm:
+2. Remove the objects created for this example from Netidm:
    1. Delete the account created in section Instructions step 1.
    2. Delete the group created in section Instructions step 2.
    3. Delete the OAuth2 resource created in section Instructions step 3.

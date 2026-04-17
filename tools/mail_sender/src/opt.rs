@@ -1,11 +1,11 @@
-use kanidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH;
-pub const DEFAULT_MAIL_SENDER_CONFIG_PATH: &str = "/etc/kanidm/mail-sender";
+use netidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH;
+pub const DEFAULT_MAIL_SENDER_CONFIG_PATH: &str = "/etc/netidm/mail-sender";
 
 #[derive(Debug, clap::Parser, Clone)]
-#[clap(about = "Kanidm Mail Sender")]
+#[clap(about = "Netidm Mail Sender")]
 pub struct Opt {
     /// Enable debugging of the sender
-    #[clap(short, long, env = "KANIDM_DEBUG")]
+    #[clap(short, long, env = "NETIDM_DEBUG")]
     pub debug: bool,
     /// Path to the client config file.
     #[clap(short, long, value_parser, default_value_os_t = DEFAULT_CLIENT_CONFIG_PATH.into())]

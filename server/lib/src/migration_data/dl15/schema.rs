@@ -25,7 +25,7 @@ pub static SCHEMA_ATTR_OAUTH2_JIT_PROVISIONING_DL15: LazyLock<SchemaAttribute> =
         uuid: UUID_SCHEMA_ATTR_OAUTH2_JIT_PROVISIONING,
         name: Attribute::OAuth2JitProvisioning,
         description:
-            "When true, automatically create a Kanidm account for first-time users of this provider."
+            "When true, automatically create a Netidm account for first-time users of this provider."
                 .to_string(),
         syntax: SyntaxType::Boolean,
         ..Default::default()
@@ -37,7 +37,7 @@ pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_NAME_DL15: LazyLock<SchemaAttribute> =
         uuid: UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_NAME,
         name: Attribute::OAuth2ClaimMapName,
         description:
-            "The provider claim name to use as the Kanidm account username (iname) on JIT provisioning."
+            "The provider claim name to use as the Netidm account username (iname) on JIT provisioning."
                 .to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()
@@ -49,7 +49,7 @@ pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME_DL15: LazyLock<SchemaAttribu
         uuid: UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
         name: Attribute::OAuth2ClaimMapDisplayname,
         description:
-            "The provider claim name to use as the Kanidm account display name on JIT provisioning."
+            "The provider claim name to use as the Netidm account display name on JIT provisioning."
                 .to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()
@@ -61,7 +61,7 @@ pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_EMAIL_DL15: LazyLock<SchemaAttribute> =
         uuid: UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_EMAIL,
         name: Attribute::OAuth2ClaimMapEmail,
         description:
-            "The provider claim name to use as the Kanidm account email address on JIT provisioning."
+            "The provider claim name to use as the Netidm account email address on JIT provisioning."
                 .to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()

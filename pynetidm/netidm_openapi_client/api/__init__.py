@@ -1,0 +1,30 @@
+# flake8: noqa
+
+# import apis into api package
+from netidm_openapi_client.api.account_api import AccountApi
+from netidm_openapi_client.api.auth_api import AuthApi
+from netidm_openapi_client.api.credential_api import CredentialApi
+from netidm_openapi_client.api.debug_api import DebugApi
+from netidm_openapi_client.api.domain_api import DomainApi
+from netidm_openapi_client.api.group_api import GroupApi
+from netidm_openapi_client.api.group_attr_api import GroupAttrApi
+from netidm_openapi_client.api.group_unix_api import GroupUnixApi
+from netidm_openapi_client.api.jwk_api import JwkApi
+from netidm_openapi_client.api.oauth2_api import Oauth2Api
+from netidm_openapi_client.api.person_api import PersonApi
+from netidm_openapi_client.api.person_attr_api import PersonAttrApi
+from netidm_openapi_client.api.person_certificate_api import PersonCertificateApi
+from netidm_openapi_client.api.person_credential_api import PersonCredentialApi
+from netidm_openapi_client.api.person_radius_api import PersonRadiusApi
+from netidm_openapi_client.api.person_ssh_pubkeys_api import PersonSshPubkeysApi
+from netidm_openapi_client.api.person_unix_api import PersonUnixApi
+from netidm_openapi_client.api.raw_api import RawApi
+from netidm_openapi_client.api.recycle_bin_api import RecycleBinApi
+from netidm_openapi_client.api.schema_api import SchemaApi
+from netidm_openapi_client.api.scim_api import ScimApi
+from netidm_openapi_client.api.self_api import SelfApi
+from netidm_openapi_client.api.service_account_api import ServiceAccountApi
+from netidm_openapi_client.api.sync_account_api import SyncAccountApi
+from netidm_openapi_client.api.system_api import SystemApi
+from netidm_openapi_client.api.ui_api import UiApi
+

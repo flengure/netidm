@@ -20,7 +20,7 @@ impl FromStr for ConsoleOutputMode {
 
     /// This can be safely unwrap'd because it'll always return a default of text
     /// ```
-    /// use kanidm_proto::messages::ConsoleOutputMode;
+    /// use netidm_proto::messages::ConsoleOutputMode;
     ///
     /// let mode: ConsoleOutputMode = "🦀".into();
     /// assert_eq!(ConsoleOutputMode::Text, mode);
@@ -46,7 +46,7 @@ impl FromStr for ConsoleOutputMode {
 /// what you asked for, else you'll get a text version.
 ///
 /// ```
-/// use kanidm_proto::messages::ConsoleOutputMode;
+/// use netidm_proto::messages::ConsoleOutputMode;
 /// let bork = "text";
 /// let com: ConsoleOutputMode = bork.into();
 /// matches!(ConsoleOutputMode::Text, com);
@@ -64,7 +64,7 @@ impl From<&str> for ConsoleOutputMode {
 /// what you asked for, else you'll get a text version.
 ///
 /// ```
-/// use kanidm_proto::messages::ConsoleOutputMode;
+/// use netidm_proto::messages::ConsoleOutputMode;
 /// let bork = String::from("cr4bz");
 /// let com: ConsoleOutputMode = bork.into();
 /// matches!(ConsoleOutputMode::Text, com);
@@ -121,7 +121,7 @@ impl Default for AccountChangeMessage {
 /// This outputs in either JSON or Text depending on the output_mode setting
 /// ```
 /// use std::fmt::format;
-/// use kanidm_proto::messages::*;
+/// use netidm_proto::messages::*;
 /// let mut msg = AccountChangeMessage::default();
 /// msg.action=String::from("cake_eating");
 /// msg.src_user=String::from("Kani");
@@ -175,7 +175,7 @@ impl Default for BasicMessage {
 
 /// This outputs in either JSON or Text depending on the output_mode setting
 /// ```
-/// use kanidm_proto::messages::*;
+/// use netidm_proto::messages::*;
 /// use std::fmt::format;
 /// let mut msg = BasicMessage::default();
 /// msg.action = String::from("cake_eating");

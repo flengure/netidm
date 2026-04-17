@@ -2,23 +2,23 @@ Password Import
 ---------------
 
 It's common that an external system may want to synchronise passwords or other
-security material into a system like Kanidm. Two major examples is a once off
+security material into a system like Netidm. Two major examples is a once off
 import of data from a different identity system, and a setup where an external
 idm system feeds account, credentials and other data into the system.
 
-Kanidm is already well placed to handle much of this due to the raw api's stateful
+Netidm is already well placed to handle much of this due to the raw api's stateful
 nature (though as with anything could always be improved further as further use
 cases are developed, for example a stateful create-or-assert batch system).
 
 One area that is lacking however is the ability to provide external password
-material to an account. This is a case where kanidm never sees the plaintext
+material to an account. This is a case where netidm never sees the plaintext
 password, we are only sent a hash of the material.
 
 Scenarios
 ----------
 
-* Once off account import - this is where we are migrating from an existing system to kanidm
-* Long term password sync - this is where an external system will sync and provide password hashes into kanidm.
+* Once off account import - this is where we are migrating from an existing system to netidm
+* Long term password sync - this is where an external system will sync and provide password hashes into netidm.
 
 In the situation where the external system has access to the cleartext of the password, the
 standard password set mechanisms and apis can be used instead.
@@ -26,7 +26,7 @@ standard password set mechanisms and apis can be used instead.
 Possible Account Configurations
 -------------------------------
 
-We have to consider that because kanidm will support various 2FA methods, or in some cases, only
+We have to consider that because netidm will support various 2FA methods, or in some cases, only
 webauthn, we must correctly handle this.
 
 * Password only - synced as expected.
@@ -39,26 +39,26 @@ a mechanism to allow password material to be supplied. If the account with webau
 is in need of recovery, other actions must be taken such as a password generate from the
 idm admin to remove the webauthn devices.
 
-Similar, if an account has configured 2FA, this must have been performed in kanidm on top of the
+Similar, if an account has configured 2FA, this must have been performed in netidm on top of the
 existing password sync. As a result, we do not fall-back to password only, but only change
 the password material to match the sync in this case.
 
 Security Considerations
 -----------------------
 
-Since this bypasses all password quality checks that kanidm provides, this is possible to misuse
+Since this bypasses all password quality checks that netidm provides, this is possible to misuse
 and weaken the security position of accounts.
 
 Additionally, being able to supply password materials to accounts may allow a compromised password
-provided to be able to take over high privilege kanidm accounts.
+provided to be able to take over high privilege netidm accounts.
 
 For this reason, the ability to import passwords must be limited to:
 
 * A service account with strong credentials
 * high_privilege accounts may NOT have their passwords set in this manner
 
-Once kanidm implements password badlist checks in the auth path, passwords that have been synced
-into kanidm via this route may not function as they are found in the badlist, causing the account
+Once netidm implements password badlist checks in the auth path, passwords that have been synced
+into netidm via this route may not function as they are found in the badlist, causing the account
 to be locked - this sounds like a good thing :)
 
 Design

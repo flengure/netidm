@@ -1,5 +1,5 @@
 
-# The token used to identify and authenticate to Kanidm to read the mail queue. This
+# The token used to identify and authenticate to Netidm to read the mail queue. This
 # token *must* have read-write privileges in order to ensure that queued messages can
 # be marked as sent.
 token = "<service account token>"
@@ -11,18 +11,18 @@ token = "<service account token>"
 #
 # schedule = "*/5 * * * * * *"
 
-# The display name of your Kanidm instance. This is used in subject lines of messages
+# The display name of your Netidm instance. This is used in subject lines of messages
 # to help identify the content to your users.
-instance_display_name = "Kanidm Localhost"
+instance_display_name = "Netidm Localhost"
 
-# The url of your Kanidm instance. This is distinct to the client uri that the mail
-# sender uses to connect to Kanidm. This is so that you can configure your mail
-# sender to connect to a *specific* Kanidm instance, while still presenting a
+# The url of your Netidm instance. This is distinct to the client uri that the mail
+# sender uses to connect to Netidm. This is so that you can configure your mail
+# sender to connect to a *specific* Netidm instance, while still presenting a
 # generic uri to users.
 instance_url = "https://localhost:8443"
 
 # The address that messages should be sent from.
-mail_from_address = "kanidm@example.com"
+mail_from_address = "netidm@example.com"
 
 # The reply-to address that will be set in messages.
 mail_reply_to_address = "tobias@example.com"
@@ -34,7 +34,7 @@ mail_reply_to_address = "tobias@example.com"
 mail_relay = "smtp.example.com"
 
 # The username to authenticate to the SMTP relay as.
-mail_username = "kanidm@example.com"
+mail_username = "netidm@example.com"
 
 # The password to authenticate to the SMTP relay.
 mail_password = ""

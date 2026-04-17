@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# PROVIDE: netidm_unixd_tasks
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+#
+# Add these lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# netidm_unixd_tasks_enable (bool):	Set to NO by default.
+#				Set it to YES to enable netidm_unixd_tasks.
+
+. /etc/rc.subr
+
+name=netidm_unixd_tasks
+rcvar=netidm_unixd_tasks_enable
+
+load_rc_config $name
+
+: ${netidm_unixd_tasks_enable:="NO"}
+
+pidfile="/var/run/netidm-unixd-tasks.pid"
+command=/usr/sbin/daemon
+command_args="-u root -p /var/run/netidm-unixd-tasks.pid -T netidm_unixd_tasks /usr/local/libexec/${name}"
+procname=/usr/local/libexec/${name}
+
+run_rc_command "$1"

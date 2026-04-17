@@ -15,8 +15,8 @@ use crate::config::OnlineBackup;
 use crate::CoreAction;
 
 use crate::actors::{QueryServerReadV1, QueryServerWriteV1};
-use kanidmd_lib::constants::PURGE_FREQUENCY;
-use kanidmd_lib::event::{
+use netidmd_lib::constants::PURGE_FREQUENCY;
+use netidmd_lib::event::{
     OnlineBackupEvent, PurgeDeleteAfterEvent, PurgeRecycledEvent, PurgeTombstoneEvent,
 };
 

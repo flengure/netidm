@@ -1,5 +1,5 @@
 use crate::OpType;
-use crate::{handle_client_error, KanidmClientParser, OutputMode, PwBadlistOpt};
+use crate::{handle_client_error, NetidmClientParser, OutputMode, PwBadlistOpt};
 
 // use std::thread;
 use std::fs::File;
@@ -10,7 +10,7 @@ use zxcvbn::Score;
 const CHUNK_SIZE: usize = 1000;
 
 impl PwBadlistOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             PwBadlistOpt::Show => {
                 let client = opt.to_client(OpType::Read).await;

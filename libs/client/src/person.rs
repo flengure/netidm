@@ -1,11 +1,11 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::constants::*;
-use kanidm_proto::internal::{CredentialStatus, IdentifyUserRequest, IdentifyUserResponse};
-use kanidm_proto::v1::{AccountUnixExtend, Entry, SingleStringRequest, UatStatus};
+use crate::{ClientError, NetidmClient};
+use netidm_proto::constants::*;
+use netidm_proto::internal::{CredentialStatus, IdentifyUserRequest, IdentifyUserResponse};
+use netidm_proto::v1::{AccountUnixExtend, Entry, SingleStringRequest, UatStatus};
 use std::collections::BTreeMap;
 use uuid::Uuid;
 
-impl KanidmClient {
+impl NetidmClient {
     pub async fn idm_person_account_list(&self) -> Result<Vec<Entry>, ClientError> {
         self.perform_get_request("/v1/person").await
     }

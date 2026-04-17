@@ -156,6 +156,8 @@ pub enum Attribute {
     OAuth2ClaimMapName,
     OAuth2ClaimMapDisplayname,
     OAuth2ClaimMapEmail,
+    OAuth2EmailLinkAccounts,
+    OAuth2DomainEmailLinkAccounts,
     ObjectClass,
     OtherNoIndex,
     PassKeys,
@@ -172,7 +174,7 @@ pub enum Attribute {
     Replicated,
     Rs256PrivateKeyDer,
     S256,
-    /// A set of scim schemas. This is similar to a kanidm class.
+    /// A set of scim schemas. This is similar to a netidm class.
     #[serde(rename = "schemas")]
     ScimSchemas,
     Scope,
@@ -182,7 +184,7 @@ pub enum Attribute {
     Spn,
     /// An LDAP-compatible sshpublickey
     LdapSshPublicKey,
-    /// The Kanidm-local ssh_publickey
+    /// The Netidm-local ssh_publickey
     SshPublicKey,
     SudoHost,
     Supplements,
@@ -489,6 +491,8 @@ impl Attribute {
             Attribute::OAuth2ClaimMapName => ATTR_OAUTH2_CLAIM_MAP_NAME,
             Attribute::OAuth2ClaimMapDisplayname => ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
             Attribute::OAuth2ClaimMapEmail => ATTR_OAUTH2_CLAIM_MAP_EMAIL,
+            Attribute::OAuth2EmailLinkAccounts => ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS,
+            Attribute::OAuth2DomainEmailLinkAccounts => ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS,
             Attribute::ObjectClass => ATTR_OBJECTCLASS,
             Attribute::OtherNoIndex => ATTR_OTHER_NO_INDEX,
             Attribute::PassKeys => ATTR_PASSKEYS,
@@ -716,6 +720,8 @@ impl Attribute {
             ATTR_OAUTH2_CLAIM_MAP_NAME => Attribute::OAuth2ClaimMapName,
             ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME => Attribute::OAuth2ClaimMapDisplayname,
             ATTR_OAUTH2_CLAIM_MAP_EMAIL => Attribute::OAuth2ClaimMapEmail,
+            ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS => Attribute::OAuth2EmailLinkAccounts,
+            ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS => Attribute::OAuth2DomainEmailLinkAccounts,
             ATTR_OBJECTCLASS => Attribute::ObjectClass,
             ATTR_OTHER_NO_INDEX => Attribute::OtherNoIndex,
             ATTR_PASSKEYS => Attribute::PassKeys,

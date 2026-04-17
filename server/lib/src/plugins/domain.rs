@@ -112,7 +112,7 @@ impl Domain {
                     && !e.attribute_pres(Attribute::DomainDisplayName)
                 {
                     let domain_display_name =
-                        Value::new_utf8(format!("Kanidm {}", qs.get_domain_name()));
+                        Value::new_utf8(format!("Netidm {}", qs.get_domain_name()));
                     security_info!(
                         "plugin_domain: setting default domain_display_name to {:?}",
                         domain_display_name

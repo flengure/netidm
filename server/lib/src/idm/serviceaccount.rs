@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 use std::time::Duration;
 
 use compact_jwt::{jws::JwsBuilder, Jws, JwsCompact};
-use kanidm_proto::internal::ApiToken as ProtoApiToken;
+use netidm_proto::internal::ApiToken as ProtoApiToken;
 use time::OffsetDateTime;
 
 use crate::credential::Credential;
@@ -405,7 +405,7 @@ mod tests {
     use std::time::Duration;
 
     use compact_jwt::{dangernoverify::JwsDangerReleaseWithoutVerify, JwsVerifier};
-    use kanidm_proto::internal::ApiToken;
+    use netidm_proto::internal::ApiToken;
 
     use super::{DestroyApiTokenEvent, GenerateApiTokenEvent};
     use crate::idm::server::IdmServerTransaction;

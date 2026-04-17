@@ -124,7 +124,7 @@ services.
 Trusted Device Authentication Design
 ====================================
 
-In Kanidm we want to solve this in a manner that:
+In Netidm we want to solve this in a manner that:
 
 * Does not require the user to be bound to a single manufacturer ecosystem
 * Does not require the user to purchase additional hardware
@@ -141,22 +141,22 @@ The workflow that we want to achieve is:
 * (phone) scan the qr code OR follow the link provided
 * (phone) Enroll webauthn for phone SE to account
 
-In more precise technical details for Kanidm:
+In more precise technical details for Netidm:
 
-* (laptop) The user is authenticated to Kanidm
+* (laptop) The user is authenticated to Netidm
 * (laptop) The user requests a new trusted device to be added to the account, providing the name of the device they are enrolling
-* (kanidm) An encrypted token containing the device name, account uuid, a uuid and a time limit is generated
-* (kanidm) The encrypted token is appended to the enrollment uri and returned
+* (netidm) An encrypted token containing the device name, account uuid, a uuid and a time limit is generated
+* (netidm) The encrypted token is appended to the enrollment uri and returned
 * (laptop) The enrollment uri with token is presented for copy-paste AND rendered as a QR code for scanning
 * (phone) The enrollment uri is followed via the link or qr code
 * (phone) The user is asked to consent that they are about to enroll a device to their account
-* (kanidm) The token is decrypted and validated.
-* (kanidm) The token time limit is asserted to not be expired.
-* (kanidm) The token uuid is checked against the account to ensure the device is not already enrolled
-* (kanidm) A webauthn registration request with user-verification required is generated and returned
+* (netidm) The token is decrypted and validated.
+* (netidm) The token time limit is asserted to not be expired.
+* (netidm) The token uuid is checked against the account to ensure the device is not already enrolled
+* (netidm) A webauthn registration request with user-verification required is generated and returned
 * (phone) The user follows the presented device prompts to enroll the device
-* (kanidm) The token uuid is checked against the account to ensure the device is not already enrolled
-* (kanidm) The webauthn credential is registered as a device to the account
+* (netidm) The token uuid is checked against the account to ensure the device is not already enrolled
+* (netidm) The webauthn credential is registered as a device to the account
 * (phone) The user is redirected to login from their device
 
 
@@ -179,7 +179,7 @@ Device enrollments do not require a password
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 On a mobile device we should NOT require a password to be entered to the account. This is because
-the password rules we attempt to enforce in Kanidm should create passwords that are *not* memorable
+the password rules we attempt to enforce in Netidm should create passwords that are *not* memorable
 meaning that the user is likely to store this in a password manager. Since the password manager
 is already on the mobile device, then compromise of the device yields access to the password, nullifying
 its security benefit.
@@ -214,7 +214,7 @@ consent and knowledge of which devices are trusted to their account for platform
 authentication.
 
 A risk of this is replication delay, where if the laptop and phone are interacting with disjoint
-Kanidm servers, then a delay may be experienced between the enrollment of the phone and the laptop
+Netidm servers, then a delay may be experienced between the enrollment of the phone and the laptop
 from being able to see that credential to enable it. This may lead to user confusion or frustration.
 
 As the user must have authenticated to the laptop to generate the URI to sign in a new device, the

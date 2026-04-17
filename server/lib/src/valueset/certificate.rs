@@ -8,9 +8,9 @@ use crypto_glue::{
     traits::{DecodeDer, EncodeDer, EncodePem, LineEndingPem},
     x509::{x509_digest_public_key_sha256, Certificate},
 };
-use kanidm_proto::scim_v1::client::ScimCertificate as ClientScimCertificate;
-use kanidm_proto::scim_v1::server::ScimCertificate;
-use kanidm_proto::scim_v1::JsonValue;
+use netidm_proto::scim_v1::client::ScimCertificate as ClientScimCertificate;
+use netidm_proto::scim_v1::server::ScimCertificate;
+use netidm_proto::scim_v1::JsonValue;
 use std::collections::BTreeMap;
 
 #[derive(Debug, Clone)]
@@ -250,7 +250,7 @@ impl ValueSetT for ValueSetCertificate {
         if vals.is_empty() {
             None
         } else {
-            Some(ScimValueKanidm::from(vals).into())
+            Some(ScimValueNetidm::from(vals).into())
         }
     }
 
@@ -306,7 +306,7 @@ impl ValueSetT for ValueSetCertificate {
 #[cfg(test)]
 mod tests {
     use super::ValueSetCertificate;
-    use crate::prelude::{ScimValueKanidm, ValueSet};
+    use crate::prelude::{ScimValueNetidm, ValueSet};
     use crypto_glue::{traits::DecodePem, x509::Certificate};
 
     // Generated with:
@@ -336,7 +336,7 @@ raBy6edj7W0EIH+yQxkDEwIhAI0nVKaI6duHLAvtKW6CfEQFG6jKg7dyk37YYiRD
         let scim_value = vs.to_scim_value().unwrap().assume_resolved();
 
         let cert = match scim_value {
-            ScimValueKanidm::ArrayCertificate(mut set) => set.pop().unwrap(),
+            ScimValueNetidm::ArrayCertificate(mut set) => set.pop().unwrap(),
             _ => unreachable!(),
         };
 

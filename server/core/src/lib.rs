@@ -25,7 +25,7 @@
 #[macro_use]
 extern crate tracing;
 #[macro_use]
-extern crate kanidmd_lib;
+extern crate netidmd_lib;
 
 mod actors;
 pub mod admin;
@@ -48,17 +48,17 @@ use crypto_glue::{
     s256::{Sha256, Sha256Output},
     traits::Digest,
 };
-use kanidm_proto::backup::BackupCompression;
-use kanidm_proto::config::ServerRole;
-use kanidm_proto::internal::OperationError;
-use kanidm_proto::scim_v1::client::ScimAssertGeneric;
-use kanidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
-use kanidmd_wg::{backend::boringtun::BoringtunBackend, backend::kernel::KernelBackend, BackendKind, WgManager};
-use kanidmd_lib::idm::ldap::LdapServer;
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::schema::Schema;
-use kanidmd_lib::status::StatusActor;
-use kanidmd_lib::value::CredentialType;
+use netidm_proto::backup::BackupCompression;
+use netidm_proto::config::ServerRole;
+use netidm_proto::internal::OperationError;
+use netidm_proto::scim_v1::client::ScimAssertGeneric;
+use netidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
+use netidmd_wg::{backend::boringtun::BoringtunBackend, backend::kernel::KernelBackend, BackendKind, WgManager};
+use netidmd_lib::idm::ldap::LdapServer;
+use netidmd_lib::prelude::*;
+use netidmd_lib::schema::Schema;
+use netidmd_lib::status::StatusActor;
+use netidmd_lib::value::CredentialType;
 use regex::Regex;
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
@@ -796,7 +796,7 @@ async fn migration_apply(
         Ok(dir_ents) => dir_ents,
         Err(err) => {
             error!(?err, "Unable to read migration directory.");
-            let diag = kanidm_lib_file_permissions::diagnose_path(migration_path);
+            let diag = netidm_lib_file_permissions::diagnose_path(migration_path);
             info!(%diag);
             return;
         }
@@ -852,7 +852,7 @@ async fn migration_apply(
             Ok(bytes) => bytes,
             Err(err) => {
                 error!(?err, "Unable to read migration - it will be ignored.");
-                let diag = kanidm_lib_file_permissions::diagnose_path(&migration_path);
+                let diag = netidm_lib_file_permissions::diagnose_path(&migration_path);
                 info!(%diag);
                 continue;
             }
@@ -1012,7 +1012,7 @@ pub async fn create_server_core(
     }
 
     info!(
-        "Starting kanidm with {}configuration: {}",
+        "Starting netidm with {}configuration: {}",
         if config_test { "TEST " } else { "" },
         config
     );
@@ -1157,8 +1157,8 @@ pub async fn create_server_core(
 
     // Start the WireGuard manager and bring up configured tunnels.
     let wg_manager = {
-        let backend_kind = kanidmd_wg::backend::detect_backend();
-        let backend: Arc<dyn kanidmd_wg::backend::WgBackend> = match backend_kind {
+        let backend_kind = netidmd_wg::backend::detect_backend();
+        let backend: Arc<dyn netidmd_wg::backend::WgBackend> = match backend_kind {
             BackendKind::Kernel => Arc::new(KernelBackend),
             BackendKind::Boringtun => Arc::new(BoringtunBackend),
         };
@@ -1183,9 +1183,9 @@ pub async fn create_server_core(
                         match WgManager::derive_public_key(&tunnel.private_key) {
                             Ok(pubkey) => {
                                 if let Ok(mut w) = idms_arc.proxy_write(ct_now).await {
-                                    let ml = kanidmd_lib::prelude::ModifyList::new_purge_and_set(
-                                        kanidmd_lib::prelude::Attribute::WgPublicKey,
-                                        kanidmd_lib::prelude::Value::new_utf8s(&pubkey),
+                                    let ml = netidmd_lib::prelude::ModifyList::new_purge_and_set(
+                                        netidmd_lib::prelude::Attribute::WgPublicKey,
+                                        netidmd_lib::prelude::Value::new_utf8s(&pubkey),
                                     );
                                     if let Err(e) = w.qs_write.internal_modify_uuid(tunnel_uuid, &ml) {
                                         error!("Failed to write public key for tunnel {} -> {:?}", tunnel_name, e);
@@ -1300,8 +1300,8 @@ pub async fn create_server_core(
         })
     };
 
-    // Background task: compare live WireGuard peers against Kanidm DB every 30 seconds
-    // and remove any peers that have been deleted from Kanidm.
+    // Background task: compare live WireGuard peers against Netidm DB every 30 seconds
+    // and remove any peers that have been deleted from Netidm.
     let wg_revoke_handle = {
         let mut broadcast_rx = broadcast_tx.subscribe();
         let wg_revoke_manager = wg_manager.clone();
@@ -1415,7 +1415,7 @@ pub async fn create_server_core(
     let migration_path = config
         .migration_path
         .clone()
-        .unwrap_or(PathBuf::from(env!("KANIDM_SERVER_MIGRATION_PATH")));
+        .unwrap_or(PathBuf::from(env!("NETIDM_SERVER_MIGRATION_PATH")));
 
     if config.integration_test_config.is_none() {
         let eventid = Uuid::new_v4();

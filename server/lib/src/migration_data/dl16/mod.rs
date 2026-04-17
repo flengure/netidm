@@ -48,12 +48,12 @@ pub fn phase_4_system_entries() -> Vec<EntryInitNew> {
 }
 
 pub fn phase_5_builtin_admin_entries(
-) -> Result<Vec<EntryInitNew>, kanidm_proto::internal::OperationError> {
+) -> Result<Vec<EntryInitNew>, netidm_proto::internal::OperationError> {
     super::dl15::phase_5_builtin_admin_entries()
 }
 
 pub fn phase_6_builtin_non_admin_entries(
-) -> Result<Vec<EntryInitNew>, kanidm_proto::internal::OperationError> {
+) -> Result<Vec<EntryInitNew>, netidm_proto::internal::OperationError> {
     super::dl15::phase_6_builtin_non_admin_entries()
 }
 

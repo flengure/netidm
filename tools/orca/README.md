@@ -1,4 +1,4 @@
-# Orca - A Kanidm Load Testing Tool
+# Orca - A Netidm Load Testing Tool
 
 Make a profile.toml
 

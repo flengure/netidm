@@ -6,7 +6,7 @@ auth_token = "ABC..."
 # default vlan for groups that don't specify one.
 radius_default_vlan = 99
 
-# if the user is in one of these Kanidm groups,
+# if the user is in one of these Netidm groups,
 # then they're allowed to authenticate
 radius_required_groups = ["radius_access_allowed@idm.example.com"]
 

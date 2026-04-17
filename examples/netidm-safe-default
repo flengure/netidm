@@ -1,0 +1,7 @@
+# Netidm minimal Service Configuration - /etc/netidm/config
+# For a full example and documentation, see /usr/share/netidm/config
+# or `example/netidm` in the source repository.
+
+# Replace this with your netidmd URI and uncomment the line
+# uri = "https://idm.example.com"
+verify_ca = true

@@ -1,9 +1,5 @@
 pub(crate) mod schema;
 
-// Re-export accounts from the last DL that introduced new accounts.
-#[cfg(test)]
-pub(crate) use super::dl14::accounts;
-
 use self::schema::*;
 use crate::prelude::*;
 
@@ -34,12 +30,12 @@ pub fn phase_4_system_entries() -> Vec<EntryInitNew> {
 }
 
 pub fn phase_5_builtin_admin_entries(
-) -> Result<Vec<EntryInitNew>, kanidm_proto::internal::OperationError> {
+) -> Result<Vec<EntryInitNew>, netidm_proto::internal::OperationError> {
     super::dl16::phase_5_builtin_admin_entries()
 }
 
 pub fn phase_6_builtin_non_admin_entries(
-) -> Result<Vec<EntryInitNew>, kanidm_proto::internal::OperationError> {
+) -> Result<Vec<EntryInitNew>, netidm_proto::internal::OperationError> {
     super::dl16::phase_6_builtin_non_admin_entries()
 }
 

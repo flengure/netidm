@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use kanidm_proto::internal::RadiusAuthToken;
+use netidm_proto::internal::RadiusAuthToken;
 use time::OffsetDateTime;
 use uuid::Uuid;
 

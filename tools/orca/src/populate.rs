@@ -8,7 +8,7 @@ use tokio::sync::Mutex;
 
 use std::sync::Arc;
 
-async fn apply_flags(client: Arc<kani::KanidmOrcaClient>, flags: &[Flag]) -> Result<(), Error> {
+async fn apply_flags(client: Arc<kani::NetidmOrcaClient>, flags: &[Flag]) -> Result<(), Error> {
     for flag in flags {
         match flag {
             Flag::DisableAllPersonsMFAPolicy => client.disable_mfa_requirement().await?,
@@ -19,7 +19,7 @@ async fn apply_flags(client: Arc<kani::KanidmOrcaClient>, flags: &[Flag]) -> Res
 }
 
 async fn preflight_person(
-    client: Arc<kani::KanidmOrcaClient>,
+    client: Arc<kani::NetidmOrcaClient>,
     person: Person,
 ) -> Result<(), Error> {
     debug!(?person);
@@ -55,7 +55,7 @@ async fn preflight_person(
     Ok(())
 }
 
-async fn preflight_group(client: Arc<kani::KanidmOrcaClient>, group: Group) -> Result<(), Error> {
+async fn preflight_group(client: Arc<kani::NetidmOrcaClient>, group: Group) -> Result<(), Error> {
     if client.group_exists(&group.name.to_string()).await? {
         // Do nothing? Do we need to reset them later?
     } else {
@@ -75,7 +75,7 @@ async fn preflight_group(client: Arc<kani::KanidmOrcaClient>, group: Group) -> R
 
 pub async fn preflight(state: State) -> Result<(), Error> {
     // Get the admin client.
-    let client = Arc::new(kani::KanidmOrcaClient::new(&state.profile).await?);
+    let client = Arc::new(kani::NetidmOrcaClient::new(&state.profile).await?);
 
     // Apply any flags if they exist.
     apply_flags(client.clone(), state.preflight_flags.as_slice()).await?;
@@ -86,7 +86,7 @@ pub async fn preflight(state: State) -> Result<(), Error> {
     // Create persons.
     for person in state.persons.into_iter() {
         let c = client.clone();
-        // While writes are single threaded in Kanidm, searches (such as .exists)
+        // While writes are single threaded in Netidm, searches (such as .exists)
         // and credential updates are concurrent / parallel. So these parts can be
         // called in parallel, so we divide up into workers.
         tasks.push_back(preflight_person(c, person))
@@ -142,7 +142,7 @@ pub async fn preflight(state: State) -> Result<(), Error> {
 
     for group in state.groups.into_iter() {
         let c = client.clone();
-        // Write operations are single threaded in Kanidm, so we don't need to attempt
+        // Write operations are single threaded in Netidm, so we don't need to attempt
         // to parallelise that here.
         // tasks.push(tokio::spawn(preflight_group(c, group)))
         tasks.push(preflight_group(c, group))

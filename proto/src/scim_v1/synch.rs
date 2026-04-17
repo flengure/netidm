@@ -53,16 +53,16 @@ impl ScimSyncRequest {
     }
 }
 
-pub const SCIM_SCHEMA_SYNC_1: &str = "urn:ietf:params:scim:schemas:kanidm:sync:1:";
-pub const SCIM_SCHEMA_SYNC_ACCOUNT: &str = "urn:ietf:params:scim:schemas:kanidm:sync:1:account";
-pub const SCIM_SCHEMA_SYNC_GROUP: &str = "urn:ietf:params:scim:schemas:kanidm:sync:1:group";
-pub const SCIM_SCHEMA_SYNC_PERSON: &str = "urn:ietf:params:scim:schemas:kanidm:sync:1:person";
+pub const SCIM_SCHEMA_SYNC_1: &str = "urn:ietf:params:scim:schemas:netidm:sync:1:";
+pub const SCIM_SCHEMA_SYNC_ACCOUNT: &str = "urn:ietf:params:scim:schemas:netidm:sync:1:account";
+pub const SCIM_SCHEMA_SYNC_GROUP: &str = "urn:ietf:params:scim:schemas:netidm:sync:1:group";
+pub const SCIM_SCHEMA_SYNC_PERSON: &str = "urn:ietf:params:scim:schemas:netidm:sync:1:person";
 pub const SCIM_SCHEMA_SYNC_OAUTH2_ACCOUNT: &str =
-    "urn:ietf:params:scim:schemas:kanidm:sync:1:oauth2_account";
+    "urn:ietf:params:scim:schemas:netidm:sync:1:oauth2_account";
 pub const SCIM_SCHEMA_SYNC_POSIXACCOUNT: &str =
-    "urn:ietf:params:scim:schemas:kanidm:sync:1:posixaccount";
+    "urn:ietf:params:scim:schemas:netidm:sync:1:posixaccount";
 pub const SCIM_SCHEMA_SYNC_POSIXGROUP: &str =
-    "urn:ietf:params:scim:schemas:kanidm:sync:1:posixgroup";
+    "urn:ietf:params:scim:schemas:netidm:sync:1:posixgroup";
 
 pub const SCIM_ALGO: &str = "algo";
 pub const SCIM_DIGITS: &str = "digits";
@@ -71,7 +71,7 @@ pub const SCIM_STEP: &str = "step";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ScimTotp {
-    /// maps to "label" in kanidm.
+    /// maps to "label" in netidm.
     pub external_id: String,
     pub secret: String,
     pub algo: String,

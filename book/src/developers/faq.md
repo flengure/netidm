@@ -4,7 +4,7 @@ This is a list of common questions that are generally raised by developers or te
 
 ## Why don't you use library/project X?
 
-A critical aspect of Kanidm is the ability to test it. Generally requests to add libraries or projects can come in
+A critical aspect of Netidm is the ability to test it. Generally requests to add libraries or projects can come in
 different forms so I'll answer to a few of them:
 
 ## Is the library in Rust?
@@ -17,19 +17,19 @@ the project from development to production.
 ## Is the project going to create a microservice like architecture?
 
 If the project (such as an external OAuth/OIDC gateway, or a different DB layer) would be used in a tight-knit manner to
-Kanidm then it is no longer a microservice, but a monolith with multiple moving parts. This creates production fragility
+Netidm then it is no longer a microservice, but a monolith with multiple moving parts. This creates production fragility
 and issues such as:
 
 - Differences and difficulties in correlating log events
-- Design choices of the project not being compatible with Kanidm's model
+- Design choices of the project not being compatible with Netidm's model
 - Extra requirements for testing/production configuration
 
-This last point is key. It is a critical part of Kanidm that the following must work on all machines, and run every
+This last point is key. It is a critical part of Netidm that the following must work on all machines, and run every
 single test in the suite.
 
 ```shell
-git clone https://github.com/kanidm/kanidm.git
-cd kanidm
+git clone https://github.com/netidm/netidm.git
+cd netidm
 cargo test
 ```
 
@@ -44,7 +44,7 @@ be possible to effectively test for all developers.
 ## Why don't you use Raft/Etcd/MongoDB/Other to solve replication?
 
 There are a number of reasons why these are generally not compatible. Generally these databases or technologies do solve
-problems, but they are not the problems in Kanidm.
+problems, but they are not the problems in Netidm.
 
 ## CAP theorem
 
@@ -73,34 +73,34 @@ to arrive at the same state _without_ communication between the nodes.
 ## Update Resolution
 
 Many databases do exist that are PA, such as CouchDB or MongoDB. However, they often do not have the properties required
-in update resolution that is required for Kanidm.
+in update resolution that is required for Netidm.
 
 An example of this is that CouchDB uses object-level resolution. This means that if two servers update the same entry
-the "latest write wins". An example of where this won't work for Kanidm is if one server locks the account as an admin
+the "latest write wins". An example of where this won't work for Netidm is if one server locks the account as an admin
 is revoking the access of an account, but another account updates the username. If the username update happened second,
 the lock event would be lost creating a security risk. There are certainly cases where this resolution method is valid,
-but Kanidm is not one.
+but Netidm is not one.
 
 Another example is MongoDB. While it does attribute level resolution, it does this without the application awareness of
-Kanidm. For example, in Kanidm if we have an account lock based on time, we can select the latest time value to
+Netidm. For example, in Netidm if we have an account lock based on time, we can select the latest time value to
 over-write the following, or we could have a counter that can correctly increment/advance between the servers. However,
 Mongo is not aware of these rules, and it would not be able to give the experience we desire. Mongo is a very good
-database, it's just not the right choice for Kanidm.
+database, it's just not the right choice for Netidm.
 
 Additionally, it's worth noting that most of these other databases would violate the previous desires to keep the
 language as Rust and may require external configuration or daemons which may not be possible to test.
 
 ## How PAM/nsswitch Work
 
-Linux and BSD clients can resolve identities from Kanidm into accounts via PAM and nsswitch.
+Linux and BSD clients can resolve identities from Netidm into accounts via PAM and nsswitch.
 
 Name Service Switch (NSS) is used for connecting the computers with different data sources to resolve name-service
 information. By adding the nsswitch libraries to /etc/nsswitch.conf, we are telling NSS to lookup password info and
-group identities in Kanidm:
+group identities in Netidm:
 
 ```text
-passwd: compat kanidm
-group: compat kanidm
+passwd: compat netidm
+group: compat netidm
 ```
 
 When a service like sudo, sshd, su, etc. wants to authenticate someone, it opens the pam.d config of that service, then
@@ -109,6 +109,6 @@ performs authentication according to the modules defined in the pam.d config. Fo
 
 ## Test coverage
 
-We're trying to regularly get coverage reports into [Coveralls](https://coveralls.io/github/kanidm/kanidm), you can run
+We're trying to regularly get coverage reports into [Coveralls](https://coveralls.io/github/netidm/netidm), you can run
 the local testing with `make coverage` once you've installed
 [cargo-tarpaulin](https://crates.io/crates/cargo-tarpaulin).

@@ -1,6 +1,6 @@
 # OAuth2 Refresh Tokens
 
-Due to how Kanidm authentication sessions were originally implemented they had short session times (1 hour) due to the
+Due to how Netidm authentication sessions were originally implemented they had short session times (1 hour) due to the
 lack of privilege separation in tokens. Now with privilege separation being implemented session lengths have been
 extended to 8 hours with possible increases in the future.
 
@@ -12,7 +12,7 @@ terminated then the user would retain access to applications for up to 8 hours o
 To prevent this, we need OAuth2 tokens to "check in" periodically to re-affirm their session validity.
 
 This is performed with access tokens and refresh tokens. The access token has a short lifespan (proposed 15 minutes) and
-must be refreshed with Kanidm which can check the true session validity and if the session has been revoked. This
+must be refreshed with Netidm which can check the true session validity and if the session has been revoked. This
 creates a short window for revocation to propagate to OAuth2 applications since each OAuth2 application must
 periodically check in to keep their access token alive.
 
@@ -32,14 +32,14 @@ This is supported by
 and
 [draft oauth security topics refresh token protection](https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#refresh_token_protection)
 
-Refresh tokens must only be used by the client application associated. Kanidm strictly enforces this already with our
+Refresh tokens must only be used by the client application associated. Netidm strictly enforces this already with our
 client authorisation checks. This is discussed in
 [RFC6749 section 10.4](https://www.rfc-editor.org/rfc/rfc6749#section-10.4).
 
 ## Design
 
           ┌─────────────────────────────────────────┐
-          │Kanidm                                   │
+          │Netidm                                   │
           │                                         │
           │ ┌─────────┐                ┌─────────┐  │
           │ │         │                │         │  │
@@ -83,7 +83,7 @@ In a replicated environment this system is also stable and correct even if a ses
                   │                                                │                                   
                   │                                                │                                   
           ┌───────┼─────────────────────────────────┐       ┌──────┼──────────────────────────────────┐
-          │Kanidm │                                 │       │Kanidm│                                  │
+          │Netidm │                                 │       │Netidm│                                  │
           │       │                                 │       │      ▼                                  │
           │ ┌─────────┐                ┌─────────┐  │       │ ┌─────────┐                 ┌─────────┐ │
           │ │         │                │         │  │       │ │         │                 │         │ │
@@ -113,7 +113,7 @@ In a replicated environment this system is also stable and correct even if a ses
      │       │                   │       │                                         │       │           
      └───────┘                   └───────┘                                         └───────┘
 
-In this example, we can see that the replication of the session with NIB 1 happens to the second Kanidm server, but the
+In this example, we can see that the replication of the session with NIB 1 happens to the second Netidm server, but the
 replication of session with NIB 2 has not occurred yet. If the token that was later issued with IAT 2 was presented to
 the second server it would still be valid and able to refresh since IAT 2 is greater or equal to NIB 1. This would also
 prompt the session to advance to NIB 3 such that when replication begun again, the session with NIB 3 would take

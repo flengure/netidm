@@ -1,4 +1,4 @@
-# Build the main Kanidmd server
+# Build the main Netidmd server
 ARG BASE_IMAGE=opensuse/tumbleweed:latest
 # ARG BASE_IMAGE=opensuse/leap:15.5
 
@@ -8,12 +8,12 @@ RUN --mount=type=cache,id=zypp,target=/var/cache/zypp /zypper_fixing.sh
 
 # ======================
 FROM repos AS builder
-ARG KANIDM_FEATURES
-ARG KANIDM_BUILD_PROFILE="container_generic"
-ARG KANIDM_BUILD_OPTIONS=""
+ARG NETIDM_FEATURES
+ARG NETIDM_BUILD_PROFILE="container_generic"
+ARG NETIDM_BUILD_OPTIONS=""
 
 # Set the build profile
-ENV KANIDM_BUILD_PROFILE=${KANIDM_BUILD_PROFILE:-container_generic}
+ENV NETIDM_BUILD_PROFILE=${NETIDM_BUILD_PROFILE:-container_generic}
 ENV RUSTFLAGS="-Clinker=clang"
 
 RUN \
@@ -36,11 +36,11 @@ RUN \
         findutils \
         which
 
-COPY . /usr/src/kanidm
+COPY . /usr/src/netidm
 
 # ======================
 
-WORKDIR /usr/src/kanidm/kanidmd/daemon
+WORKDIR /usr/src/netidm/netidmd/daemon
 
 # Exports don't persist through RUN statements.
 RUN --mount=type=cache,id=cargo,target=/cargo \
@@ -49,9 +49,9 @@ RUN --mount=type=cache,id=cargo,target=/cargo \
     export SCCACHE_DIR=/sccache && \
     export RUSTC_WRAPPER=/usr/bin/sccache && \
     export CC="/usr/bin/clang" && \
-    cargo auditable build --locked -p daemon ${KANIDM_BUILD_OPTIONS} \
-        --target-dir="/usr/src/kanidm/target/" \
-        --features="${KANIDM_FEATURES}" \
+    cargo auditable build --locked -p daemon ${NETIDM_BUILD_OPTIONS} \
+        --target-dir="/usr/src/netidm/target/" \
+        --features="${NETIDM_FEATURES}" \
         --release; \
     sccache -s
 
@@ -60,8 +60,8 @@ RUN --mount=type=cache,id=cargo,target=/cargo \
 RUN <<EOF
     mkdir -p /out/libs
     mkdir -p /out/libs-root
-    ldd /usr/src/kanidm/target/release/kanidmd
-    ldd /usr/src/kanidm/target/release/kanidmd | grep -v 'linux-vdso.so' | awk '{print $(NF-1) " " $1}' | sort -u -k 1,1 | awk '{print "install", "-D", $1, (($2 ~ /^\//) ? "/out/libs-root" $2 : "/out/libs/" $2)}' | xargs -I {} sh -c {}
+    ldd /usr/src/netidm/target/release/netidmd
+    ldd /usr/src/netidm/target/release/netidmd | grep -v 'linux-vdso.so' | awk '{print $(NF-1) " " $1}' | sort -u -k 1,1 | awk '{print "install", "-D", $1, (($2 ~ /^\//) ? "/out/libs-root" $2 : "/out/libs/" $2)}' | xargs -I {} sh -c {}
     ls -Rla /out/libs
     ls -Rla /out/libs-root
 EOF
@@ -78,9 +78,9 @@ WORKDIR /
 COPY --from=repos /etc/ssl/certs /etc/ssl/certs
 
 # Copy our build
-COPY --from=builder --chmod=0755 /usr/src/kanidm/target/release/kanidmd /sbin/
+COPY --from=builder --chmod=0755 /usr/src/netidm/target/release/netidmd /sbin/
 # Web assets
-COPY --from=builder /usr/src/kanidm/server/core/static /hpkg/
+COPY --from=builder /usr/src/netidm/server/core/static /hpkg/
 
 # Copy fixed-path dynamic libraries to their position
 COPY --from=builder /out/libs-root/ /
@@ -105,6 +105,6 @@ HEALTHCHECK \
     --start-period=60s \
     --start-interval=5s \
     --retries=3 \
-    CMD [ "/sbin/kanidmd", "scripting", "healthcheck"]
+    CMD [ "/sbin/netidmd", "scripting", "healthcheck"]
 
-CMD [ "/sbin/kanidmd", "server"]
+CMD [ "/sbin/netidmd", "server"]

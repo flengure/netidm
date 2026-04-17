@@ -9,12 +9,12 @@ use crypto_glue::{
     traits::Digest,
 };
 use ipnet::IpNet;
-use kanidm_proto::wg::{
+use netidm_proto::wg::{
     WgConnectRequest, WgConnectResponse, WgPeerResponse, WgTokenCreate, WgTokenCreatedResponse,
     WgTokenInfo, WgTunnelCreate, WgTunnelResponse,
 };
-use kanidmd_wg::alloc::allocate;
-use kanidmd_wg::types::{WgPeerConfig, WgTunnelConfig};
+use netidmd_wg::alloc::allocate;
+use netidmd_wg::types::{WgPeerConfig, WgTunnelConfig};
 use rand::RngExt;
 
 // ---- Read operations ----

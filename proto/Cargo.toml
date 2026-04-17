@@ -1,7 +1,7 @@
 [package]
-name = "kanidm_proto"
-description = "Kanidm Protocol Bindings for serde"
-documentation = "https://docs.rs/kanidm_proto/latest/kanidm_proto/"
+name = "netidm_proto"
+description = "Netidm Protocol Bindings for serde"
+documentation = "https://docs.rs/netidm_proto/latest/netidm_proto/"
 
 version = { workspace = true }
 authors = { workspace = true }
@@ -47,4 +47,4 @@ enum-iterator = { workspace = true }
 serde_urlencoded = { workspace = true }
 
 [build-dependencies]
-kanidm_build_profiles = { workspace = true }
+netidm_build_profiles = { workspace = true }

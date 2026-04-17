@@ -8,7 +8,7 @@ use async_trait::async_trait;
 use idlset::v2::IDLBitRange;
 
 use hashbrown::HashMap;
-use kanidm_client::KanidmClient;
+use netidm_client::NetidmClient;
 use rand::RngExt;
 use rand_chacha::ChaCha8Rng;
 
@@ -55,7 +55,7 @@ enum State {
 pub struct ActorLatencyMeasurer {
     state: State,
     randomised_backoff_time: Duration,
-    additional_clients: Vec<KanidmClient>,
+    additional_clients: Vec<NetidmClient>,
     group_index: u64,
     personal_group_name: String,
     groups_creation_time: HashMap<u64, Instant>,
@@ -65,7 +65,7 @@ pub struct ActorLatencyMeasurer {
 impl ActorLatencyMeasurer {
     pub fn new(
         mut cha_rng: ChaCha8Rng,
-        additional_clients: Vec<KanidmClient>,
+        additional_clients: Vec<NetidmClient>,
         person_name: &str,
         warmup_time_ms: u64,
     ) -> Result<Self, Error> {
@@ -93,7 +93,7 @@ impl ActorLatencyMeasurer {
 impl ActorModel for ActorLatencyMeasurer {
     async fn transition(
         &mut self,
-        client: &KanidmClient,
+        client: &NetidmClient,
         person: &Person,
     ) -> Result<Vec<EventRecord>, Error> {
         let transition = self.next_transition();

@@ -45,7 +45,7 @@ impl DaemonClient {
                 Ok(res)
             }
             _ => {
-                error!("Error making request to kanidm_unixd");
+                error!("Error making request to netidm_unixd");
                 Err(Box::new(IoError::other("oh no!")))
             }
         }
@@ -61,7 +61,7 @@ impl DaemonClient {
 
         tokio::select! {
             _ = &mut sleep => {
-                error!(?timeout, "Timed out making request to kanidm_unixd");
+                error!(?timeout, "Timed out making request to netidm_unixd");
                 Err(Box::new(IoError::other("timeout")))
             }
             res = self.call_inner(req) => {

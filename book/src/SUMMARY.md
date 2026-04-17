@@ -1,8 +1,8 @@
 <!-- markdownlint-disable MD025 MD042 -->
 
-# Kanidm
+# Netidm
 
-- [Introduction to Kanidm](introduction_to_kanidm.md)
+- [Introduction to Netidm](introduction_to_netidm.md)
 
 - [Evaluation Quickstart](evaluation_quickstart.md)
 

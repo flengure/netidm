@@ -13,7 +13,7 @@ use self::schema::*;
 use self::system_config::*;
 use crate::constants::UUID_SCHEMA_ATTR_EC_KEY_PRIVATE;
 use crate::prelude::EntryInitNew;
-use kanidm_proto::internal::OperationError;
+use netidm_proto::internal::OperationError;
 use uuid::Uuid;
 
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {

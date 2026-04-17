@@ -76,8 +76,8 @@ impl FromStr for BackupCompression {
 #[test]
 
 fn test_backup_compression_identify() {
-    let gzip_path = Path::new("/var/lib/kanidm/backups/backup-2024-01-01.tar.gz");
-    let no_comp_path = Path::new("/var/lib/kanidm/backups/backup-2024-01-01.tar");
+    let gzip_path = Path::new("/var/lib/netidm/backups/backup-2024-01-01.tar.gz");
+    let no_comp_path = Path::new("/var/lib/netidm/backups/backup-2024-01-01.tar");
 
     assert_eq!(
         BackupCompression::identify_file(gzip_path),

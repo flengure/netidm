@@ -1,6 +1,6 @@
 # SCIM Pagination
 
-SCIM Pagination is important for Kanidm to limit the size of responses to clients, and to allow efficient UI's to exist
+SCIM Pagination is important for Netidm to limit the size of responses to clients, and to allow efficient UI's to exist
 that show results over multiple pages for large datasets (such as users)
 
 The default pagination in the [SCIM rfc](https://www.rfc-editor.org/rfc/rfc7644#section-3.4.2.4) has many limitations in
@@ -18,7 +18,7 @@ The major limitation of the SCIM RFC pagination is related to _access controls_.
 Say that we have 100 users. Our request is only allowed to access a subset of these users, and should only be able to
 see a total of 50 users.
 
-When Kanidm queries our backend we get a candidate set that matches the filter, but to apply the access controls we
+When Netidm queries our backend we get a candidate set that matches the filter, but to apply the access controls we
 actually need to fully load the entry in question and determine if it is or is not part of this result set.
 
 So this then raises a problem - how do we actually do this _effeciently_?. Since the RFC pagination only works based on
@@ -34,7 +34,7 @@ Cursor Based Pagination works by adding a nextCursor and previousCursor value to
 allows us to indicate the offset into the candidate result set, even without access controls being applied.
 
 Lets say that our candidate set has the same 100 entries as before. We skip the first 5, and the next 10 are returned.
-We then store the value 16 into the nextCurser. On the next request, Kanidm can skip the first 15 entries then start to
+We then store the value 16 into the nextCurser. On the next request, Netidm can skip the first 15 entries then start to
 apply access controls again from the 16th entry in the candidate set. This way we delay the scanning until that point.
 When we return the next results, we can list the previous page as previousCursor 0 (and the first 15 entries will be
 checked again), and the nextCursor at offset 28 (supposing we return 10 entries and skipped 2).

@@ -23,11 +23,11 @@
 
 1. After fetching `https://api.github.com/user`, if `email` is null, make a second request to `https://api.github.com/user/emails` (requires `user:email` scope already in required scopes).
 2. From the returned list, select the entry where `primary: true` and `verified: true`.
-3. If still no verified primary email exists, proceed with account creation — email field on the Kanidm account is left empty. Account creation is NOT blocked by missing email.
+3. If still no verified primary email exists, proceed with account creation — email field on the Netidm account is left empty. Account creation is NOT blocked by missing email.
 
 **Rationale**: Many legitimate GitHub users keep their email private. Blocking provisioning on missing email would exclude them. Email is informational at creation time per spec assumption.
 
-**Alternatives considered**: Block provisioning if no email found. Rejected — disproportionate, violates the Kanidm "humans first" principle.
+**Alternatives considered**: Block provisioning if no email found. Rejected — disproportionate, violates the Netidm "humans first" principle.
 
 ---
 
@@ -55,7 +55,7 @@ If `find_account_by_oauth2_provider_and_user_id(provider_uuid, sub)` returns an 
 
 For the initial JIT flow: this guard is also the duplicate-prevention mechanism. If a user with the same provider+sub already exists, they are logged in to the existing account — no new account is created.
 
-**Rationale**: Silent re-linking would allow an attacker who gains temporary access to a provider account to hijack a Kanidm account. Hard deny + admin contact is the safe default.
+**Rationale**: Silent re-linking would allow an attacker who gains temporary access to a provider account to hijack a Netidm account. Hard deny + admin contact is the safe default.
 
 **Alternatives considered**: Allow re-linking via an explicit admin operation. Agreed as the correct future path but out of scope for v1.
 
@@ -66,13 +66,13 @@ For the initial JIT flow: this guard is also the duplicate-prevention mechanism.
 **Decision**: Short-lived signed cookie (`COOKIE_OAUTH2_PROVISION_REQ`) with 10-minute TTL.
 
 - Claims from the provider are serialized, signed (same mechanism as `COOKIE_OAUTH2_REQ`), and stored in a cookie named `COOKIE_OAUTH2_PROVISION_REQ` when redirecting to `/ui/login/provision`.
-- If the user abandons (closes browser, navigates away, lets cookie expire): the cookie expires, the provider token expires independently on the provider side. No Kanidm state is left behind since the account was never created.
+- If the user abandons (closes browser, navigates away, lets cookie expire): the cookie expires, the provider token expires independently on the provider side. No Netidm state is left behind since the account was never created.
 - If the user returns within 10 minutes: the cookie is still valid, the confirmation page re-renders with the same proposed details (idempotent).
 - If the provider access token has expired when the user submits confirmation: the submission still succeeds — the access token is not re-validated at confirmation time. The claims were already extracted and stored in the cookie.
 
 **Rationale**: The 10-minute window matches typical user interaction time. No server-side session state needed for the confirmation page — cookie-only approach keeps the provisioning flow stateless.
 
-**Alternatives considered**: Store claims server-side in a Redis/in-memory store. Rejected — Kanidm has no such store, and the cookie approach already exists for `COOKIE_OAUTH2_REQ`.
+**Alternatives considered**: Store claims server-side in a Redis/in-memory store. Rejected — Netidm has no such store, and the cookie approach already exists for `COOKIE_OAUTH2_REQ`.
 
 ---
 
@@ -131,9 +131,9 @@ Current highest level is DL14 (`server/lib/src/migration_data/dl14/`). New attri
 |---|---|---|---|
 | `ATTR_OAUTH2_USERINFO_ENDPOINT` | `oauth2_userinfo_endpoint` | Url | Userinfo endpoint for non-OIDC providers |
 | `ATTR_OAUTH2_JIT_PROVISIONING` | `oauth2_jit_provisioning` | Boolean | Enable JIT provisioning for this provider |
-| `ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME` | `oauth2_claim_map_displayname` | Utf8 | Provider claim name → Kanidm display name |
-| `ATTR_OAUTH2_CLAIM_MAP_EMAIL` | `oauth2_claim_map_email` | Utf8 | Provider claim name → Kanidm email |
-| `ATTR_OAUTH2_CLAIM_MAP_NAME` | `oauth2_claim_map_name` | Utf8 | Provider claim name → Kanidm iname (username) |
+| `ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME` | `oauth2_claim_map_displayname` | Utf8 | Provider claim name → Netidm display name |
+| `ATTR_OAUTH2_CLAIM_MAP_EMAIL` | `oauth2_claim_map_email` | Utf8 | Provider claim name → Netidm email |
+| `ATTR_OAUTH2_CLAIM_MAP_NAME` | `oauth2_claim_map_name` | Utf8 | Provider claim name → Netidm iname (username) |
 
 **Rationale**: All new attributes are optional (`systemmay`) on the existing `OAuth2Client` class. No migration of existing data is required — existing providers simply lack these attributes and therefore have JIT disabled by default.
 

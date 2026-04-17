@@ -10,14 +10,14 @@ use url::Url;
 use uuid::Uuid;
 
 include!("src/opt/ssh_authorizedkeys.rs");
-include!("src/opt/kanidm.rs");
+include!("src/opt/netidm.rs");
 
 fn main() -> Result<(), Error> {
     profiles::apply_profile();
 
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-env-changed=OUT_DIR");
-    println!("cargo:rerun-if-changed=src/opt/kanidm.rs");
+    println!("cargo:rerun-if-changed=src/opt/netidm.rs");
     println!("cargo:rerun-if-changed=src/opt/ssh_authorizedkeys.rs");
     let outdir = match env::var_os("OUT_DIR") {
         None => return Ok(()),
@@ -38,14 +38,14 @@ fn main() -> Result<(), Error> {
         generate_to(
             shell,
             &mut SshAuthorizedOpt::command(),
-            "kanidm_ssh_authorizedkeys_direct",
+            "netidm_ssh_authorizedkeys_direct",
             comp_dir.clone(),
         )?;
 
         generate_to(
             shell,
-            &mut KanidmClientParser::command(),
-            "kanidm",
+            &mut NetidmClientParser::command(),
+            "netidm",
             comp_dir.clone(),
         )?;
     }

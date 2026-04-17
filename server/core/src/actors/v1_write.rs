@@ -1,18 +1,18 @@
 use std::iter;
 
 use compact_jwt::JweCompact;
-use kanidm_proto::internal::{
+use netidm_proto::internal::{
     CUIntentToken, CUSessionToken, CUStatus, CreateRequest, DeleteRequest, ImageValue,
     Modify as ProtoModify, ModifyList as ProtoModifyList, ModifyRequest,
     Oauth2ClaimMapJoin as ProtoOauth2ClaimMapJoin, OperationError,
 };
-use kanidm_proto::v1::{AccountUnixExtend, Entry as ProtoEntry, GroupUnixExtend};
+use netidm_proto::v1::{AccountUnixExtend, Entry as ProtoEntry, GroupUnixExtend};
 use std::str::FromStr;
 use time::OffsetDateTime;
 use tracing::{info, instrument, trace};
 use uuid::Uuid;
 
-use kanidmd_lib::{
+use netidmd_lib::{
     event::{CreateEvent, DeleteEvent, ModifyEvent, ReviveRecycledEvent},
     filter::{Filter, FilterInvalid},
     idm::account::DestroySessionTokenEvent,
@@ -32,7 +32,7 @@ use kanidmd_lib::{
     value::{OauthClaimMapJoin, PartialValue, Value},
 };
 
-use kanidmd_lib::prelude::*;
+use netidmd_lib::prelude::*;
 
 #[cfg(feature = "dev-oauth2-device-flow")]
 use std::collections::BTreeSet;
@@ -1784,7 +1784,7 @@ impl QueryServerWriteV1 {
         client_id: &str,
         scope: &Option<BTreeSet<String>>,
         eventid: Uuid,
-    ) -> Result<kanidm_proto::oauth2::DeviceAuthorizationResponse, Oauth2Error> {
+    ) -> Result<netidm_proto::oauth2::DeviceAuthorizationResponse, Oauth2Error> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_write = self
             .idms
@@ -1807,7 +1807,7 @@ impl QueryServerWriteV1 {
     pub async fn handle_jit_provision_oauth2_account(
         &self,
         provider_uuid: Uuid,
-        claims: kanidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
         desired_name: String,
         eventid: Uuid,
         _client_auth_info: ClientAuthInfo,
@@ -1820,11 +1820,28 @@ impl QueryServerWriteV1 {
             .and_then(|uuid| idms_prox_write.commit().map(|_| uuid))
     }
 
-    /// Derive a unique Kanidm username from external identity claims, performing
+    /// Attempt to link an existing Person account to an OAuth2 provider by verified email.
+    /// Returns `Ok(Some(uuid))` if a match was found and linked, `Ok(None)` if no match.
+    pub async fn handle_link_account_by_email(
+        &self,
+        provider_uuid: Uuid,
+        claims: netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        eventid: Uuid,
+        _client_auth_info: ClientAuthInfo,
+    ) -> Result<Option<Uuid>, OperationError> {
+        let _ = eventid;
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        idms_prox_write
+            .find_and_link_account_by_email(provider_uuid, &claims)
+            .and_then(|maybe_uuid| idms_prox_write.commit().map(|_| maybe_uuid))
+    }
+
+    /// Derive a unique Netidm username from external identity claims, performing
     /// collision resolution (_2…_100 suffix) if the preferred name is taken.
     pub async fn handle_derive_jit_username(
         &self,
-        claims: kanidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
         _client_auth_info: ClientAuthInfo,
     ) -> Result<String, OperationError> {
         let ct = duration_from_epoch_now();
@@ -1838,7 +1855,7 @@ impl QueryServerWriteV1 {
     pub async fn handle_wg_tunnel_create(
         &self,
         _client_auth_info: ClientAuthInfo,
-        req: kanidm_proto::wg::WgTunnelCreate,
+        req: netidm_proto::wg::WgTunnelCreate,
         eventid: Uuid,
     ) -> Result<(), OperationError> {
         let ct = duration_from_epoch_now();
@@ -1867,9 +1884,9 @@ impl QueryServerWriteV1 {
         &self,
         _client_auth_info: ClientAuthInfo,
         tunnel_name: String,
-        req: kanidm_proto::wg::WgTokenCreate,
+        req: netidm_proto::wg::WgTokenCreate,
         eventid: Uuid,
-    ) -> Result<kanidm_proto::wg::WgTokenCreatedResponse, OperationError> {
+    ) -> Result<netidm_proto::wg::WgTokenCreatedResponse, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_write = self.idms.proxy_write(ct).await?;
         // Resolve the tunnel UUID.
@@ -1906,9 +1923,9 @@ impl QueryServerWriteV1 {
         &self,
         _client_auth_info: ClientAuthInfo,
         caller_name: String,
-        req: kanidm_proto::wg::WgConnectRequest,
+        req: netidm_proto::wg::WgConnectRequest,
         eventid: Uuid,
-    ) -> Result<kanidm_proto::wg::WgConnectResponse, OperationError> {
+    ) -> Result<netidm_proto::wg::WgConnectResponse, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_write = self.idms.proxy_write(ct).await?;
         let resp = idms_prox_write.wg_connect(&caller_name, &req, ct)?;

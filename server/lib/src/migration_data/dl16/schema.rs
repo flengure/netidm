@@ -154,7 +154,7 @@ pub static SCHEMA_ATTR_WG_PRESHARED_KEY_DL16: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_WG_PRESHARED_KEY,
         name: Attribute::WgPresharedKey,
-        description: "Optional per-peer preshared key stored in kanidm, readable by the daemon via ACP.".to_string(),
+        description: "Optional per-peer preshared key stored in netidm, readable by the daemon via ACP.".to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });

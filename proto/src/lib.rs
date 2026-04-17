@@ -1,6 +1,6 @@
-//! Kanidm JSON protocol definitions
+//! Netidm JSON protocol definitions
 //!
-//! This library defines the elements that are used by Kanidm's http APIs.
+//! This library defines the elements that are used by Netidm's http APIs.
 //! Each module has different support levels which define the projects policy
 //! on change for the module.
 

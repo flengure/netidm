@@ -1,9 +1,9 @@
 use crate::OpType;
-use crate::{handle_client_error, KanidmClientParser, WgOpt};
-use kanidm_proto::wg::{WgConnectRequest, WgTokenCreate, WgTunnelCreate};
+use crate::{handle_client_error, NetidmClientParser, WgOpt};
+use netidm_proto::wg::{WgConnectRequest, WgTokenCreate, WgTunnelCreate};
 
 impl WgOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             WgOpt::TunnelList => {
                 let client = opt.to_client(OpType::Read).await;

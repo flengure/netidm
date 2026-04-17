@@ -1,11 +1,11 @@
 use crate::OpType;
-use crate::{handle_client_error, GroupOpt, GroupPosix, KanidmClientParser, OutputMode};
-use kanidm_proto::constants::ATTR_GIDNUMBER;
+use crate::{handle_client_error, GroupOpt, GroupPosix, NetidmClientParser, OutputMode};
+use netidm_proto::constants::ATTR_GIDNUMBER;
 
 mod account_policy;
 
 impl GroupOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             GroupOpt::List => {
                 let client = opt.to_client(OpType::Read).await;

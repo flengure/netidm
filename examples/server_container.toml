@@ -15,10 +15,10 @@ bindaddress = "0.0.0.0:8443"
 #   Defaults to "" (disabled)
 # ldapbindaddress = "0.0.0.0:3636"
 #
-#   The path to the kanidm database.
-db_path = "/data/kanidm.db"
+#   The path to the netidm database.
+db_path = "/data/netidm.db"
 #
-#   If you have a known filesystem, kanidm can tune the
+#   If you have a known filesystem, netidm can tune the
 #   database page size to match. Valid choices are:
 #   [zfs, other]
 #   If you are unsure about this leave it as the default
@@ -59,7 +59,7 @@ tls_key = "/data/key.pem"
 #   The log level of the server. May be one of info, debug, trace
 #
 #   NOTE: this can be overridden by the environment variable
-#   `KANIDM_LOG_LEVEL` at runtime
+#   `NETIDM_LOG_LEVEL` at runtime
 #   Defaults to "info"
 # log_level = "info"
 #
@@ -78,7 +78,7 @@ tls_key = "/data/key.pem"
 #   credentials for accounts including but not limited to
 #   webauthn, oauth tokens, and more.
 #   If you change this value you *must* run
-#   `kanidmd domain rename` immediately after.
+#   `netidmd domain rename` immediately after.
 domain = "idm.example.com"
 #
 #   The origin for webauthn. This is the url to the server,
@@ -133,7 +133,7 @@ origin = "https://idm.example.com"
 
 [online_backup]
 #   The path to the output folder for online backups
-path = "/data/kanidm/backups/"
+path = "/data/netidm/backups/"
 #   The schedule to run online backups (see https://crontab.guru/)
 #   every day at 22:00 UTC (default)
 schedule = "00 22 * * *"

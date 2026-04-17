@@ -1,7 +1,7 @@
 ## Unixd MultiResolver Support
 
-Up until July 2024 the purpose and motivation of the Kanidm Unixd component (`unix_integration` in the source tree) was
-to allow Unix-like platforms to authenticate and resolve users against a Kanidm instance.
+Up until July 2024 the purpose and motivation of the Netidm Unixd component (`unix_integration` in the source tree) was
+to allow Unix-like platforms to authenticate and resolve users against a Netidm instance.
 
 However, throughout 2023 and 2024 this project has expanded in scope - from the addition of TPM support to protect
 cached credentials (the first pam module to do so!), to use of the framework by himmelblau to enable Azure AD
@@ -74,7 +74,7 @@ would be damaging to users if their CTAP2 (passkeys) were deleted randomly on a 
 #### Local Group Extension
 
 An often requested feature is the ability to extend a local group with the members from a remote group. Often people
-attempt to achieve this by "overloading" a group remotely such as creating a group called "wheel" in Kanidm and then
+attempt to achieve this by "overloading" a group remotely such as creating a group called "wheel" in Netidm and then
 attempting to resolve it on their systems. This can introduce issues as different distributions may have the same groups
 but with different gidNumbers which can break systems, or it can cause locally configured items to be masked.
 
@@ -111,7 +111,7 @@ This has consequences on how we performance authentication flows generally.
 
 #### Domain Joining of Resolvers
 
-Some Clients (and in the future Kanidm) need to be able to persist some state related to Domain Joining, where the
+Some Clients (and in the future Netidm) need to be able to persist some state related to Domain Joining, where the
 client registers to the authentication provider. This provides extra functionality beyond the scope of this document,
 but a domain join work flow needs to be possible for the providers in some manner.
 
@@ -149,7 +149,7 @@ PIN's or CTAP devices. To achieve this we will need some methods to cryptographi
 these updates.
 
 To achieve this, we need to make the compromise that the users password must be stored in a reversible form on the
-system. Without this, the various wallets/keyrings won't work. This trade is acceptable since `pam_kanidm` is already a
+system. Without this, the various wallets/keyrings won't work. This trade is acceptable since `pam_netidm` is already a
 module that handles password material in plaintext, so having a mechanism to securely retrieve this _while_ the user is
 entering equivalent security material is reasonable.
 
@@ -197,7 +197,7 @@ the output.
 └──────────────────┘
 ```
 
-_Remote Users (such as Kanidm)_
+_Remote Users (such as Netidm)_
 
 After a lot of thinking, the conclusion we arrived at is that trying to handle password stacking for later pam modules
 is out of scope at this time.
@@ -369,7 +369,7 @@ To obfuscate details, the sqlite db should be a single table of key:value where 
 The uuid is a local detail, not related to the provider.
 
 The cache should move to a concread based concurrent tree which will also allow us to multi-thread the resolver for high
-performance deployments. Mail servers is an often requested use case for Kanidm in this space.
+performance deployments. Mail servers is an often requested use case for Netidm in this space.
 
 #### Extensible Entries
 

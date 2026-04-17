@@ -91,7 +91,7 @@ then the idl for that search is the set of all database entries. Similar, if our
 250,000 `class=person`, then `Eq(class, person)`, will have an idl containing 250,000 ids. Even with idl compression,
 this is still a lot of data!
 
-There tend to be two types of searches against a directory like Kanidm.
+There tend to be two types of searches against a directory like Netidm.
 
 - Broad searches
 - Targeted single entry searches

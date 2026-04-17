@@ -1,4 +1,4 @@
-use kanidm_proto::constants::uri::{
+use netidm_proto::constants::uri::{
     OAUTH2_AUTHORISE, OAUTH2_AUTHORISE_DEVICE, OAUTH2_TOKEN_ENDPOINT,
 };
 use oauth2_ext::basic::BasicClient;
@@ -80,7 +80,7 @@ async fn main() -> anyhow::Result<()> {
 
     let filter_layer = EnvFilter::builder()
         .with_default_directive(LevelFilter::INFO.into())
-        .parse_lossy("info,kanidm_client=warn,kanidm_cli=info");
+        .parse_lossy("info,netidm_client=warn,netidm_cli=info");
 
     sketching::tracing_subscriber::registry()
         .with(filter_layer)
@@ -89,7 +89,7 @@ async fn main() -> anyhow::Result<()> {
 
     info!("building client...");
 
-    // kanidm system oauth2_ext create-public device_flow device_flow 'https://deviceauth'
+    // netidm system oauth2_ext create-public device_flow device_flow 'https://deviceauth'
     let client = BasicClient::new(ClientId::new("device_code".to_string()))
         .set_token_uri(TokenUrl::from_url(
             format!("https://localhost:8443{OAUTH2_TOKEN_ENDPOINT}").parse()?,

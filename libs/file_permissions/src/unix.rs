@@ -18,7 +18,7 @@ use std::os::illumos::fs::MetadataExt;
 #[cfg(target_os = "android")]
 use std::os::android::fs::MetadataExt;
 
-use kanidm_utils_users::{get_current_gid, get_current_uid};
+use netidm_utils_users::{get_current_gid, get_current_uid};
 
 use std::fmt;
 use std::path::{Path, PathBuf};

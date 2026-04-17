@@ -3,9 +3,9 @@
 **Feature**: 002-wg-mgmt-crate  
 **Date**: 2026-04-17  
 **Base path**: `/v1/wg`  
-**Auth**: Kanidm bearer token (JWT) on all endpoints including `/v1/wg/connect` — the WG token secret is a second factor, not a replacement for authentication. The authenticated session determines `WgPeer.WgUserRef`.
+**Auth**: Netidm bearer token (JWT) on all endpoints including `/v1/wg/connect` — the WG token secret is a second factor, not a replacement for authentication. The authenticated session determines `WgPeer.WgUserRef`.
 
-All endpoints follow Kanidm conventions: JSON request/response bodies, `WebError` on failure, annotated with `#[utoipa::path(...)]`, registered in `apidocs/mod.rs`.
+All endpoints follow Netidm conventions: JSON request/response bodies, `WebError` on failure, annotated with `#[utoipa::path(...)]`, registered in `apidocs/mod.rs`.
 
 ---
 
@@ -135,7 +135,7 @@ Revoke a peer. Hot-removes from live interface within 30 seconds.
 
 ## Client Endpoints
 
-These endpoints are used by end-user WireGuard clients. They authenticate with a token secret rather than a Kanidm bearer token.
+These endpoints are used by end-user WireGuard clients. They authenticate with a token secret rather than a Netidm bearer token.
 
 ### `POST /v1/wg/connect`
 Register a new peer and receive a WireGuard client config.

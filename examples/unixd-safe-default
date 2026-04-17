@@ -1,15 +1,15 @@
-# Kanidm Unixd minimal Service Configuration - /etc/kanidm/unixd
-# For a full example and documentation, see /usr/share/kanidm-unixd/unixd
+# Netidm Unixd minimal Service Configuration - /etc/netidm/unixd
+# For a full example and documentation, see /usr/share/netidm-unixd/unixd
 # or `example/unixd` in the source repository
 
 version = '2'
 
-# Steps to enable the Kanidm auth provider:
-# 1. Uncomment the `[kanidm]` line below to enable the provider.
+# Steps to enable the Netidm auth provider:
+# 1. Uncomment the `[netidm]` line below to enable the provider.
 # 2. Set the `pam_allowed_login_groups` option to one or more valid posix groups.
-# 3. Also update /etc/kanidm/config and set the `idm_uri` option.
+# 3. Also update /etc/netidm/config and set the `idm_uri` option.
 
-# [kanidm]
+# [netidm]
 # WITHOUT THIS SET, NOBODY WILL BE ABLE TO LOG IN VIA PAM
 #
 # pam_allowed_login_groups = ["your_posix_login_group"]

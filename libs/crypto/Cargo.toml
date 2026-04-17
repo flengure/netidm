@@ -1,8 +1,8 @@
 [package]
-name = "kanidm_lib_crypto"
+name = "netidm_lib_crypto"
 version = { workspace = true }
 edition = { workspace = true }
-description = "Kanidm cryptographic functionality"
+description = "Netidm cryptographic functionality"
 license = { workspace = true }
 homepage = { workspace = true }
 repository = { workspace = true }

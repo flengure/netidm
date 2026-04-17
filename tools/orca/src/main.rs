@@ -53,17 +53,17 @@ fn main() -> ExitCode {
     if opt.debug() {
         ::std::env::set_var(
             "RUST_LOG",
-            "orca=debug,kanidm=debug,kanidm_client=debug,webauthn=debug",
+            "orca=debug,netidm=debug,netidm_client=debug,webauthn=debug",
         );
     }
 
     tracing_subscriber::fmt::init();
 
-    info!("Orca - the Kanidm Load Testing Utility.");
+    info!("Orca - the Netidm Load Testing Utility.");
     debug!("cli -> {:?}", opt);
     match opt {
         OrcaOpt::Version { .. } => {
-            println!("orca {}", env!("KANIDM_PKG_VERSION"));
+            println!("orca {}", env!("NETIDM_PKG_VERSION"));
             ExitCode::SUCCESS
         }
 
@@ -133,7 +133,7 @@ fn main() -> ExitCode {
             // we're okay with just one thread here
             let runtime = build_tokio_runtime(Some(1));
             runtime.block_on(async {
-                match kani::KanidmOrcaClient::new(&profile).await {
+                match kani::NetidmOrcaClient::new(&profile).await {
                     Ok(_) => {
                         info!("success");
                         ExitCode::SUCCESS
@@ -160,7 +160,7 @@ fn main() -> ExitCode {
             let runtime = build_tokio_runtime(Some(1));
 
             runtime.block_on(async {
-                let client = match kani::KanidmOrcaClient::new(&profile).await {
+                let client = match kani::NetidmOrcaClient::new(&profile).await {
                     Ok(client) => client,
                     Err(_err) => {
                         return ExitCode::FAILURE;

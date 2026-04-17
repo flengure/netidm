@@ -11,7 +11,7 @@ RUN /zypper_fixing.sh
 # FROM repos
 ARG RADIUS_USER=radiusd
 EXPOSE 1812 1813
-ENV KANIDM_CONFIG_FILE="/data/kanidm"
+ENV NETIDM_CONFIG_FILE="/data/netidm"
 
 RUN zypper install -y \
         freeradius-client \
@@ -51,8 +51,8 @@ RUN chown -R $RADIUS_USER. /etc/raddb/ && \
     chmod 775 /etc/raddb/certs && \
     chmod 640 /etc/raddb/clients.conf
 
-RUN mkdir -p /pkg/pykanidm/
-COPY pykanidm/ /pkg/pykanidm/
+RUN mkdir -p /pkg/pynetidm/
+COPY pynetidm/ /pkg/pynetidm/
 
 # install the package and its dependencies
 RUN zypper install -y gcc openssl-devel && \
@@ -60,7 +60,7 @@ RUN zypper install -y gcc openssl-devel && \
     --break-system-packages \
     --no-cache-dir \
     --no-warn-script-location \
-    /pkg/pykanidm && \
+    /pkg/pynetidm && \
     zypper remove -y gcc openssl-devel
 
 COPY rlm_python/radius_entrypoint.py /radius_entrypoint.py

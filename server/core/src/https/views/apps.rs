@@ -7,7 +7,7 @@ use axum::{
 };
 use axum_htmx::HxPushUrl;
 
-use kanidm_proto::internal::{AppLink, UserAuthToken};
+use netidm_proto::internal::{AppLink, UserAuthToken};
 
 use super::constants::Urls;
 use super::navbar::NavbarCtx;

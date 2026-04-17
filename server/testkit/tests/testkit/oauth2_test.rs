@@ -1,18 +1,18 @@
 #![deny(warnings)]
 use compact_jwt::{JwkKeySet, JwsEs256Verifier, JwsVerifier, OidcToken, OidcUnverified};
-use kanidm_client::ClientError;
-use kanidm_client::{http::header, KanidmClient, StatusCode};
-use kanidm_proto::constants::uri::{OAUTH2_AUTHORISE, OAUTH2_AUTHORISE_PERMIT};
-use kanidm_proto::constants::*;
-use kanidm_proto::internal::Oauth2ClaimMapJoin;
-use kanidm_proto::oauth2::{
+use netidm_client::ClientError;
+use netidm_client::{http::header, NetidmClient, StatusCode};
+use netidm_proto::constants::uri::{OAUTH2_AUTHORISE, OAUTH2_AUTHORISE_PERMIT};
+use netidm_proto::constants::*;
+use netidm_proto::internal::Oauth2ClaimMapJoin;
+use netidm_proto::oauth2::{
     AccessTokenIntrospectRequest, AccessTokenIntrospectResponse, AccessTokenRequest,
     AccessTokenResponse, AccessTokenType, AuthorisationResponse, ClientPostAuth, GrantTypeReq,
     OidcDiscoveryResponse, TokenRevokeRequest,
 };
-use kanidmd_lib::constants::NAME_IDM_ALL_ACCOUNTS;
-use kanidmd_lib::prelude::Attribute;
-use kanidmd_testkit::{
+use netidmd_lib::constants::NAME_IDM_ALL_ACCOUNTS;
+use netidmd_lib::prelude::Attribute;
+use netidmd_testkit::{
     assert_no_cache, ADMIN_TEST_PASSWORD, ADMIN_TEST_USER, NOT_ADMIN_TEST_EMAIL,
     NOT_ADMIN_TEST_PASSWORD, NOT_ADMIN_TEST_USERNAME, TEST_INTEGRATION_RS_DISPLAY,
     TEST_INTEGRATION_RS_GROUP_ALL, TEST_INTEGRATION_RS_ID, TEST_INTEGRATION_RS_REDIRECT_URL,
@@ -55,7 +55,7 @@ pub(crate) fn get_reqwest_client() -> reqwest::Client {
 ///   If `true`, use the `code` passed in the callback URI's fragment, and
 ///   require the query parameter to be empty.
 async fn test_oauth2_openid_basic_flow_impl(
-    rsclient: &KanidmClient,
+    rsclient: &NetidmClient,
     response_mode: Option<&str>,
     response_in_fragment: bool,
     state: Option<&str>,
@@ -631,8 +631,8 @@ async fn test_oauth2_openid_basic_flow_impl(
 /// `response_mode` unset.
 ///
 /// The response should be returned as a query parameter.
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_basic_flow_mode_unset_bearer(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_basic_flow_mode_unset_bearer(rsclient: &NetidmClient) {
     test_oauth2_openid_basic_flow_impl(
         rsclient,
         None,
@@ -642,8 +642,8 @@ async fn test_oauth2_openid_basic_flow_mode_unset_bearer(rsclient: &KanidmClient
     )
     .await;
 }
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_basic_flow_mode_unset_post(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_basic_flow_mode_unset_post(rsclient: &NetidmClient) {
     test_oauth2_openid_basic_flow_impl(
         rsclient,
         None,
@@ -658,8 +658,8 @@ async fn test_oauth2_openid_basic_flow_mode_unset_post(rsclient: &KanidmClient) 
 /// `response_mode=query`.
 ///
 /// The response should be returned as a query parameter.
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_basic_flow_mode_query_bearer(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_basic_flow_mode_query_bearer(rsclient: &NetidmClient) {
     test_oauth2_openid_basic_flow_impl(
         rsclient,
         Some("query"),
@@ -669,8 +669,8 @@ async fn test_oauth2_openid_basic_flow_mode_query_bearer(rsclient: &KanidmClient
     )
     .await;
 }
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_basic_flow_mode_query_post(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_basic_flow_mode_query_post(rsclient: &NetidmClient) {
     test_oauth2_openid_basic_flow_impl(
         rsclient,
         Some("query"),
@@ -685,8 +685,8 @@ async fn test_oauth2_openid_basic_flow_mode_query_post(rsclient: &KanidmClient) 
 /// `response_mode=fragment`.
 ///
 /// The response should be returned in the URI's fragment.
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_basic_flow_mode_fragment_bearer(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_basic_flow_mode_fragment_bearer(rsclient: &NetidmClient) {
     test_oauth2_openid_basic_flow_impl(
         rsclient,
         Some("fragment"),
@@ -696,8 +696,8 @@ async fn test_oauth2_openid_basic_flow_mode_fragment_bearer(rsclient: &KanidmCli
     )
     .await;
 }
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_basic_flow_mode_fragment_post(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_basic_flow_mode_fragment_post(rsclient: &NetidmClient) {
     test_oauth2_openid_basic_flow_impl(
         rsclient,
         Some("fragment"),
@@ -712,14 +712,14 @@ async fn test_oauth2_openid_basic_flow_mode_fragment_post(rsclient: &KanidmClien
 /// `response_mode=fragment` and no state in the request..
 ///
 /// The response should be returned in the URI's fragment.
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_basic_flow_no_state_bearer(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_basic_flow_no_state_bearer(rsclient: &NetidmClient) {
     test_oauth2_openid_basic_flow_impl(rsclient, Some("fragment"), true, None, AuthMethod::Basic)
         .await;
 }
 /// The response should be returned in the URI's fragment.
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_basic_flow_no_state_post(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_basic_flow_no_state_post(rsclient: &NetidmClient) {
     test_oauth2_openid_basic_flow_impl(
         rsclient,
         Some("fragment"),
@@ -743,7 +743,7 @@ async fn test_oauth2_openid_basic_flow_no_state_post(rsclient: &KanidmClient) {
 ///   If `true`, use the `code` passed in the callback URI's fragment, and
 ///   require the query parameter to be empty.
 async fn test_oauth2_openid_public_flow_impl(
-    rsclient: &KanidmClient,
+    rsclient: &NetidmClient,
     response_mode: Option<&str>,
     response_in_fragment: bool,
     state: Option<&str>,
@@ -1087,8 +1087,8 @@ async fn test_oauth2_openid_public_flow_impl(
 /// `response_mode` unset.
 ///
 /// The response should be returned as a query parameter.
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_public_flow_mode_unset(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_public_flow_mode_unset(rsclient: &NetidmClient) {
     test_oauth2_openid_public_flow_impl(rsclient, None, false, Some(TEST_INTEGRATION_STATE_VALUE))
         .await;
 }
@@ -1097,8 +1097,8 @@ async fn test_oauth2_openid_public_flow_mode_unset(rsclient: &KanidmClient) {
 /// `response_mode=query`.
 ///
 /// The response should be returned as a query parameter.
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_public_flow_mode_query(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_public_flow_mode_query(rsclient: &NetidmClient) {
     test_oauth2_openid_public_flow_impl(
         rsclient,
         Some("query"),
@@ -1112,8 +1112,8 @@ async fn test_oauth2_openid_public_flow_mode_query(rsclient: &KanidmClient) {
 /// `response_mode=fragment`.
 ///
 /// The response should be returned in the URI's fragment.
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_public_flow_mode_fragment(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_public_flow_mode_fragment(rsclient: &NetidmClient) {
     test_oauth2_openid_public_flow_impl(
         rsclient,
         Some("fragment"),
@@ -1127,13 +1127,13 @@ async fn test_oauth2_openid_public_flow_mode_fragment(rsclient: &KanidmClient) {
 /// `response_mode=fragment` and no state value in the url
 ///
 /// The response should be returned in the URI's fragment.
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_public_flow_no_state(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_public_flow_no_state(rsclient: &NetidmClient) {
     test_oauth2_openid_public_flow_impl(rsclient, Some("fragment"), true, None).await;
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_token_post_bad_bodies(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_token_post_bad_bodies(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -1163,8 +1163,8 @@ async fn test_oauth2_token_post_bad_bodies(rsclient: &KanidmClient) {
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_token_revoke_post_bearer(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_token_revoke_post_bearer(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -1217,8 +1217,8 @@ async fn test_oauth2_token_revoke_post_bearer(rsclient: &KanidmClient) {
     assert_eq!(response.status(), StatusCode::UNSUPPORTED_MEDIA_TYPE);
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_token_revoke_post_postauth(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_token_revoke_post_postauth(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -1246,8 +1246,8 @@ async fn test_oauth2_token_revoke_post_postauth(rsclient: &KanidmClient) {
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_basic_consent_can_be_disabled(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_basic_consent_can_be_disabled(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -1272,8 +1272,8 @@ async fn test_oauth2_openid_basic_consent_can_be_disabled(rsclient: &KanidmClien
     );
 }
 
-#[kanidmd_testkit::test]
-async fn test_oauth2_openid_public_consent_cant_be_disabled(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_oauth2_openid_public_consent_cant_be_disabled(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;

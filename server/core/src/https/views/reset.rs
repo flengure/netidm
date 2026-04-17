@@ -9,7 +9,7 @@ use crate::https::views::login::ReauthPurpose;
 use crate::https::views::reauth::{
     render_readonly, render_reauth, uat_privilege_decision, PrivilegeDecision,
 };
-use crate::https::views::{cookies, KanidmHxEventName};
+use crate::https::views::{cookies, NetidmHxEventName};
 use crate::https::ServerState;
 use askama::Template;
 use askama_web::WebTemplate;
@@ -25,12 +25,12 @@ use axum_htmx::{
     SwapOption,
 };
 use futures_util::TryFutureExt;
-use kanidm_proto::internal::{
+use netidm_proto::internal::{
     CUCredState, CUExtPortal, CURegState, CURegWarning, CURequest, CUSessionToken, CUStatus,
     CredentialDetail, OperationError, PasskeyDetail, PasswordFeedback, TotpAlgo, UiHint,
     UserAuthToken, COOKIE_CU_SESSION_TOKEN,
 };
-use kanidmd_lib::prelude::ClientAuthInfo;
+use netidmd_lib::prelude::ClientAuthInfo;
 use qrcode::render::svg;
 use qrcode::QrCode;
 use serde::{Deserialize, Serialize};
@@ -529,7 +529,7 @@ pub(crate) async fn view_new_passkey(
     };
 
     let passkey_init_trigger =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddPasskeySwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(NetidmHxEventName::AddPasskeySwapped)]);
     Ok((
         passkey_init_trigger,
         HxPushUrl("/ui/reset/add_passkey".to_string()),
@@ -602,7 +602,7 @@ pub(crate) async fn add_totp(
 
     let check_totpcode = u32::from_str(&new_totp_form.check_totpcode).unwrap_or_default();
     let swapped_handler_trigger =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddTotpSwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(NetidmHxEventName::AddTotpSwapped)]);
 
     // If the user has not provided a name or added only spaces we exit early
     if new_totp_form.name.trim().is_empty() {
@@ -697,7 +697,7 @@ pub(crate) async fn view_new_pwd(
 
     let cu_session_token: CUSessionToken = get_cu_session(&jar).await?;
     let swapped_handler_trigger =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddPasswordSwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(NetidmHxEventName::AddPasswordSwapped)]);
 
     let new_passwords = match opt_form {
         None => {
@@ -824,7 +824,7 @@ pub(crate) async fn view_set_unixcred(
 
     let cu_session_token: CUSessionToken = get_cu_session(&jar).await?;
     let swapped_handler_trigger =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddPasswordSwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(NetidmHxEventName::AddPasswordSwapped)]);
 
     let new_passwords = match opt_form {
         None => {

@@ -9,9 +9,9 @@ use base64::{
     Engine as _,
 };
 use compact_jwt::{Jws, JwsCompact};
-use kanidm_proto::internal::{ApiTokenPurpose, ScimSyncToken};
-use kanidm_proto::scim_v1::*;
-use kanidm_proto::v1::OutboundMessage;
+use netidm_proto::internal::{ApiTokenPurpose, ScimSyncToken};
+use netidm_proto::scim_v1::*;
+use netidm_proto::v1::OutboundMessage;
 use sshkey_attest::proto::PublicKey as SshPublicKey;
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Duration;
@@ -296,7 +296,7 @@ impl IdmServerProxyWriteTransaction<'_> {
 
         // Referential integrity tries to assert that the reference to sync_parent_uuid is valid
         // from within the recycle bin. To prevent this, we have to "finalise" first, transfer
-        // authority to kanidm, THEN we do the delete which breaks the reference requirement.
+        // authority to netidm, THEN we do the delete which breaks the reference requirement.
         //
         // Importantly, we have to do this for items that are in the recycle bin!
 
@@ -355,7 +355,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             self.qs_write
                 .internal_modify(&f_all_sync, &mods)
                 .inspect_err(|_e| {
-                    error!("Failed to modify sync objects to grant authority to kanidm");
+                    error!("Failed to modify sync objects to grant authority to netidm");
                 })?;
         };
 
@@ -424,7 +424,7 @@ impl IdmServerProxyWriteTransaction<'_> {
 
         // Referential integrity tries to assert that the reference to sync_parent_uuid is valid
         // from within the recycle bin. To prevent this, we have to "finalise" first, transfer
-        // authority to kanidm, THEN we do the delete which breaks the reference requirement.
+        // authority to netidm, THEN we do the delete which breaks the reference requirement.
         //
         // Importantly, we have to do this for items that are in the recycle bin!
 
@@ -484,7 +484,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .inspect_err(|err| {
                     error!(
                         ?err,
-                        "Failed to modify sync objects to grant authority to Kanidm"
+                        "Failed to modify sync objects to grant authority to Netidm"
                     );
                 })?;
 
@@ -619,7 +619,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 }
             }
             (ScimSyncState::Active { cookie: _ }, None) => {
-                error!("Invalid Sync State - Sync Tool Reports Active, but agreement has Refresh Required. You can resync the agreement with `kanidm system sync force-refresh`");
+                error!("Invalid Sync State - Sync Tool Reports Active, but agreement has Refresh Required. You can resync the agreement with `netidm system sync force-refresh`");
                 return Err(OperationError::InvalidSyncState);
             }
         };
@@ -771,13 +771,13 @@ impl IdmServerProxyWriteTransaction<'_> {
         // and what state they should be in. This means that a situation can exist where on the
         // supplier you have:
         //
-        //    Supplier           Kanidm
+        //    Supplier           Netidm
         //    Add X
         //    Sync X   ---------> X
         //    Delete X
         //    Refresh  --------->
         //
-        // Since the delete uuid event wouldn't be sent, we need to ensure that Kanidm will clean
+        // Since the delete uuid event wouldn't be sent, we need to ensure that Netidm will clean
         // up entries that are *not* present in the change set here.
         //
         // To achieve this we do a delete where the condition is sync parent and not in the change
@@ -1141,7 +1141,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                     })
             }
             (syn, mv, sa) => {
-                error!(?syn, ?mv, ?sa, "Unsupported scim attribute conversion. This may be a syntax error in your import, or a missing feature in Kanidm.");
+                error!(?syn, ?mv, ?sa, "Unsupported scim attribute conversion. This may be a syntax error in your import, or a missing feature in Netidm.");
                 Err(OperationError::InvalidAttribute(format!(
                     "Unsupported attribute conversion - {scim_attr_name}"
                 )))
@@ -1162,14 +1162,14 @@ impl IdmServerProxyWriteTransaction<'_> {
             .map(|schema| {
                 schema.as_str().strip_prefix(SCIM_SCHEMA_SYNC_1)
                     .ok_or_else(|| {
-                        error!(?schema, "Invalid requested schema - Not a kanidm sync schema.");
+                        error!(?schema, "Invalid requested schema - Not a netidm sync schema.");
                         OperationError::InvalidEntryState
                     })
                     // Now look up if it's satisfiable.
                     .and_then(|cls_name| {
                         sync_allow_class_set.get_key_value(cls_name)
                         .ok_or_else(|| {
-                            error!(?cls_name, "Invalid requested schema - Class does not exist in Kanidm or is not a sync_allowed class");
+                            error!(?cls_name, "Invalid requested schema - Class does not exist in Netidm or is not a sync_allowed class");
                             OperationError::InvalidEntryState
                         })
                     })
@@ -1203,7 +1203,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         // ldap entries because of how it works.
         //
         // If we do decide to add this we use the sync_class attr to determine what was *previously* added to the object
-        // rather than what we as kanidm added.
+        // rather than what we as netidm added.
         //
         // We can then diff the sync_class from the set of req classes to work out what to remove.
         //
@@ -1544,8 +1544,8 @@ mod tests {
     use crate::prelude::*;
     use compact_jwt::traits::JwsVerifiable;
     use compact_jwt::{Jws, JwsCompact, JwsEs256Signer, JwsSigner};
-    use kanidm_proto::internal::ApiTokenPurpose;
-    use kanidm_proto::scim_v1::*;
+    use netidm_proto::internal::ApiTokenPurpose;
+    use netidm_proto::scim_v1::*;
     use std::sync::Arc;
     use std::time::Duration;
 
@@ -3300,9 +3300,9 @@ mod tests {
   "entries": [
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:person",
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:account",
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:posixaccount"
+        "urn:ietf:params:scim:schemas:netidm:sync:1:person",
+        "urn:ietf:params:scim:schemas:netidm:sync:1:account",
+        "urn:ietf:params:scim:schemas:netidm:sync:1:posixaccount"
       ],
       "id": "babb8302-43a1-11ed-a50d-919b4b1a5ec0",
       "externalId": "uid=testuser,cn=users,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",
@@ -3326,7 +3326,7 @@ mod tests {
     },
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:group"
+        "urn:ietf:params:scim:schemas:netidm:sync:1:group"
       ],
       "id": "d547c581-5f26-11ed-a50d-919b4b1a5ec0",
       "externalId": "cn=testgroup,cn=groups,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",
@@ -3340,7 +3340,7 @@ mod tests {
     },
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:group"
+        "urn:ietf:params:scim:schemas:netidm:sync:1:group"
       ],
       "id": "d547c583-5f26-11ed-a50d-919b4b1a5ec0",
       "externalId": "cn=testexternal,cn=groups,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",
@@ -3348,8 +3348,8 @@ mod tests {
     },
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:group",
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:posixgroup"
+        "urn:ietf:params:scim:schemas:netidm:sync:1:group",
+        "urn:ietf:params:scim:schemas:netidm:sync:1:posixgroup"
       ],
       "id": "f90b0b81-5f26-11ed-a50d-919b4b1a5ec0",
       "externalId": "cn=testposix,cn=groups,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",
@@ -3381,7 +3381,7 @@ mod tests {
   "entries": [
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:group"
+        "urn:ietf:params:scim:schemas:netidm:sync:1:group"
       ],
       "id": "d547c583-5f26-11ed-a50d-919b4b1a5ec0",
       "externalId": "cn=testexternal2,cn=groups,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",
@@ -3394,8 +3394,8 @@ mod tests {
     },
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:group",
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:posixgroup"
+        "urn:ietf:params:scim:schemas:netidm:sync:1:group",
+        "urn:ietf:params:scim:schemas:netidm:sync:1:posixgroup"
       ],
       "id": "f90b0b81-5f26-11ed-a50d-919b4b1a5ec0",
       "externalId": "cn=testposix,cn=groups,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",
@@ -3422,9 +3422,9 @@ mod tests {
   "entries": [
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:person",
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:account",
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:posixaccount"
+        "urn:ietf:params:scim:schemas:netidm:sync:1:person",
+        "urn:ietf:params:scim:schemas:netidm:sync:1:account",
+        "urn:ietf:params:scim:schemas:netidm:sync:1:posixaccount"
       ],
       "id": "babb8302-43a1-11ed-a50d-919b4b1a5ec0",
       "externalId": "uid=testuser,cn=users,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",
@@ -3439,7 +3439,7 @@ mod tests {
     },
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:sync:1:group"
+        "urn:ietf:params:scim:schemas:netidm:sync:1:group"
       ],
       "id": "d547c581-5f26-11ed-a50d-919b4b1a5ec0",
       "externalId": "cn=testgroup,cn=groups,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",

@@ -1,4 +1,4 @@
-use kanidm_utils_users::get_user_name_by_uid;
+use netidm_utils_users::get_user_name_by_uid;
 use std::ffi::{CString, OsStr};
 use std::path::{Path, PathBuf};
 use std::process::Command;

@@ -12,9 +12,9 @@ use crate::modify::{ModifyInvalid, ModifyList};
 use crate::prelude::*;
 use crate::schema::SchemaTransaction;
 use crate::value::{IntentTokenState, PartialValue, SessionState, Value};
-use kanidm_lib_crypto::CryptoPolicy;
-use kanidm_proto::internal::{CredentialStatus, UatPurpose, UiHint, UserAuthToken};
-use kanidm_proto::v1::{UatStatus, UatStatusState, UnixGroupToken, UnixUserToken};
+use netidm_lib_crypto::CryptoPolicy;
+use netidm_proto::internal::{CredentialStatus, UatPurpose, UiHint, UserAuthToken};
+use netidm_proto::v1::{UatStatus, UatStatusState, UnixGroupToken, UnixUserToken};
 use sshkey_attest::proto::PublicKey as SshPublicKey;
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Duration;
@@ -1125,7 +1125,7 @@ impl IdmServerProxyReadTransaction<'_> {
 mod tests {
     use crate::idm::accountpolicy::ResolvedAccountPolicy;
     use crate::prelude::*;
-    use kanidm_proto::internal::UiHint;
+    use netidm_proto::internal::UiHint;
 
     #[idm_test]
     async fn test_idm_account_ui_hints(idms: &IdmServer, _idms_delayed: &mut IdmServerDelayed) {

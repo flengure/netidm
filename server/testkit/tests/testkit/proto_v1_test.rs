@@ -2,19 +2,19 @@
 use compact_jwt::dangernoverify::JwsDangerReleaseWithoutVerify;
 use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier};
 use hyper::header::CONTENT_TYPE;
-use kanidm_client::{ClientError, KanidmClient};
-use kanidm_proto::constants::{ATTR_GIDNUMBER, KSESSIONID};
-use kanidm_proto::internal::{
+use netidm_client::{ClientError, NetidmClient};
+use netidm_proto::constants::{ATTR_GIDNUMBER, KSESSIONID};
+use netidm_proto::internal::{
     ApiToken, CURegState, Filter, ImageValue, Modify, ModifyList, UatPurpose, UserAuthToken,
 };
-use kanidm_proto::v1::{
+use netidm_proto::v1::{
     AuthCredential, AuthIssueSession, AuthMech, AuthRequest, AuthResponse, AuthState, AuthStep,
     Entry,
 };
-use kanidmd_lib::constants::{NAME_IDM_ADMINS, NAME_SYSTEM_ADMINS};
-use kanidmd_lib::credential::totp::Totp;
-use kanidmd_lib::prelude::{Attribute, APPLICATION_JSON};
-use kanidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
+use netidmd_lib::constants::{NAME_IDM_ADMINS, NAME_SYSTEM_ADMINS};
+use netidmd_lib::credential::totp::Totp;
+use netidmd_lib::prelude::{Attribute, APPLICATION_JSON};
+use netidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 use std::path::Path;
 use std::str::FromStr;
 use std::time::SystemTime;
@@ -25,8 +25,8 @@ use webauthn_authenticator_rs::WebauthnAuthenticator;
 
 const UNIX_TEST_PASSWORD: &str = "unix test user password";
 
-#[kanidmd_testkit::test]
-async fn test_server_create(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_create(rsclient: &NetidmClient) {
     let e: Entry = serde_json::from_str(
         r#"{
             "attrs": {
@@ -51,8 +51,8 @@ async fn test_server_create(rsclient: &KanidmClient) {
     assert!(res.is_ok());
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_whoami_anonymous(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_whoami_anonymous(rsclient: &NetidmClient) {
     // First show we are un-authenticated.
     let pre_res = rsclient.whoami().await;
     // This means it was okay whoami, but no uat attached.
@@ -80,8 +80,8 @@ async fn test_server_whoami_anonymous(rsclient: &KanidmClient) {
     assert!(res.is_ok());
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_whoami_admin_simple_password(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_whoami_admin_simple_password(rsclient: &NetidmClient) {
     // First show we are un-authenticated.
     let pre_res = rsclient.whoami().await;
     // This means it was okay whoami, but no uat attached.
@@ -105,8 +105,8 @@ async fn test_server_whoami_admin_simple_password(rsclient: &KanidmClient) {
     );
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_search(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_search(rsclient: &NetidmClient) {
     // First show we are un-authenticated.
     let pre_res = rsclient.whoami().await;
     // This means it was okay whoami, but no uat attached.
@@ -131,8 +131,8 @@ async fn test_server_search(rsclient: &KanidmClient) {
 }
 
 // test the rest group endpoint.
-#[kanidmd_testkit::test]
-async fn test_server_rest_group_read(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_group_read(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -147,8 +147,8 @@ async fn test_server_rest_group_read(rsclient: &KanidmClient) {
     println!("{g:?}");
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_rest_group_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_group_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -259,8 +259,8 @@ async fn test_server_rest_group_lifecycle(rsclient: &KanidmClient) {
     );
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_rest_account_read(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_account_read(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -275,8 +275,8 @@ async fn test_server_rest_account_read(rsclient: &KanidmClient) {
     println!("{a:?}");
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_rest_schema_read(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_schema_read(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -309,8 +309,8 @@ async fn test_server_rest_schema_read(rsclient: &KanidmClient) {
 }
 
 // Test resetting a radius cred, and then checking/viewing it.
-#[kanidmd_testkit::test]
-async fn test_server_radius_credential_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_radius_credential_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -380,8 +380,8 @@ async fn test_server_radius_credential_lifecycle(rsclient: &KanidmClient) {
     assert!(n_sec.is_none());
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_rest_person_account_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_person_account_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -435,8 +435,8 @@ async fn test_server_rest_person_account_lifecycle(rsclient: &KanidmClient) {
         .unwrap();
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_rest_sshkey_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_sshkey_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -505,8 +505,8 @@ async fn test_server_rest_sshkey_lifecycle(rsclient: &KanidmClient) {
     assert_eq!(sk5.len(), 1);
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_rest_domain_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_domain_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -535,8 +535,8 @@ async fn test_server_rest_domain_lifecycle(rsclient: &KanidmClient) {
     );
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_rest_posix_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_posix_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -663,8 +663,8 @@ async fn test_server_rest_posix_lifecycle(rsclient: &KanidmClient) {
     assert_eq!(r3.name, "posix_group");
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_rest_posix_auth_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_posix_auth_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -763,8 +763,8 @@ async fn test_server_rest_posix_auth_lifecycle(rsclient: &KanidmClient) {
     };
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_rest_recycle_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_recycle_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -817,8 +817,8 @@ async fn test_server_rest_recycle_lifecycle(rsclient: &KanidmClient) {
     assert!(acc.is_some());
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_rest_oauth2_basic_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_rest_oauth2_basic_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -933,7 +933,7 @@ async fn test_server_rest_oauth2_basic_lifecycle(rsclient: &KanidmClient) {
     let image_contents = std::fs::read(image_path).unwrap();
     let image = ImageValue::new(
         "test".to_string(),
-        kanidm_proto::internal::ImageType::Png,
+        netidm_proto::internal::ImageType::Png,
         image_contents,
     );
 
@@ -965,7 +965,7 @@ async fn test_server_rest_oauth2_basic_lifecycle(rsclient: &KanidmClient) {
     let jpg_file_contents = std::fs::read(image_path).unwrap();
     let image = ImageValue::new(
         "test".to_string(),
-        kanidm_proto::internal::ImageType::Jpg,
+        netidm_proto::internal::ImageType::Jpg,
         jpg_file_contents.clone(),
     );
     let res = rsclient
@@ -977,7 +977,7 @@ async fn test_server_rest_oauth2_basic_lifecycle(rsclient: &KanidmClient) {
     // check it fails when we upload a jpg and say it's a webp
     let image = ImageValue::new(
         "test".to_string(),
-        kanidm_proto::internal::ImageType::Webp,
+        netidm_proto::internal::ImageType::Webp,
         jpg_file_contents,
     );
     let res = rsclient
@@ -1028,8 +1028,8 @@ async fn test_server_rest_oauth2_basic_lifecycle(rsclient: &KanidmClient) {
     assert!(final_configs.is_empty());
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_credential_update_session_pw(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_credential_update_session_pw(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -1103,8 +1103,8 @@ async fn test_server_credential_update_session_pw(rsclient: &KanidmClient) {
     assert!(res.is_ok());
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_credential_update_session_totp_pw(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_credential_update_session_totp_pw(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -1233,7 +1233,7 @@ async fn test_server_credential_update_session_totp_pw(rsclient: &KanidmClient) 
     assert!(res.is_ok());
 }
 
-async fn setup_demo_account_passkey(rsclient: &KanidmClient) -> WebauthnAuthenticator<SoftPasskey> {
+async fn setup_demo_account_passkey(rsclient: &NetidmClient) -> WebauthnAuthenticator<SoftPasskey> {
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
         .await;
@@ -1312,7 +1312,7 @@ async fn setup_demo_account_passkey(rsclient: &KanidmClient) -> WebauthnAuthenti
 }
 
 async fn setup_demo_account_password(
-    rsclient: &KanidmClient,
+    rsclient: &NetidmClient,
 ) -> Result<(String, String), ClientError> {
     let account_name = String::from_str("demo_account").expect("Failed to parse string");
 
@@ -1366,8 +1366,8 @@ async fn setup_demo_account_password(
     Ok((account_name, account_pass))
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_credential_update_session_passkey(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_credential_update_session_passkey(rsclient: &NetidmClient) {
     let mut wa = setup_demo_account_passkey(rsclient).await;
 
     let res = rsclient
@@ -1384,8 +1384,8 @@ async fn test_server_credential_update_session_passkey(rsclient: &KanidmClient) 
     assert!(res.is_ok());
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_api_token_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_api_token_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -1555,8 +1555,8 @@ async fn test_server_api_token_lifecycle(rsclient: &KanidmClient) {
     //     .is_ok());
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_user_auth_token_lifecycle(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_user_auth_token_lifecycle(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -1678,8 +1678,8 @@ async fn test_server_user_auth_token_lifecycle(rsclient: &KanidmClient) {
         .is_ok());
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_user_auth_reauthentication(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_user_auth_reauthentication(rsclient: &NetidmClient) {
     let mut wa = setup_demo_account_passkey(rsclient).await;
 
     let res = rsclient
@@ -1764,7 +1764,7 @@ async fn test_server_user_auth_reauthentication(rsclient: &KanidmClient) {
 }
 
 async fn start_password_session(
-    rsclient: &KanidmClient,
+    rsclient: &NetidmClient,
     username: &str,
     password: &str,
     privileged: bool,
@@ -1851,8 +1851,8 @@ async fn start_password_session(
     Ok(uat)
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_user_auth_unprivileged(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_user_auth_unprivileged(rsclient: &NetidmClient) {
     let (account_name, account_pass) = setup_demo_account_password(rsclient)
         .await
         .expect("Failed to setup demo_account");
@@ -1874,8 +1874,8 @@ async fn test_server_user_auth_unprivileged(rsclient: &KanidmClient) {
     }
 }
 
-#[kanidmd_testkit::test]
-async fn test_server_user_auth_privileged_shortcut(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_server_user_auth_privileged_shortcut(rsclient: &NetidmClient) {
     let (account_name, account_pass) = setup_demo_account_password(rsclient)
         .await
         .expect("Failed to setup demo_account");
@@ -1894,14 +1894,14 @@ async fn test_server_user_auth_privileged_shortcut(rsclient: &KanidmClient) {
 
 // wanna test how long it takes for testkit to start up? here's your biz.
 // turns out  as of 2023-10-11 on my M2 Max, it's about 1.0 seconds per iteration
-// #[kanidmd_testkit::test]
+// #[netidmd_testkit::test]
 // fn test_teskit_test_test() {
 //     #[allow(unnameable_test_items)]
 
 //     for _ in 0..15 {
-//         #[kanidmd_testkit::test]
+//         #[netidmd_testkit::test]
 //         #[allow(dead_code)]
-//         async fn test_teskit_test(rsclient: KanidmClient){
+//         async fn test_teskit_test(rsclient: NetidmClient){
 //             assert!(rsclient.auth_anonymous().await.is_ok());
 //         }
 

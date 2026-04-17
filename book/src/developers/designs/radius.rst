@@ -4,7 +4,7 @@ RADIUS Integration
 
 RADIUS (and in the future, diameter?) is the supporting technology that enables per-user authentication
 to network infrastructure. This may be through VPNs, switchports or wireless mediums. As a result
-supporting RADIUS and being able to work well with it will help to make kanidm able to be used in
+supporting RADIUS and being able to work well with it will help to make netidm able to be used in
 a broad range of applications.
 
 Deployment Characteristics
@@ -14,7 +14,7 @@ In the majority of deployments, due to the centralisation of authentication, RAD
 a one-to-one relationship with IDM systems. IE you will only have a single RADIUS infrastructure
 to server your users, rather than multiple RADIUS silos backed to one IDM infrastructure.
 
-This means that Kanidm only has to consider that a single RADIUS infrastructure will exist. We
+This means that Netidm only has to consider that a single RADIUS infrastructure will exist. We
 could consider this to be a single server, or many servers that are identical, but they will all
 serve the same network authentication role, arbitrating access to a single network space (even
 over large geographic areas).
@@ -53,12 +53,12 @@ Compromise of a radius credential will not compromise the main account, and shou
 login at all (except to network which is not the only security boundary).
 
 
-Kanidm RADIUS Specifics
+Netidm RADIUS Specifics
 -----------------------
 
 With the above in mind, this leads to the following conclusions:
 
-* There is only a single RADIUS configuration profile per-kanidm topology
+* There is only a single RADIUS configuration profile per-netidm topology
 * A user only requires a single RADIUS infrastructure password as the network is considered a single entity and resources are arbitrated elsewhere.
 * Groups define what vlan a users belongs to (and possibly other ip resources).
 * The users RADIUS password is separate from their main account, and has no other function than RADIUS authentication.
