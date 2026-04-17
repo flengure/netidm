@@ -76,6 +76,7 @@ pub fn migration_entry_attrs(
         ]);
         allow_attrs.extend([
             Attribute::Name,
+            Attribute::DisplayName,
             Attribute::LegalName,
             Attribute::Mail,
             Attribute::SshPublicKey,
