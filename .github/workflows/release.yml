@@ -28,9 +28,6 @@ jobs:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             cross: false
-          - target: aarch64-unknown-linux-gnu
-            os: ubuntu-latest
-            cross: true
 
     steps:
       - uses: actions/checkout@v6
@@ -43,25 +40,13 @@ jobs:
       - name: Setup sccache
         uses: mozilla-actions/sccache-action@v0.0.9
 
-      - name: Install native build dependencies
-        if: matrix.cross == false
+      - name: Install build dependencies
         run: |
           sudo apt-get update && sudo apt-get install -y \
             libpam0g-dev \
             libudev-dev \
             libssl-dev \
             libsystemd-dev
-
-      - name: Install cross-compilation dependencies (aarch64)
-        if: matrix.cross == true
-        run: |
-          sudo apt-get update && sudo apt-get install -y \
-            gcc-aarch64-linux-gnu \
-            libc6-dev-arm64-cross \
-            libssl-dev \
-            pkg-config
-          echo "CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc" >> "$GITHUB_ENV"
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> "$GITHUB_ENV"
 
       - name: Build release binaries
         run: |
@@ -72,18 +57,10 @@ jobs:
             --bin netidm_ssh_authorizedkeys_direct
 
       - name: Strip binaries
-        if: matrix.cross == false
         run: |
           strip target/${{ matrix.target }}/release/netidmd
           strip target/${{ matrix.target }}/release/netidm
           strip target/${{ matrix.target }}/release/netidm_ssh_authorizedkeys_direct
-
-      - name: Strip binaries (cross)
-        if: matrix.cross == true
-        run: |
-          aarch64-linux-gnu-strip target/${{ matrix.target }}/release/netidmd
-          aarch64-linux-gnu-strip target/${{ matrix.target }}/release/netidm
-          aarch64-linux-gnu-strip target/${{ matrix.target }}/release/netidm_ssh_authorizedkeys_direct
 
       - name: Determine version
         id: version
