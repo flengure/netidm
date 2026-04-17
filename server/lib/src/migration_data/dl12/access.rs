@@ -3,7 +3,7 @@
 
 use crate::prelude::*;
 use crate::value::Value;
-use kanidm_proto::internal::Filter as ProtoFilter;
+use netidm_proto::internal::Filter as ProtoFilter;
 
 /// either recycled or tombstone
 pub static FILTER_RECYCLED_OR_TOMBSTONE: LazyLock<ProtoFilter> = LazyLock::new(|| {

@@ -307,7 +307,7 @@ impl TryFrom<&str> for AccessTokenType {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct TokenRevokeRequest {
     pub token: String,
-    /// Not required for Kanidm.
+    /// Not required for Netidm.
     /// <https://datatracker.ietf.org/doc/html/rfc7009#section-4.1.2>
     pub token_type_hint: Option<String>,
 
@@ -363,7 +363,7 @@ impl From<(&str, Option<&str>)> for ClientAuth {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AccessTokenIntrospectRequest {
     pub token: String,
-    /// Not required for Kanidm.
+    /// Not required for Netidm.
     /// <https://datatracker.ietf.org/doc/html/rfc7009#section-4.1.2>
     pub token_type_hint: Option<String>,
 
@@ -445,7 +445,7 @@ fn response_modes_supported_default() -> Vec<ResponseMode> {
 #[serde(rename_all = "snake_case")]
 pub enum Prompt {
     /// None is not the absence of a value but a rather a value itself.
-    /// Prompt::None signifies to kanidm that *if* the authentications server
+    /// Prompt::None signifies to netidm that *if* the authentications server
     /// cannot automatically proceed thanks to an already logged in user,
     /// It must return a error response rather than allowing a user to proceed
     /// through the regular login flow.
@@ -658,7 +658,7 @@ pub struct OidcDiscoveryResponse {
     // "content type that contains a set of Claims as its members that are a subset of the Metadata
     //  values defined in Section 3. Other Claims MAY also be returned. "
     //
-    // In addition, we also return the following claims in kanidm
+    // In addition, we also return the following claims in netidm
 
     // rfc7009
     pub revocation_endpoint: Option<Url>,

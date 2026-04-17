@@ -1,10 +1,10 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::wg::{
+use crate::{ClientError, NetidmClient};
+use netidm_proto::wg::{
     WgConnectRequest, WgConnectResponse, WgPeerResponse, WgTokenCreate, WgTokenCreatedResponse,
     WgTokenInfo, WgTunnelCreate, WgTunnelResponse,
 };
 
-impl KanidmClient {
+impl NetidmClient {
     pub async fn wg_tunnel_list(&self) -> Result<Vec<WgTunnelResponse>, ClientError> {
         self.perform_get_request("/v1/wg/tunnel").await
     }

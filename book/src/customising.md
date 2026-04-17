@@ -1,17 +1,17 @@
 # Customising
 
-Kanidm supports customising various aspects such as the site display name, site image, and display names and images for
+Netidm supports customising various aspects such as the site display name, site image, and display names and images for
 each application.
 
 ## Changing the site
 
 ### Updating the display Name
 
-By default, the display name is `Kanidm <hostname>` which is visible when logged in. To modify the display name, run the
+By default, the display name is `Netidm <hostname>` which is visible when logged in. To modify the display name, run the
 following
 
 ```bash
-kanidm system domain set-displayname <new-display-name> -D admin
+netidm system domain set-displayname <new-display-name> -D admin
 ```
 
 ### Updating the site image
@@ -24,9 +24,9 @@ below commands. The image must satisfy the following conditions:
 3. Is a supported image file type: png, jpg, gif, svg, webp
 
 ```bash
-kanidm system domain set-image <file-path> [image-type] -D admin
+netidm system domain set-image <file-path> [image-type] -D admin
 
-kanidm system domain remove-image -D admin
+netidm system domain remove-image -D admin
 ```
 
 ## Changing a resource server
@@ -36,7 +36,7 @@ kanidm system domain remove-image -D admin
 Each application can have its display name updated with the following
 
 ```bash
-kanidm system oauth2 set-displayname <NAME> <displayname> -D idm_admin
+netidm system oauth2 set-displayname <NAME> <displayname> -D idm_admin
 ```
 
 ### Updating the image
@@ -45,9 +45,9 @@ Each application can have its image updated or reset with the following commands
 restrictions as the site image above.
 
 ```bash
-kanidm system oauth2 set-image <NAME> <file-path> [image-type] -D idm_admin
+netidm system oauth2 set-image <NAME> <file-path> [image-type] -D idm_admin
 
-kanidm system oauth2 remove-image <NAME> -D idm_admin
+netidm system oauth2 remove-image <NAME> -D idm_admin
 ```
 
 ## Custom CSS
@@ -58,7 +58,7 @@ Docker:
 ```bash
 docker run \
     -p 443:8443 \
-    -v kanidmd:/data \
+    -v netidmd:/data \
     --mount type=bind,src=./your/override.css,dst=/hpkg/override.css \
-    kanidm/server:latest
+    netidm/server:latest
 ```

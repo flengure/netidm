@@ -1,4 +1,4 @@
-//! Kanidm internal elements
+//! Netidm internal elements
 //!
 //! Items defined in this module *may* change between releases without notice.
 
@@ -120,7 +120,7 @@ pub enum ImageType {
 impl TryFrom<&str> for ImageType {
     type Error = &'static str;
     /// ```
-    /// use kanidm_proto::internal::ImageType;
+    /// use netidm_proto::internal::ImageType;
     /// assert_eq!(ImageType::try_from("png").unwrap(), ImageType::Png);
     /// assert!(ImageType::try_from("krabs").is_err());
     /// ```

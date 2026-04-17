@@ -8,9 +8,9 @@ use askama_web::WebTemplate;
 use axum::response::IntoResponse;
 use axum::response::Response;
 use axum_extra::extract::cookie::CookieJar;
-use kanidm_proto::internal::{PrivilegesActive, UserAuthToken};
-use kanidmd_lib::idm::server::DomainInfoRead;
-use kanidmd_lib::prelude::ClientAuthInfo;
+use netidm_proto::internal::{PrivilegesActive, UserAuthToken};
+use netidmd_lib::idm::server::DomainInfoRead;
+use netidmd_lib::prelude::ClientAuthInfo;
 use uuid::Uuid;
 
 const READ_WRITE_REAUTH_WINDOW_SECONDS: i64 = 60;

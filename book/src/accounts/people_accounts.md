@@ -1,7 +1,7 @@
 # People Accounts
 
-A person represents a human's account in Kanidm. The majority of your users will be a person who will use this account
-in their daily activities. These entries may contain personally identifying information that _is_ considered by Kanidm
+A person represents a human's account in Netidm. The majority of your users will be a person who will use this account
+in their daily activities. These entries may contain personally identifying information that _is_ considered by Netidm
 to be sensitive. Because of this, there are default limits to who may access these data.
 
 ## Creating Person Accounts
@@ -10,18 +10,18 @@ Members of the `idm_people_admins` group have the privileges to create new perso
 has this permission.
 
 ```bash
-kanidm login --name idm_admin
-kanidm person create demo_user "Demonstration User" --name idm_admin
-kanidm person get demo_user --name idm_admin
+netidm login --name idm_admin
+netidm person create demo_user "Demonstration User" --name idm_admin
+netidm person get demo_user --name idm_admin
 ```
 
-Kanidm allows person accounts to include personally identifying attributes, such as their legal name and email address.
+Netidm allows person accounts to include personally identifying attributes, such as their legal name and email address.
 
 Initially, a person does not have these attributes. If desired, a person may be modified to have these attributes.
 
 ```bash
 # Note, both the --legalname and --mail flags may be omitted
-kanidm person update demo_user --legalname "initial name" --mail "initial@email.address"
+netidm person update demo_user --legalname "initial name" --mail "initial@email.address"
 ```
 
 > [!NOTE]
@@ -33,8 +33,8 @@ You can also use anonymous to view accounts - note that you won't see certain fi
 access control profile.
 
 ```bash
-kanidm login --name anonymous
-kanidm person get demo_user --name anonymous
+netidm login --name anonymous
+netidm person get demo_user --name anonymous
 ```
 
 > [!NOTE]
@@ -50,7 +50,7 @@ Also
 
 ## Account Validity
 
-Kanidm supports accounts that are only able to authenticate between a pair of dates and times; the "valid from" and
+Netidm supports accounts that are only able to authenticate between a pair of dates and times; the "valid from" and
 "expires" timestamps define these points in time. By default members of `idm_people_admins` and `idm_service_desk` may
 change these values.
 
@@ -62,14 +62,14 @@ change these values.
 The account validity can be displayed with:
 
 ```bash
-kanidm person validity show demo_user --name idm_admin
+netidm person validity show demo_user --name idm_admin
 user: demo_user
 valid after: any time
 expire: never
 ```
 
 ```bash
-kanidm person validity show demo_user --name idm_admin
+netidm person validity show demo_user --name idm_admin
 valid after: 2020-09-25T21:22:04+10:00
 expire: 2020-09-25T01:22:04+10:00
 ```
@@ -88,33 +88,33 @@ Year-Month-Day T hour:minutes:seconds Z +- timezone offset
 Set the earliest time the account can start authenticating:
 
 ```bash
-kanidm person validity begin-from demo_user '2020-09-25T11:22:04+00:00' --name idm_admin
+netidm person validity begin-from demo_user '2020-09-25T11:22:04+00:00' --name idm_admin
 ```
 
 Set the expiry or end date of the account:
 
 ```bash
-kanidm person validity expire-at demo_user '2020-09-25T11:22:04+00:00' --name idm_admin
+netidm person validity expire-at demo_user '2020-09-25T11:22:04+00:00' --name idm_admin
 ```
 
 To unset or remove these values the following can be used, where `any|clear` means you may use either `any` or `clear`.
 
 ```bash
-kanidm person validity begin-from demo_user any|clear --name idm_admin
-kanidm person validity expire-at demo_user clear|epoch|now --name idm_admin
+netidm person validity begin-from demo_user any|clear --name idm_admin
+netidm person validity expire-at demo_user clear|epoch|now --name idm_admin
 ```
 
 To "lock" an account, you can set the `expire_at` value to `now` or `epoch`. Even in the situation where the "valid
 from" is _after_ the `expire_at`, the `expire_at` will be respected.
 
-These validity settings impact all authentication functions of the account (kanidm, ldap, radius).
+These validity settings impact all authentication functions of the account (netidm, ldap, radius).
 
 ### Allowing people accounts to change their mail attribute
 
-By default, Kanidm allows an account to change some attributes, but not their mail address.
+By default, Netidm allows an account to change some attributes, but not their mail address.
 
 Adding the user to the `idm_people_self_mail_write` group, as shown below, allows the user to edit their own mail.
 
 ```bash
-kanidm group add-members idm_people_self_mail_write demo_user --name idm_admin
+netidm group add-members idm_people_self_mail_write demo_user --name idm_admin
 ```

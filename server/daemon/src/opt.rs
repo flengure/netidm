@@ -5,7 +5,7 @@ struct BackupOpt {
     path: PathBuf,
 
     /// Compression method
-    #[clap(short = 'C', long, env = "KANIDM_BACKUP_COMPRESSION")]
+    #[clap(short = 'C', long, env = "NETIDM_BACKUP_COMPRESSION")]
     compression: Option<String>,
 }
 
@@ -26,7 +26,7 @@ enum DomainSettingsCmds {
     Change,
     /// Perform a pre-upgrade-check of this domains content. This will report possible
     /// incompatibilities that can block a successful upgrade to the next version of
-    /// Kanidm. This is a safe read only operation.
+    /// Netidm. This is a safe read only operation.
     #[clap(name = "upgrade-check")]
     UpgradeCheck,
     /// ⚠️  Do not use this command unless directed by a project member. ⚠️
@@ -109,16 +109,16 @@ enum DbScanOpt {
 }
 
 #[derive(Debug, Parser)]
-#[command(name = "kanidmd")]
-struct KanidmdParser {
+#[command(name = "netidmd")]
+struct NetidmdParser {
     #[command(subcommand)]
-    commands: KanidmdOpt,
+    commands: NetidmdOpt,
 
-    #[clap(short, long, env = "KANIDM_CONFIG", global = true)]
+    #[clap(short, long, env = "NETIDM_CONFIG", global = true)]
     config_path: Option<PathBuf>,
 
     #[clap(flatten)]
-    kanidmd_options: kanidm_proto::cli::KanidmdCli,
+    netidmd_options: netidm_proto::cli::NetidmdCli,
 }
 
 #[derive(Debug, Subcommand)]
@@ -148,9 +148,9 @@ enum ScriptingCommand {
     },
 }
 
-// The main command parser for kanidmd
+// The main command parser for netidmd
 #[derive(Debug, Subcommand)]
-enum KanidmdOpt {
+enum NetidmdOpt {
     #[clap(name = "server")]
     /// Start the IDM Server
     Server,

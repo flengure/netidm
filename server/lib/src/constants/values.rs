@@ -5,7 +5,7 @@ use url::Url;
 
 pub static URL_SERVICE_DOCUMENTATION: LazyLock<Url> = LazyLock::new(|| {
     #[allow(clippy::expect_used)]
-    Url::parse("https://kanidm.github.io/kanidm/master/integrations/oauth2.html")
+    Url::parse("https://netidm.github.io/netidm/master/integrations/oauth2.html")
         .expect("Failed to parse oauth2 service documentation url")
 });
 pub static PV_FALSE: PartialValue = PartialValue::new_bool(false);

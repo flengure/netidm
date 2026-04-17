@@ -18,8 +18,8 @@ use crate::server::keys::KeyObject;
 use crate::value::{AuthType, Session, SessionExtMetadata, SessionState};
 use compact_jwt::Jws;
 use hashbrown::HashSet;
-use kanidm_proto::internal::UserAuthToken;
-use kanidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
+use netidm_proto::internal::UserAuthToken;
+use netidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
 use nonempty::NonEmpty;
 use std::collections::BTreeMap;
 use std::sync::Arc;
@@ -78,6 +78,7 @@ pub(super) enum CredState {
     ProvisioningRequired {
         provider_uuid: Uuid,
         claims: crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        email_link_accounts: bool,
     },
 }
 
@@ -1575,6 +1576,7 @@ impl AuthSession {
                     CredState::ProvisioningRequired {
                         provider_uuid,
                         claims,
+                        email_link_accounts,
                     } => {
                         security_info!(%provider_uuid, "JIT provisioning required for new user");
                         (
@@ -1582,6 +1584,7 @@ impl AuthSession {
                             Ok(AuthState::ProvisioningRequired {
                                 provider_uuid,
                                 claims,
+                                email_link_accounts,
                             }),
                         )
                     }
@@ -1787,10 +1790,10 @@ mod tests {
     use crate::utils::readable_password_from_random;
     use compact_jwt::{dangernoverify::JwsDangerReleaseWithoutVerify, JwsVerifier};
     use hashbrown::HashSet;
-    use kanidm_lib_crypto::CryptoPolicy;
-    use kanidm_proto::internal::{UatPurpose, UserAuthToken};
-    use kanidm_proto::oauth2::{AccessTokenResponse, AccessTokenType, IssuedTokenType};
-    use kanidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
+    use netidm_lib_crypto::CryptoPolicy;
+    use netidm_proto::internal::{UatPurpose, UserAuthToken};
+    use netidm_proto::oauth2::{AccessTokenResponse, AccessTokenType, IssuedTokenType};
+    use netidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
     use std::time::Duration;
     use time::OffsetDateTime;
     use tokio::sync::mpsc::unbounded_channel as unbounded;

@@ -3,7 +3,7 @@ let
 in
 { pkgs ? import <nixpkgs> { overlays = [ rust-overlay ]; } }:
 pkgs.mkShellNoCC {
-	# Kanidm dependencies
+	# Netidm dependencies
 	buildInputs = with pkgs; [
 		pkg-config
 		

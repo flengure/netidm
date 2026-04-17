@@ -1,6 +1,6 @@
 # Developer Ethics
 
-Kanidm is a project that will store, process and present people's personal data. This means we have a responsibility to
+Netidm is a project that will store, process and present people's personal data. This means we have a responsibility to
 respect the data of all people who could be using our system - many who interact indirectly or do not have a choice in
 this platform.
 

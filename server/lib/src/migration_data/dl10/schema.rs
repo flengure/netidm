@@ -156,7 +156,7 @@ pub static SCHEMA_ATTR_DOMAIN_DISPLAY_NAME: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_DOMAIN_DISPLAY_NAME,
         name: Attribute::DomainDisplayName,
-        description: "The user-facing display name of the Kanidm domain".to_string(),
+        description: "The user-facing display name of the Netidm domain".to_string(),
         indexed: true,
         syntax: SyntaxType::Utf8String,
         ..Default::default()
@@ -655,7 +655,7 @@ pub static SCHEMA_ATTR_SYNC_YIELD_AUTHORITY: LazyLock<SchemaAttribute> =
         uuid: UUID_SCHEMA_ATTR_SYNC_YIELD_AUTHORITY,
         name: Attribute::SyncYieldAuthority,
         description:
-            "A set of attributes that have their authority yielded to Kanidm in a sync agreement"
+            "A set of attributes that have their authority yielded to Netidm in a sync agreement"
                 .to_string(),
         multivalue: true,
         syntax: SyntaxType::Utf8StringInsensitive,
@@ -1128,7 +1128,7 @@ pub static SCHEMA_CLASS_KEY_PROVIDER_INTERNAL_DL6: LazyLock<SchemaClass> =
     LazyLock::new(|| SchemaClass {
         uuid: UUID_SCHEMA_CLASS_KEY_PROVIDER_INTERNAL,
         name: EntryClass::KeyProviderInternal.into(),
-        description: "The Kanidm internal cryptographic key provider".to_string(),
+        description: "The Netidm internal cryptographic key provider".to_string(),
         ..Default::default()
     });
 

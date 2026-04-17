@@ -50,12 +50,12 @@ cargo install  --force \
 - [ ] git checkout -b 1.x.0 (Note no v to prevent ref conflict)
 - [ ] update version to set pre tag in ./Cargo.toml
 - [ ] update Makefile to set docker image to rc
-- [ ] `git commit -m "Release $(cargo metadata --format-version 1 | jq '.packages[] | select(.name=="kanidm_proto") | .version')-pre"`
-- [ ] `git tag v$(cargo metadata --format-version 1 | jq '.packages[] | select(.name=="kanidm_proto") | .version')-pre`
+- [ ] `git commit -m "Release $(cargo metadata --format-version 1 | jq '.packages[] | select(.name=="netidm_proto") | .version')-pre"`
+- [ ] `git tag v$(cargo metadata --format-version 1 | jq '.packages[] | select(.name=="netidm_proto") | .version')-pre`
 
 - [ ] Final inspect of the branch
 
-- [ ] `git push origin "$(cargo metadata --format-version 1 | jq '.packages[] | select(.name=="kanidm_proto") | .version')" --tags`
+- [ ] `git push origin "$(cargo metadata --format-version 1 | jq '.packages[] | select(.name=="netidm_proto") | .version')" --tags`
 
 - [ ] github -> Ensure release branch is protected
 
@@ -96,7 +96,7 @@ cargo install  --force \
 
 - [ ] docker buildx use cluster
 - [ ] `make buildx`
-- [ ] Update the readme on docker <https://hub.docker.com/repository/docker/kanidm/server>
+- [ ] Update the readme on docker <https://hub.docker.com/repository/docker/netidm/server>
 
 ### Distro
 

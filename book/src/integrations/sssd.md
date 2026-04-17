@@ -5,33 +5,33 @@ on Linux.
 
 > [!WARNING]
 >
-> SSSD should be considered a "last resort". If possible, always use the native Kanidm pam and nsswitch tools instead.
+> SSSD should be considered a "last resort". If possible, always use the native Netidm pam and nsswitch tools instead.
 
 ## Limitations
 
-SSSD has many significant limitations compared to Kanidm's native [PAM and nsswitch](./pam_and_nsswitch.md) provider.
+SSSD has many significant limitations compared to Netidm's native [PAM and nsswitch](./pam_and_nsswitch.md) provider.
 
 ### Performance
 
-Kanidm's native provider outperforms SSSD significantly for both online and offline user resolving and operations.
-Because of this, SSSD can cause higher load on the Kanidm server due to its design limitations.
+Netidm's native provider outperforms SSSD significantly for both online and offline user resolving and operations.
+Because of this, SSSD can cause higher load on the Netidm server due to its design limitations.
 
 ### Features
 
-SSSD is not able to access all of the features of Kanidm, limiting the integration options available to you.
+SSSD is not able to access all of the features of Netidm, limiting the integration options available to you.
 
 ### Security
 
-By default Kanidm uses state of the art cryptographic methods with configurable TPM binding of cached local credentials.
+By default Netidm uses state of the art cryptographic methods with configurable TPM binding of cached local credentials.
 SSSD uses significantly weaker methods to cache passwords. This means that you should not be caching credentials with
 SSSD, limiting deployment flexibility.
 
-In addition, Kanidm's providers are written in Rust rather than C, meaning they have less surface area for attack and
+In addition, Netidm's providers are written in Rust rather than C, meaning they have less surface area for attack and
 compromise. These providers have been through multiple security audits performed by the SUSE product security teams.
 
 ## Support
 
-If you choose to use the SSSD provider the Kanidm project will only provide "best effort" for compatibility and issue
+If you choose to use the SSSD provider the Netidm project will only provide "best effort" for compatibility and issue
 resolution.
 
 ## Configuration
@@ -39,10 +39,10 @@ resolution.
 An example configuration for SSSD is provided.
 
 ```toml
-# Example configuration for SSSD to resolve accounts via Kanidm
+# Example configuration for SSSD to resolve accounts via Netidm
 #
 # This should always be a "last resort". If possible you should always use the
-# kanidm pam and nsswitch resolver as these will give you a better and more
+# netidm pam and nsswitch resolver as these will give you a better and more
 # reliable setup.
 #
 # Changing the values of this config is not recommended.
@@ -76,10 +76,10 @@ sudo_provider = none
 ldap_schema = rfc2307bis
 ldap_search_base = o=idm
 
-# Your URI must be LDAPS. Kanidm does not support StartTLS.
+# Your URI must be LDAPS. Netidm does not support StartTLS.
 ldap_uri = ldaps://idm.example.com
 
-# These allow SSSD to resolve user primary groups, which in Kanidm are implied by
+# These allow SSSD to resolve user primary groups, which in Netidm are implied by
 # the existence of the user. Ensure you change the search base to your ldap_search_base.
 ldap_group_object_class = object
 ldap_group_search_base = o=idm?subtree?(|(objectClass=posixAccount)(objectClass=posixGroup))
@@ -97,10 +97,10 @@ ldap_group_search_base = o=idm?subtree?(|(objectClass=posixAccount)(objectClass=
 # that users who do NOT match, will still have their uid/gid resolve, but they
 # can't login.
 #
-# Note that because of how Kanidm presents group names, this value SHOULD be an SPN
+# Note that because of how Netidm presents group names, this value SHOULD be an SPN
 ldap_access_filter = (memberof=idm_all_accounts@idm.example.com)
 
-# Set the home dir override. Kanidm does not support configuration of homedirs as an
+# Set the home dir override. Netidm does not support configuration of homedirs as an
 # attribute, and will use the uid number of the account. This is because users can
 # change their uid at anytime, so you must have home directories configured in a stable
 # way that does not change.
@@ -110,7 +110,7 @@ ldap_access_filter = (memberof=idm_all_accounts@idm.example.com)
 override_homedir = /home/%U
 
 # This prevents an issue where SSSD incorrectly attempts to recursively walk all
-# entries in Kanidm.
+# entries in Netidm.
 #
 # ⚠️  NEVER CHANGE THIS VALUE ⚠️
 ignore_group_members = True

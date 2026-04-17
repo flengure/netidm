@@ -2,8 +2,8 @@ use axum::extract::State;
 use axum::http::header::CONTENT_TYPE;
 use axum::response::{IntoResponse, Redirect};
 use axum::{Extension, Json};
-use kanidmd_lib::prelude::APPLICATION_JSON;
-use kanidmd_lib::status::StatusRequestEvent;
+use netidmd_lib::prelude::APPLICATION_JSON;
+use netidmd_lib::status::StatusRequestEvent;
 use url::Url;
 
 use super::middleware::KOpId;

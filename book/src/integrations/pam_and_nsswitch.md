@@ -1,17 +1,17 @@
 # PAM and nsswitch
 
 [PAM](http://linux-pam.org) and [nsswitch](https://en.wikipedia.org/wiki/Name_Service_Switch) are the core mechanisms
-used by Linux and BSD clients to resolve identities from an IDM service like Kanidm into accounts that can be used on
+used by Linux and BSD clients to resolve identities from an IDM service like Netidm into accounts that can be used on
 the machine for various interactive tasks.
 
 ## The UNIX Daemon
 
-Kanidm provides a UNIX daemon that runs on any client that wants to support PAM and nsswitch. This service has many
-features which are useful even without Kanidm as a network authentication service.
+Netidm provides a UNIX daemon that runs on any client that wants to support PAM and nsswitch. This service has many
+features which are useful even without Netidm as a network authentication service.
 
-The Kanidm UNIX Daemon:
+The Netidm UNIX Daemon:
 
-- Caches Kanidm users and groups for users with unreliable networks, or for roaming users.
+- Caches Netidm users and groups for users with unreliable networks, or for roaming users.
 - Securely caches user credentials with optional TPM backed cryptographic operations.
 - Automatically creates home directories for users.
 - Caches and resolves the content of `/etc/passwd` and `/etc/group` improving system performance.
@@ -21,34 +21,34 @@ We recommend you install the client daemon from your system package manager:
 
 ```bash
 # OpenSUSE
-zypper in kanidm-unixd-clients
+zypper in netidm-unixd-clients
 # Fedora
-dnf install kanidm-unixd-clients
+dnf install netidm-unixd-clients
 # FreeBSD
-pkg install kanidm-client
+pkg install netidm-client
 ```
 
 You can check the daemon is running on your Linux system with:
 
 ```bash
-systemctl status kanidm-unixd
+systemctl status netidm-unixd
 ```
 
 You can check the privileged tasks daemon is running with:
 
 ```bash
-systemctl status kanidm-unixd-tasks
+systemctl status netidm-unixd-tasks
 ```
 
 > [!NOTE]
 >
-> `kanidm-unixd-tasks` is required, which is a change where it was previously optional.
+> `netidm-unixd-tasks` is required, which is a change where it was previously optional.
 
-You can configure unixd with the file /etc/kanidm/unixd:
+You can configure unixd with the file /etc/netidm/unixd:
 
 > [!NOTE]
 >
-> All users in Kanidm can change their name (and their spn) at any time. If you change `home_attr` from `uuid` you
+> All users in Netidm can change their name (and their spn) at any time. If you change `home_attr` from `uuid` you
 > _must_ have a plan on how to manage these directory renames in your system. We recommend that you have a stable ID
 > (like the UUID), and symlinks from the name to the UUID folder. Automatic support is provided for this via the unixd
 > tasks daemon, as documented here.
@@ -60,31 +60,31 @@ You can configure unixd with the file /etc/kanidm/unixd:
 {{#rustdoc_include ../../../examples/unixd}}
 ```
 
-If you are using the Kanidm provider features, you also need to configure `/etc/kanidm/config`. This is the covered in
-[client_tools](../client_tools.md#kanidm-configuration). At a minimum the `uri` option must be set.
+If you are using the Netidm provider features, you also need to configure `/etc/netidm/config`. This is the covered in
+[client_tools](../client_tools.md#netidm-configuration). At a minimum the `uri` option must be set.
 
 You can start, and then check the status of the daemon with the following commands:
 
 ```bash
-systemctl enable --now kanidm-unixd
-kanidm-unix status
+systemctl enable --now netidm-unixd
+netidm-unix status
 ```
 
 If the daemon is working, you should see:
 
 ```text
 system: online
-Kanidm: online
+Netidm: online
 ```
 
 If it is not working, you will see an error message:
 
 ```text
-[2020-02-14T05:58:10Z ERROR kanidm-unix] Error ->
+[2020-02-14T05:58:10Z ERROR netidm-unix] Error ->
    Os { code: 111, kind: ConnectionRefused, message: "Connection refused" }
 ```
 
-If the unixd daemon is running but not configured to use the Kanidm provider, only system status is reported:
+If the unixd daemon is running but not configured to use the Netidm provider, only system status is reported:
 
 ```text
 system: online
@@ -94,39 +94,39 @@ For more information, see the [Troubleshooting](pam_and_nsswitch/troubleshooting
 
 ## Using a service account
 
-By default kanidm-unixd relies on anonymous access to Kanidm for queries. In environments where the anonymous account is
-disabled you will need to use a service-account to allow kanidm-unixd to resolve user information.
+By default netidm-unixd relies on anonymous access to Netidm for queries. In environments where the anonymous account is
+disabled you will need to use a service-account to allow netidm-unixd to resolve user information.
 
 See the [Service Accounts](/accounts/service_accounts.md) chapter to create a unixd user.
 
 The service account must be a member of the group `idm_unix_authentication_read`
 
 ```
-kanidm group add-members idm_unix_authentication_read <service account name>
+netidm group add-members idm_unix_authentication_read <service account name>
 ```
 
 The service account token should be put into a file on a single line. The path to the service account token is
-configured in kanidm-unixd with:
+configured in netidm-unixd with:
 
 ```
 version = "2"
-[kanidm]
-service_account_token_path = "/etc/kanidm/unixd_token"
+[netidm]
+service_account_token_path = "/etc/netidm/unixd_token"
 ```
 
-Alternately, `systemctl edit kanidm-unixd.service` has comments on how to use systemd credentials to load the token.
+Alternately, `systemctl edit netidm-unixd.service` has comments on how to use systemd credentials to load the token.
 
 ## nsswitch
 
 When the daemon is running you can add the nsswitch libraries to /etc/nsswitch.conf
 
 ```text
-passwd: kanidm compat # ... other modules
-group:  kanidm compat
+passwd: netidm compat # ... other modules
+group:  netidm compat
 ```
 
-> NOTE: Unlike other remote nsswitch modules, Kanidm should be before all other modules, even `compat` or `files`. This
-> is because `kanidm` provides a cached view of the `files` module, and to ensure that identities resolve in a
+> NOTE: Unlike other remote nsswitch modules, Netidm should be before all other modules, even `compat` or `files`. This
+> is because `netidm` provides a cached view of the `files` module, and to ensure that identities resolve in a
 > deterministic order.
 
 > [!WARNING]
@@ -134,8 +134,8 @@ group:  kanidm compat
 > The `systemd` module _must_ always be _last_ if in use. For example:
 
 ```text
-passwd: kanidm compat systemd
-group:  kanidm compat systemd
+passwd: netidm compat systemd
+group:  netidm compat systemd
 ```
 
 Then [create a user](../accounts/intro.md) and
@@ -160,7 +160,7 @@ testgroup:x:2439676479:testunix
 > [!HINT]
 >
 > Remember to also create a UNIX password with something like
-> `kanidm person posix set-password --name idm_admin demo_user`. Otherwise there will be no credential for the account
+> `netidm person posix set-password --name idm_admin demo_user`. Otherwise there will be no credential for the account
 > to authenticate with.
 
 ## PAM
@@ -191,4 +191,4 @@ Documentation examples for the following Linux distributions are available:
 - [FreeBSD](pam_and_nsswitch/freebsd.md)
 - [SUSE / OpenSUSE](pam_and_nsswitch/suse.md)
 - [Fedora](pam_and_nsswitch/fedora.md)
-- Debian / Ubuntu - Installed with the packages from [kanidm/kanidm_ppa](https://kanidm.github.io/kanidm_ppa/).
+- Debian / Ubuntu - Installed with the packages from [netidm/netidm_ppa](https://netidm.github.io/netidm_ppa/).

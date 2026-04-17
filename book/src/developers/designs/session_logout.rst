@@ -2,7 +2,7 @@
 Session Logout
 --------------
 
-Currently, Kanidm relies on "short session times" to manage and limit issues with session
+Currently, Netidm relies on "short session times" to manage and limit issues with session
 disclosure, but this is obviously not optimal long term! In addition, there are systems like
 OAuth 2.0 token revocation ( https://datatracker.ietf.org/doc/html/rfc7009 ) which we may want
 to use to allow global logouts across linked applications.
@@ -10,11 +10,11 @@ to use to allow global logouts across linked applications.
 Goals
 =====
 
-* When a user selects "logout" in kanidm the active session is canceled
+* When a user selects "logout" in netidm the active session is canceled
 * A user can view their list of active sessions and audit or revoke them
 * A user can view which OAuth 2.0 applications an active session has been used with
 * An OAuth 2.0 application can use the RFC7009  logout mechanism to revoke a token that is associated to a session for that application
-* Revocation of a kanidm session implies revocation of all OAuth 2.0 sessions.
+* Revocation of a netidm session implies revocation of all OAuth 2.0 sessions.
 * Management of other session types that may exist in the future.
 
 On Login
@@ -62,7 +62,7 @@ This is a positive validation of the validity of a session. The absence of a pos
 existence, is what implies revocation.
 
 The session will have a "grace window", to account for replication delay. This is so that if the
-session is used on another kanidm server which has not yet received the latest revocation list
+session is used on another netidm server which has not yet received the latest revocation list
 changes, it "assumes" the best intent and proceeds. This window should be short, likely in minutes.
 
 When any API endpoint is called, if the token is valid and does not need a refresh:
@@ -156,7 +156,7 @@ is required.
 OAuth 2.0 (RFC7009) revoke
 ==========================
 
-OAuth 2.0 doesn't need the access token to be sent frequently to kanidm to check for validity. The method
+OAuth 2.0 doesn't need the access token to be sent frequently to netidm to check for validity. The method
 to "enforce" frequent check-ins to the authentication server is through the issuance of an access_token
 with a "short" window, and a refresh window with a "long" expiration.
 
@@ -179,12 +179,12 @@ Refresh
 A key security aspect of managing refresh tokens, is preventing divergent token chains. this is where
 some refresh token is used to create multiple access or session tokens and paired refresh tokens.
 
-Since Kanidm is a distributed system with eventually consistent replication we need to be able to
+Since Netidm is a distributed system with eventually consistent replication we need to be able to
 detect this state and prevent the usage of refresh tokens in this manner. This affects both user auth tokens
 and OAuth 2.0 tokens.
 
 A "worst case" scenario is when we involve system failure along with an attempted attack. In this scenario, we
-have three kanidm servers in replication.
+have three netidm servers in replication.
 
 * Refresh Token A is stolen, but not used used.
 * Token A expires. The refresh is sent to Server 1. Token B is issued.

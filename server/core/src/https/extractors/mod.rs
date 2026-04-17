@@ -5,13 +5,13 @@ use axum::{
 };
 use axum_extra::extract::cookie::CookieJar;
 use compact_jwt::JwsCompact;
-use kanidm_proto::internal::COOKIE_BEARER_TOKEN;
-use kanidmd_lib::prelude::{ClientAuthInfo, ClientCertInfo, Source};
+use netidm_proto::internal::COOKIE_BEARER_TOKEN;
+use netidmd_lib::prelude::{ClientAuthInfo, ClientCertInfo, Source};
 use std::net::{IpAddr, SocketAddr};
 use std::str::FromStr;
 
 // Re-export
-pub use kanidmd_lib::idm::server::DomainInfoRead;
+pub use netidmd_lib::idm::server::DomainInfoRead;
 
 pub struct VerifiedClientInformation(pub ClientAuthInfo);
 
@@ -169,7 +169,7 @@ impl FromRequestParts<ServerState> for DomainInfo {
 
 #[derive(Debug, Clone)]
 pub struct ClientConnInfo {
-    /// This is the address that is *connected* to Kanidm right now
+    /// This is the address that is *connected* to Netidm right now
     /// for this operation.
     #[allow(dead_code)]
     pub connection_addr: SocketAddr,

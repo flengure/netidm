@@ -39,16 +39,16 @@ pub fn parse_nsswitch_contents_return_missing(contents: &str) -> Vec<String> {
                         tag.trim_end_matches(':'),
                         line
                     );
-                    if !line.contains("kanidm") {
+                    if !line.contains("netidm") {
                         warn!(
-                            "nsswitch.conf {} line does not contain string 'kanidm': {}",
+                            "nsswitch.conf {} line does not contain string 'netidm': {}",
                             tag.trim_end_matches(':'),
                             line
                         );
                         return Some(line.to_string());
                     } else {
                         debug!(
-                            "nsswitch.conf {} line contains string 'kanidm': {}",
+                            "nsswitch.conf {} line contains string 'netidm': {}",
                             tag.trim_end_matches(':'),
                             line
                         );
@@ -61,9 +61,9 @@ pub fn parse_nsswitch_contents_return_missing(contents: &str) -> Vec<String> {
         .collect()
 }
 
-/// Warn the admin that user/group resolution may fail if Kanidm is not configured in nsswitch.conf. This is a common misconfiguration that can lead to confusion, and is worth proactively warning about.
-pub fn check_nsswitch_has_kanidm(path: Option<PathBuf>) -> bool {
-    // returns true if kanidm is configured in nsswitch.conf, false otherwise.
+/// Warn the admin that user/group resolution may fail if Netidm is not configured in nsswitch.conf. This is a common misconfiguration that can lead to confusion, and is worth proactively warning about.
+pub fn check_nsswitch_has_netidm(path: Option<PathBuf>) -> bool {
+    // returns true if netidm is configured in nsswitch.conf, false otherwise.
     let nsswitch_conf = path.unwrap_or_else(|| PathBuf::from("/etc/nsswitch.conf"));
     if nsswitch_conf.exists() {
         match fs::read_to_string(&nsswitch_conf) {
@@ -71,19 +71,19 @@ pub fn check_nsswitch_has_kanidm(path: Option<PathBuf>) -> bool {
                 let missing_lines = parse_nsswitch_contents_return_missing(&contents);
                 if missing_lines.is_empty() {
                     debug!(
-                        "{} appears to have Kanidm configured OK for passwd/group resolution",
+                        "{} appears to have Netidm configured OK for passwd/group resolution",
                         nsswitch_conf.display()
                     );
                     true
                 } else {
-                    warn!("Kanidm does not appear to be configured in {} for passwd/group resolution. Lines of interest: {:?}", nsswitch_conf.display(), missing_lines);
+                    warn!("Netidm does not appear to be configured in {} for passwd/group resolution. Lines of interest: {:?}", nsswitch_conf.display(), missing_lines);
                     false
                 }
             }
             Err(err) => {
                 debug!(
                     ?err,
-                    "Couldn't read {} to check for Kanidm presence",
+                    "Couldn't read {} to check for Netidm presence",
                     nsswitch_conf.display()
                 );
                 false
@@ -91,7 +91,7 @@ pub fn check_nsswitch_has_kanidm(path: Option<PathBuf>) -> bool {
         }
     } else {
         debug!(
-            "Couldn't read {} to check for Kanidm presence - file does not exist",
+            "Couldn't read {} to check for Netidm presence - file does not exist",
             nsswitch_conf.display()
         );
         false

@@ -5,7 +5,7 @@ use crate::value::{KeyStatus, KeyUsage};
 use crate::valueset::ScimResolveStatus;
 use crate::valueset::{DbValueSetV2, ValueSet};
 use crypto_glue::traits::Zeroizing;
-use kanidm_proto::scim_v1::server::ScimKeyInternal;
+use netidm_proto::scim_v1::server::ScimKeyInternal;
 use std::collections::BTreeMap;
 use std::fmt;
 use time::OffsetDateTime;
@@ -291,7 +291,7 @@ impl ValueSetT for ValueSetKeyInternal {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.map
                 .iter()
                 .map(|(kid, key_object)| {

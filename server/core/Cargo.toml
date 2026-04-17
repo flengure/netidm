@@ -1,7 +1,7 @@
 [package]
-name = "kanidmd_core"
-description = "Kanidm Server Core and Library"
-documentation = "https://docs.rs/kanidm/latest/kanidm/"
+name = "netidmd_core"
+description = "Netidm Server Core and Library"
+documentation = "https://docs.rs/netidm/latest/netidm/"
 
 version = { workspace = true }
 authors = { workspace = true }
@@ -39,11 +39,11 @@ futures-util = { workspace = true }
 haproxy-protocol = { workspace = true, features = ["tokio"] }
 hyper = { workspace = true }
 hyper-util = { workspace = true }
-kanidm_proto = { workspace = true }
-kanidm_utils_users = { workspace = true }
-kanidmd_lib = { workspace = true }
-kanidm_lib_crypto = { workspace = true }
-kanidm_lib_file_permissions = { workspace = true }
+netidm_proto = { workspace = true }
+netidm_utils_users = { workspace = true }
+netidmd_lib = { workspace = true }
+netidm_lib_crypto = { workspace = true }
+netidm_lib_file_permissions = { workspace = true }
 ldap3_proto = { workspace = true }
 libc = { workspace = true }
 opentelemetry = { workspace = true, features = ["logs"] }
@@ -93,19 +93,19 @@ webauthn-rs = { workspace = true, features = [
     "preview-features",
     "danger-credential-internals",
 ] }
-kanidmd_wg = { version = "1.10.0-dev", path = "../wg" }
+netidmd_wg = { version = "1.10.0-dev", path = "../wg" }
 
 [dev-dependencies]
 walkdir = { workspace = true }
 tempfile = { workspace = true }
-kanidmd_lib = { workspace = true, features = ["test"] }
+netidmd_lib = { workspace = true, features = ["test"] }
 
 [build-dependencies]
-kanidm_build_profiles = { workspace = true }
+netidm_build_profiles = { workspace = true }
 
 
 [package.metadata.cargo-machete]
 ignored = [
     "opentelemetry",         # feature gated
-    "kanidm_build_profiles",
+    "netidm_build_profiles",
 ]

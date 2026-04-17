@@ -1,19 +1,19 @@
-# Kanidm - Support and Release Processes
+# Netidm - Support and Release Processes
 
 # Introduction
 
-This document describes the Kanidm project teams support and release version processes.
+This document describes the Netidm project teams support and release version processes.
 
 While we have made every effort to ensure this document is complete, in the event that something is missing or if you
-have a question, please [open a discussion](https://github.com/kanidm/kanidm/discussions).
+have a question, please [open a discussion](https://github.com/netidm/netidm/discussions).
 
 The version of this document found
-[on the project page](https://github.com/kanidm/kanidm/blob/master/book/src/support.md) is considered authoritative and
+[on the project page](https://github.com/netidm/netidm/blob/master/book/src/support.md) is considered authoritative and
 applies to all versions.
 
 ## Release Schedule and Versioning
 
-Kanidm is released on a 3 month (quarterly) schedule.
+Netidm is released on a 3 month (quarterly) schedule.
 
 - February 1
 - May 1
@@ -103,7 +103,7 @@ Upgrades are supported from 1 release (minor version) before the current stable 
 
 ### Tool Versions
 
-Command line tools (`kanidm`) and sync connectors (`kanidm-ipa-sync`, `kanidm-ldap-sync`) must be matched versions with
+Command line tools (`netidm`) and sync connectors (`netidm-ipa-sync`, `netidm-ldap-sync`) must be matched versions with
 the server that they communicate with at all times.
 
 ### Unix Clients
@@ -116,37 +116,37 @@ release.
 
 ### API stability
 
-Kanidm has a number of APIs with different stability guarantees. APIs that are stable will only receive breaking changes
+Netidm has a number of APIs with different stability guarantees. APIs that are stable will only receive breaking changes
 in the case of an ethics, security or potential data corruption issue.
 
 Stable APIs are:
 
 - LDAP protocol operations
 - JSON HTTP end points which use elements from
-  [`proto/src/v1`](https://github.com/kanidm/kanidm/blob/master/proto/src/v1)
+  [`proto/src/v1`](https://github.com/netidm/netidm/blob/master/proto/src/v1)
 
 All other APIs and interactions are not considered stable. Changes will be minimised if possible. This includes but is
 not limited to:
 
-- unix domain socket API of `kanidm_unixd` resolver
-- unix admin domain socket for `kanidmd` server
+- unix domain socket API of `netidm_unixd` resolver
+- unix admin domain socket for `netidmd` server
 - web user interface design and operations
 - entry schema
-- CLI interface of any command provided by kanidm unless otherwise noted above
+- CLI interface of any command provided by netidm unless otherwise noted above
 - JSON HTTP end points which use elements from
-  [`proto/src/internal.rs`](https://github.com/kanidm/kanidm/blob/master/proto/src/internal.rs)
-- SCIM operations from [`proto/src/scim_v1`](https://github.com/kanidm/kanidm/blob/master/proto/src/scim_v1)
+  [`proto/src/internal.rs`](https://github.com/netidm/netidm/blob/master/proto/src/internal.rs)
+- SCIM operations from [`proto/src/scim_v1`](https://github.com/netidm/netidm/blob/master/proto/src/scim_v1)
 
 ### Deprecation Policy
 
 Features or APIs may be removed with 1 release versions notice. Deprecations will be announced in
-[the Release Notes](https://github.com/kanidm/kanidm/blob/master/RELEASE_NOTES.md)
+[the Release Notes](https://github.com/netidm/netidm/blob/master/RELEASE_NOTES.md)
 
 ### Python module
 
 The Python module will typically trail changes in functionality of the core Rust code, and has been developed as we have
 needed it - please feel free to add functionality or improvements, or
-[ask for them in a Github issue](http://github.com/kanidm/kanidm/issues/new/choose)!
+[ask for them in a Github issue](http://github.com/netidm/netidm/issues/new/choose)!
 
 All code changes will include full type-casting wherever possible.
 

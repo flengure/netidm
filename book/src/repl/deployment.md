@@ -40,7 +40,7 @@ First display the identity certificate of A.
 ```bash
 # Server A
 docker exec -i -t <container name> \
-  kanidmd show-replication-certificate
+  netidmd show-replication-certificate
 # certificate: "MII....."
 ```
 
@@ -60,7 +60,7 @@ Now we must configure A to pull from B.
 ```bash
 # Server B
 docker exec -i -t <container name> \
-  kanidmd show-replication-certificate
+  netidmd show-replication-certificate
 # certificate: "MII....."
 ```
 
@@ -81,7 +81,7 @@ Then restart both servers. Initially the servers will refuse to synchronise as t
 ```bash
 # Server B
 docker exec -i -t <container name> \
-  kanidmd refresh-replication-consumer
+  netidmd refresh-replication-consumer
 ```
 
 ## Partially Automated Node Configurations
@@ -100,7 +100,7 @@ First display the identity certificate
 ```bash
 # Server A
 docker exec -i -t <container name> \
-  kanidmd show-replication-certificate
+  netidmd show-replication-certificate
 # certificate: "MII....."
 ```
 
@@ -121,7 +121,7 @@ Now we must configure A to pull from B.
 ```bash
 # Server B
 docker exec -i -t <container name> \
-  kanidmd show-replication-certificate
+  netidmd show-replication-certificate
 # certificate: "MII....."
 ```
 

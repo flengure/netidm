@@ -12,7 +12,7 @@
 #![allow(clippy::expect_used)]
 
 use clap::Parser;
-use kanidm_cli::KanidmClientParser;
+use netidm_cli::NetidmClientParser;
 use std::process::ExitCode;
 use std::thread;
 use tokio::runtime;
@@ -24,7 +24,7 @@ use tracing_subscriber::{fmt, EnvFilter};
 use tokio::signal::unix::{signal, SignalKind};
 
 #[cfg(target_family = "unix")]
-async fn signal_handler(opt: KanidmClientParser) -> ExitCode {
+async fn signal_handler(opt: NetidmClientParser) -> ExitCode {
     // We need a signal handler to deal with a few things that can occur during runtime, especially
     // sigpipe on linux.
 
@@ -49,18 +49,18 @@ async fn signal_handler(opt: KanidmClientParser) -> ExitCode {
 }
 
 #[cfg(target_family = "windows")]
-async fn signal_handler(opt: KanidmClientParser) -> ExitCode {
+async fn signal_handler(opt: NetidmClientParser) -> ExitCode {
     opt.exec().await;
     ExitCode::SUCCESS
 }
 
 fn main() -> ExitCode {
-    let opt = KanidmClientParser::parse();
+    let opt = NetidmClientParser::parse();
 
     let fmt_layer = fmt::layer().with_writer(std::io::stderr);
 
     let filter_layer = if opt.debug {
-        match EnvFilter::try_new("kanidm=debug,kanidm_client=debug,webauthn=debug,kanidm_cli=debug")
+        match EnvFilter::try_new("netidm=debug,netidm_client=debug,webauthn=debug,netidm_cli=debug")
         {
             Ok(f) => f,
             Err(e) => {
@@ -73,7 +73,7 @@ fn main() -> ExitCode {
             Ok(f) => f,
             Err(_) => EnvFilter::builder()
                 .with_default_directive(LevelFilter::INFO.into())
-                .parse_lossy("kanidm_client=warn,kanidm_cli=info"),
+                .parse_lossy("netidm_client=warn,netidm_cli=info"),
         }
     };
 

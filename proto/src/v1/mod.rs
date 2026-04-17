@@ -1,4 +1,4 @@
-//! Kanidm Version 1
+//! Netidm Version 1
 //!
 //! Items defined in this module will remain stable, or change in ways that are forward
 //! compatible with newer releases.
@@ -113,7 +113,7 @@ pub struct ApiTokenGenerate {
 
 /* ===== low level proto types ===== */
 
-/// A limited view of an entry in Kanidm.
+/// A limited view of an entry in Netidm.
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Default, ToSchema)]
 pub struct Entry {
     pub attrs: BTreeMap<String, Vec<String>>,

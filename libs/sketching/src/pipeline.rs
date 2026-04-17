@@ -26,10 +26,10 @@ pub fn start_logging_pipeline(
 ) -> Result<(Option<SdkTracerProvider>, Box<dyn Subscriber + Send + Sync>), String> {
     // Always force the event span to be generated at the correct level, regardless
     // of what the user set.
-    let kanidmd_core_directives = [
-        Directive::from_str("kanidmd_core::https::trace=info")
+    let netidmd_core_directives = [
+        Directive::from_str("netidmd_core::https::trace=info")
             .map_err(|err| format!("Invalid directive during log setup: {}", err))?,
-        Directive::from_str("kanidmd_core::https::middleware=info")
+        Directive::from_str("netidmd_core::https::middleware=info")
             .map_err(|err| format!("Invalid directive during log setup: {}", err))?,
     ];
 
@@ -37,7 +37,7 @@ pub fn start_logging_pipeline(
         .with_default_directive(log_filter.into())
         .parse("")
         .map_err(|err| format!("Failed to create OTEL logging filter: {}", err))?;
-    for directive in kanidmd_core_directives.iter() {
+    for directive in netidmd_core_directives.iter() {
         logging_filter = logging_filter.add_directive(directive.clone());
     }
     logging_filter = logging_filter
@@ -101,7 +101,7 @@ pub fn start_logging_pipeline(
             .map_err(|err| err.to_string())?;
 
         // this env var gets set at build time, if we can pull it, add it to the metadata
-        let git_rev = match option_env!("KANIDM_PKG_COMMIT_REV") {
+        let git_rev = match option_env!("NETIDM_PKG_COMMIT_REV") {
             Some(rev) => format!("-{rev}"),
             None => "".to_string(),
         };
@@ -122,7 +122,7 @@ pub fn start_logging_pipeline(
 
         // only set the service name if it's not already set in the environment because the SDK defaults to "unknown_service"
         if std::env::var("OTEL_SERVICE_NAME").is_err() {
-            resource = resource.with_service_name("kanidmd");
+            resource = resource.with_service_name("netidmd");
         }
         let resource = resource.build();
 

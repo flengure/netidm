@@ -25,7 +25,7 @@ are not improved through the addition of more nodes.
 
 ## Directing Clients to Live Servers
 
-Operating replicas of Kanidm allows you to minimise outages if a single or multiple servers experience downtime. This
+Operating replicas of Netidm allows you to minimise outages if a single or multiple servers experience downtime. This
 can assist you with patching and other administrative tasks that you must perform.
 
 However, there are some key limitations to this fault tolerance.
@@ -34,9 +34,9 @@ You require a method to fail over between servers. This generally involves a loa
 tolerant. Load balancers can be made fault tolerant through the use of protocols like `CARP` or `VRRP`, or by
 configuration of routers with anycast.
 
-If you elect to use `CARP` or `VRRP` directly on your Kanidm servers, then be aware that you will be configuring your
+If you elect to use `CARP` or `VRRP` directly on your Netidm servers, then be aware that you will be configuring your
 systems as active-passive, rather than active-active, so you will not benefit from improved read throughput. Contrast,
-anycast will always route to the closest Kanidm server and will failover to nearby servers so this may be an attractive
+anycast will always route to the closest Netidm server and will failover to nearby servers so this may be an attractive
 choice.
 
 You should _NOT_ use DNS based failover mechanisms as clients can cache DNS records and remain "stuck" to a node in a
@@ -44,7 +44,7 @@ failed state.
 
 ## Maximum Downtime of a Server
 
-Kanidm's replication protocol enforces limits on how long a server can be offline. This is due to how tombstones
+Netidm's replication protocol enforces limits on how long a server can be offline. This is due to how tombstones
 (deleted entries) are handled. By default the maximum is 7 days. If a server is offline for more than 7 days a refresh
 will be required for that server to continue participation in the topology.
 

@@ -1,5 +1,5 @@
 use crate::https::extractors::DomainInfoRead;
-use kanidm_proto::internal::UiHint;
+use netidm_proto::internal::UiHint;
 use std::collections::BTreeSet;
 
 pub struct NavbarCtx {

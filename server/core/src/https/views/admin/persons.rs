@@ -11,15 +11,15 @@ use axum::extract::{Path, State};
 use axum::response::{IntoResponse, Response};
 use axum::Extension;
 use axum_htmx::{HxPushUrl, HxRequest};
-use kanidm_proto::attribute::Attribute;
-use kanidm_proto::internal::{OperationError, UserAuthToken};
-use kanidm_proto::scim_v1::server::{
-    ScimEffectiveAccess, ScimEntryKanidm, ScimListResponse, ScimPerson,
+use netidm_proto::attribute::Attribute;
+use netidm_proto::internal::{OperationError, UserAuthToken};
+use netidm_proto::scim_v1::server::{
+    ScimEffectiveAccess, ScimEntryNetidm, ScimListResponse, ScimPerson,
 };
-use kanidm_proto::scim_v1::ScimEntryGetQuery;
-use kanidm_proto::scim_v1::ScimFilter;
-use kanidmd_lib::constants::EntryClass;
-use kanidmd_lib::idm::authentication::ClientAuthInfo;
+use netidm_proto::scim_v1::ScimEntryGetQuery;
+use netidm_proto::scim_v1::ScimFilter;
+use netidmd_lib::constants::EntryClass;
+use netidmd_lib::idm::authentication::ClientAuthInfo;
 use uuid::Uuid;
 
 pub const PERSON_ATTRIBUTES: [Attribute; 9] = [
@@ -126,7 +126,7 @@ pub async fn get_person_info(
     kopid: &KOpId,
     client_auth_info: ClientAuthInfo,
 ) -> Result<(ScimPerson, ScimEffectiveAccess), WebError> {
-    let scim_entry: ScimEntryKanidm = state
+    let scim_entry: ScimEntryNetidm = state
         .qe_r_ref
         .scim_entry_id_get(
             client_auth_info.clone(),
@@ -181,7 +181,7 @@ async fn get_persons_info(
 }
 
 fn scimentry_into_personinfo(
-    scim_entry: ScimEntryKanidm,
+    scim_entry: ScimEntryNetidm,
 ) -> Option<(ScimPerson, ScimEffectiveAccess)> {
     let scim_effective_access = scim_entry.ext_access_check.clone()?; // TODO: This should be an error msg.
     let person = ScimPerson::try_from(scim_entry).ok()?;

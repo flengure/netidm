@@ -1,10 +1,10 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::scim_v1::{
+use crate::{ClientError, NetidmClient};
+use netidm_proto::scim_v1::{
     client::{ScimEntryPostGeneric, ScimEntryPutGeneric, ScimListEntry},
     ScimEntryGeneric, ScimEntryGetQuery, ScimSyncRequest, ScimSyncState,
 };
 
-impl KanidmClient {
+impl NetidmClient {
     pub async fn scim_v1_sync_status(&self) -> Result<ScimSyncState, ClientError> {
         self.perform_get_request("/scim/v1/Sync").await
     }
@@ -18,7 +18,7 @@ impl KanidmClient {
     }
 
     /// Retrieve a Generic SCIM Entry as a JSON Value. This can retrieve any
-    /// type of entry that Kanidm supports.
+    /// type of entry that Netidm supports.
     pub async fn scim_v1_entry_get(
         &self,
         name_or_uuid: &str,

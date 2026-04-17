@@ -1,7 +1,7 @@
 [package]
-name = "kanidm_client"
-description = "Kanidm Client Library"
-documentation = "https://docs.rs/kanidm_client/latest/kanidm_client/"
+name = "netidm_client"
+description = "Netidm Client Library"
+documentation = "https://docs.rs/netidm_client/latest/netidm_client/"
 
 version = { workspace = true }
 authors = { workspace = true }
@@ -19,8 +19,8 @@ doctest = false
 compact_jwt = { workspace = true }
 tracing = { workspace = true }
 reqwest = { workspace = true }
-kanidm_proto = { workspace = true }
-kanidm_lib_file_permissions = { workspace = true }
+netidm_proto = { workspace = true }
+netidm_lib_file_permissions = { workspace = true }
 http = { workspace = true }
 hyper = { workspace = true }
 serde = { workspace = true, features = ["derive"] }

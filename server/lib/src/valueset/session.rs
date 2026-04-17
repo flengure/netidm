@@ -11,9 +11,9 @@ use crate::value::{
     SessionState,
 };
 use crate::valueset::{uuid_to_proto_string, DbValueSetV2, ScimResolveStatus, ValueSet};
-use kanidm_proto::scim_v1::server::ScimApiToken;
-use kanidm_proto::scim_v1::server::ScimAuthSession;
-use kanidm_proto::scim_v1::server::ScimOAuth2Session;
+use netidm_proto::scim_v1::server::ScimApiToken;
+use netidm_proto::scim_v1::server::ScimAuthSession;
+use netidm_proto::scim_v1::server::ScimOAuth2Session;
 use std::collections::btree_map::Entry as BTreeEntry;
 use std::collections::BTreeMap;
 use time::OffsetDateTime;
@@ -384,7 +384,7 @@ impl ValueSetT for ValueSetSession {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.map
                 .iter()
                 .map(|(session_id, session)| {
@@ -885,7 +885,7 @@ impl ValueSetT for ValueSetOauth2Session {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.map
                 .iter()
                 .map(|(session_id, session)| {
@@ -1227,7 +1227,7 @@ impl ValueSetT for ValueSetApiToken {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.map
                 .iter()
                 .map(|(token_id, token)| ScimApiToken {

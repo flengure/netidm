@@ -8,7 +8,7 @@ use hashbrown::HashSet;
 use image::codecs::gif::GifDecoder;
 use image::codecs::webp::WebPDecoder;
 use image::ImageDecoder;
-use kanidm_proto::internal::{ImageType, ImageValue};
+use netidm_proto::internal::{ImageType, ImageValue};
 use std::fmt::Display;
 use std::io::Cursor;
 
@@ -393,7 +393,7 @@ impl ValueSetT for ValueSetImage {
         //
         // TODO: Scim supports a "type" field here, but do we care?
 
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.set
                 .iter()
                 .map(|image| image.hash_imagevalue())

@@ -1,11 +1,11 @@
 use crate::OpType;
 use crate::{
     handle_client_error, handle_group_account_policy_error, GroupAccountPolicyOpt,
-    KanidmClientParser,
+    NetidmClientParser,
 };
 
 impl GroupAccountPolicyOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             GroupAccountPolicyOpt::Enable { name } => {
                 let client = opt.to_client(OpType::Write).await;

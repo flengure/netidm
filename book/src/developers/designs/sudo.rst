@@ -2,7 +2,7 @@ Sudo Mode
 ---------
 
 To ensure that certain actions are only performed after re-authentication, we should introduce
-a sudo mode to kanidm. This relies on some changes from Oauth.rst (namely interactive session
+a sudo mode to netidm. This relies on some changes from Oauth.rst (namely interactive session
 identification).
 
 Only interactive sessions (IE not api passwords or radius) must be eligible for sudo mode.

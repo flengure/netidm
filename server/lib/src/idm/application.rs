@@ -9,7 +9,7 @@ use crate::prelude::*;
 use crate::utils::readable_password_from_random;
 use concread::cowcell::*;
 use hashbrown::HashMap;
-use kanidm_proto::internal::OperationError;
+use netidm_proto::internal::OperationError;
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -321,7 +321,7 @@ mod tests {
     use crate::idm::serviceaccount::{DestroyApiTokenEvent, GenerateApiTokenEvent};
     use crate::prelude::*;
     use compact_jwt::{dangernoverify::JwsDangerReleaseWithoutVerify, JwsVerifier};
-    use kanidm_proto::internal::ApiToken as ProtoApiToken;
+    use netidm_proto::internal::ApiToken as ProtoApiToken;
     use std::time::Duration;
 
     const TEST_CURRENT_TIME: u64 = 6000;

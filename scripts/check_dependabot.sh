@@ -2,7 +2,7 @@
 
 # checks that all the cargo files are found in the dependabot config
 # doesn't check that extras are there, dependabot will tell you
-# typically here - https://github.com/kanidm/kanidm/network/updates
+# typically here - https://github.com/netidm/netidm/network/updates
 
 DIRNAMES="$(find . -type f -name Cargo.toml | sed -E 's/^\.//' | xargs -n1 dirname)"
 

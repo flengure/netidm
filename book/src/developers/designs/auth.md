@@ -11,7 +11,7 @@ scope of the credential rather than time as well.
 
 <https://pages.nist.gov/800-63-3/sp800-63b.html>
 
-## Kanidm account system
+## Netidm account system
 
 The login screen is presented to the user. They are challenged for a series of credentials. When they request an action
 that is of a certain privilege, they must re-provide the strongest credential (ie Webauthn token, TOTP). Some actions
@@ -33,7 +33,7 @@ are then redirected to the target site with an appropriate (oauth) token describ
 
 ## Login to workstation (connected)
 
-The user is prompted for a password and or token auth. These are verified by the Kanidm server, and the login proceeds.
+The user is prompted for a password and or token auth. These are verified by the Netidm server, and the login proceeds.
 
 ## Login to workstation (disconnected)
 
@@ -52,7 +52,7 @@ MFA could be provided here with TOTP?
 
 ## SSH to machine (legacy, disconnected)
 
-The user pre-enrolls their SSH key to their account via the Kanidm console. They are then able to SSH to the machine as
+The user pre-enrolls their SSH key to their account via the Netidm console. They are then able to SSH to the machine as
 usual with their key. SUDO rights are granted via password only once they are connected (see sudo on workstation).
 
 Agent forwarding is a concern in this scenario to limit scope and lateral movement. Can this be limited correctly? IMO
@@ -60,7 +60,7 @@ no, so don't allow it.
 
 ## SSH to machine
 
-The user calls a special Kanidm SSH command. This generates a once-off SSH key, and an authentication request is lodged
+The user calls a special Netidm SSH command. This generates a once-off SSH key, and an authentication request is lodged
 to the system. Based on policy, the user may need to allow the request via a web console, or another user may need to
 sign off to allow the access. Once granted the module then allows the authentication to continue, and the ephemeral key
 is allowed access and the login completes. The key may only be valid for a short time.
@@ -127,7 +127,7 @@ For identification
       - Clients can add password hashes to the ID tokens on successful auth.
 
     - Request based auth proto - a service account creates an auth request, which then must be acknowledged by the
-      correct Kanidm api, and when acknowledged the authentication can proceed.
+      correct Netidm api, and when acknowledged the authentication can proceed.
 
     - OAuth - This would issue a different token type as required with the right details embedded as requested.
 

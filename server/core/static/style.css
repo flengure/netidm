@@ -78,7 +78,7 @@ nav a.navbar-brand {
   transition: var(--navbar-colors-transition);
 }
 
-.kanidm_logo {
+.netidm_logo {
   width: 12em;
   height: 12em;
 }

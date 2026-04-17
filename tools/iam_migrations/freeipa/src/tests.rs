@@ -1,5 +1,5 @@
 use crate::process_ipa_sync_result;
-use kanidm_proto::scim_v1::{ScimSyncRequest, ScimSyncState};
+use netidm_proto::scim_v1::{ScimSyncRequest, ScimSyncState};
 use std::collections::BTreeMap;
 
 use ldap3_client::LdapSyncRepl;
@@ -444,9 +444,9 @@ const TEST_SCIM_SYNC_REPL_1: &str = r#"
   "entries": [
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:1.0:person",
-        "urn:ietf:params:scim:schemas:kanidm:1.0:account",
-        "urn:ietf:params:scim:schemas:kanidm:1.0:posixaccount"
+        "urn:ietf:params:scim:schemas:netidm:1.0:person",
+        "urn:ietf:params:scim:schemas:netidm:1.0:account",
+        "urn:ietf:params:scim:schemas:netidm:1.0:posixaccount"
       ],
       "id": "babb8302-43a1-11ed-a50d-919b4b1a5ec0",
       "externalId": "uid=testuser,cn=users,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",
@@ -458,7 +458,7 @@ const TEST_SCIM_SYNC_REPL_1: &str = r#"
     },
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:1.0:group"
+        "urn:ietf:params:scim:schemas:netidm:1.0:group"
       ],
       "id": "d547c581-5f26-11ed-a50d-919b4b1a5ec0",
       "externalId": "cn=testgroup,cn=groups,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",
@@ -467,7 +467,7 @@ const TEST_SCIM_SYNC_REPL_1: &str = r#"
     },
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:1.0:group"
+        "urn:ietf:params:scim:schemas:netidm:1.0:group"
       ],
       "id": "d547c583-5f26-11ed-a50d-919b4b1a5ec0",
       "externalId": "cn=testexternal,cn=groups,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",
@@ -475,8 +475,8 @@ const TEST_SCIM_SYNC_REPL_1: &str = r#"
     },
     {
       "schemas": [
-        "urn:ietf:params:scim:schemas:kanidm:1.0:group",
-        "urn:ietf:params:scim:schemas:kanidm:1.0:posixgroup"
+        "urn:ietf:params:scim:schemas:netidm:1.0:group",
+        "urn:ietf:params:scim:schemas:netidm:1.0:posixgroup"
       ],
       "id": "f90b0b81-5f26-11ed-a50d-919b4b1a5ec0",
       "externalId": "cn=testposix,cn=groups,cn=accounts,dc=dev,dc=blackhats,dc=net,dc=au",

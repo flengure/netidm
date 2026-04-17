@@ -14,22 +14,22 @@ use axum::routing::{delete, get, post, put};
 use axum::{Extension, Json, Router};
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use compact_jwt::{Jwk, Jws, JwsSigner};
-use kanidm_proto::constants::uri::V1_AUTH_VALID;
-use kanidm_proto::internal::{
+use netidm_proto::constants::uri::V1_AUTH_VALID;
+use netidm_proto::internal::{
     ApiToken, AppLink, CUIntentSend, CUIntentToken, CURequest, CUSessionToken, CUStatus,
     CreateRequest, CredentialStatus, DeleteRequest, IdentifyUserRequest, IdentifyUserResponse,
     ModifyRequest, RadiusAuthToken, SearchRequest, SearchResponse, UserAuthToken,
     COOKIE_AUTH_SESSION_ID, COOKIE_BEARER_TOKEN,
 };
-use kanidm_proto::v1::{
+use netidm_proto::v1::{
     AccountUnixExtend, ApiTokenGenerate, AuthIssueSession, AuthRequest, AuthResponse,
     AuthState as ProtoAuthState, Entry as ProtoEntry, GroupUnixExtend, SingleStringRequest,
     UatStatus, UnixGroupToken, UnixUserToken, WhoamiResponse,
 };
-use kanidmd_lib::idm::authentication::{AuthState, AuthStep};
-use kanidmd_lib::idm::event::AuthResult;
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::value::PartialValue;
+use netidmd_lib::idm::authentication::{AuthState, AuthStep};
+use netidmd_lib::idm::event::AuthResult;
+use netidmd_lib::prelude::*;
+use netidmd_lib::value::PartialValue;
 use std::net::IpAddr;
 use uuid::Uuid;
 

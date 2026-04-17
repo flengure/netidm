@@ -13,7 +13,7 @@ updates:
         patterns:
           - "*"
   - package-ecosystem: pip
-    directory: "/pykanidm"
+    directory: "/pynetidm"
     schedule:
       interval: weekly
       time: "06:00"
@@ -162,7 +162,7 @@ updates:
       time: "06:00"
       timezone: Australia/Brisbane
   - package-ecosystem: cargo
-    directory: "/unix_integration/nss_kanidm"
+    directory: "/unix_integration/nss_netidm"
     schedule:
       interval: weekly
       time: "06:00"
@@ -173,7 +173,7 @@ updates:
         patterns:
           - "*"
   - package-ecosystem: cargo
-    directory: "/unix_integration/pam_kanidm"
+    directory: "/unix_integration/pam_netidm"
     schedule:
       interval: weekly
       time: "06:00"

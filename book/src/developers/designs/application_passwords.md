@@ -1,10 +1,10 @@
 # Rationale
 
-Kanidm exists to provide an authentication source for external applications. These applications need to have
-standardised ways to integrate with Kanidm to allow that application to interact and trust Kanidm's authentication
+Netidm exists to provide an authentication source for external applications. These applications need to have
+standardised ways to integrate with Netidm to allow that application to interact and trust Netidm's authentication
 results.
 
-For web based applications we offer OAuth2/OIDC. For Linux machines we offer a Kanidm-specific HTTPS channel for
+For web based applications we offer OAuth2/OIDC. For Linux machines we offer a Netidm-specific HTTPS channel for
 identifying users (UNIX integration). Currently, for applications that don't support other protocols we offer an LDAPS
 gateway that allows users to bind using their UNIX password.
 
@@ -21,11 +21,11 @@ bind with the UNIX password.
 
 # User experience
 
-The administrator configures two applications on their Kanidm instance. One is "mail" for a generic SMTP+IMAP service.
+The administrator configures two applications on their Netidm instance. One is "mail" for a generic SMTP+IMAP service.
 The other is HTTP basic auth to a legacy web server. Applications have a linked group to determine which users will be
 able to use application passwords for each application.
 
-The mail services and web services are configured to point to Kanidm's LDAP gateway with a customized search base DN.
+The mail services and web services are configured to point to Netidm's LDAP gateway with a customized search base DN.
 
 The users can login to the webui or command line and list what linked applications exist on their accounts that require
 application passwords.
@@ -54,7 +54,7 @@ this search base, we show the same content from dc=example,dc=com.
 for allowing access to the application, but then still need other groups reflected into the subtree. In this case, if we
 limited the view to application access only, we wouldn't be displaying the non-access groups that the application may
 still rely on. Ultimately, in this case the application needs to make its own authorisation decisions to an extend.
-Kanidm can limit which users are members of the access allowed group as only they can bind still as an extra layer of
+Netidm can limit which users are members of the access allowed group as only they can bind still as an extra layer of
 defence)
 
 The application must bind with its api-token if it wishes to read extended user information. With this, only basic info
@@ -64,9 +64,9 @@ limited to anonymous rights are granted.
 client applications may disclose this basedn in UI elements).
 
 When a user authenticates the binddn of the account is set to `spn=user,app=name,dc=example,dc=com`. This difference in
-base DN triggers Kanidm to re-route the authentication to the application specific password, rather than the UNIX one.
+base DN triggers Netidm to re-route the authentication to the application specific password, rather than the UNIX one.
 
-## Kanidm
+## Netidm
 
 ### Application Entries
 
@@ -81,7 +81,7 @@ When users are removed from a group associated to an application all of their ap
 will be disabled.
 
 Application schema class will supplement service account class to allow generating tokens for them. These are optional
-since an anonymous bind to kanidm and searching under the basedn or application base dn will continue to work.
+since an anonymous bind to netidm and searching under the basedn or application base dn will continue to work.
 
 Application should have a URL reference to help admins identify where the application may be located or accessed.
 
@@ -164,9 +164,9 @@ We need to add a cache of available applications for lookup.
 An application can bind with its api-token because the application may need to search LDAP with elevated read
 permissions.
 
-### kanidm CLI
+### netidm CLI
 
-The `kanidm` command line tool will be extended to satisfy the following configuration requirements:
+The `netidm` command line tool will be extended to satisfy the following configuration requirements:
 
 - List applications
 

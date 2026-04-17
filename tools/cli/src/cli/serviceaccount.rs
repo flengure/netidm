@@ -1,20 +1,20 @@
 use crate::common::try_expire_at_from_string;
 use crate::OpType;
-use kanidm_proto::constants::{
+use netidm_proto::constants::{
     ATTR_ACCOUNT_EXPIRE, ATTR_ACCOUNT_VALID_FROM, ATTR_GIDNUMBER, ATTR_SSH_PUBLICKEY,
 };
-use kanidm_proto::messages::{AccountChangeMessage, ConsoleOutputMode, MessageStatus};
+use netidm_proto::messages::{AccountChangeMessage, ConsoleOutputMode, MessageStatus};
 use time::OffsetDateTime;
 
 use crate::{
-    handle_client_error, AccountSsh, AccountUserAuthToken, AccountValidity, KanidmClientParser,
+    handle_client_error, AccountSsh, AccountUserAuthToken, AccountValidity, NetidmClientParser,
     OutputMode, ServiceAccountApiToken, ServiceAccountCredential, ServiceAccountOpt,
     ServiceAccountPosix,
 };
 use time::format_description::well_known::Rfc3339;
 
 impl ServiceAccountOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             ServiceAccountOpt::Credential { commands } => match commands {
                 ServiceAccountCredential::Status(apo) => {
@@ -113,7 +113,7 @@ impl ServiceAccountOpt {
                                     output_mode: ConsoleOutputMode::JSON,
                                     action: "api-token generate".to_string(),
                                     result: new_token,
-                                    status: kanidm_proto::messages::MessageStatus::Success,
+                                    status: netidm_proto::messages::MessageStatus::Success,
                                     src_user: opt
                                         .username
                                         .clone()

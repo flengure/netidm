@@ -1,7 +1,7 @@
 use crate::idm::authentication::{AuthCredential, AuthState, AuthStep};
 use crate::prelude::*;
 use compact_jwt::JwsCompact;
-use kanidm_proto::v1::{AuthIssueSession, AuthMech};
+use netidm_proto::v1::{AuthIssueSession, AuthMech};
 
 #[cfg(test)]
 use std::sync::Arc;

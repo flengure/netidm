@@ -1,7 +1,7 @@
 [package]
-name = "kanidm_build_profiles"
-description = "Kanidm Build System Profiles"
-documentation = "https://docs.rs/kanidm/latest/kanidm/"
+name = "netidm_build_profiles"
+description = "Netidm Build System Profiles"
+documentation = "https://docs.rs/netidm/latest/netidm/"
 # We do not have tests in this pkg
 autotests = false
 

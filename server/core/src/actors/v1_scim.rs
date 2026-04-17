@@ -1,17 +1,17 @@
 use super::{QueryServerReadV1, QueryServerWriteV1};
-use kanidm_proto::scim_v1::{
+use netidm_proto::scim_v1::{
     client::{ScimEntryPostGeneric, ScimEntryPutGeneric},
-    server::{ScimEntryKanidm, ScimListResponse},
+    server::{ScimEntryNetidm, ScimListResponse},
     ScimApplicationPassword, ScimApplicationPasswordCreate, ScimEntryGetQuery, ScimFilter,
     ScimSyncRequest, ScimSyncState,
 };
-use kanidmd_lib::idm::application::GenerateApplicationPasswordEvent;
-use kanidmd_lib::idm::scim::{
+use netidmd_lib::idm::application::GenerateApplicationPasswordEvent;
+use netidmd_lib::idm::scim::{
     GenerateScimSyncTokenEvent, ScimSyncFinaliseEvent, ScimSyncTerminateEvent, ScimSyncUpdateEvent,
 };
-use kanidmd_lib::idm::server::IdmServerTransaction;
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::server::scim::{ScimCreateEvent, ScimDeleteEvent, ScimEntryPutEvent};
+use netidmd_lib::idm::server::IdmServerTransaction;
+use netidmd_lib::prelude::*;
+use netidmd_lib::server::scim::{ScimCreateEvent, ScimDeleteEvent, ScimEntryPutEvent};
 
 impl QueryServerWriteV1 {
     #[instrument(
@@ -193,7 +193,7 @@ impl QueryServerWriteV1 {
         eventid: Uuid,
         classes: &[EntryClass],
         entry: ScimEntryPostGeneric,
-    ) -> Result<ScimEntryKanidm, OperationError> {
+    ) -> Result<ScimEntryNetidm, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_write = self.idms.proxy_write(ct).await?;
         let ident = idms_prox_write
@@ -380,7 +380,7 @@ impl QueryServerWriteV1 {
         client_auth_info: ClientAuthInfo,
         eventid: Uuid,
         generic: ScimEntryPutGeneric,
-    ) -> Result<ScimEntryKanidm, OperationError> {
+    ) -> Result<ScimEntryNetidm, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_write = self.idms.proxy_write(ct).await?;
         let ident = idms_prox_write
@@ -431,7 +431,7 @@ impl QueryServerReadV1 {
         uuid_or_name: String,
         class: EntryClass,
         query: ScimEntryGetQuery,
-    ) -> Result<ScimEntryKanidm, OperationError> {
+    ) -> Result<ScimEntryNetidm, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_read = self.idms.proxy_read().await?;
         let ident = idms_prox_read

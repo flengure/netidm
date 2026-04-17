@@ -35,12 +35,12 @@ use compact_jwt::{Jwk, JwsCompact};
 use concread::bptree::{BptreeMap, BptreeMapReadTxn, BptreeMapWriteTxn};
 use concread::cowcell::CowCellReadTxn;
 use concread::hashmap::{HashMap, HashMapReadTxn, HashMapWriteTxn};
-use kanidm_lib_crypto::CryptoPolicy;
-use kanidm_proto::internal::{
+use netidm_lib_crypto::CryptoPolicy;
+use netidm_proto::internal::{
     ApiToken, CredentialStatus, PasswordFeedback, RadiusAuthToken, ScimSyncToken, UatPurpose,
     UserAuthToken,
 };
-use kanidm_proto::v1::{UnixGroupToken, UnixUserToken};
+use netidm_proto::v1::{UnixGroupToken, UnixUserToken};
 use rand::prelude::*;
 use std::convert::TryFrom;
 use std::sync::Arc;
@@ -192,7 +192,7 @@ impl IdmServer {
                 origin,
                 rp_id
             );
-            admin_error!("To change the origin or domain name see: https://kanidm.github.io/kanidm/master/server_configuration.html");
+            admin_error!("To change the origin or domain name see: https://netidm.github.io/netidm/master/server_configuration.html");
             return Err(OperationError::InvalidState);
         };
 
@@ -606,7 +606,7 @@ pub trait IdmServerTransaction<'a> {
                 OperationError::NotAuthenticated
             })?;
 
-            let apit = kanidm_proto::internal::ApiToken {
+            let apit = netidm_proto::internal::ApiToken {
                 account_id: entry.get_uuid(),
                 token_id: session_id,
                 label: api_token_internal.label.clone(),
@@ -2289,7 +2289,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             .and_then(|application_set| self.applications.reload(application_set))
     }
 
-    /// Find a Kanidm account linked to a specific OAuth2 provider and provider-assigned subject ID.
+    /// Find a Netidm account linked to a specific OAuth2 provider and provider-assigned subject ID.
     /// Returns `None` if no account is linked, or `Some(Account)` if one exists.
     pub fn find_account_by_oauth2_provider_and_user_id(
         &mut self,
@@ -2333,7 +2333,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
     }
 
-    /// JIT-provision a new Kanidm account from external provider claims.
+    /// JIT-provision a new Netidm account from external provider claims.
     /// Returns the UUID of the newly created account.
     pub fn jit_provision_oauth2_account(
         &mut self,
@@ -2381,7 +2381,71 @@ impl IdmServerProxyWriteTransaction<'_> {
         Ok(new_account_uuid)
     }
 
-    /// Derive a valid Kanidm account name from an external provider identity.
+    /// Link an existing local Person account to an OAuth2 provider by verified email.
+    ///
+    /// Searches for a Person entry whose `mail` attribute matches the verified email from the
+    /// provider, then writes the three OAuth2Account linking attributes onto that entry.
+    /// Returns `Ok(Some(uuid))` on success, `Ok(None)` if no matching account is found,
+    /// or an error if the write fails.
+    pub fn find_and_link_account_by_email(
+        &mut self,
+        provider_uuid: Uuid,
+        claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+    ) -> Result<Option<Uuid>, OperationError> {
+        let Some(ref email) = claims.email else {
+            return Ok(None);
+        };
+
+        let mut matches = self.qs_write.internal_search(filter!(f_and!([
+            f_eq(
+                Attribute::Mail,
+                PartialValue::EmailAddress(email.clone())
+            ),
+            f_eq(Attribute::Class, EntryClass::Person.into()),
+        ])))?;
+
+        if matches.is_empty() {
+            return Ok(None);
+        }
+
+        // Use the first match (mail is unique-per-person in normal deployments).
+        let target_uuid = matches.remove(0).get_uuid();
+
+        let cred_id = Uuid::new_v4();
+
+        let modlist = ModifyList::new_list(vec![
+            Modify::Present(
+                Attribute::Class,
+                EntryClass::OAuth2Account.to_value(),
+            ),
+            Modify::Present(
+                Attribute::OAuth2AccountProvider,
+                Value::Refer(provider_uuid),
+            ),
+            Modify::Present(
+                Attribute::OAuth2AccountUniqueUserId,
+                Value::new_utf8s(&claims.sub),
+            ),
+            Modify::Present(
+                Attribute::OAuth2AccountCredentialUuid,
+                Value::Uuid(cred_id),
+            ),
+        ]);
+
+        self.qs_write
+            .internal_modify(
+                &filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(target_uuid))),
+                &modlist,
+            )
+            .map_err(|e| {
+                admin_error!(?e, "find_and_link_account_by_email modify failed");
+                e
+            })?;
+
+        Ok(Some(target_uuid))
+    }
+
+    /// Derive a valid Netidm account name from an external provider identity.
     ///
     /// Candidate order: `username_hint` → email local-part → first 8 hex chars of `sub`.
     /// The candidate is normalised (lowercased, non-alphanumeric chars replaced with `_`,
@@ -2516,8 +2580,8 @@ mod tests {
     use crate::server::keys::KeyProvidersTransaction;
     use crate::value::{AuthType, SessionState};
     use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier};
-    use kanidm_lib_crypto::CryptoPolicy;
-    use kanidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
+    use netidm_lib_crypto::CryptoPolicy;
+    use netidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
     use time::OffsetDateTime;
     use uuid::Uuid;
 
@@ -3934,7 +3998,7 @@ mod tests {
         idms: &IdmServer,
         idms_delayed: &mut IdmServerDelayed,
     ) {
-        use kanidm_proto::internal::UserAuthToken;
+        use netidm_proto::internal::UserAuthToken;
 
         let ct = duration_from_epoch_now();
 

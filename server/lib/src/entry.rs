@@ -46,12 +46,12 @@ use crate::valueset::{self, ScimResolveStatus, ValueSet, ValueSetSpn};
 use compact_jwt::JwsEs256Signer;
 use crypto_glue::s256::Sha256Output;
 use hashbrown::{HashMap, HashSet};
-use kanidm_proto::internal::ImageValue;
-use kanidm_proto::internal::{
+use netidm_proto::internal::ImageValue;
+use netidm_proto::internal::{
     ConsistencyError, Filter as ProtoFilter, OperationError, SchemaError, UiHint,
 };
-use kanidm_proto::scim_v1::server::ScimEffectiveAccess;
-use kanidm_proto::v1::Entry as ProtoEntry;
+use netidm_proto::scim_v1::server::ScimEffectiveAccess;
+use netidm_proto::v1::Entry as ProtoEntry;
 use ldap3_proto::simple::{LdapPartialAttribute, LdapSearchResultEntry};
 use std::cmp::Ordering;
 pub use std::collections::BTreeSet as Set;
@@ -2412,14 +2412,14 @@ impl Entry<EntryReduced, EntryCommitted> {
         Ok(ProtoEntry { attrs: attrs? })
     }
 
-    pub fn to_scim_kanidm<'a, TXN>(
+    pub fn to_scim_netidm<'a, TXN>(
         &self,
         read_txn: &mut TXN,
-    ) -> Result<ScimEntryKanidm, OperationError>
+    ) -> Result<ScimEntryNetidm, OperationError>
     where
         TXN: QueryServerTransaction<'a>,
     {
-        let result: Result<BTreeMap<Attribute, ScimValueKanidm>, OperationError> = self
+        let result: Result<BTreeMap<Attribute, ScimValueNetidm>, OperationError> = self
             .attrs
             .iter()
             // We want to skip some attributes as they are already in the header.
@@ -2463,7 +2463,7 @@ impl Entry<EntryReduced, EntryCommitted> {
         // to achieve this.
         let schemas = Vec::with_capacity(0);
 
-        Ok(ScimEntryKanidm {
+        Ok(ScimEntryNetidm {
             header: ScimEntryHeader {
                 schemas,
                 id,

@@ -18,10 +18,10 @@ they are used, this may be a useful reference if something feels unknown to you.
 
 ## Accounts
 
-- trust - A trust is when two Kanidm domains have a relationship to each other where accounts can be used between the
+- trust - A trust is when two Netidm domains have a relationship to each other where accounts can be used between the
   domains. The domains retain their administration boundaries, but allow cross authentication.
-- replication - This is the process where two or more Kanidm servers in a domain can synchronise their database content.
-- UAT - User Authentication Token. This is a token issue by Kanidm to an account after it has authenticated.
+- replication - This is the process where two or more Netidm servers in a domain can synchronise their database content.
+- UAT - User Authentication Token. This is a token issue by Netidm to an account after it has authenticated.
 - SPN - Security Principal Name. This is a name of an account comprising its name and domain name. This allows
   distinction between accounts with identical names over a trust boundary
 

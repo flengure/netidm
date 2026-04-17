@@ -364,7 +364,7 @@ mod tests {
     use crate::server::ModifyEvent;
     use crate::server::SearchEvent;
     use crate::server::ValueSetMessage;
-    use kanidm_proto::v1::OutboundMessage;
+    use netidm_proto::v1::OutboundMessage;
     use time::OffsetDateTime;
 
     #[qs_test]

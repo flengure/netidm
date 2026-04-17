@@ -3,7 +3,7 @@
 OAuth2 uses a number of terms in ways that can make it unclear and difficult to understand.
 
 A user wishes to access a service (resource, resource server) through an OAuth2 client. The client does not have an
-active session for the user so it redirects to the authorisation server (Kanidm) to determine if the user has the
+active session for the user so it redirects to the authorisation server (Netidm) to determine if the user has the
 appropriate permissions (scopes) for the requested resources, and should be allowed to proceed.
 
 The authorisation server checks the current session of the user and may present a login flow if required. Based on the
@@ -29,11 +29,11 @@ on top.
 ### Why Does Sharing a Client Weaken OAuth2?
 
 By sharing a client ID between multiple applications this implies that all of these applications are a singular client
-in Kanidm's view. This means tokens issued to one application can be reused on any other application.
+in Netidm's view. This means tokens issued to one application can be reused on any other application.
 
 This limits your ability to enforce scopes, presents a large compromise blast radius if a token is stolen, and also
 increases the damage radius if the client credentials are stolen.
 
-Generally this also provides a bad user experience since the Kanidm application portal only lists a single landing URL
+Generally this also provides a bad user experience since the Netidm application portal only lists a single landing URL
 of the client, so subsequent applications that "piggy back" can not be redirected to from the application portal meaning
 that users will not easily be able to access the application.

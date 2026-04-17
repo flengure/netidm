@@ -1,6 +1,6 @@
 use crate::idm::server::IdmServerProxyReadTransaction;
 use crate::prelude::*;
-use kanidm_proto::internal::AppLink;
+use netidm_proto::internal::AppLink;
 
 impl IdmServerProxyReadTransaction<'_> {
     pub fn list_applinks(&mut self, ident: &Identity) -> Result<Vec<AppLink>, OperationError> {
@@ -72,7 +72,7 @@ impl IdmServerProxyReadTransaction<'_> {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use kanidm_proto::internal::AppLink;
+    use netidm_proto::internal::AppLink;
 
     #[idm_test]
     async fn test_idm_applinks_list(idms: &IdmServer, _idms_delayed: &mut IdmServerDelayed) {
@@ -112,7 +112,7 @@ mod tests {
                 Attribute::OAuth2RsScopeMap,
                 Value::new_oauthscopemap(
                     grp_uuid,
-                    btreeset![kanidm_proto::constants::OAUTH2_SCOPE_READ.to_string()]
+                    btreeset![netidm_proto::constants::OAUTH2_SCOPE_READ.to_string()]
                 )
                 .expect("invalid oauthscope")
             )

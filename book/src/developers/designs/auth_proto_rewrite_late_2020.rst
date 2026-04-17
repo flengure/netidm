@@ -1,7 +1,7 @@
 Authentication Proto Rewrite
 ----------------------------
 
-The initial design and implementation of authentication of Kanidm is already showing a number of
+The initial design and implementation of authentication of Netidm is already showing a number of
 limitations and issues since the implementation of Webauthn has been nearly completed. Part of this
 is due to the expansion of ideas around account policy, partly due to defects in Webauthn, and part
 due to information based on real usage and deployments.

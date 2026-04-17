@@ -11,15 +11,15 @@ use axum::extract::{rejection::JsonRejection, DefaultBodyLimit, Path, Query, Sta
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::{delete, get, post};
 use axum::{Extension, Json, Router};
-use kanidm_proto::scim_v1::ScimEntry;
-use kanidm_proto::scim_v1::{
+use netidm_proto::scim_v1::ScimEntry;
+use netidm_proto::scim_v1::{
     client::{ScimEntryPostGeneric, ScimEntryPutGeneric},
-    server::{ScimEntryKanidm, ScimListResponse},
+    server::{ScimEntryNetidm, ScimListResponse},
     ScimApplicationPassword, ScimApplicationPasswordCreate, ScimEntryGetQuery, ScimSyncRequest,
     ScimSyncState,
 };
-use kanidm_proto::v1::Entry as ProtoEntry;
-use kanidmd_lib::prelude::*;
+use netidm_proto::v1::Entry as ProtoEntry;
+use netidmd_lib::prelude::*;
 
 const DEFAULT_SCIM_SYNC_BYTES: usize = 1024 * 1024 * 32;
 
@@ -369,7 +369,7 @@ async fn scim_entry_post(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Json(post_generic): Json<ScimEntryPostGeneric>,
-) -> Result<Json<ScimEntryKanidm>, WebError> {
+) -> Result<Json<ScimEntryNetidm>, WebError> {
     state
         .qe_w_ref
         .scim_entry_create(client_auth_info, kopid.eventid, &[], post_generic)
@@ -394,7 +394,7 @@ async fn scim_entry_put(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Json(put_generic): Json<ScimEntryPutGeneric>,
-) -> Result<Json<ScimEntryKanidm>, WebError> {
+) -> Result<Json<ScimEntryNetidm>, WebError> {
     state
         .qe_w_ref
         .handle_scim_entry_put(client_auth_info, kopid.eventid, put_generic)
@@ -445,7 +445,7 @@ async fn scim_entry_id_get(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Query(scim_entry_get_query): Query<ScimEntryGetQuery>,
-) -> Result<Json<ScimEntryKanidm>, WebError> {
+) -> Result<Json<ScimEntryNetidm>, WebError> {
     state
         .qe_r_ref
         .scim_entry_id_get(
@@ -477,7 +477,7 @@ async fn scim_person_id_get(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Query(scim_entry_get_query): Query<ScimEntryGetQuery>,
-) -> Result<Json<ScimEntryKanidm>, WebError> {
+) -> Result<Json<ScimEntryNetidm>, WebError> {
     state
         .qe_r_ref
         .scim_entry_id_get(
@@ -590,7 +590,7 @@ async fn scim_application_post(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Json(entry_post): Json<ScimEntryPostGeneric>,
-) -> Result<Json<ScimEntryKanidm>, WebError> {
+) -> Result<Json<ScimEntryNetidm>, WebError> {
     state
         .qe_w_ref
         .scim_entry_create(
@@ -624,7 +624,7 @@ async fn scim_application_id_get(
     Path(id): Path<String>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
-) -> Result<Json<ScimEntryKanidm>, WebError> {
+) -> Result<Json<ScimEntryNetidm>, WebError> {
     state
         .qe_r_ref
         .scim_entry_id_get(
@@ -771,7 +771,7 @@ async fn scim_message_id_get(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Query(scim_entry_get_query): Query<ScimEntryGetQuery>,
-) -> Result<Json<ScimEntryKanidm>, WebError> {
+) -> Result<Json<ScimEntryNetidm>, WebError> {
     state
         .qe_r_ref
         .scim_entry_id_get(
@@ -947,7 +947,7 @@ pub fn route_setup() -> Router<ServerState> {
         //                                                   for one or more
         //                                                   resource types using
         //                                                   POST.
-        //  -- Kanidm Resources
+        //  -- Netidm Resources
         //
         //  Entry    /Entry/{id}      GET                    Retrieve a generic entry
         //                                                   of any kind from the database.

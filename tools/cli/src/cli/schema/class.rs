@@ -1,9 +1,9 @@
-use crate::{handle_client_error, KanidmClientParser, OpType, SchemaClassOpt};
-use kanidm_proto::scim_v1::{ScimEntryGetQuery, ScimFilter};
+use crate::{handle_client_error, NetidmClientParser, OpType, SchemaClassOpt};
+use netidm_proto::scim_v1::{ScimEntryGetQuery, ScimFilter};
 use std::str::FromStr;
 
 impl SchemaClassOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             Self::List => {
                 let client = opt.to_client(OpType::Read).await;

@@ -11,7 +11,7 @@ use axum::{
 };
 use axum_htmx::{HxEvent, HxRequestGuardLayer};
 use constants::Urls;
-use kanidmd_lib::{
+use netidmd_lib::{
     idm::server::DomainInfoRead,
     prelude::{OperationError, Uuid},
 };
@@ -47,7 +47,7 @@ struct ErrorToastPartial {
 }
 
 pub fn view_router(state: ServerState) -> Router<ServerState> {
-    // These routes are special, and often need to redirect *out* of kanidm. We need to
+    // These routes are special, and often need to redirect *out* of netidm. We need to
     // allow this within CSP.
     let unguarded_csp_router = Router::new()
         .route("/oauth2/resume", get(oauth2::view_resume_get))
@@ -120,7 +120,7 @@ pub fn view_router(state: ServerState) -> Router<ServerState> {
 
     #[cfg(feature = "dev-oauth2-device-flow")]
     let unguarded_router = unguarded_router.route(
-        kanidmd_lib::prelude::uri::OAUTH2_DEVICE_LOGIN,
+        netidmd_lib::prelude::uri::OAUTH2_DEVICE_LOGIN,
         get(oauth2::view_device_get).post(oauth2::view_device_post),
     );
 
@@ -195,7 +195,7 @@ where
 }
 
 /// Used for creating hx events
-pub(crate) enum KanidmHxEventName {
+pub(crate) enum NetidmHxEventName {
     AddEmailSwapped,
     AddTotpSwapped,
     AddPasskeySwapped,
@@ -203,14 +203,14 @@ pub(crate) enum KanidmHxEventName {
     PermissionDenied,
 }
 
-impl From<KanidmHxEventName> for HxEvent {
-    fn from(event_name: KanidmHxEventName) -> Self {
+impl From<NetidmHxEventName> for HxEvent {
+    fn from(event_name: NetidmHxEventName) -> Self {
         match event_name {
-            KanidmHxEventName::AddEmailSwapped => HxEvent::new("addEmailSwapped"),
-            KanidmHxEventName::AddTotpSwapped => HxEvent::new("addTotpSwapped"),
-            KanidmHxEventName::AddPasskeySwapped => HxEvent::new("addPasskeySwapped"),
-            KanidmHxEventName::AddPasswordSwapped => HxEvent::new("addPasswordSwapped"),
-            KanidmHxEventName::PermissionDenied => HxEvent::new("permissionDenied"),
+            NetidmHxEventName::AddEmailSwapped => HxEvent::new("addEmailSwapped"),
+            NetidmHxEventName::AddTotpSwapped => HxEvent::new("addTotpSwapped"),
+            NetidmHxEventName::AddPasskeySwapped => HxEvent::new("addPasskeySwapped"),
+            NetidmHxEventName::AddPasswordSwapped => HxEvent::new("addPasswordSwapped"),
+            NetidmHxEventName::PermissionDenied => HxEvent::new("permissionDenied"),
         }
     }
 }
@@ -223,7 +223,7 @@ mod tests {
     use super::*;
     #[tokio::test]
     async fn test_unrecoverableerrorview() {
-        let domain_info = kanidmd_lib::server::DomainInfo::new_test();
+        let domain_info = netidmd_lib::server::DomainInfo::new_test();
 
         let view = UnrecoverableErrorView {
             err_code: OperationError::InvalidState,

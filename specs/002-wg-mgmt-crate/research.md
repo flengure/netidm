@@ -44,7 +44,7 @@ std::thread::spawn(|| boringtun::device::Device::new(config).run());
 
 **Decision**: Use the `rtnetlink` crate (async, tokio-based) for interface creation/deletion, address assignment, link-up, and route management on Linux.
 
-**Rationale**: Kanidm's server/core already initialises an rtnetlink handle on Linux (seen in the existing main startup code). The `rtnetlink` crate provides async APIs for all required netlink operations. This avoids shelling out to `ip link` / `ip addr` / `ip route`.
+**Rationale**: Netidm's server/core already initialises an rtnetlink handle on Linux (seen in the existing main startup code). The `rtnetlink` crate provides async APIs for all required netlink operations. This avoids shelling out to `ip link` / `ip addr` / `ip route`.
 
 For the `BoringtunBackend`, TUN device creation is handled by `tun2`; rtnetlink still manages address/route assignment after the device exists.
 
@@ -62,7 +62,7 @@ For the `BoringtunBackend`, TUN device creation is handled by `tun2`; rtnetlink 
 
 **Alternatives considered**:
 - Opening a netlink socket and attempting a wg device query — more robust but requires CAP_NET_ADMIN at detection time.
-- Config flag in kanidm.toml — administrator should not need to configure this.
+- Config flag in netidm.toml — administrator should not need to configure this.
 
 ---
 
@@ -70,7 +70,7 @@ For the `BoringtunBackend`, TUN device creation is handled by `tun2`; rtnetlink 
 
 **Decision**: Add a `WgToken` entry class (in a new DL17 migration) rather than extending the existing `IntentToken` machinery.
 
-**Rationale**: WireGuard registration tokens have a different lifecycle and scope from credential update intent tokens. They are scoped to a tunnel (not a credential session), have a `uses_left` counter (not just a consumed flag), and do not need the InProgress/session-tracking state. A new entry class gives clean ACL control (admins manage them via standard Kanidm CRUD), proper audit trail, and no coupling to credential update internals.
+**Rationale**: WireGuard registration tokens have a different lifecycle and scope from credential update intent tokens. They are scoped to a tunnel (not a credential session), have a `uses_left` counter (not just a consumed flag), and do not need the InProgress/session-tracking state. A new entry class gives clean ACL control (admins manage them via standard Netidm CRUD), proper audit trail, and no coupling to credential update internals.
 
 **Token schema**: `WgToken` entry has `Name`, `WgTunnelRef`, `WgTokenUsesLeft` (Uint32, optional — absent means unlimited), `WgTokenExpiry` (optional datetime), `WgTokenPrincipalRef` (optional — locks token to a specific user).
 
@@ -94,7 +94,7 @@ For the `BoringtunBackend`, TUN device creation is handled by `tun2`; rtnetlink 
 
 **Decision**: `server/wg/` Rust crate, added to the workspace. Consumed by `server/core` (not exposed as a public library). HTTP handlers in `server/core/src/https/v1_wg.rs`, registered in the existing Axum router and `apidocs/mod.rs`.
 
-**Rationale**: Matches the existing pattern (`server/lib/`, `server/core/`). The WG management code is tightly coupled to kanidmd's lifecycle (startup, shutdown, actor system) and should not be a standalone binary.
+**Rationale**: Matches the existing pattern (`server/lib/`, `server/core/`). The WG management code is tightly coupled to netidmd's lifecycle (startup, shutdown, actor system) and should not be a standalone binary.
 
 **New dependencies (workspace-level)**:
 - `wireguard-control` — WireGuard device configuration (kernel + UAPI)
@@ -107,12 +107,12 @@ For the `BoringtunBackend`, TUN device creation is handled by `tun2`; rtnetlink 
 
 ## Decision 8: Background Poller and Peer Watch
 
-**Decision**: Two background tasks spawned at kanidmd startup:
+**Decision**: Two background tasks spawned at netidmd startup:
 1. **Handshake poller** — every 30 seconds, reads peer handshake timestamps from all live WireGuard interfaces via wireguard-control and writes `last_seen` back to WgPeer entries via the actor write path.
-2. **Peer watch** — polls Kanidm for deleted/suspended WgPeer entries on the same 30s cycle and hot-removes them from live interfaces.
+2. **Peer watch** — polls Netidm for deleted/suspended WgPeer entries on the same 30s cycle and hot-removes them from live interfaces.
 
-**Rationale**: Kanidm does not yet have a push-based internal event system for entry modifications (it has async tasks but not live watches). A 30s polling cycle matches the wgdb Go reference and satisfies the spec's 30-second revocation SLA.
+**Rationale**: Netidm does not yet have a push-based internal event system for entry modifications (it has async tasks but not live watches). A 30s polling cycle matches the wgdb Go reference and satisfies the spec's 30-second revocation SLA.
 
 **Alternatives considered**:
-- Change-log based watch — Kanidm has an internal changelog but it is not currently exposed for this use case.
+- Change-log based watch — Netidm has an internal changelog but it is not currently exposed for this use case.
 - Longer poll interval — would violate the 30-second revocation SLA from the spec.

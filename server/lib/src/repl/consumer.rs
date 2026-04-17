@@ -580,7 +580,7 @@ impl QueryServerWriteTransaction<'_> {
     ) -> Result<(), OperationError> {
         // Can we apply the domain version validly?
         // if domain_version >= min_support ...
-        let current_devel_flag = option_env!("KANIDM_PRE_RELEASE").is_some();
+        let current_devel_flag = option_env!("NETIDM_PRE_RELEASE").is_some();
 
         if ctx_domain_version < DOMAIN_MINIMUM_REPLICATION_LEVEL {
             error!("Unable to proceed with consumer refresh - incoming domain level is lower than our minimum supported level. {} < {}", ctx_domain_version, DOMAIN_MINIMUM_REPLICATION_LEVEL);

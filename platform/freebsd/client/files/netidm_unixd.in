@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# PROVIDE: netidm_unixd
+# REQUIRE: LOGIN
+# KEYWORD: shutdown
+#
+# Add these lines to /etc/rc.conf.local or /etc/rc.conf
+# to enable this service:
+#
+# netidm_unixd_enable (bool):	Set to NO by default.
+#				Set it to YES to enable netidm_unixd.
+
+. /etc/rc.subr
+
+name=netidm_unixd
+rcvar=netidm_unixd_enable
+
+load_rc_config $name
+
+: ${netidm_unixd_enable:="NO"}
+
+pidfile="/var/run/netidm-unixd.pid"
+command=/usr/sbin/daemon
+command_args="-u _netidm_unixd -p /var/run/netidm-unixd.pid -T netidm_unixd /usr/local/libexec/${name}"
+procname=/usr/local/libexec/${name}
+
+run_rc_command "$1"

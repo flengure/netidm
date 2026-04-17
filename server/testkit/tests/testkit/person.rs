@@ -1,10 +1,10 @@
-use kanidm_client::{ClientError, KanidmClient, StatusCode};
-use kanidm_proto::constants::ATTR_MAIL;
-use kanidmd_testkit::{create_user, ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
+use netidm_client::{ClientError, NetidmClient, StatusCode};
+use netidm_proto::constants::ATTR_MAIL;
+use netidmd_testkit::{create_user, ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 use serde_json::Value;
 
-#[kanidmd_testkit::test]
-async fn test_v1_person_id_patch(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_v1_person_id_patch(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;
@@ -24,8 +24,8 @@ async fn test_v1_person_id_patch(rsclient: &KanidmClient) {
     eprintln!("response: {response:#?}");
 }
 
-#[kanidmd_testkit::test]
-async fn test_v1_person_id_ssh_pubkeys_post(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_v1_person_id_ssh_pubkeys_post(rsclient: &NetidmClient) {
     let res = rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await;

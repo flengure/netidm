@@ -13,9 +13,9 @@ use crate::valueset::{
     UnresolvedValueSetOauth2ScopeMap, ValueSet, ValueSetIntermediate, ValueSetResolveStatus,
     ValueSetScimPut,
 };
-use kanidm_proto::scim_v1::client::ScimOAuth2ClaimMap as ClientScimOAuth2ClaimMap;
-use kanidm_proto::scim_v1::client::ScimOAuth2ScopeMap as ClientScimOAuth2ScopeMap;
-use kanidm_proto::scim_v1::JsonValue;
+use netidm_proto::scim_v1::client::ScimOAuth2ClaimMap as ClientScimOAuth2ClaimMap;
+use netidm_proto::scim_v1::client::ScimOAuth2ScopeMap as ClientScimOAuth2ScopeMap;
+use netidm_proto::scim_v1::JsonValue;
 
 #[derive(Debug, Clone)]
 pub struct ValueSetOauthScope {
@@ -132,7 +132,7 @@ impl ValueSetT for ValueSetOauthScope {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::ArrayString(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::ArrayString(
             self.set.iter().cloned().collect(),
         )))
     }

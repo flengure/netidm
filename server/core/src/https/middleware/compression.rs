@@ -13,7 +13,7 @@
 //! * `/pkg/<and all sub-paths>`
 //!
 //! as they're all static content with no secrets in transit - all that data should
-//! come from Kanidm's REST API, which is on a different path and not covered by
+//! come from Netidm's REST API, which is on a different path and not covered by
 //! the compression middleware.
 //!
 //! (1) - <https://resources.infosecinstitute.com/topic/the-breach-attack/>

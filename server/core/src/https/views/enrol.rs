@@ -15,7 +15,7 @@ use axum::extract::State;
 use axum::response::{IntoResponse, Response};
 use axum::Extension;
 use axum_extra::extract::CookieJar;
-use kanidm_proto::internal::UserAuthToken;
+use netidm_proto::internal::UserAuthToken;
 use qrcode::render::svg;
 use qrcode::QrCode;
 use std::time::Duration;

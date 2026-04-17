@@ -5,10 +5,10 @@ responsible for ensuring all nodes are connected properly, and that agreements a
 manual work for administrators to configure each node individually, as well as monitoring individually. This adds a
 significant barrier to "stateless" configurations.
 
-In Kanidm we want to avoid this - we want replication to be coordinated to make deployment of replicas as easy as
+In Netidm we want to avoid this - we want replication to be coordinated to make deployment of replicas as easy as
 possible for new sites.
 
-## Kanidm Replication Coordinator
+## Netidm Replication Coordinator
 
 The intent of the replication coordinator (KRC) is to allow nodes to subscribe to the KRC which configures the state of
 replication across the topology.
@@ -18,7 +18,7 @@ replication across the topology.
  issue KRC ca + ────────────────┤                │
    Client JWT.                  │                │
         │       ┌──────────────▶│                │──────────────────────┐
-        │       │2. HTTPS       │     Kanidm     │                      │
+        │       │2. HTTPS       │     Netidm     │                      │
         │     JWT in Bearer     │  Replication   │            5. Issue repl config
         │  Request repl config  │  Coordinator   │             with partner public
         │  Send self signed ID  │                │                     key
@@ -39,7 +39,7 @@ replication across the topology.
        │                │                                │                │
        │                │       5. mTLS with self        │                │
        │                │──────────signed cert──────────▶│                │
-       │ Kanidm Server  │      Perform replication       │ Kanidm Server  │
+       │ Netidm Server  │      Perform replication       │ Netidm Server  │
        │     (node)     │                                │     (node)     │
        │                │                                │                │
        │                │                                │                │
@@ -48,12 +48,12 @@ replication across the topology.
        └────────────────┘                                └────────────────┘
 ```
 
-## Kanidm Node Configuration
+## Netidm Node Configuration
 
 There are some limited cases where an administrator may wish to _manually_ define replication configuration for their
-deployments. In these cases the admin can manually configure replication parameters in the Kanidm configuration.
+deployments. In these cases the admin can manually configure replication parameters in the Netidm configuration.
 
-A kanidm node for replication requires either:
+A netidm node for replication requires either:
 
 - The URL to the KRC
 - the KRC CA cert
@@ -88,27 +88,27 @@ This mode is unlikely to be developed as it does not match the way that replicat
 
 There are two nodes, A and B.
 
-The administrator configures both kanidm servers with replication urls.
+The administrator configures both netidm servers with replication urls.
 
 ```toml
 # Server A
 [replication]
-origin = "repl://kanidmd_a:8444"
+origin = "repl://netidmd_a:8444"
 bindaddress = "[::]:8444"
 ```
 
 ```toml
 # Server B
 [replication]
-origin = "repl://kanidmd_b:8444"
+origin = "repl://netidmd_b:8444"
 bindaddress = "[::]:8444"
 ```
 
-The administrator extracts their replication certificates with the kanidmd binary admin features. This will reflect the
+The administrator extracts their replication certificates with the netidmd binary admin features. This will reflect the
 `node_url` in the certificate.
 
 ```shell
-kanidmd replication get-certificate
+netidmd replication get-certificate
 ```
 
 For each node, a replication configuration is created in json.
@@ -116,7 +116,7 @@ For each node, a replication configuration is created in json.
 For A pulling from B.
 
 ```toml
-[replication."repl://kanidmd_b:8444"]
+[replication."repl://netidmd_b:8444"]
 type = "mutual-pull"
 partner_cert = "M..."
 automatic_refresh = false
@@ -125,7 +125,7 @@ automatic_refresh = false
 For B pulling from A.
 
 ```toml
-[replication."repl://kanidmd_a:8444"]
+[replication."repl://netidmd_a:8444"]
 type = "mutual-pull"
 partner_cert = "M..."
 automatic_refresh = true
@@ -142,7 +142,7 @@ operation configuration.
 
 ```toml
 [replication]
-origin = "repl://kanidmd_a:8444"
+origin = "repl://netidmd_a:8444"
 bindaddress = "[::]:8444"
 
 krc_enable = true
@@ -155,14 +155,14 @@ All other nodes will have a configuration of:
 
 ```toml
 [replication]
-origin = "repl://kanidmd_b:8444"
+origin = "repl://netidmd_b:8444"
 bindaddress = "[::]:8444"
 
 # krc_enable -- unset / false
 
 # krc_url = https://private.name.of.krc.node
-krc_url = https://kanidmd_a
-# must contain ca that signs kanidmd_a's tls_chain.
+krc_url = https://netidmd_a
+# must contain ca that signs netidmd_a's tls_chain.
 krc_ca_dir = /path/to/ca_dir
 ```
 
@@ -172,9 +172,9 @@ internally add itself to the `Default Site`.
 The KRC can then issue Tokens that define which Site a new replica should join. Initially we will only allow
 `Default Site` (and will disallow creation of other sites).
 
-The new replica will load its KRC token from the environment variable `KANIDMD_KRC_TOKEN_PATH`. This value will contain
+The new replica will load its KRC token from the environment variable `NETIDMD_KRC_TOKEN_PATH`. This value will contain
 a file path where the JWT is stored. This is compatible with systemd credentials and docker secrets. By default the
-value if unset will be defined by a profile default (`/etc/kanidm/krc.token` or `/data/krc.token`).
+value if unset will be defined by a profile default (`/etc/netidm/krc.token` or `/data/krc.token`).
 
 A new replica can then contact the `krc_url` validating the presented TLS chain with the roots from `krc_ca_dir` to
 assert the legitimacy of the KRC. Only once these are asserted, then the KRC token can be sent to the instance as a
@@ -203,7 +203,7 @@ trimmed from the RUV.
 
 ### Moving the Replication Coordinator Role
 
-Since the coordinator is part of a kanidmd server, there must be a process to move the KRC to another node.
+Since the coordinator is part of a netidmd server, there must be a process to move the KRC to another node.
 
 Imagine the following example. Here, Node A is acting as the KRC.
 

@@ -4,7 +4,7 @@
 
 ## Why TLS?
 
-You may have noticed that Kanidm requires you to configure TLS in your container or server install.
+You may have noticed that Netidm requires you to configure TLS in your container or server install.
 
 One of the fundamental goals of the project is a secure-by-design rather than secure-by-configuration system, so TLS for
 all connections is mandatory. It is not an optional feature you add later.
@@ -13,22 +13,22 @@ all connections is mandatory. It is not an optional feature you add later.
 >
 > Please respect the maintainers decision on TLS-by-default, no discussions on this topic will be entered into.
 
-### Why not allow HTTP (without TLS) between my load balancer and Kanidm?
+### Why not allow HTTP (without TLS) between my load balancer and Netidm?
 
-Because Kanidm is one of the keys to a secure network, and insecure connections to them are not best practice. This can
+Because Netidm is one of the keys to a secure network, and insecure connections to them are not best practice. This can
 allow account hijacking, privilege escalation, credential disclosures, personal information leaks and more.
 
 We believe that the **entire** path between a client and the server must be protected at all times. This includes the
-path between load balancers or proxies and Kanidm.
+path between load balancers or proxies and Netidm.
 
-### Can Kanidm authentication work without TLS?
+### Can Netidm authentication work without TLS?
 
 No, it can not. TLS is required due to our use of the `Secure` flag our cookies, which requires a client to transmit
 them back to the origin site
 [if and only if the client
 sees HTTPS as the protocol in the URL](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies#security).
 
-Kanidm's authentication system is a stepped challenge response design, where you initially request an "intent" to
+Netidm's authentication system is a stepped challenge response design, where you initially request an "intent" to
 authenticate. Once you establish this intent, the server sets up a session-id into a secure cookie, and informs the
 client of what authentication methods can proceed.
 
@@ -50,7 +50,7 @@ Similarly, WebAuthn and its various other names like Passkeys, FIDO2 or "scan th
 ## OAuth2
 
 [RFC6819 - OAuth2 Threat Model and Security Considerations](https://www.rfc-editor.org/rfc/rfc6819) is a comprehensive
-and valuable resource discussing the security of OAuth2 and influences OpenID Connect as well. In general Kanidm follows
+and valuable resource discussing the security of OAuth2 and influences OpenID Connect as well. In general Netidm follows
 and implements many of the recommendations in this document, as well as choosing not to implement certain known insecure
 OAuth2 features.
 
@@ -62,12 +62,12 @@ perform the code exchange without the user being aware. A successful code exchan
 `access_token` and optionally a `refresh_token`. The RFC has an excellent explanation of the attack. Additionally, this
 threat is discussed in [RFC6819 Section 4.4.1](https://www.rfc-editor.org/rfc/rfc6819#section-4.4.1).
 
-As Kanidm aims for "secure by default" design, even with _confidential_ clients, we deem it important to raise the bar
+As Netidm aims for "secure by default" design, even with _confidential_ clients, we deem it important to raise the bar
 for attackers. For example, an attacker may have access to the `client_id` and `client_secret` of a confidential client
 as it was mishandled by a system administrator. While they may not have direct access to the client/application systems,
 they could still use this `client_id+secret` to then carry out the authorisation code interception attack listed.
 
-For confidential clients (referred to as a `basic` client in Kanidm due to the use of HTTP Basic for `client_id+secret`
+For confidential clients (referred to as a `basic` client in Netidm due to the use of HTTP Basic for `client_id+secret`
 presentation) PKCE may optionally be disabled. This can allow authorisation code attacks to be carried out - however
 _if_ TLS is used and the `client_secret` never leaks, then these attacks will not be possible. Since there are many
 public references to system administrators mishandling secrets such as these so we should not rely on this as our sole
@@ -89,7 +89,7 @@ to known and exploited authorisation code interception attacks.
 Because there are still many applications where PKCE is not available and it is not trivial to solve for all downstream
 applications. In the case that PKCE is absent on a single OAuth2 client, the scope of failure is reduced to that single
 client. This is not the case with TLS, which is trivial to configure, and in the case of compromise of an internal
-network between a load balancer and Kanidm, the attacker can access and steal all traffic and authentication data.
+network between a load balancer and Netidm, the attacker can access and steal all traffic and authentication data.
 
 ### Why is RSA considered legacy?
 
@@ -119,19 +119,19 @@ time too. Cryptography and security is not stangnant, it requires continual revi
 No, it is not possible swap out the SQLite database for any other type of SQL server, nor will it be considered as an
 option.
 
-**_ATTEMPTING THIS WILL BREAK YOUR KANIDM INSTANCE IRREPARABLY_**
+**_ATTEMPTING THIS WILL BREAK YOUR NETIDM INSTANCE IRREPARABLY_**
 
-This question is normally asked because people want to setup multiple Kanidm servers connected to a single database.
+This question is normally asked because people want to setup multiple Netidm servers connected to a single database.
 
-Kanidm does not use SQL as a _database_. Kanidm uses SQL as a durable key-value store and Kanidm implements its own
+Netidm does not use SQL as a _database_. Netidm uses SQL as a durable key-value store and Netidm implements its own
 database, caching, querying, optimisation and indexing on top of that key-value store.
 
-As a result, because Kanidm specifically implements its own cache layer above the key-value store (sqlite in this
-example) then if you were to connect two Kanidm instances to the same key-value store, as each server has its own cache
+As a result, because Netidm specifically implements its own cache layer above the key-value store (sqlite in this
+example) then if you were to connect two Netidm instances to the same key-value store, as each server has its own cache
 layer and they are not in contact, it is possible for writes on one server to never be observed by the second, and if
 the second were to then write over those entries it will cause loss of the changes from the first server.
 
-Kanidm now implements its own eventually consistent distributed replication which also removes the need for external
+Netidm now implements its own eventually consistent distributed replication which also removes the need for external
 databases to be considered.
 
 ## Why aren't snaps launching with `home_alias` set?
@@ -140,7 +140,7 @@ Snaps rely on AppArmor and [AppArmor doesn't follow symlinks](https://bugs.launc
 `home_alias` is any value other than `none` a symlink will be created and pointing to `home_attr`. It is recommended to
 use alternative software packages to snaps.
 
-All users in Kanidm can change their name (and their spn) at any time. If you change `home_attr` from `uuid` you must
+All users in Netidm can change their name (and their spn) at any time. If you change `home_attr` from `uuid` you must
 have a plan on how to manage these directory renames in your system.
 
 ## Why so many crabs?

@@ -26,7 +26,7 @@ New fields added:
 ```rust
 userinfo_endpoint: Option<Url>        // For non-OIDC providers (GitHub)
 jit_provisioning: bool                // Default: false
-claim_map: HashMap<KanidmAttr, String> // Maps local attr → provider claim name
+claim_map: HashMap<NetidmAttr, String> // Maps local attr → provider claim name
 ```
 
 **DB Attributes (DL15 — new, all systemmay on OAuth2Client class)**:
@@ -65,7 +65,7 @@ New fields added:
 ```rust
 userinfo_endpoint: Option<Url>
 jit_provisioning: bool
-claim_map: HashMap<KanidmAttr, String>
+claim_map: HashMap<NetidmAttr, String>
 ```
 
 ---
@@ -167,7 +167,7 @@ OAuth2ClientProvider (1) ──────────────── (0..*)
     │                                              │
     │ provider_uuid                                │ provider + user_id
     ▼                                              ▼
-ExternalUserClaims ──── JIT path ────► Kanidm Account Entry
+ExternalUserClaims ──── JIT path ────► Netidm Account Entry
                                         (classes: Object, Account, Person, OAuth2Account)
                                         attrs: name, displayName, mail (optional)
                                                oauth2AccountProvider

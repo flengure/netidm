@@ -1,13 +1,13 @@
 use crate::OpType;
 use crate::{handle_client_error, Oauth2Opt, OutputMode};
-use crate::{KanidmClientParser, Oauth2ClaimMapJoin};
+use crate::{NetidmClientParser, Oauth2ClaimMapJoin};
 use anyhow::{Context, Error};
-use kanidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin as ProtoOauth2ClaimMapJoin};
+use netidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin as ProtoOauth2ClaimMapJoin};
 use std::fs::read;
 use std::process::exit;
 
 impl Oauth2Opt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             #[cfg(feature = "dev-oauth2-device-flow")]
             Oauth2Opt::DeviceFlowDisable(nopt) => {
@@ -260,7 +260,7 @@ impl Oauth2Opt {
                             if opt.debug {
                                 eprintln!(
                                     "{}",
-                                    kanidm_lib_file_permissions::diagnose_path(path.as_ref())
+                                    netidm_lib_file_permissions::diagnose_path(path.as_ref())
                                 );
                             }
                             Err(err).context(format!("Failed to read file at '{}'", path.display()))
@@ -561,16 +561,50 @@ impl Oauth2Opt {
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
+            Oauth2Opt::EnableEmailLinkAccounts { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_oauth2_client_enable_email_link_accounts(name.as_str())
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::DisableEmailLinkAccounts { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_oauth2_client_disable_email_link_accounts(name.as_str())
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::EnableDomainEmailLinkAccounts => {
+                let client = opt.to_client(OpType::Write).await;
+                match client.idm_oauth2_domain_enable_email_link_accounts().await {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::DisableDomainEmailLinkAccounts => {
+                let client = opt.to_client(OpType::Write).await;
+                match client.idm_oauth2_domain_disable_email_link_accounts().await {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
             Oauth2Opt::SetIdentityClaimMap {
                 name,
-                kanidm_attr,
+                netidm_attr,
                 provider_claim,
             } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client
                     .idm_oauth2_client_set_claim_map(
                         name.as_str(),
-                        kanidm_attr.as_str(),
+                        netidm_attr.as_str(),
                         provider_claim.as_str(),
                     )
                     .await

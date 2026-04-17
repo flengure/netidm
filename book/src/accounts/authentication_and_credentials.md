@@ -1,21 +1,21 @@
 # Authentication and Credentials
 
-A primary job of a system like Kanidm is to manage credentials for persons. This can involve a range of operations from
+A primary job of a system like Netidm is to manage credentials for persons. This can involve a range of operations from
 new user onboarding, credential resets, and self service.
 
 ## Types of Credentials
 
 ### Passkeys
 
-This is the preferred method of authentication in Kanidm. Passkeys represent "all possible cryptographic" authenticators
+This is the preferred method of authentication in Netidm. Passkeys represent "all possible cryptographic" authenticators
 that support Webauthn. Examples of this include Yubikeys, TouchID, Windows Hello, TPM's and more.
 
 These devices are unphishable, self contained multifactor authenticators and are considered the most secure method of
-authentication in Kanidm.
+authentication in Netidm.
 
 > [!WARNING]
 >
-> Kanidm's definition of Passkeys may differ from that of other systems. This is because we adopted the term very early,
+> Netidm's definition of Passkeys may differ from that of other systems. This is because we adopted the term very early,
 > before it has changed and evolved.
 
 ### Attested Passkeys
@@ -26,7 +26,7 @@ authenticator. In general only FIDO2 keys or TPM's are capable of meeting attest
 
 ### Password + TOTP
 
-This is a classic Time-based One Time Password combined with a password. Different to other systems Kanidm will prompt
+This is a classic Time-based One Time Password combined with a password. Different to other systems Netidm will prompt
 for the TOTP _first_ before the password. This is to prevent drive by bruteforce against the password of the account and
 testing if the password is vulnerable.
 
@@ -49,9 +49,9 @@ These processes are very similar. You can send a credential reset link to a user
 own credentials. To generate this link or qrcode:
 
 ```bash
-kanidm person credential create-reset-token <account_id> [<time to live in seconds>]
-kanidm person credential create-reset-token demo_user --name idm_admin
-kanidm person credential create-reset-token demo_user 86400 --name idm_admin
+netidm person credential create-reset-token <account_id> [<time to live in seconds>]
+netidm person credential create-reset-token demo_user --name idm_admin
+netidm person credential create-reset-token demo_user 86400 --name idm_admin
 # The person can use one of the following to allow the credential reset
 #
 # Scan this QR Code:
@@ -81,7 +81,7 @@ kanidm person credential create-reset-token demo_user 86400 --name idm_admin
 # ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
 #
 # This link: https://localhost:8443/ui/reset?token=8qDRG-AE1qC-zjjAT-0Fkd6
-# Or run this command: kanidm person credential use-reset-token 8qDRG-AE1qC-zjjAT-0Fkd6
+# Or run this command: netidm person credential use-reset-token 8qDRG-AE1qC-zjjAT-0Fkd6
 ```
 
 If the user wishes you can direct them to `https://idm.mydomain.name/ui/reset` where they can manually enter their token
@@ -102,7 +102,7 @@ directly manage the credentials of another account.
 > Don't use the direct credential reset to lock or invalidate an account. You should expire the account instead.
 
 ```bash
-kanidm person credential update demo_user --name idm_admin
+netidm person credential update demo_user --name idm_admin
 # spn: demo_user@idm.example.com
 # Name: Demonstration User
 # Primary Credential:
@@ -120,8 +120,8 @@ kanidm person credential update demo_user --name idm_admin
 # cred update (? for help) # : commit
 # Do you want to commit your changes? yes
 # success
-kanidm login --name demo_user
-kanidm self whoami --name demo_user
+netidm login --name demo_user
+netidm self whoami --name demo_user
 ```
 
 ## Credential Deletion
@@ -131,7 +131,7 @@ invalidated.
 
 ## Reauthentication / Privilege Access Mode
 
-To allow for longer lived sessions in Kanidm, by default sessions are issued in a "privilege capable" but read-only
+To allow for longer lived sessions in Netidm, by default sessions are issued in a "privilege capable" but read-only
 mode. In order to access privileges for a short time, you must re-authenticate. This re-issues your session with a small
 time limited read-write session internally. You can consider this to be like `sudo` on a unix system or `UAC` on windows
 where you reauthenticate for short periods to access higher levels of privilege.
@@ -139,14 +139,14 @@ where you reauthenticate for short periods to access higher levels of privilege.
 When using a user command that requires these privileges you will be warned:
 
 ```shell
-kanidm person credential update william
+netidm person credential update william
 # Privileges have expired for william@idm.example.com - you need to re-authenticate again.
 ```
 
 To reauthenticate
 
 ```shell
-kanidm reauth -D william
+netidm reauth -D william
 ```
 
 > [!NOTE]
@@ -156,6 +156,6 @@ kanidm reauth -D william
 
 ## Password Changed Time
 
-kanidm keeps track of the last time a password (relevant to logging in via LDAP/POSIX) was changed. This follows the [PrimaryCredFallback](../account_policy#setting-primary-credential-fallback) Policy, so if no Unix Credential is present, the last changed time of the Primary Credential will be used (if applicable).
+netidm keeps track of the last time a password (relevant to logging in via LDAP/POSIX) was changed. This follows the [PrimaryCredFallback](../account_policy#setting-primary-credential-fallback) Policy, so if no Unix Credential is present, the last changed time of the Primary Credential will be used (if applicable).
 
 This is credential will also be provided through LDAP via the `pwdChangedTime` attribute and is required for external applications to be informed on when a user has changed their credentials and needs to be re-authenticated. 

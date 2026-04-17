@@ -16,16 +16,16 @@ use crate::error::SyncError;
 use chrono::Utc;
 use clap::Parser;
 use cron::Schedule;
-use kanidm_client::KanidmClientBuilder;
-use kanidm_lib_file_permissions::readonly as file_permissions_readonly;
-use kanidm_proto::constants::ATTR_OBJECTCLASS;
-use kanidm_proto::scim_v1::{
+use netidm_client::NetidmClientBuilder;
+use netidm_lib_file_permissions::readonly as file_permissions_readonly;
+use netidm_proto::constants::ATTR_OBJECTCLASS;
+use netidm_proto::scim_v1::{
     MultiValueAttr, ScimEntry, ScimSshPubKey, ScimSyncGroup, ScimSyncPerson, ScimSyncRequest,
     ScimSyncRetentionMode, ScimSyncState,
 };
 #[cfg(target_family = "unix")]
-use kanidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
-use kanidmd_lib::prelude::Attribute;
+use netidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
+use netidmd_lib::prelude::Attribute;
 use ldap3_client::{
     proto::{self, LdapFilter},
     LdapClient, LdapClientBuilder, LdapSyncRepl, LdapSyncReplEntry, LdapSyncStateValue,
@@ -59,7 +59,7 @@ mod error;
 include!("./opt.rs");
 
 async fn driver_main(opt: Opt) -> Result<(), ()> {
-    debug!("Starting kanidm ldap sync driver.");
+    debug!("Starting netidm ldap sync driver.");
 
     let mut f = match File::open(&opt.ldap_sync_config) {
         Ok(f) => f,
@@ -97,7 +97,7 @@ async fn driver_main(opt: Opt) -> Result<(), ()> {
 
     debug!(?sync_config);
 
-    let cb = match KanidmClientBuilder::new().read_options_from_optional_config(&opt.client_config)
+    let cb = match NetidmClientBuilder::new().read_options_from_optional_config(&opt.client_config)
     {
         Ok(v) => v,
         Err(_) => {
@@ -253,7 +253,7 @@ async fn driver_main(opt: Opt) -> Result<(), ()> {
 }
 
 async fn run_sync(
-    cb: KanidmClientBuilder,
+    cb: NetidmClientBuilder,
     sync_config: &Config,
     opt: &Opt,
 ) -> Result<(), SyncError> {
@@ -325,8 +325,8 @@ async fn run_sync(
         }
     };
 
-    //  * can we connect to kanidm?
-    // - get the current sync cookie from kanidm.
+    //  * can we connect to netidm?
+    // - get the current sync cookie from netidm.
     let scim_sync_status = match rsclient.scim_v1_sync_status().await {
         Ok(s) => s,
         Err(e) => {
@@ -470,7 +470,7 @@ async fn run_sync(
     } else if let Err(e) = rsclient.scim_v1_sync_update(&scim_sync_request).await {
         error!(
             ?e,
-            "Failed to submit scim sync update - see the kanidmd server log for more details."
+            "Failed to submit scim sync update - see the netidmd server log for more details."
         );
         Err(SyncError::SyncUpdate)
     } else {
@@ -902,7 +902,7 @@ fn main() {
     let fmt_layer = fmt::layer().with_writer(std::io::stderr);
 
     let filter_layer = if opt.debug {
-        match EnvFilter::try_new("kanidm_client=debug,kanidm_ldap_sync=debug,ldap3_client=debug") {
+        match EnvFilter::try_new("netidm_client=debug,netidm_ldap_sync=debug,ldap3_client=debug") {
             Ok(f) => f,
             Err(e) => {
                 eprintln!("ERROR! Unable to start tracing {e:?}");
@@ -912,7 +912,7 @@ fn main() {
     } else {
         match EnvFilter::try_from_default_env() {
             Ok(f) => f,
-            Err(_) => EnvFilter::new("kanidm_client=warn,kanidm_ldap_sync=info,ldap3_client=warn"),
+            Err(_) => EnvFilter::new("netidm_client=warn,netidm_ldap_sync=info,ldap3_client=warn"),
         }
     };
 

@@ -23,17 +23,17 @@ server/web_ui/*/pkg/*.js
 *.profraw
 tarpaulin-report.html
 
-# kanidm simple packaging
+# netidm simple packaging
 deployment-config/
-kanidm_simple_pkg/
-kanidm-client-tools.tar.gz
+netidm_simple_pkg/
+netidm-client-tools.tar.gz
 
 # python things
 **/__pycache__/**
 **/.venv/**
 .coverage
-pykanidm/dist/
-pykanidm/site/
+pynetidm/dist/
+pynetidm/site/
 
 # oauth2 integration test things
 scripts/oauth_proxy/client.secret

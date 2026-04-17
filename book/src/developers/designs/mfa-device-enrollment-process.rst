@@ -1,7 +1,7 @@
 Multiple Device Enrollment Workflow
 -----------------------------------
 
-As we continue to develop kanidm, we'll add support for OTP and Webauthn. A constraint we must
+As we continue to develop netidm, we'll add support for OTP and Webauthn. A constraint we must
 consider is that many webauthn devices are tied to (bound) to the device. This could be a yubikey
 nano that may not pluginto a phone, a built in touch id, a tpm, or even a softtoken in firefox.
 
@@ -18,7 +18,7 @@ We have a user with a device E(nrolled), and a device N(ew) that they wish to be
 
 Each device contains a unique webauthn device that is inseparable from the device.
 
-Each device may be connected to a separate Kanidm instance - IE we can not assume that
+Each device may be connected to a separate Netidm instance - IE we can not assume that
 the data in the system may be point-in-time consistent due to replication as an asynchronous
 process.
 

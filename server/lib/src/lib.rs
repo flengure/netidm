@@ -1,4 +1,4 @@
-//! The Kanidmd server library. This implements all of the internal components of the server
+//! The Netidmd server library. This implements all of the internal components of the server
 //! which is used to process authentication, store identities and enforce access controls.
 
 #![deny(warnings)]
@@ -69,7 +69,7 @@ pub mod server;
 pub mod status;
 pub mod testkit;
 
-/// A prelude of imports that should be imported by all other Kanidm modules to
+/// A prelude of imports that should be imported by all other Netidm modules to
 /// help make imports cleaner.
 // Clippy is wrong, these are used. Hush little clippy.
 #[allow(unused_imports)]
@@ -112,18 +112,18 @@ pub mod prelude {
         ValueSet, ValueSetBool, ValueSetCid, ValueSetIname, ValueSetIutf8, ValueSetRefer,
         ValueSetSha256, ValueSetSyntax, ValueSetT, ValueSetUtf8, ValueSetUuid,
     };
-    pub use kanidm_proto::attribute::{AttrString, Attribute};
-    pub use kanidm_proto::constants::*;
-    pub use kanidm_proto::internal::{
+    pub use netidm_proto::attribute::{AttrString, Attribute};
+    pub use netidm_proto::constants::*;
+    pub use netidm_proto::internal::{
         ConsistencyError, Filter as ProtoFilter, OperationError, PluginError, SchemaError,
     };
-    pub use kanidm_proto::scim_v1::JsonValue;
-    pub(crate) use kanidm_proto::scim_v1::{
-        server::{ScimEntryKanidm, ScimValueKanidm},
+    pub use netidm_proto::scim_v1::JsonValue;
+    pub(crate) use netidm_proto::scim_v1::{
+        server::{ScimEntryNetidm, ScimValueNetidm},
         ScimEntryHeader,
     };
     #[cfg(test)]
-    pub use kanidmd_lib_macros::*;
+    pub use netidmd_lib_macros::*;
     pub use sketching::{
         admin_debug, admin_error, admin_info, admin_warn, filter_error, filter_info, filter_trace,
         filter_warn, perf_trace, request_error, request_info, request_trace, request_warn,

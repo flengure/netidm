@@ -135,7 +135,7 @@
 	<key>PayloadDisplayName</key>
 	<string>wifi-blackhats</string>
 	<key>PayloadIdentifier</key>
-	<string>kanidm.1CAAD07A-89C7-4A3B-9AAD-C7C1DE7F69AE</string>
+	<string>netidm.1CAAD07A-89C7-4A3B-9AAD-C7C1DE7F69AE</string>
 	<key>PayloadOrganization</key>
 	<string>blackhats.net.au</string>
 	<key>PayloadRemovalDisallowed</key>

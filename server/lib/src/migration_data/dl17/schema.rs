@@ -1,9 +1,5 @@
 //! Schema entries for DL17: WireGuard token and peer-monitoring attributes.
 
-// Re-export schema items used by test code via `latest::schema`.
-#[cfg(test)]
-pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
-
 use crate::constants::uuids::*;
 use crate::prelude::*;
 

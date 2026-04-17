@@ -6,8 +6,8 @@ use std::iter;
 use std::str::FromStr;
 
 use compact_jwt::JwsCompact;
-use kanidm_proto::constants::*;
-use kanidm_proto::internal::{ApiToken, UserAuthToken};
+use netidm_proto::constants::*;
+use netidm_proto::internal::{ApiToken, UserAuthToken};
 use ldap3_proto::simple::*;
 use regex::{Regex, RegexBuilder};
 use std::net::IpAddr;
@@ -131,7 +131,7 @@ impl LdapServer {
                 },
                 LdapPartialAttribute {
                     atype: "vendorname".to_string(),
-                    vals: vec!["Kanidm Project".as_bytes().to_vec()],
+                    vals: vec!["Netidm Project".as_bytes().to_vec()],
                 },
                 LdapPartialAttribute {
                     atype: "vendorversion".to_string(),
@@ -321,7 +321,7 @@ impl LdapServer {
                         }
                     })
                     .collect();
-                // This is what the client requested, but mapped to kanidm forms.
+                // This is what the client requested, but mapped to netidm forms.
                 // NOTE: All req_attrs are lowercase at this point.
                 let mapped_attrs: BTreeSet<_> = req_attrs
                     .iter()
@@ -863,7 +863,7 @@ mod tests {
 
     use compact_jwt::{dangernoverify::JwsDangerReleaseWithoutVerify, JwsVerifier};
     use hashbrown::HashSet;
-    use kanidm_proto::internal::ApiToken;
+    use netidm_proto::internal::ApiToken;
     use ldap3_proto::proto::{
         LdapFilter, LdapMsg, LdapOp, LdapResultCode, LdapSearchScope, LdapSubstringFilter,
     };
@@ -2410,7 +2410,7 @@ mod tests {
                     lsre,
                     "",
                     (Attribute::ObjectClass, "top"),
-                    ("vendorname", "Kanidm Project"),
+                    ("vendorname", "Netidm Project"),
                     ("supportedldapversion", "3"),
                     ("defaultnamingcontext", "dc=example,dc=com")
                 );
@@ -2428,7 +2428,7 @@ mod tests {
             filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(UUID_DOMAIN_INFO))),
             ModifyList::new_purge_and_set(
                 Attribute::DomainLdapBasedn,
-                Value::new_iutf8("o=kanidmproject"),
+                Value::new_iutf8("o=netidmproject"),
             ),
         );
         assert!(idms_prox_write.qs_write.modify(&me_posix).is_ok());
@@ -2466,9 +2466,9 @@ mod tests {
                     lsre,
                     "",
                     (Attribute::ObjectClass, "top"),
-                    ("vendorname", "Kanidm Project"),
+                    ("vendorname", "Netidm Project"),
                     ("supportedldapversion", "3"),
-                    ("defaultnamingcontext", "o=kanidmproject")
+                    ("defaultnamingcontext", "o=netidmproject")
                 );
             }
             _ => panic!("Oh no"),

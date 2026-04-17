@@ -39,7 +39,7 @@ language).
 
 ### Multiple Kani Servers
 
-Kanidm often has multiple servers, so we need a way to ensure that messages are sent "at least once". But at the same
+Netidm often has multiple servers, so we need a way to ensure that messages are sent "at least once". But at the same
 time we don't want to send the message _too many_ times, as this can annoy users.
 
 ### Different Messaging Requirements
@@ -62,8 +62,8 @@ From this set of use cases we can derive a number of basic requirements.
 
 ## Design
 
-Rather than embed messaging (email) capability into Kanidm directly, we should create an api where an external messaging
-tool can consume database records from Kanidm when we wish to communicate with a user.
+Rather than embed messaging (email) capability into Netidm directly, we should create an api where an external messaging
+tool can consume database records from Netidm when we wish to communicate with a user.
 
 The database records that we generate should include:
 

@@ -11,7 +11,7 @@ default.
 ## Default Account Policy
 
 A default Account Policy is applied to `idm_all_persons`. This provides the defaults that influence all people in
-Kanidm. This policy can be modified the same as any other group's policy.
+Netidm. This policy can be modified the same as any other group's policy.
 
 ## Enforced Attributes
 
@@ -95,8 +95,8 @@ webauthn-attestation-ca-list: [ "yubikey 5fips" ]
 Account Policy is enabled on a group with the command:
 
 ```shell
-kanidm group account-policy enable <group name>
-kanidm group account-policy enable my_admin_group
+netidm group account-policy enable <group name>
+netidm group account-policy enable my_admin_group
 ```
 
 Note that the Account Policy is already enabled for `idm_all_persons`.
@@ -108,13 +108,13 @@ the user must reauthenticate.
 
 This value provides a difficult balance - forcing frequent re-authentications can frustrate and annoy users. However
 extremely long sessions allow a stolen or disclosed session token/device to read data for an extended period. Due to
-Kanidm's read/write separation this mitigates the risk of disclosed sessions as they can only _read_ data, not write it.
+Netidm's read/write separation this mitigates the risk of disclosed sessions as they can only _read_ data, not write it.
 
 To set the maximum authentication session time
 
 ```shell
-kanidm group account-policy auth-expiry <group name> <seconds>
-kanidm group account-policy auth-expiry my_admin_group 86400
+netidm group account-policy auth-expiry <group name> <seconds>
+netidm group account-policy auth-expiry my_admin_group 86400
 ```
 
 ### Setting Minimum Password Length
@@ -126,8 +126,8 @@ proven to not matter in any real world attacks.
 To set this value:
 
 ```shell
-kanidm group account-policy password-minimum-length <group name> <length>
-kanidm group account-policy password-minimum-length my_admin_group 12
+netidm group account-policy password-minimum-length <group name> <length>
+netidm group account-policy password-minimum-length my_admin_group 12
 ```
 
 ### Setting Maximum Privilege Time
@@ -138,15 +138,15 @@ time (maximum 1 hour), the session returns to read-only mode.
 To set the maximum privilege time
 
 ```shell
-kanidm group account-policy privilege-expiry <group name> <seconds>
-kanidm group account-policy privilege-expiry my_admin_group 900
-kanidm group account-policy privilege-expiry my_admin_group 86400 # NB: will be limited to 3600
+netidm group account-policy privilege-expiry <group name> <seconds>
+netidm group account-policy privilege-expiry my_admin_group 900
+netidm group account-policy privilege-expiry my_admin_group 86400 # NB: will be limited to 3600
 ```
 
 ### Setting Webauthn Attestation CA Lists
 
-To verify Webauthn authenticators with attestation, Kanidm needs an allowlist of authenticators to trust. Generate this
-list with the `fido-mds-tool` from the [webauthn-rs project](https://github.com/kanidm/webauthn-rs). If you have a Rust
+To verify Webauthn authenticators with attestation, Netidm needs an allowlist of authenticators to trust. Generate this
+list with the `fido-mds-tool` from the [webauthn-rs project](https://github.com/netidm/webauthn-rs). If you have a Rust
 toolchain installed, it can built and installed from source with
 
 ```bash
@@ -174,11 +174,11 @@ For details of how to query the MDS data, run
 fido-mds-tool query --help
 ```
 
-Once you have generated the authenticator allowlist, use it to configure Kanidm's account policy for a group. For
+Once you have generated the authenticator allowlist, use it to configure Netidm's account policy for a group. For
 example, to set the allowlist for all persons, run
 
 ```bash
-kanidm group account-policy webauthn-attestation-ca-list idm_all_persons trusted-authenticators
+netidm group account-policy webauthn-attestation-ca-list idm_all_persons trusted-authenticators
 ```
 
 ### Setting Primary Credential Fallback
@@ -186,16 +186,16 @@ kanidm group account-policy webauthn-attestation-ca-list idm_all_persons trusted
 The primary credential fallback enables behavior which allows authenticating using the primary account password when
 logging in via LDAP.
 
-If both an LDAP and primary password are specified, Kanidm will only accept the LDAP password.
+If both an LDAP and primary password are specified, Netidm will only accept the LDAP password.
 
 ```bash
-kanidm group account-policy allow-primary-cred-fallback <group name> <enabled>
+netidm group account-policy allow-primary-cred-fallback <group name> <enabled>
 ```
 
 to disable it for a group you would run:
 
 ```bash
-kanidm group account-policy allow-primary-cred-fallback <group name> false
+netidm group account-policy allow-primary-cred-fallback <group name> false
 ```
 
 ## Global Settings
@@ -204,38 +204,38 @@ There are a small number of account policy settings that are set globally rather
 
 ### Denied Names
 
-Users of Kanidm can change their name at any time. However, there are some cases where you may wish to deny some name
+Users of Netidm can change their name at any time. However, there are some cases where you may wish to deny some name
 values from being usable. This can be due to conflicting system account names or to exclude insulting or other abusive
 terms.
 
 To achieve this you can set names to be in the denied-name list:
 
 ```bash
-kanidm system denied-names append <name> [<name> ...]
+netidm system denied-names append <name> [<name> ...]
 ```
 
 You can display the currently denied names with:
 
 ```bash
-kanidm system denied-names show
+netidm system denied-names show
 ```
 
 To allow a name to be used again it can be removed from the list:
 
 ```shell
-kanidm system denied-names remove <name> [<name> ...]
+netidm system denied-names remove <name> [<name> ...]
 ```
 
 ### Password Quality
 
-Kanidm enforces that all passwords are checked by the library "[zxcvbn](https://github.com/dropbox/zxcvbn)". This has a
+Netidm enforces that all passwords are checked by the library "[zxcvbn](https://github.com/dropbox/zxcvbn)". This has a
 large number of checks for password quality. It also provides constructive feedback to users on how to improve their
 passwords if they are rejected.
 
 Some things that zxcvbn looks for is use of the account name or email in the password, common passwords, low entropy
 passwords, dates, reverse words and more.
 
-This library can not be disabled - all passwords in Kanidm must pass this check.
+This library can not be disabled - all passwords in Netidm must pass this check.
 
 ### Password Badlisting
 
@@ -255,13 +255,13 @@ considered breached.
 You can display the current badlist with:
 
 ```bash
-kanidm system pw-badlist show
+netidm system pw-badlist show
 ```
 
 You can update your own badlist with:
 
 ```bash
-kanidm system pw-badlist upload "path/to/badlist" [...]
+netidm system pw-badlist upload "path/to/badlist" [...]
 ```
 
 Multiple bad lists can be listed and uploaded at once. These are preprocessed to identify and remove passwords that
@@ -270,5 +270,5 @@ over at run time.
 
 ### Password Rotation
 
-Kanidm will never support this "anti-feature". Password rotation encourages poor password hygiene and is not shown to
+Netidm will never support this "anti-feature". Password rotation encourages poor password hygiene and is not shown to
 prevent any attacks - rather it _significantly weakens password security_.

@@ -1,0 +1,3 @@
+# netidm.NetidmClient
+
+::: netidm.NetidmClient

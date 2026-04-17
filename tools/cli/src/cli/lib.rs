@@ -18,11 +18,11 @@ use std::path::PathBuf;
 
 use identify_user_no_tui::{run_identity_verification_no_tui, IdentifyUserState};
 
-use kanidm_client::{ClientError, StatusCode};
+use netidm_client::{ClientError, StatusCode};
 use url::Url;
 use uuid::Uuid;
 
-include!("../opt/kanidm.rs");
+include!("../opt/netidm.rs");
 
 mod common;
 mod domain;
@@ -76,8 +76,8 @@ pub(crate) fn handle_client_error(response: ClientError, _output_mode: OutputMod
 }
 
 pub(crate) fn handle_group_account_policy_error(response: ClientError, _output_mode: OutputMode) {
-    use kanidm_proto::internal::OperationError::SchemaViolation;
-    use kanidm_proto::internal::SchemaError::AttributeNotValidForClass;
+    use netidm_proto::internal::OperationError::SchemaViolation;
+    use netidm_proto::internal::SchemaError::AttributeNotValidForClass;
 
     if let ClientError::Http(_status, Some(SchemaViolation(AttributeNotValidForClass(att))), opid) =
         response
@@ -90,7 +90,7 @@ pub(crate) fn handle_group_account_policy_error(response: ClientError, _output_m
 }
 
 impl SelfOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             SelfOpt::Whoami => {
                 let client = opt.to_client(OpType::Read).await;
@@ -145,7 +145,7 @@ impl SelfOpt {
 }
 
 impl SystemOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             SystemOpt::Api { commands } => commands.exec(opt).await,
             SystemOpt::PwBadlist { commands } => commands.exec(opt).await,
@@ -158,31 +158,31 @@ impl SystemOpt {
     }
 }
 
-impl KanidmClientParser {
+impl NetidmClientParser {
     pub async fn exec(self) {
         match self.commands.clone() {
-            KanidmClientOpt::Raw { commands } => commands.exec(self).await,
-            KanidmClientOpt::Login(lopt) => lopt.exec(self).await,
-            KanidmClientOpt::Reauth => self.reauth().await,
-            KanidmClientOpt::Logout(lopt) => lopt.exec(self).await,
-            KanidmClientOpt::Session { commands } => commands.exec(self).await,
-            KanidmClientOpt::CSelf { commands } => commands.exec(self).await,
-            KanidmClientOpt::Person { commands } => commands.exec(self).await,
-            KanidmClientOpt::ServiceAccount { commands } => commands.exec(self).await,
-            KanidmClientOpt::Group { commands } => commands.exec(self).await,
-            KanidmClientOpt::Graph(gops) => gops.exec(self).await,
-            KanidmClientOpt::System { commands } => commands.exec(self).await,
-            KanidmClientOpt::Schema {
+            NetidmClientOpt::Raw { commands } => commands.exec(self).await,
+            NetidmClientOpt::Login(lopt) => lopt.exec(self).await,
+            NetidmClientOpt::Reauth => self.reauth().await,
+            NetidmClientOpt::Logout(lopt) => lopt.exec(self).await,
+            NetidmClientOpt::Session { commands } => commands.exec(self).await,
+            NetidmClientOpt::CSelf { commands } => commands.exec(self).await,
+            NetidmClientOpt::Person { commands } => commands.exec(self).await,
+            NetidmClientOpt::ServiceAccount { commands } => commands.exec(self).await,
+            NetidmClientOpt::Group { commands } => commands.exec(self).await,
+            NetidmClientOpt::Graph(gops) => gops.exec(self).await,
+            NetidmClientOpt::System { commands } => commands.exec(self).await,
+            NetidmClientOpt::Schema {
                 commands: SchemaOpt::Class { commands },
             } => commands.exec(self).await,
-            KanidmClientOpt::Schema {
+            NetidmClientOpt::Schema {
                 commands: SchemaOpt::Attribute { commands },
             } => commands.exec(self).await,
-            KanidmClientOpt::Recycle { commands } => commands.exec(self).await,
-            KanidmClientOpt::Wg { commands } => commands.exec(self).await,
-            KanidmClientOpt::Version => {
+            NetidmClientOpt::Recycle { commands } => commands.exec(self).await,
+            NetidmClientOpt::Wg { commands } => commands.exec(self).await,
+            NetidmClientOpt::Version => {
                 self.output_mode
-                    .print_message(format!("kanidm {}", env!("KANIDM_PKG_VERSION")));
+                    .print_message(format!("netidm {}", env!("NETIDM_PKG_VERSION")));
             }
         }
     }
@@ -219,8 +219,8 @@ mod identify_user_no_tui {
         CODE_FAILURE_ERROR_MESSAGE, IDENTITY_UNAVAILABLE_ERROR_MESSAGE, INVALID_STATE_ERROR_MESSAGE,
     };
 
-    use kanidm_client::{ClientError, KanidmClient};
-    use kanidm_proto::internal::{IdentifyUserRequest, IdentifyUserResponse};
+    use netidm_client::{ClientError, NetidmClient};
+    use netidm_proto::internal::{IdentifyUserRequest, IdentifyUserResponse};
 
     use dialoguer::{Confirm, Input};
     use regex::Regex;
@@ -251,7 +251,7 @@ mod identify_user_no_tui {
 
     pub(super) async fn run_identity_verification_no_tui(
         mut state: IdentifyUserState,
-        client: KanidmClient,
+        client: NetidmClient,
         self_id: &str,
         mut other_id: Option<String>,
     ) {

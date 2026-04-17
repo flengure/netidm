@@ -1,26 +1,26 @@
 #![deny(warnings)]
-use kanidm_client::{KanidmClient, KanidmClientBuilder};
+use netidm_client::{NetidmClient, NetidmClientBuilder};
 use kanidm_hsm_crypto::{
     provider::{BoxedDynTpm, SoftTpm, Tpm},
     AuthValue,
 };
-use kanidm_proto::config::ServerRole;
-use kanidm_proto::constants::ATTR_ACCOUNT_EXPIRE;
-use kanidm_unix_common::constants::{
+use netidm_proto::config::ServerRole;
+use netidm_proto::constants::ATTR_ACCOUNT_EXPIRE;
+use netidm_unix_common::constants::{
     DEFAULT_CACHE_TIMEOUT, DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_GID_ATTR_MAP,
     DEFAULT_HOME_ALIAS, DEFAULT_HOME_ATTR, DEFAULT_HOME_PREFIX, DEFAULT_SHELL,
     DEFAULT_UID_ATTR_MAP,
 };
-use kanidm_unix_common::unix_config::{GroupMap, KanidmConfig};
-use kanidm_unix_common::unix_passwd::{CryptPw, EtcGroup, EtcShadow, EtcUser};
-use kanidm_unix_resolver::db::{Cache, Db};
-use kanidm_unix_resolver::idprovider::interface::Id;
-use kanidm_unix_resolver::idprovider::kanidm::KanidmProvider;
-use kanidm_unix_resolver::idprovider::system::SystemProvider;
-use kanidm_unix_resolver::resolver::Resolver;
-use kanidmd_core::config::{Configuration, IntegrationTestConfig};
-use kanidmd_core::create_server_core;
-use kanidmd_testkit::{is_free_port, PORT_ALLOC};
+use netidm_unix_common::unix_config::{GroupMap, NetidmConfig};
+use netidm_unix_common::unix_passwd::{CryptPw, EtcGroup, EtcShadow, EtcUser};
+use netidm_unix_resolver::db::{Cache, Db};
+use netidm_unix_resolver::idprovider::interface::Id;
+use netidm_unix_resolver::idprovider::netidm::NetidmProvider;
+use netidm_unix_resolver::idprovider::system::SystemProvider;
+use netidm_unix_resolver::resolver::Resolver;
+use netidmd_core::config::{Configuration, IntegrationTestConfig};
+use netidmd_core::create_server_core;
+use netidmd_testkit::{is_free_port, PORT_ALLOC};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::atomic::Ordering;
@@ -40,16 +40,16 @@ const TESTACCOUNT1_PASSWORD_B: &str = "password b for account1 test";
 const TESTACCOUNT1_PASSWORD_INC: &str = "never going to work";
 const ACCOUNT_EXPIRE: &str = "1970-01-01T00:00:00+00:00";
 
-type Fixture = Box<dyn FnOnce(KanidmClient) -> Pin<Box<dyn Future<Output = ()>>>>;
+type Fixture = Box<dyn FnOnce(NetidmClient) -> Pin<Box<dyn Future<Output = ()>>>>;
 
-fn fixture<T>(f: fn(KanidmClient) -> T) -> Fixture
+fn fixture<T>(f: fn(NetidmClient) -> T) -> Fixture
 where
     T: Future<Output = ()> + 'static,
 {
     Box::new(move |n| Box::pin(f(n)))
 }
 
-async fn setup_test(fix_fn: Fixture) -> (Resolver, mpsc::Receiver<Id>, KanidmClient) {
+async fn setup_test(fix_fn: Fixture) -> (Resolver, mpsc::Receiver<Id>, NetidmClient) {
     sketching::test_init();
 
     let mut counter = 0;
@@ -90,7 +90,7 @@ async fn setup_test(fix_fn: Fixture) -> (Resolver, mpsc::Receiver<Id>, KanidmCli
     let addr = format!("http://127.0.0.1:{port}");
 
     // Run fixtures
-    let adminclient = KanidmClientBuilder::new()
+    let adminclient = NetidmClientBuilder::new()
         .address(addr.clone())
         .enable_native_ca_roots(false)
         .no_proxy()
@@ -128,14 +128,14 @@ async fn setup_test(fix_fn: Fixture) -> (Resolver, mpsc::Receiver<Id>, KanidmCli
     // Finally execute the test fixtures
     fix_fn(adminclient).await;
 
-    let client = KanidmClientBuilder::new()
+    let client = NetidmClientBuilder::new()
         .address(addr.clone())
         .enable_native_ca_roots(false)
         .no_proxy()
         .build()
         .expect("Failed to build async admin client");
 
-    let rsclient = KanidmClientBuilder::new()
+    let rsclient = NetidmClientBuilder::new()
         .address(addr)
         .enable_native_ca_roots(false)
         .no_proxy()
@@ -161,9 +161,9 @@ async fn setup_test(fix_fn: Fixture) -> (Resolver, mpsc::Receiver<Id>, KanidmCli
 
     let system_provider = SystemProvider::new().unwrap();
 
-    let idprovider = KanidmProvider::new(
+    let idprovider = NetidmProvider::new(
         rsclient,
-        &KanidmConfig {
+        &NetidmConfig {
             conn_timeout: 1,
             request_timeout: 1,
             pam_allowed_login_groups: vec!["allowed_group".to_string()],
@@ -215,7 +215,7 @@ async fn setup_test(fix_fn: Fixture) -> (Resolver, mpsc::Receiver<Id>, KanidmCli
 /// - creates a test group (testgroup1) and adds the test account to the test group
 /// - extends testgroup1 with posix attrs
 /// - creates two more groups with unix perms (allowed_group, masked_group)
-async fn test_fixture(rsclient: KanidmClient) {
+async fn test_fixture(rsclient: NetidmClient) {
     // Create a new account
     rsclient
         .idm_person_account_create("testaccount1", "Posix Demo Account")
@@ -903,7 +903,7 @@ async fn test_cache_nxset_group() {
             vec![],
             vec![EtcGroup {
                 name: "testgroup1".to_string(),
-                // Important! We set the GID to differ from what kanidm stores so we can
+                // Important! We set the GID to differ from what netidm stores so we can
                 // tell we got the system version.
                 gid: 30001,
                 password: Default::default(),
@@ -939,7 +939,7 @@ async fn test_cache_nxset_group() {
     cachelayer.mark_next_check_now(SystemTime::now()).await;
     assert!(cachelayer.test_connection().await);
 
-    // get a kanidm account with the kanidm equivalent group
+    // get a netidm account with the netidm equivalent group
     let ut = cachelayer
         .get_nssaccount_name("testaccount1")
         .await

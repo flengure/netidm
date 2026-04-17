@@ -13,7 +13,7 @@ Represents a server-side WireGuard interface. One entry per tunnel.
 
 | Attribute | Syntax | Required | Multi | Notes |
 |-----------|--------|----------|-------|-------|
-| Name | Utf8StringIname | yes | no | Kanidm entry name (also used as logical tunnel name) |
+| Name | Utf8StringIname | yes | no | Netidm entry name (also used as logical tunnel name) |
 | WgInterface | Utf8StringIname | yes | no | OS interface name (e.g. `wg0`) |
 | WgPrivateKey | Utf8String | yes | no | Base64 private key; public key derived by daemon |
 | WgPublicKey | Utf8String | no | no | Derived and written back by daemon on startup |
@@ -41,7 +41,7 @@ Represents a single client peer. Created by the daemon during registration.
 
 | Attribute | Syntax | Required | Multi | Notes |
 |-----------|--------|----------|-------|-------|
-| Name | Utf8StringIname | yes | no | Kanidm entry name (e.g. `peer-<username>-<tunnel>`) |
+| Name | Utf8StringIname | yes | no | Netidm entry name (e.g. `peer-<username>-<tunnel>`) |
 | WgPubkey | Utf8String | yes | no | Client WireGuard public key (unique) |
 | WgAllowedIps | Utf8String | yes | yes | Server-assigned CIDR(s) for this peer |
 | WgTunnelRef | ReferenceUuid | yes | no | → WgTunnel entry |
@@ -52,7 +52,7 @@ Represents a single client peer. Created by the daemon during registration.
 
 **State transitions**:
 - Created by daemon during registration → hot-added to live interface
-- Deleted in Kanidm → daemon detects within 30s → hot-removed from interface
+- Deleted in Netidm → daemon detects within 30s → hot-removed from interface
 
 ---
 
@@ -101,7 +101,7 @@ WgToken ──WgTokenPrincipalRef──► Person/Account ◄──WgUserRef
 
 ---
 
-## Runtime State (not persisted in Kanidm)
+## Runtime State (not persisted in Netidm)
 
 | Struct | Location | Purpose |
 |--------|----------|---------|

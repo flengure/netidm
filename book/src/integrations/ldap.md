@@ -3,11 +3,11 @@
 While many applications can support external authentication and identity services through OAuth2, not all services can.
 Lightweight Directory Access Protocol (LDAP) has been the "universal language" of authentication for many years, with
 almost every application in the world being able to search and bind to LDAP. As many organisations still rely on LDAP,
-Kanidm can host a read-only LDAP interface for these legacy applications and services.
+Netidm can host a read-only LDAP interface for these legacy applications and services.
 
 > [!WARNING]
 >
-> The LDAP server in Kanidm is not a complete LDAP implementation. This is intentional, as Kanidm wants to cover the
+> The LDAP server in Netidm is not a complete LDAP implementation. This is intentional, as Netidm wants to cover the
 > common use cases - simple bind and search. The parts we do support are RFC compliant however.
 
 ## What is LDAP
@@ -15,30 +15,30 @@ Kanidm can host a read-only LDAP interface for these legacy applications and ser
 LDAP is a protocol to read data from a directory of information. It is not a server, but a way to communicate to a
 server. There are many famous LDAP implementations such as Active Directory, 389 Directory Server, DSEE, FreeIPA and
 many others. Because it is a standard, applications can use an LDAP client library to authenticate users to LDAP, given
-"one account" for many applications - an IDM just like Kanidm!
+"one account" for many applications - an IDM just like Netidm!
 
 ## Data Mapping
 
-Kanidm entries cannot be mapped 100% to LDAP's objects. This is because LDAP types are simple key-values on objects
-which are all UTF8 strings (or subsets thereof) based on validation (matching) rules. Kanidm internally implements
+Netidm entries cannot be mapped 100% to LDAP's objects. This is because LDAP types are simple key-values on objects
+which are all UTF8 strings (or subsets thereof) based on validation (matching) rules. Netidm internally implements
 complex structured data types such as tagging on SSH keys, or multi-value credentials. These can not be represented in
 LDAP.
 
-Many of the structures in Kanidm do not correlate closely to LDAP. For example, Kanidm only has a GID number, where
+Many of the structures in Netidm do not correlate closely to LDAP. For example, Netidm only has a GID number, where
 LDAP's schemas define both a UID number and a GID number.
 
-Entries in the database also have a specific name in LDAP, related to their path in the directory tree. Kanidm is a flat
+Entries in the database also have a specific name in LDAP, related to their path in the directory tree. Netidm is a flat
 model, so we have to emulate some tree-like elements, and ignore others.
 
-For this reason, when you search the LDAP interface, Kanidm will make some mapping decisions.
+For this reason, when you search the LDAP interface, Netidm will make some mapping decisions.
 
-- The Kanidm domain name is used to generate the DN of the suffix by default.
+- The Netidm domain name is used to generate the DN of the suffix by default.
 - The `domain_info` object becomes the suffix root.
 - All other entries are direct subordinates of the `domain_info` for DN purposes.
 - Distinguished Names (DNs) are generated from the spn, name, or uuid attribute.
 - Bind DNs can be remapped and rewritten, and may not even be a DN during bind.
 
-These decisions were made to make the path as simple and effective as possible, relying more on the Kanidm query and
+These decisions were made to make the path as simple and effective as possible, relying more on the Netidm query and
 filter system rather than attempting to generate a tree-like representation of data. As almost all clients can use
 filters for entry selection we don't believe this is a limitation for the consuming applications.
 
@@ -48,11 +48,11 @@ filters for entry selection we don't believe this is a limitation for the consum
 
 StartTLS is _not_ supported due to security risks such as credential leakage and MITM attacks that are fundamental in
 how StartTLS works. StartTLS can not be repaired to prevent this. LDAPS is the only secure method of communicating to
-any LDAP server. Kanidm will use its certificates for both HTTPS and LDAPS.
+any LDAP server. Netidm will use its certificates for both HTTPS and LDAPS.
 
 ### Writes
 
-The structure of LDAP is too simplistic for writing to the complex entries that Kanidm internally contains. As a result,
+The structure of LDAP is too simplistic for writing to the complex entries that Netidm internally contains. As a result,
 writes are rejected for all users via the LDAP interface.
 
 ### Access Controls
@@ -60,7 +60,7 @@ writes are rejected for all users via the LDAP interface.
 LDAP only supports password authentication. As LDAP is used heavily in POSIX environments the LDAP bind for any DN will
 use its configured posix password.
 
-As the POSIX password is not equivalent in strength to the primary credentials of Kanidm (which in most cases is
+As the POSIX password is not equivalent in strength to the primary credentials of Netidm (which in most cases is
 multi-factor authentication), the LDAP bind does not grant rights to elevated read permissions. All binds have the
 permissions of "anonymous" even if the anonymous account is locked.
 
@@ -76,7 +76,7 @@ It is recommended that client applications filter accounts that can authenticate
 
 ## Server Configuration
 
-To configure Kanidm to provide LDAP, add the argument to the `server.toml` configuration:
+To configure Netidm to provide LDAP, add the argument to the `server.toml` configuration:
 
 ```toml
 ldapbindaddress = "127.0.0.1:3636"
@@ -86,24 +86,24 @@ You should configure TLS certificates and keys as usual - LDAP will reuse the We
 
 ## Showing LDAP Entries and Attribute Maps
 
-By default Kanidm is limited in what attributes are generated or remapped into LDAP entries. However, the server
+By default Netidm is limited in what attributes are generated or remapped into LDAP entries. However, the server
 internally contains a map of extended attribute mappings for application specific requests that must be satisfied.
 
-An example is that some applications expect and require a 'CN' value, even though Kanidm does not provide it. If the
-application is unable to be configured to accept "name" it may be necessary to use Kanidm's mapping feature. Currently
+An example is that some applications expect and require a 'CN' value, even though Netidm does not provide it. If the
+application is unable to be configured to accept "name" it may be necessary to use Netidm's mapping feature. Currently
 these are compiled into the server, so you may need to open an issue with your requirements for attribute maps.
 
 To show what attribute maps exists for an entry you can use the attribute search term '+'.
 
 ```bash
-# To show Kanidm attributes
+# To show Netidm attributes
 ldapsearch ... -x '(name=admin)' '*'
 
 # To show all attribute maps
 ldapsearch ... -x '(name=admin)' '+'
 ```
 
-Attributes that are in the map can be requested explicitly, and this can be combined with requesting Kanidm native
+Attributes that are in the map can be requested explicitly, and this can be combined with requesting Netidm native
 attributes.
 
 ```bash
@@ -160,8 +160,8 @@ However, you may wish to change this to something shorter or at a higher level w
 As an admin you can change the domain ldap basedn with:
 
 ```bash
-kanidm system domain set-ldap-basedn <new basedn>
-kanidm system domain set-ldap-basedn o=kanidm -D admin
+netidm system domain set-ldap-basedn <new basedn>
+netidm system domain set-ldap-basedn o=netidm -D admin
 ```
 
 Basedns are validated to ensure they are either `dc=`, `ou=` or `o=`. They must have one or more of these components and
@@ -175,8 +175,8 @@ you must restart all servers.
 If you do not have applications that require LDAP password binds, then you should disable this function to limit access.
 
 ```shell
-kanidm system domain set-ldap-allow-unix-password-bind [true|false]
-kanidm system domain set-ldap-allow-unix-password-bind -D admin false
+netidm system domain set-ldap-allow-unix-password-bind [true|false]
+netidm system domain set-ldap-allow-unix-password-bind -D admin false
 ```
 
 ## Examples

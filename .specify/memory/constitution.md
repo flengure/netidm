@@ -11,15 +11,15 @@ Templates requiring updates:
 Follow-up TODOs: None — all fields populated from project sources
 -->
 
-# Kanidm Constitution
+# Netidm Constitution
 
 ## Core Principles
 
 ### I. Ethics & Human Rights (NON-NEGOTIABLE)
 
-Kanidm stores and processes people's personal identity data. Every design and implementation decision
+Netidm stores and processes people's personal identity data. Every design and implementation decision
 MUST respect the rights of all people who interact with the system — including those who have no
-choice in its use (e.g. employees, end-users of services that delegate to Kanidm).
+choice in its use (e.g. employees, end-users of services that delegate to Netidm).
 
 People using this software MUST always have:
 - Self-control over their data, including the ability to alter or delete it at any time.

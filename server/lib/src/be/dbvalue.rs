@@ -1,7 +1,7 @@
 use crate::prelude::JsonValue;
 use hashbrown::HashSet;
-use kanidm_proto::internal::ImageType;
-use kanidm_proto::v1::OutboundMessage;
+use netidm_proto::internal::ImageType;
+use netidm_proto::v1::OutboundMessage;
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use std::collections::{BTreeMap, BTreeSet};
@@ -18,7 +18,7 @@ use webauthn_rs_core::proto::{COSEKey, UserVerificationPolicy};
 // Re-export this as though it was here.
 use crate::repl::cid::Cid;
 use crypto_glue::{s256::Sha256Output, traits::Zeroizing};
-pub use kanidm_lib_crypto::DbPasswordV1;
+pub use netidm_lib_crypto::DbPasswordV1;
 
 fn unix_epoch() -> OffsetDateTime {
     OffsetDateTime::UNIX_EPOCH

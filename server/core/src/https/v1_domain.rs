@@ -10,9 +10,9 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use kanidm_proto::internal::{ImageType, ImageValue};
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::valueset::image::ImageValueThings;
+use netidm_proto::internal::{ImageType, ImageValue};
+use netidmd_lib::prelude::*;
+use netidmd_lib::valueset::image::ImageValueThings;
 use sketching::admin_error;
 
 pub(crate) async fn image_get(DomainInfo(domain_info): DomainInfo) -> Response {

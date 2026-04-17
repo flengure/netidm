@@ -1,7 +1,7 @@
 Resource Limits
 ---------------
 
-As security sensitive software, kanidm must be "available" (as defined by
+As security sensitive software, netidm must be "available" (as defined by
 confidentiality, integrity, and availability). This means that as a service we must
 be able to handle a large volume of potentially malicious traffic, and still able
 to serve legitimate requests without fault or failure.
@@ -10,7 +10,7 @@ To achieve this, the resources of the server must be managed and distributed to 
 potentially thousands of operations per second, while preventing exhaustion of those
 resources.
 
-Kanidm is structured as a database, where each request requires a process
+Netidm is structured as a database, where each request requires a process
 to resolve that query into an answer. This could be a request for authentication
 which is a true/false response, or a request for an identity so that we can
 determine their groups for authorisation, or even just a request to find
@@ -21,7 +21,7 @@ can be processed in parallel.
 
 Resource exhaustion occurs when input from a client consumes more resources
 than the server can provide. This means the attack surface is any possible input
-and how the server interprets and processes that input. In kanidm this could be
+and how the server interprets and processes that input. In netidm this could be
 a search filter for example - the query may be small, but it could be expensive
 to compute.
 

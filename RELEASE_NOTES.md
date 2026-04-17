@@ -1,10 +1,10 @@
-# Kanidm Release Notes
+# Netidm Release Notes
 
-![Kanidm Logo](artwork/logo-small.png)
+![Netidm Logo](artwork/logo-small.png)
 
 ## Getting Started
 
-To get started, see the [kanidm book]
+To get started, see the [netidm book]
 
 ## Feedback
 
@@ -14,9 +14,9 @@ We value your feedback! First, please see our [code of conduct]. If you have que
 
 ## Release Notes
 
-### 2026-02-11 - Kanidm 1.9.0
+### 2026-02-11 - Netidm 1.9.0
 
-This is the latest stable release of the Kanidm Identity Management project. Every release is the combined effort of our
+This is the latest stable release of the Netidm Identity Management project. Every release is the combined effort of our
 community and we appreciate their invaluable contributions, comments, questions, feedback and support.
 
 You should review our [support documentation] as this may have important effects on your distribution or upgrades in
@@ -30,7 +30,7 @@ Before upgrading you should review [our upgrade documentation]
 - Upgrade/Downgrade constraints are now stricter to prevent mistakes during administrative tasks.
 - Service Accounts can issue OIDC/OAuth2 token using RFC8693 Token Exchange.
 - CSS can be set by overriding a default file (`override.css`).
-- Kanidmd now has a JSON scripting CLI, replacing the `--output json` CLI option.
+- Netidmd now has a JSON scripting CLI, replacing the `--output json` CLI option.
 - Service Account tokens now support a short-format for applications that can not process credentials greater than 128
   characters.
 
@@ -45,8 +45,8 @@ Before upgrading you should review [our upgrade documentation]
 - Add a truncated service account token format.
 - Raise the maximum number of default queryable attributes in LDAP to support SSSD.
 - Add support for RADIUS certificates to identify a user with the subjectAltName-DN type.
-- Add a kanidmd command line scripting interface.
-- Harden against errors when `libnss_kanidm.so` is used by a forking process.
+- Add a netidmd command line scripting interface.
+- Harden against errors when `libnss_netidm.so` is used by a forking process.
 - Allow overrides of CSS via a default file that can be overridden.
 - Add an LDAP homeDirectory virtualAttribute for some RFC2307Bis Clients.
 - Invalid password formats can be skipped during migration imports.
@@ -62,7 +62,7 @@ Before upgrading you should review [our upgrade documentation]
 - Allow disabling the OAuth2 Consent Prompt for some applications.
 - Improve debugging of IP address logging configuration.
 - Force synchronisation of token privilege limetime to be bound by token life.
-- Add the Kanidm Project Anthem. #3987
+- Add the Netidm Project Anthem. #3987
 - Resolve a bug where upgrade version constraints were not correctly enforced.
 - Improved environment variable parsing for server configuration.
 - Improve upgrade documentation.
@@ -72,9 +72,9 @@ Before upgrading you should review [our upgrade documentation]
 - Home user directory symlinks are now conditionally updated.
 - Improve UID/GID overlap messages to help administrators resolve issues during IAM migration.
 
-### 2025-10-07 - Kanidm 1.8.0
+### 2025-10-07 - Netidm 1.8.0
 
-This is the latest stable release of the Kanidm Identity Management project. Every release is the combined effort of our
+This is the latest stable release of the Netidm Identity Management project. Every release is the combined effort of our
 community and we appreciate their invaluable contributions, comments, questions, feedback and support.
 
 You should review our [support documentation] as this may have important effects on your distribution or upgrades in
@@ -85,8 +85,8 @@ Before upgrading you should review [our upgrade documentation]
 #### 1.8.0 Important Changes
 
 For distribution package users, systemd-notify reload has been removed due to ongoing bugs with the feature from the
-systemd side which would cause kanidmd to be killed ungracefully. If you rely on this to perform "systemctl reload
-kanidmd" actions, you should instead use "systemctl restart" or send a SIGHUP directly to the kanidmd process.
+systemd side which would cause netidmd to be killed ungracefully. If you rely on this to perform "systemctl reload
+netidmd" actions, you should instead use "systemctl restart" or send a SIGHUP directly to the netidmd process.
 
 #### 1.8.0 Release Highlights
 
@@ -116,12 +116,12 @@ kanidmd" actions, you should instead use "systemctl restart" or send a SIGHUP di
 - Improve argon2id parameter search speed (#3768)
 - Properly drop the "remember me" cookie when set to off (#3770)
 - Fix handling of SEC1 Private Keys (#3769)
-- Improve order of operations in Kanidm Unixd Tasks (#3762)
+- Improve order of operations in Netidm Unixd Tasks (#3762)
 - Fix an issue with RADIUS service account access controls (#3759)
 
-### 2025-08-01 - Kanidm 1.7.0
+### 2025-08-01 - Netidm 1.7.0
 
-This is the latest stable release of the Kanidm Identity Management project. Every release is the combined effort of our
+This is the latest stable release of the Netidm Identity Management project. Every release is the combined effort of our
 community and we appreciate their invaluable contributions, comments, questions, feedback and support.
 
 You should review our [support documentation] as this may have important effects on your distribution or upgrades in
@@ -147,9 +147,9 @@ Before upgrading you should review [our upgrade documentation]
 - Fix UI confusion when unix password validation fails (#3719, #3720)
 - Web UI for users to self manage RADIUS passwords (#3728)
 
-### 2025-05-01 - Kanidm 1.6.0
+### 2025-05-01 - Netidm 1.6.0
 
-This is the latest stable release of the Kanidm Identity Management project. Every release is the combined effort of our
+This is the latest stable release of the Netidm Identity Management project. Every release is the combined effort of our
 community and we appreciate their invaluable contributions, comments, questions, feedback and support.
 
 You should review our [support documentation] as this may have important effects on your distribution or upgrades in
@@ -159,7 +159,7 @@ Before upgrading you should review [our upgrade documentation]
 
 #### 1.6.0 Important Changes
 
-- The kanidmd server configuration now supports versions. You should review the example server configuration and update
+- The netidmd server configuration now supports versions. You should review the example server configuration and update
   to `version = "2"`.
 
 #### 1.6.0 Release Highlights
@@ -177,7 +177,7 @@ Before upgrading you should review [our upgrade documentation]
 - Add `max_ber_size` to freeipa sync tool (#3530)
 - Make schema indexing a boolean rather than index type (#3517)
 - Add set-description to group cli (#3511)
-- pam kanidm now acts as a pam unix replacement (#3501)
+- pam netidm now acts as a pam unix replacement (#3501)
 - Support rfc2307 in ldap import/sync (3466)
 - Handle incorrect OAuth2 clients that ignore response modes (#3467)
 - Improve idx validation performance (#3459)
@@ -189,9 +189,9 @@ Before upgrading you should review [our upgrade documentation]
 - Harden denied names against accidental lockouts (#3429)
 - OAuth2 supports redirect uri's with query parameters (#3422)
 
-### 2025-02-09 - Kanidm 1.5.0
+### 2025-02-09 - Netidm 1.5.0
 
-This is the latest stable release of the Kanidm Identity Management project. Every release is the combined effort of our
+This is the latest stable release of the Netidm Identity Management project. Every release is the combined effort of our
 community and we appreciate their invaluable contributions, comments, questions, feedback and support.
 
 You should review our [support documentation] as this may have important effects on your distribution or upgrades in
@@ -238,9 +238,9 @@ Before upgrading you should review [our upgrade documentation]
 
 And many more!
 
-### 2024-11-01 - Kanidm 1.4.0
+### 2024-11-01 - Netidm 1.4.0
 
-This is the latest stable release of the Kanidm Identity Management project. Every release is the combined effort of our
+This is the latest stable release of the Netidm Identity Management project. Every release is the combined effort of our
 community and we appreciate their invaluable contributions, comments, questions, feedback and support.
 
 You should review our [support documentation] as this may have important effects on your distribution or upgrades in
@@ -259,7 +259,7 @@ Before upgrading you should review [our upgrade documentation]
 
 - Improve handling of client timeouts when the server is under high load
 - Resolve a minor issue preventing some credential updates from saving
-- PAM/NSS unixd now allow non-Kanidm backends - more to come soon
+- PAM/NSS unixd now allow non-Netidm backends - more to come soon
 - Mail attributes have substring indexing added
 - Access controls for mail servers to read mail attributes
 - Admin CLI tools support instance profiles allowing admin of multiple sites to be easier
@@ -273,7 +273,7 @@ Before upgrading you should review [our upgrade documentation]
 - Large techdebt cleanups
 - PAM/NSS unixd can provide system users, replacing `pam_unix`
 - Account policy supports LDAP password fallback to main password
-- PAM/NSS unixd can extend a system group with members from remote sources (such as Kanidm)
+- PAM/NSS unixd can extend a system group with members from remote sources (such as Netidm)
 - Resolve a potential issue in replication on upgrade where migrated entries cause a referential integrity conflict
   leading to a forced initialisation
 - Display credential reset token expiry time when created on CLI
@@ -284,9 +284,9 @@ Before upgrading you should review [our upgrade documentation]
 - Rewrite the entire web frontend to be simpler and faster, allowing more features to be added in the future. Greatly
   improves user experience as the pages are now very fast to load!
 
-### 2024-08-07 - Kanidm 1.3.0
+### 2024-08-07 - Netidm 1.3.0
 
-This is the latest stable release of the Kanidm Identity Management project. Every release is the combined effort of our
+This is the latest stable release of the Netidm Identity Management project. Every release is the combined effort of our
 community and we appreciate their invaluable contributions, comments, questions, feedback and support.
 
 You should review our [support documentation] as this may have important effects on your distribution or upgrades in
@@ -302,7 +302,7 @@ Before upgrading you should review [our upgrade documentation]
 - Security Keys will be removed as a second factor alternative to TOTP from accounts in 1.4.0. It has not been possible
   to register a new security for more than 1 year. Security Keys are surpassed by PassKeys which give a better user
   experience.
-- Kanidm now supports FreeBSD and Illumos in addition to Linux
+- Netidm now supports FreeBSD and Illumos in addition to Linux
 
 #### 1.3.0 Release Highlights
 
@@ -327,9 +327,9 @@ Before upgrading you should review [our upgrade documentation]
 - Strict redirect URI enforcement in OAuth2
 - Substring indexing for improved search performance
 
-### 2024-05-01 - Kanidm 1.2.0
+### 2024-05-01 - Netidm 1.2.0
 
-This is the first stable release of the Kanidm Identity Management project. We want to thank every one in our community
+This is the first stable release of the Netidm Identity Management project. We want to thank every one in our community
 who has supported to the project to this point with their invaluable contributions, comments, questions, feedback and
 support.
 
@@ -367,13 +367,13 @@ Importantly this release makes a number of changes to our project's support proc
 - Migrate cryptographic key handling to an object model with future HSM support
 - Limit maximum active sessions on an account to 48
 
-### 2024-02-07 - Kanidm 1.1.0-rc.16
+### 2024-02-07 - Netidm 1.1.0-rc.16
 
-This is the sixteenth pre-release of the Kanidm Identity Management project. Pre-releases are to help get feedback and
+This is the sixteenth pre-release of the Netidm Identity Management project. Pre-releases are to help get feedback and
 ideas from the community on how we can continue to make this project better.
 
 This is the final release candidate before we publish a release version. We believe that the API and server interfaces
-are stable and reliable enough for people to depend on, and to develop external tools to interact with Kanidm.
+are stable and reliable enough for people to depend on, and to develop external tools to interact with Netidm.
 
 #### 1.1.0-rc.16 Release Highlights
 
@@ -394,9 +394,9 @@ are stable and reliable enough for people to depend on, and to develop external 
 - Support RFC6749 Client Credentials Grant
 - Support custom claim maps in OIDC
 
-### 2023-10-31 - Kanidm 1.1.0-beta14
+### 2023-10-31 - Netidm 1.1.0-beta14
 
-This is the fourteenth pre-release of the Kanidm Identity Management project. Pre-releases are to help get feedback and
+This is the fourteenth pre-release of the Netidm Identity Management project. Pre-releases are to help get feedback and
 ideas from the community on how we can continue to make this project better.
 
 At this point we believe we are on the final stretch to making something we consider "release ready". After this we will
@@ -417,9 +417,9 @@ of the API's for longer term support.
 - Removed a lot of uses of `unwrap` and `expect` to improve reliability.
 - Account policy framework is now in place.
 
-### 2023-05-01 - Kanidm 1.1.0-beta13
+### 2023-05-01 - Netidm 1.1.0-beta13
 
-This is the thirteenth pre-release of the Kanidm Identity Management project. Pre-releases are to help get feedback and
+This is the thirteenth pre-release of the Netidm Identity Management project. Pre-releases are to help get feedback and
 ideas from the community on how we can continue to make this project better.
 
 At this point we believe we are on the final stretch to making something we consider "release ready". After this we will
@@ -439,7 +439,7 @@ of the API's for longer term support.
 - Modularise unix integration for third party modules
 - Improve account recovery by performing over unix socket for live changes
 - Support hsts in all responses
-- Allow sync agreements to yield some attrs to kanidm
+- Allow sync agreements to yield some attrs to netidm
 - Fix bug with posix account gid setting causing gid to be randomised
 - Improve account sync import, including mail attrs and better session handling
 - Bug fix in unixd when certain operation orders could cause group cache to be ignored
@@ -467,9 +467,9 @@ of the API's for longer term support.
 - Improve create-reset-token user experience
 - Improve self-healing for some reference issues
 
-### 2023-05-01 - Kanidm 1.1.0-alpha12
+### 2023-05-01 - Netidm 1.1.0-alpha12
 
-This is the twelfth alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the twelfth alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 The project is shaping up very nicely, and a beta will be coming soon! The main reason we haven't done so yet is we
@@ -496,9 +496,9 @@ change there. Otherwise the server is stable and reliable for production usage.
 - Add exclusive process lock to daemon
 - Allow dns/rdns in ldap search contexts
 
-### 2023-02-01 - Kanidm 1.1.0-alpha11
+### 2023-02-01 - Netidm 1.1.0-alpha11
 
-This is the eleventh alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the eleventh alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 The project is shaping up very nicely, and a beta will be coming soon! The main reason we haven't done so yet is we
@@ -507,10 +507,10 @@ change there. Otherwise the server is stable and reliable.
 
 #### 1.1.0-alpha11 Release Highlights
 
-- Support /etc/skel home dir templates in kanidm-unixd
+- Support /etc/skel home dir templates in netidm-unixd
 - Improve warning messages for openssl when a cryptographic routine is not supported
 - Support windows for server tests
-- Add a kanidm tools container
+- Add a netidm tools container
 - Initial support for live sync/import of users and groups from FreeIPA
 - OAuth2 session logout and global logout support
 - UI polish based on hint flags to dynamically enable/disable elements
@@ -522,13 +522,13 @@ change there. Otherwise the server is stable and reliable.
 - LDAP support for mail primary and alternate address selectors in queries
 - Fix handling of virtual attrs with '\*' searches in ldap
 - Support multiple TOTP on accounts
-- Add kanidmd healthcheck for containers
+- Add netidmd healthcheck for containers
 - Improve the access control module to evaluate access in a clearer way
 - Allow synced users to correct modify their local sessions
 
-### 2022-11-01 - Kanidm 1.1.0-alpha10
+### 2022-11-01 - Netidm 1.1.0-alpha10
 
-This is the tenth alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the tenth alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 The project is shaping up very nicely, and a beta will be coming soon!
@@ -560,9 +560,9 @@ ready for this change when you upgrade to the latest version.
 - Cleanup of expired authentication sessions
 - Improved administration of password badlists
 
-### 2022-08-02 - Kanidm 1.1.0-alpha9
+### 2022-08-02 - Netidm 1.1.0-alpha9
 
-This is the ninth alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the ninth alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 The project is shaping up very nicely, and a beta will be coming soon!
@@ -583,9 +583,9 @@ The project is shaping up very nicely, and a beta will be coming soon!
 - CTAP2+ support in Webauthn via CLI
 - Radius supports EAP TLS identities in addition to EAP PEAP
 
-### 2022-05-01 - Kanidm 1.1.0-alpha8
+### 2022-05-01 - Netidm 1.1.0-alpha8
 
-This is the eighth alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the eighth alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 #### 1.1.0-alpha8 Release Highlights
@@ -604,9 +604,9 @@ feedback and ideas from the community on how we can continue to make this projec
 - Highlight that the WebUI is in alpha to prevent confusion
 - Remove sync only client paths
 
-### 2022-01-01 - Kanidm 1.1.0-alpha7
+### 2022-01-01 - Netidm 1.1.0-alpha7
 
-This is the seventh alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the seventh alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 #### 1.1.0-alpha7 Release Highlights
@@ -620,12 +620,12 @@ feedback and ideas from the community on how we can continue to make this projec
 - Addition of email address attributes
 - Web UI improvements for OAuth2
 
-### 2021-10-01 - Kanidm 1.1.0-alpha6
+### 2021-10-01 - Netidm 1.1.0-alpha6
 
-This is the sixth alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the sixth alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
-It's also a special release as Kanidm has just turned 3 years old! Thank you all for helping to bring the project this
+It's also a special release as Netidm has just turned 3 years old! Thank you all for helping to bring the project this
 far! 🎉 🦀
 
 #### 1.1.0-alpha6 Release Highlights
@@ -648,9 +648,9 @@ far! 🎉 🦀
 - Improvements to performance with high cache sizes
 - Session tokens persist over a session restart
 
-### 2021-07-07 - Kanidm 1.1.0-alpha5
+### 2021-07-07 - Netidm 1.1.0-alpha5
 
-This is the fifth alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the fifth alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 #### 1.1.0-alpha5 Release Highlights
@@ -659,7 +659,7 @@ feedback and ideas from the community on how we can continue to make this projec
 - Improve query performance by caching partial queries
 - Clarity of error messages and user communication
 - Password badlist caching
-- Orca, a kanidm and ldap load testing system
+- Orca, a netidm and ldap load testing system
 - TOTP usability improvements
 - OAuth2 foundations
 - CLI tool session management improvements
@@ -668,9 +668,9 @@ feedback and ideas from the community on how we can continue to make this projec
 - Statistical analysis of indexes to improve query optimisation
 - Handle broken TOTP authenticator apps
 
-### 2021-04-01 - Kanidm 1.1.0-alpha4
+### 2021-04-01 - Netidm 1.1.0-alpha4
 
-This is the fourth alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the fourth alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 #### 1.1.0-alpha4 Release Highlights
@@ -687,9 +687,9 @@ feedback and ideas from the community on how we can continue to make this projec
 - Badlist checked at login to determine account compromise
 - Minor Fixes for attribute display
 
-### 2021-01-01 - Kanidm 1.1.0-alpha3
+### 2021-01-01 - Netidm 1.1.0-alpha3
 
-This is the third alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the third alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 #### 1.1.0-alpha3 Release Highlights
@@ -700,9 +700,9 @@ feedback and ideas from the community on how we can continue to make this projec
 - Rewrite of json authentication protocol components.
 - Unixd will cache "non-existent" items to improve nss/pam latency.
 
-### 2020-10-01 - Kanidm 1.1.0-alpha2
+### 2020-10-01 - Netidm 1.1.0-alpha2
 
-This is the second alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the second alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 #### 1.1.0-alpha2 Release Highlights
@@ -717,9 +717,9 @@ feedback and ideas from the community on how we can continue to make this projec
 - Reduction in memory footprint during searches
 - Change authentication from cookies to auth-bearer tokens
 
-### 2020-07-01 - Kanidm 1.1.0-alpha1
+### 2020-07-01 - Netidm 1.1.0-alpha1
 
-This is the first alpha series release of the Kanidm Identity Management project. Alpha releases are to help get
+This is the first alpha series release of the Netidm Identity Management project. Alpha releases are to help get
 feedback and ideas from the community on how we can continue to make this project better for a future supported release.
 
 It would not be possible to create a project like this, without the contributions and help of many people. I would
@@ -747,9 +747,9 @@ especially like to thank:
 - Recycle Bin
 - Performance analysis tools
 
-[issue tracker]: https://github.com/kanidm/kanidm/issues
-[gitter community channel]: https://gitter.im/kanidm/community
-[code of conduct]: https://github.com/kanidm/kanidm/blob/master/CODE_OF_CONDUCT.md
-[kanidm book]: https://kanidm.github.io/kanidm/stable/
-[our upgrade documentation]: https://github.com/kanidm/kanidm/blob/master/book/src/server_updates.md#general-update-notes
-[support documentation]: https://github.com/kanidm/kanidm/blob/master/book/src/support.md
+[issue tracker]: https://github.com/netidm/netidm/issues
+[gitter community channel]: https://gitter.im/netidm/community
+[code of conduct]: https://github.com/netidm/netidm/blob/master/CODE_OF_CONDUCT.md
+[netidm book]: https://netidm.github.io/netidm/stable/
+[our upgrade documentation]: https://github.com/netidm/netidm/blob/master/book/src/server_updates.md#general-update-notes
+[support documentation]: https://github.com/netidm/netidm/blob/master/book/src/support.md

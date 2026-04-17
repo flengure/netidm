@@ -9,7 +9,7 @@ use rand_chacha::ChaCha8Rng;
 
 use crossbeam::queue::{ArrayQueue, SegQueue};
 
-use kanidm_client::{KanidmClient, KanidmClientBuilder};
+use netidm_client::{NetidmClient, NetidmClientBuilder};
 
 use serde::Serialize;
 use tokio::sync::broadcast;
@@ -17,12 +17,12 @@ use tokio::sync::broadcast;
 use std::time::{Duration, Instant};
 
 async fn actor_person(
-    main_client: KanidmClient,
+    main_client: NetidmClient,
     person: Person,
     stats_queue: Arc<SegQueue<EventRecord>>,
     mut actor_rx: broadcast::Receiver<Signal>,
     rng_seed: u64,
-    additional_clients: Vec<KanidmClient>,
+    additional_clients: Vec<NetidmClient>,
     warmup_time: Duration,
 ) -> Result<(), Error> {
     let mut model =
@@ -160,14 +160,14 @@ pub async fn execute(state: State, control_rx: broadcast::Receiver<Signal>) -> R
     let clients = std::iter::once(state.profile.control_uri().to_string())
         .chain(state.profile.extra_uris().iter().cloned())
         .map(|uri| {
-            KanidmClientBuilder::new()
+            NetidmClientBuilder::new()
                 .address(uri)
                 .danger_accept_invalid_hostnames(true)
                 .danger_accept_invalid_certs(true)
                 .build()
                 .map_err(|err| {
-                    error!(?err, "Unable to create kanidm client");
-                    Error::KanidmClient
+                    error!(?err, "Unable to create netidm client");
+                    Error::NetidmClient
                 })
         })
         .collect::<Result<Vec<_>, _>>()?;
@@ -178,12 +178,12 @@ pub async fn execute(state: State, control_rx: broadcast::Receiver<Signal>) -> R
     let mut tasks = Vec::with_capacity(state.persons.len());
     for person in state.persons.into_iter() {
         // this is not super efficient but we don't really care as we are not even inside the warmup time window, so we're not in a hurry
-        let mut cloned_clients: Vec<KanidmClient> = clients
+        let mut cloned_clients: Vec<NetidmClient> = clients
             .iter()
             .map(|client| {
                 client.new_session().map_err(|err| {
-                    error!(?err, "Unable to create a new kanidm client session");
-                    Error::KanidmClient
+                    error!(?err, "Unable to create a new netidm client session");
+                    Error::NetidmClient
                 })
             })
             .collect::<Result<Vec<_>, _>>()?;

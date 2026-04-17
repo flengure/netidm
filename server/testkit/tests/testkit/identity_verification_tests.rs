@@ -1,7 +1,7 @@
-use kanidm_client::KanidmClient;
-use kanidm_proto::internal::{IdentifyUserRequest, IdentifyUserResponse};
-use kanidmd_lib::prelude::Attribute;
-use kanidmd_testkit::ADMIN_TEST_PASSWORD;
+use netidm_client::NetidmClient;
+use netidm_proto::internal::{IdentifyUserRequest, IdentifyUserResponse};
+use netidmd_lib::prelude::Attribute;
+use netidmd_testkit::ADMIN_TEST_PASSWORD;
 
 static UNIVERSAL_PW: &str = "eicieY7ahchaoCh0eeTa";
 
@@ -10,8 +10,8 @@ static USER_A_NAME: &str = "valid_user_a";
 static USER_B_NAME: &str = "valid_user_b";
 
 // here we actually test the full idm flow by duplicating the server
-#[kanidmd_testkit::test]
-async fn test_full_identification_flow(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_full_identification_flow(rsclient: &NetidmClient) {
     setup_server(rsclient).await;
     let user_a_uuid = create_user(rsclient, USER_A_NAME).await;
     let user_b_uuid = create_user(rsclient, USER_B_NAME).await;
@@ -111,7 +111,7 @@ async fn test_full_identification_flow(rsclient: &KanidmClient) {
     assert_eq!(higher_user_req_2_right, IdentifyUserResponse::Success);
 }
 
-async fn setup_server(rsclient: &KanidmClient) {
+async fn setup_server(rsclient: &NetidmClient) {
     // basically this function logs in
     let res = rsclient
         .auth_simple_password("admin", ADMIN_TEST_PASSWORD)
@@ -120,7 +120,7 @@ async fn setup_server(rsclient: &KanidmClient) {
     assert!(res.is_ok());
 }
 
-async fn create_user(rsclient: &KanidmClient, user: &str) -> String {
+async fn create_user(rsclient: &NetidmClient, user: &str) -> String {
     rsclient
         .idm_person_account_create(user, &format!("dx{user}"))
         .await
@@ -138,7 +138,7 @@ async fn create_user(rsclient: &KanidmClient, user: &str) -> String {
     r.unwrap().first().unwrap().to_owned()
 }
 
-async fn login_with_user(rsclient: &KanidmClient, id: &str) {
+async fn login_with_user(rsclient: &NetidmClient, id: &str) {
     let _ = rsclient.logout().await;
 
     let res = rsclient.auth_simple_password(id, UNIVERSAL_PW).await;

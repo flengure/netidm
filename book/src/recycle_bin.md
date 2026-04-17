@@ -27,19 +27,19 @@ Currently they stay up to 1 week before they are removed. This may change in the
 You can display all items in the Recycle Bin with:
 
 ```bash
-kanidm recycle-bin list --name admin
+netidm recycle-bin list --name admin
 ```
 
 You can show a single item with:
 
 ```bash
-kanidm recycle-bin get --name admin <uuid>
+netidm recycle-bin get --name admin <uuid>
 ```
 
 An entry can be revived with:
 
 ```bash
-kanidm recycle-bin revive --name admin <uuid>
+netidm recycle-bin revive --name admin <uuid>
 ```
 
 ## Edge Cases
@@ -76,4 +76,4 @@ revive group1 // no members
 These issues could be looked at again in the future, but for now we think that deletes of groups is rare - we expect
 recycle bin to save you in "oops" moments, and in a majority of cases you may delete a group or a user and then restore
 them. To handle this series of steps requires extra code complexity in how we flag operations. For more, see
-[This issue on github](https://github.com/kanidm/kanidm/issues/177).
+[This issue on github](https://github.com/netidm/netidm/issues/177).

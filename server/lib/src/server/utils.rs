@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::valueset::{ValueSetDateTime, ValueSetEmailAddress, ValueSetIutf8, ValueSetMessage};
-use kanidm_proto::v1::OutboundMessage;
+use netidm_proto::v1::OutboundMessage;
 
 impl QueryServerWriteTransaction<'_> {
     pub(crate) fn queue_message(

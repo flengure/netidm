@@ -1,4 +1,4 @@
-//! [`Filter`]s are one of the three foundational concepts of the design in kanidm.
+//! [`Filter`]s are one of the three foundational concepts of the design in netidm.
 //! They are used in nearly every aspect of the server to provide searching of
 //! datasets and assertion of entry properties.
 //!
@@ -21,9 +21,9 @@ use concread::arcache::{ARCache, ARCacheReadTxn};
 use hashbrown::HashMap;
 #[cfg(test)]
 use hashbrown::HashSet;
-use kanidm_proto::constants::ATTR_UUID;
-use kanidm_proto::internal::{Filter as ProtoFilter, OperationError, SchemaError};
-use kanidm_proto::scim_v1::{AttrPath as ScimAttrPath, ScimFilter};
+use netidm_proto::constants::ATTR_UUID;
+use netidm_proto::internal::{Filter as ProtoFilter, OperationError, SchemaError};
+use netidm_proto::scim_v1::{AttrPath as ScimAttrPath, ScimFilter};
 use ldap3_proto::proto::{LdapFilter, LdapSubstringFilter};
 use serde::Deserialize;
 use uuid::Uuid;
@@ -1794,7 +1794,7 @@ mod tests {
     use std::collections::BTreeSet;
     use std::time::Duration;
 
-    use kanidm_proto::internal::Filter as ProtoFilter;
+    use netidm_proto::internal::Filter as ProtoFilter;
     use ldap3_proto::simple::LdapFilter;
 
     use crate::event::{CreateEvent, DeleteEvent};

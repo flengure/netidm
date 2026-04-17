@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
-use kanidm_proto::internal::{Group as ProtoGroup, UiHint};
-use kanidm_proto::v1::UnixGroupToken;
+use netidm_proto::internal::{Group as ProtoGroup, UiHint};
+use netidm_proto::v1::UnixGroupToken;
 use uuid::Uuid;
 
 use crate::entry::{Committed, Entry, EntryCommitted, EntrySealed, GetUuid};

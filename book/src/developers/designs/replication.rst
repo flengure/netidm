@@ -64,7 +64,7 @@ This is the property that your topology in the face of partition tolerance will
 continue to provide functional services (generally reads).
 
 Almost all systems expect partition tolerance, so the choice becomes between consistency
-and availability. Kanidm has chosen availability, as the needs of IDM dictate that we
+and availability. Netidm has chosen availability, as the needs of IDM dictate that we
 always function even in the face of partition tolerance, and when other failures occur.
 
 This AP selection is often called "eventually consistent".
@@ -75,7 +75,7 @@ Conflict Resolution
 As consistency is not a property that we can uphold in an AP system, we must handle
 the possibility of inconsistent data and the correct methods to handle it to bring
 a system into a consistent state. There are two levels that inconsistency can occur
-at in a system like Kanidm.
+at in a system like Netidm.
 
 * Object Level
 * Attribute Level
@@ -169,7 +169,7 @@ or none do.
 Entry Change Log
 ================
 
-Within Kanidm id2entry is the primary store of active entry state representation. However
+Within Netidm id2entry is the primary store of active entry state representation. However
 the content of id2entry is a reflection of the series of modifications and changes that
 have applied to create that entity. As a result id2entry can be considered as an entry
 state cache.
@@ -196,7 +196,7 @@ and the changelog becomes a perfect history of transitions within the database c
 
 We can visualise the changelog index as a series of CID's with references to the associated
 entries that need to be considered. This is where we start to consider the true implementation
-structure of how we will code this within Kanidm.
+structure of how we will code this within Netidm.
 
 ::
 

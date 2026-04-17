@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::schema::SchemaAttribute;
 use crate::valueset::ScimResolveStatus;
 use crate::valueset::{DbValueSetV2, ValueSet};
-use kanidm_proto::internal::Filter as ProtoFilter;
+use netidm_proto::internal::Filter as ProtoFilter;
 use smolset::SmolSet;
 
 #[derive(Debug, Clone)]
@@ -122,7 +122,7 @@ impl ValueSetT for ValueSetJsonFilter {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.set
                 .iter()
                 .filter_map(|s| {
@@ -285,7 +285,7 @@ impl ValueSetT for ValueSetJson {
         serde_json::to_string(&self.object)
             .inspect_err(|err| error!(?err, "A json object was corrupted during run-time"))
             .ok()
-            .map(|value| ScimResolveStatus::Resolved(ScimValueKanidm::from(value)))
+            .map(|value| ScimResolveStatus::Resolved(ScimValueNetidm::from(value)))
     }
 
     fn to_db_valueset_v2(&self) -> DbValueSetV2 {

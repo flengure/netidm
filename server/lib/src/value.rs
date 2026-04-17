@@ -19,10 +19,10 @@ use crypto_glue::{
     x509::Certificate,
 };
 use hashbrown::HashSet;
-use kanidm_proto::internal::ImageValue;
-use kanidm_proto::internal::{ApiTokenPurpose, Filter as ProtoFilter, UiHint};
-use kanidm_proto::scim_v1::ScimOauth2ClaimMapJoinChar;
-use kanidm_proto::v1::UatPurposeStatus;
+use netidm_proto::internal::ImageValue;
+use netidm_proto::internal::{ApiTokenPurpose, Filter as ProtoFilter, UiHint};
+use netidm_proto::scim_v1::ScimOauth2ClaimMapJoinChar;
+use netidm_proto::v1::UatPurposeStatus;
 use num_enum::TryFromPrimitive;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
@@ -2612,7 +2612,7 @@ mod tests {
     fn test_value_url() {
         // https://html.spec.whatwg.org/multipage/forms.html#valid-e-mail-address
         let val1 = Value::new_url_s("https://localhost:8000/search?q=text#hello");
-        let val2 = Value::new_url_s("https://github.com/kanidm/kanidm");
+        let val2 = Value::new_url_s("https://github.com/netidm/netidm");
         let val3 = Value::new_url_s("ldap://foo.com");
         let inv1 = Value::new_url_s("127.0.");
         let inv2 = Value::new_url_s("🤔");

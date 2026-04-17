@@ -4,7 +4,7 @@ use crate::utils::trigraph_iter;
 use crate::valueset::ScimResolveStatus;
 use crate::valueset::{DbValueSetV2, ValueSet};
 use base64urlsafedata::Base64UrlSafeData;
-use kanidm_proto::scim_v1::server::ScimBinary;
+use netidm_proto::scim_v1::server::ScimBinary;
 use smolset::SmolSet;
 use std::collections::btree_map::Entry as BTreeEntry;
 use std::collections::BTreeMap;
@@ -272,7 +272,7 @@ impl ValueSetT for ValueSetPublicBinary {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.map
                 .iter()
                 .map(|(tag, bin)| ScimBinary {

@@ -1,11 +1,11 @@
 use crate::OpType;
-use crate::{handle_client_error, DomainOpt, KanidmClientParser};
+use crate::{handle_client_error, DomainOpt, NetidmClientParser};
 use anyhow::{Context, Error};
-use kanidm_proto::internal::ImageValue;
+use netidm_proto::internal::ImageValue;
 use std::fs::read;
 
 impl DomainOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             DomainOpt::SetDisplayname(dopt) => {
                 eprintln!(
@@ -106,7 +106,7 @@ impl DomainOpt {
                             if opt.debug {
                                 eprintln!(
                                     "{}",
-                                    kanidm_lib_file_permissions::diagnose_path(path.as_ref())
+                                    netidm_lib_file_permissions::diagnose_path(path.as_ref())
                                 );
                             }
                             Err(err).context(format!("Failed to read file at '{}'", path.display()))

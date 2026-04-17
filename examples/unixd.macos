@@ -1,8 +1,8 @@
-# this  example configures kanidm-unixd for testing on macos
-db_path = "/tmp/kanidm-unixd"
-sock_path = "/tmp/kanidm_unixd.sock"
-task_sock_path = "/tmp/kanidm_unixd_task.sock"
-# some documentation is here: https://github.com/kanidm/kanidm/blob/master/book/src/pam_and_nsswitch.md
+# this  example configures netidm-unixd for testing on macos
+db_path = "/tmp/netidm-unixd"
+sock_path = "/tmp/netidm_unixd.sock"
+task_sock_path = "/tmp/netidm_unixd_task.sock"
+# some documentation is here: https://github.com/netidm/netidm/blob/master/book/src/pam_and_nsswitch.md
 pam_allowed_login_groups = ["posix_group"]
 # default_shell = "/bin/sh"
 # home_prefix = "/home/"

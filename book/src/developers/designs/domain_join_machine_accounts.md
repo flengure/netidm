@@ -13,11 +13,11 @@ from ssh keys (and in future, ctap2).
 In order to maintain compatibility with LDAP style authentication, we allow "anonymous hosts" to retrieve ssh public
 keys, and then perform sudo authentication.
 
-This has the obvious caveat that anyone can stand up a machine that trusts a Kanidm instance. This presents a double
+This has the obvious caveat that anyone can stand up a machine that trusts a Netidm instance. This presents a double
 edged sword:
 
-- By configuring a machine to authenticate via Kanidm, there is full trust in the authentication decisions Kanidm makes.
-- Users of Kanidm may be tricked into accessing a machine that is not managed by their IT or other central authority.
+- By configuring a machine to authenticate via Netidm, there is full trust in the authentication decisions Netidm makes.
+- Users of Netidm may be tricked into accessing a machine that is not managed by their IT or other central authority.
 
 To prevent this, UNIX authentication should be configurable to prevent usage from unregistered machines. This will
 require the machine to present machine authentication credentials simultaneously with the user's credentials.
@@ -32,7 +32,7 @@ systems. When a user authenticates with credentials such as ssh-keys, it's not p
 forwardable credentials - and ssh agent forwarding only allows forwarding of ssh credentials, not other types of
 credentials that may be needed.
 
-In this case, when a user authenticates with SSH, since they're using a trusted machine, Kanidm can request short-term
+In this case, when a user authenticates with SSH, since they're using a trusted machine, Netidm can request short-term
 and limited credentials on the users behalf.
 
 An example is that we could dynamically request TLS certificates or Kerberos credentials.
@@ -60,9 +60,9 @@ this trust relationship.
 1. A join token is created by a user who is authorised to perform domain joins.
 2. The machine is audited for a known trust state. This process may vary from site to site. A future improvement could
    be that the join token can only release on certain TPM PCR values.
-3. The join token is yielded to the Kanidm UNIX daemon which submits its signing key to the Kanidm server.
-4. The kanidm server verifies the submission and creates a machine account.
-5. The Kanidm UNIX daemon now uses its signing key to sign a challenge that is submitted with all requests to the kanidm
+3. The join token is yielded to the Netidm UNIX daemon which submits its signing key to the Netidm server.
+4. The netidm server verifies the submission and creates a machine account.
+5. The Netidm UNIX daemon now uses its signing key to sign a challenge that is submitted with all requests to the netidm
    server.
 
 Extra
@@ -92,8 +92,8 @@ The machine should be audited to be in a secure state. It's not yet clear how to
 using TPM PCRs with secure boot to measure this and validate the machine state.
 
 One possible way to achieve this could be with full disk encryption that is bound to secure boot and TPM PCRs.
-Kanidm-unixd could validate the same PCR's to start operating. The challenge here would be updates of the expected PCR
-values during a system update. Alternately, Kanidm could "assume" that if started, then the FDE must have passed and
+Netidm-unixd could validate the same PCR's to start operating. The challenge here would be updates of the expected PCR
+values during a system update. Alternately, Netidm could "assume" that if started, then the FDE must have passed and
 attestation of health "is out of scope" for us.
 
 ### Public Key Submission
@@ -113,6 +113,6 @@ The machine account is linked to the join token.
 The machine account is a new form of account, similar to a service account. It should identify the machine, its
 hostname, and other properties. It should also contain the machine's public key id.
 
-When the machine requests certain API's from Kanidm, it should submit signed requests that include the current time. The
+When the machine requests certain API's from Netidm, it should submit signed requests that include the current time. The
 kid is used to find the machine account that is submitting the request. This then validates the identity of the caller,
 and then allows the action to proceed.

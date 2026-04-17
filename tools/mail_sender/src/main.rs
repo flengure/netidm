@@ -16,11 +16,11 @@ use chrono::Utc;
 use clap::Parser;
 use cron::Schedule;
 use hashbrown::HashSet;
-use kanidm_client::KanidmClient;
-use kanidm_client::KanidmClientBuilder;
-use kanidm_lib_file_permissions::readonly as file_permissions_readonly;
-use kanidm_proto::v1::OutboundMessage;
-use kanidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
+use netidm_client::NetidmClient;
+use netidm_client::NetidmClientBuilder;
+use netidm_lib_file_permissions::readonly as file_permissions_readonly;
+use netidm_proto::v1::OutboundMessage;
+use netidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
 use lettre::{
     address::Address, message::header::ContentType, message::Mailbox,
     transport::smtp::authentication::Credentials, AsyncSmtpTransport, AsyncTransport, Message,
@@ -235,7 +235,7 @@ async fn mail_checker(
     outbound_tx: mpsc::Sender<QueuedMessage>,
     mut response_rx: mpsc::Receiver<MessageStatus>,
     schedule: Schedule,
-    rsclient: KanidmClient,
+    rsclient: NetidmClient,
 ) {
     let mut message_seen: HashSet<Uuid> = HashSet::new();
 
@@ -265,7 +265,7 @@ async fn mail_checker(
             }) = response_rx.recv() => {
                 // Mark that we are no longer processing this message id.
                 let _ = message_seen.remove(&message_id);
-                // process the response, normally by marking it as done in Kanidm.
+                // process the response, normally by marking it as done in Netidm.
                 if status.is_ok() {
                     if let Err(client_error) = rsclient.idm_message_mark_sent(message_id).await {
                         error!(?client_error, ?message_id, "Unable to mark message as sent. Exiting to prevent potential spam!");
@@ -432,7 +432,7 @@ async fn driver_main(opt: Opt) -> Result<(), ()> {
         }
     };
 
-    let cb = match KanidmClientBuilder::new().read_options_from_optional_config(&opt.client_config)
+    let cb = match NetidmClientBuilder::new().read_options_from_optional_config(&opt.client_config)
     {
         Ok(v) => v,
         Err(_) => {
@@ -489,7 +489,7 @@ async fn driver_main(opt: Opt) -> Result<(), ()> {
 
     if let Some(to_address) = opt.test_email {
         let ob_msg_template = OutboundMessage::TestMessageV1 {
-            display_name: "KANIDM MAIL SENDER TEST".into(),
+            display_name: "NETIDM MAIL SENDER TEST".into(),
         };
 
         let queue_message = QueuedMessage {
@@ -611,7 +611,7 @@ fn main() {
     let fmt_layer = fmt::layer().with_writer(std::io::stderr);
 
     let filter_layer = if opt.debug {
-        match EnvFilter::try_new("kanidm_client=debug,kanidm_mail_sender=debug,lettre=debug") {
+        match EnvFilter::try_new("netidm_client=debug,netidm_mail_sender=debug,lettre=debug") {
             Ok(f) => f,
             Err(e) => {
                 eprintln!("ERROR! Unable to start tracing {e:?}");
@@ -621,7 +621,7 @@ fn main() {
     } else {
         match EnvFilter::try_from_default_env() {
             Ok(f) => f,
-            Err(_) => EnvFilter::new("kanidm_client=warn,kanidm_mail_sender=info"),
+            Err(_) => EnvFilter::new("netidm_client=warn,netidm_mail_sender=info"),
         }
     };
 

@@ -3,7 +3,7 @@ use crate::model::{self, ActorModel, Transition, TransitionAction, TransitionRes
 use crate::error::Error;
 use crate::run::EventRecord;
 use crate::state::*;
-use kanidm_client::KanidmClient;
+use netidm_client::NetidmClient;
 
 use async_trait::async_trait;
 use rand::RngExt;
@@ -38,7 +38,7 @@ impl ActorWriter {
 impl ActorModel for ActorWriter {
     async fn transition(
         &mut self,
-        client: &KanidmClient,
+        client: &NetidmClient,
         person: &Person,
     ) -> Result<Vec<EventRecord>, Error> {
         let transition = self.next_transition();

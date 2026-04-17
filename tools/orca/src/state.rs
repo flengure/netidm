@@ -3,14 +3,14 @@ use crate::model::{ActorModel, ActorRole};
 use crate::models;
 use crate::profile::Profile;
 use core::fmt::Display;
-use kanidm_client::KanidmClient;
+use netidm_client::NetidmClient;
 use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeSet;
 use std::path::Path;
 use std::time::Duration;
-/// A serialisable state representing the content of a kanidm database and potential
+/// A serialisable state representing the content of a netidm database and potential
 /// test content that can be created and modified.
 ///
 /// This is all generated ahead of time before the test so that during the test
@@ -97,7 +97,7 @@ impl Model {
     pub fn as_dyn_object(
         self,
         rng_seed: u64,
-        additional_clients: Vec<KanidmClient>,
+        additional_clients: Vec<NetidmClient>,
         person_name: &str,
         warmup_time: Duration,
     ) -> Result<Box<dyn ActorModel + Send + '_>, Error> {

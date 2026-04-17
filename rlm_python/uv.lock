@@ -421,9 +421,9 @@ wheels = [
 ]
 
 [[package]]
-name = "kanidm"
+name = "netidm"
 version = "1.2.0"
-source = { directory = "../pykanidm" }
+source = { directory = "../pynetidm" }
 dependencies = [
     { name = "aiohttp" },
     { name = "authlib" },
@@ -875,7 +875,7 @@ name = "rlm-python"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "kanidm" },
+    { name = "netidm" },
 ]
 
 [package.dev-dependencies]
@@ -887,7 +887,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "kanidm", directory = "../pykanidm" }]
+requires-dist = [{ name = "netidm", directory = "../pynetidm" }]
 
 [package.metadata.requires-dev]
 dev = [

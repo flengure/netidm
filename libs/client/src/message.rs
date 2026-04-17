@@ -1,11 +1,11 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::scim_v1::{
+use crate::{ClientError, NetidmClient};
+use netidm_proto::scim_v1::{
     client::{ScimEntryMessage, ScimListMessage},
     ScimEntryGetQuery,
 };
 use uuid::Uuid;
 
-impl KanidmClient {
+impl NetidmClient {
     pub async fn idm_message_list(
         &self,
         query: Option<ScimEntryGetQuery>,

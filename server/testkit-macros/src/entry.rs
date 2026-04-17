@@ -79,9 +79,9 @@ fn parse_attributes(
         }
     });
 
-    let ts = quote!(kanidmd_core::config::Configuration {
+    let ts = quote!(netidmd_core::config::Configuration {
         #field_modifications
-        ..kanidmd_core::config::Configuration::new_for_test()
+        ..netidmd_core::config::Configuration::new_for_test()
     });
 
     Ok((ts, flags))
@@ -159,7 +159,7 @@ pub(crate) fn test(args: TokenStream, item: TokenStream) -> TokenStream {
         #header
         fn #test_driver() {
             let body = async {
-                let mut test_env = kanidmd_testkit::setup_async_test(#default_config_struct).await;
+                let mut test_env = netidmd_testkit::setup_async_test(#default_config_struct).await;
 
                 #test_fn(#test_fn_args).await;
                 test_env.core_handle.shutdown().await;

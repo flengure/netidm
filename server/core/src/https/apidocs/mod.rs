@@ -1,5 +1,5 @@
 use axum::{middleware::from_fn, response::Redirect, routing::get, Router};
-use kanidm_proto::{attribute, internal, scim_v1, v1, wg};
+use netidm_proto::{attribute, internal, scim_v1, v1, wg};
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
     Modify, OpenApi,
@@ -43,7 +43,7 @@ impl Modify for SecurityAddon {
             )
         )
     ),
-    external_docs(url = "https://kanidm.com/docs", description = "Kanidm documentation page"),
+    external_docs(url = "https://netidm.com/docs", description = "Netidm documentation page"),
 
     paths(
         super::generic::status,
@@ -344,14 +344,14 @@ impl Modify for SecurityAddon {
     ),
     modifiers(&SecurityAddon),
     tags(
-        (name = "kanidm", description = "Kanidm API")
+        (name = "netidm", description = "Netidm API")
     ),
     info(
-        title = "Kanidm",
-        description = "API for interacting with the Kanidm system. This is a work in progress.",
+        title = "Netidm",
+        description = "API for interacting with the Netidm system. This is a work in progress.",
         contact( // <https://docs.rs/utoipa-gen/3.5.0/utoipa_gen/derive.OpenApi.html#info-attribute-syntax>
-            name="Kanidm Github",
-            url="https://github.com/kanidm/kanidm",
+            name="Netidm Github",
+            url="https://github.com/netidm/netidm",
         )
     )
 )]

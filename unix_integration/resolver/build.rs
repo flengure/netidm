@@ -34,15 +34,15 @@ fn main() {
         generate_to(
             shell,
             &mut SshAuthorizedOpt::command(),
-            "kanidm_ssh_authorizedkeys",
+            "netidm_ssh_authorizedkeys",
             comp_dir.clone(),
         )
         .ok();
 
         generate_to(
             shell,
-            &mut KanidmUnixParser::command(),
-            "kanidm_unix",
+            &mut NetidmUnixParser::command(),
+            "netidm_unix",
             comp_dir.clone(),
         )
         .ok();

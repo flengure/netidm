@@ -8,7 +8,7 @@
 
         (% if can_edit %)
         <input type="email" aria-label="Email address input ((index))" class="form-control" name="emails[]" value="(( value ))" hx-validate="true" required>
-        <button type="button" class="btn btn-secondary kanidm-remove-list-entry">Remove</button>
+        <button type="button" class="btn btn-secondary netidm-remove-list-entry">Remove</button>
         (% else %)
         <input type="email" aria-label="Email address input ((index))" class="form-control" name="emails[]" value="(( value ))" hx-validate="true" required disabled>
         (% endif %)

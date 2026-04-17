@@ -1,3 +1,3 @@
 # rlm_python
 
-Kanidm FreeRADIUS module.
+Netidm FreeRADIUS module.

@@ -1,7 +1,7 @@
 [package]
-name = "kanidm_unix_common"
-description = "Kanidm Unix Resolver - Common Libraries"
-documentation = "https://docs.rs/kanidm/latest/kanidm/"
+name = "netidm_unix_common"
+description = "Netidm Unix Resolver - Common Libraries"
+documentation = "https://docs.rs/netidm/latest/netidm/"
 
 version = { workspace = true }
 authors = { workspace = true }
@@ -15,11 +15,11 @@ repository = { workspace = true }
 client_sync_tracing = []
 default = ["unix"]
 unix = []
-selinux = ["dep:selinux", "dep:kanidm_utils_users"]
+selinux = ["dep:selinux", "dep:netidm_utils_users"]
 tpm = []
 
 [lib]
-name = "kanidm_unix_common"
+name = "netidm_unix_common"
 path = "src/lib.rs"
 test = true
 doctest = false
@@ -28,7 +28,7 @@ doctest = false
 bytes = { workspace = true }
 csv = { workspace = true }
 futures = { workspace = true }
-kanidm_proto = { workspace = true }
+netidm_proto = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_with = { workspace = true }
@@ -42,10 +42,10 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 
 selinux = { workspace = true, optional = true }
-kanidm_utils_users = { workspace = true, optional = true }
+netidm_utils_users = { workspace = true, optional = true }
 
 [build-dependencies]
-kanidm_build_profiles = { workspace = true }
+netidm_build_profiles = { workspace = true }
 
 [package.metadata.cargo-machete]
-ignored = ["kanidm_build_profiles"]
+ignored = ["netidm_build_profiles"]

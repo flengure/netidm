@@ -60,7 +60,7 @@ impl QueryServerWriteTransaction<'_> {
 
         let serial_number = x509::uuid_to_serial(s_uuid);
         let subject =
-            x509::Name::from_str(&format!("O=Kanidm Replication,CN={s_uuid}")).map_err(|err| {
+            x509::Name::from_str(&format!("O=Netidm Replication,CN={s_uuid}")).map_err(|err| {
                 error!(?err, "Unable to parse subject dn");
                 OperationError::CryptographyError
             })?;

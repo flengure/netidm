@@ -9,8 +9,8 @@ use crate::value::{CredUpdateSessionPerms, CredentialType, IntentTokenState};
 use crate::valueset::{
     DbValueSetV2, ScimResolveStatus, ValueSet, ValueSetResolveStatus, ValueSetScimPut,
 };
-use kanidm_proto::scim_v1::server::{ScimIntentToken, ScimIntentTokenState};
-use kanidm_proto::scim_v1::JsonValue;
+use netidm_proto::scim_v1::server::{ScimIntentToken, ScimIntentTokenState};
+use netidm_proto::scim_v1::JsonValue;
 use smolset::SmolSet;
 use std::collections::btree_map::Entry as BTreeEntry;
 use std::collections::BTreeMap;
@@ -367,7 +367,7 @@ impl ValueSetT for ValueSetIntentToken {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.map
                 .iter()
                 .map(|(token_id, intent_token_state)| {
@@ -974,7 +974,7 @@ impl ValueSetT for ValueSetCredentialType {
         self.set
             .iter()
             .next()
-            .map(|ct| ScimResolveStatus::Resolved(ScimValueKanidm::from(ct.to_string())))
+            .map(|ct| ScimResolveStatus::Resolved(ScimValueNetidm::from(ct.to_string())))
     }
 
     fn to_db_valueset_v2(&self) -> DbValueSetV2 {
@@ -1114,7 +1114,7 @@ impl ValueSetT for ValueSetWebauthnAttestationCaList {
     }
 
     fn to_scim_value(&self) -> Option<ScimResolveStatus> {
-        Some(ScimResolveStatus::Resolved(ScimValueKanidm::from(
+        Some(ScimResolveStatus::Resolved(ScimValueNetidm::from(
             self.ca_list
                 .cas()
                 .values()

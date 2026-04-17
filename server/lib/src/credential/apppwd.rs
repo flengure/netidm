@@ -1,6 +1,6 @@
 use crate::credential::{CryptoPolicy, Password};
 use crate::prelude::*;
-use kanidm_proto::internal::OperationError;
+use netidm_proto::internal::OperationError;
 use std::cmp::Ordering;
 use std::fmt;
 

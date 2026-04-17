@@ -1,4 +1,4 @@
-// Transform password import requests into proper kanidm credentials.
+// Transform password import requests into proper netidm credentials.
 use std::convert::TryFrom;
 use std::iter::once;
 use std::sync::Arc;
@@ -166,7 +166,7 @@ mod tests {
     use crate::credential::totp::{Totp, TOTP_DEFAULT_STEP};
     use crate::credential::{Credential, CredentialType};
     use crate::prelude::*;
-    use kanidm_lib_crypto::CryptoPolicy;
+    use netidm_lib_crypto::CryptoPolicy;
     use time::OffsetDateTime;
 
     const IMPORT_HASH: &str =

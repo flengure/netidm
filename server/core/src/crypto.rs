@@ -306,7 +306,7 @@ pub(crate) fn build_ca() -> Result<CaHandle, ()> {
     };
 
     let profile = Profile::Root;
-    let root_subject = Name::from_str("C=AU,ST=QLD,O=Kanidm,CN=Kanidm Generated CA,OU=Development and Evaluation - NOT FOR PRODUCTION")
+    let root_subject = Name::from_str("C=AU,ST=QLD,O=Netidm,CN=Netidm Generated CA,OU=Development and Evaluation - NOT FOR PRODUCTION")
         .map_err(|err| {
             error!(?err, "Invalid root subject DN - THIS IS A BUG.");
         })?;
@@ -460,7 +460,7 @@ pub(crate) fn build_cert(domain_name: &str, ca_handle: &CaHandle) -> Result<Cert
         enable_key_encipherment: true,
         include_subject_key_identifier: true,
     };
-    let root_subject = Name::from_str("C=AU,ST=QLD,O=Kanidm,CN=Kanidm Generated Server Certificate,OU=Development and Evaluation - NOT FOR PRODUCTION")
+    let root_subject = Name::from_str("C=AU,ST=QLD,O=Netidm,CN=Netidm Generated Server Certificate,OU=Development and Evaluation - NOT FOR PRODUCTION")
         .map_err(|err| {
             error!(?err, "Invalid cert subject DN - THIS IS A BUG.");
         })?;

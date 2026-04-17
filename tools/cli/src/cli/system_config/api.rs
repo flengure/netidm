@@ -1,8 +1,8 @@
-use crate::{ApiOpt, KanidmClientParser};
+use crate::{ApiOpt, NetidmClientParser};
 use std::io::IsTerminal;
 
 impl ApiOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             ApiOpt::DownloadSchema(aopt) => {
                 let client = opt.to_unauth_client();

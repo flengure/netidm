@@ -1,11 +1,11 @@
-use crate::{ClientError, KanidmClient};
-use kanidm_proto::scim_v1::{
+use crate::{ClientError, NetidmClient};
+use netidm_proto::scim_v1::{
     client::{ScimEntryApplication, ScimEntryApplicationPost, ScimListApplication},
     ScimApplicationPassword, ScimApplicationPasswordCreate, ScimEntryGetQuery,
 };
 use uuid::Uuid;
 
-impl KanidmClient {
+impl NetidmClient {
     /// Delete an application
     pub async fn idm_application_delete(&self, id: &str) -> Result<(), ClientError> {
         self.perform_delete_request(format!("/scim/v1/Application/{id}").as_str())

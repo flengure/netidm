@@ -2,10 +2,10 @@
 
 ## Introduction
 
-Replication allows two or more Kanidm servers to exchange their databases and keep their content synchronised. This is
+Replication allows two or more Netidm servers to exchange their databases and keep their content synchronised. This is
 critical to allow multiple servers to act in failover groups for highly available infrastructure.
 
-Kanidm replication is eventually consistent. This means that there are no elections or quorums required between nodes -
+Netidm replication is eventually consistent. This means that there are no elections or quorums required between nodes -
 all nodes can accept writes and distribute them to all other nodes. This is important for security and performance.
 
 Because replication is eventually consistent, this means that there can be small delays between different servers
@@ -14,9 +14,9 @@ receiving a change. This may result in some users noticing discrepancies that ar
 To minimise this, when you operate replication in a highly available deployment you should use a load balancer
 which uses sticky sessions so that users are redirected to the same server unless a failover event occurs.
 Another option is an "active-passive" configuration where your load balancer targets a single node. 
-Since replication is eventually consistent, there is no need for a manual failover or failback procedure in Kanidm.
+Since replication is eventually consistent, there is no need for a manual failover or failback procedure in Netidm.
 
-In this chapter we will cover the details of planning, deploying and maintaining replication between Kanidm servers.
+In this chapter we will cover the details of planning, deploying and maintaining replication between Netidm servers.
 
 ## Vocabulary
 

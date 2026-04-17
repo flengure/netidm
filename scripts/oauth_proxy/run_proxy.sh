@@ -47,8 +47,8 @@ echo "#################################################################"
 docker run --rm -it \
     --env-file envfile \
     --network host \
-    --mount "type=bind,source=/tmp/kanidm/cert.pem,target=/opt/cert.pem" \
-    --mount "type=bind,source=/tmp/kanidm/key.pem,target=/opt/key.pem" \
+    --mount "type=bind,source=/tmp/netidm/cert.pem,target=/opt/cert.pem" \
+    --mount "type=bind,source=/tmp/netidm/key.pem,target=/opt/key.pem" \
     --mount "type=bind,source=./index.html,target=/opt/index.html" \
     --mount "type=bind,source=./client.secret,target=/opt/client.secret" \
     "bitnami/oauth2-proxy:${PROXY_VERSION}" --email-domain='*'

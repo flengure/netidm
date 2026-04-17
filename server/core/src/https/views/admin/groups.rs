@@ -14,16 +14,16 @@ use axum::Extension;
 use axum_extra::extract::Form;
 use axum_htmx::{HxPushUrl, HxRequest};
 use futures_util::TryFutureExt;
-use kanidm_proto::attribute::Attribute;
-use kanidm_proto::internal::{OperationError, UserAuthToken};
-use kanidm_proto::scim_v1::server::{
-    ScimEffectiveAccess, ScimEntryKanidm, ScimGroup, ScimListResponse, ScimValueKanidm,
+use netidm_proto::attribute::Attribute;
+use netidm_proto::internal::{OperationError, UserAuthToken};
+use netidm_proto::scim_v1::server::{
+    ScimEffectiveAccess, ScimEntryNetidm, ScimGroup, ScimListResponse, ScimValueNetidm,
 };
-use kanidm_proto::scim_v1::ScimEntryGetQuery;
-use kanidm_proto::scim_v1::{client::ScimEntryPutKanidm, ScimFilter};
-use kanidmd_lib::constants::EntryClass;
-use kanidmd_lib::filter::{f_eq, Filter};
-use kanidmd_lib::idm::authentication::ClientAuthInfo;
+use netidm_proto::scim_v1::ScimEntryGetQuery;
+use netidm_proto::scim_v1::{client::ScimEntryPutNetidm, ScimFilter};
+use netidmd_lib::constants::EntryClass;
+use netidmd_lib::filter::{f_eq, Filter};
+use netidmd_lib::idm::authentication::ClientAuthInfo;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use uuid::Uuid;
@@ -154,7 +154,7 @@ pub async fn get_group_info(
     kopid: &KOpId,
     client_auth_info: ClientAuthInfo,
 ) -> Result<(ScimGroup, ScimEffectiveAccess), WebError> {
-    let scim_entry: ScimEntryKanidm = state
+    let scim_entry: ScimEntryNetidm = state
         .qe_r_ref
         .scim_entry_id_get(
             client_auth_info.clone(),
@@ -227,7 +227,7 @@ pub(crate) async fn edit_group(
     let mut attrs = BTreeMap::new();
     attrs.insert(
         Attribute::Name,
-        Some(ScimValueKanidm::String(query.account_name)),
+        Some(ScimValueNetidm::String(query.account_name)),
     );
 
     let (group_info, _) =
@@ -239,11 +239,11 @@ pub(crate) async fn edit_group(
     if group_info.description != query.description {
         attrs.insert(
             Attribute::Description,
-            query.description.map(ScimValueKanidm::String),
+            query.description.map(ScimValueNetidm::String),
         );
     }
 
-    let generic = ScimEntryPutKanidm {
+    let generic = ScimEntryPutNetidm {
         id: group_uuid,
         attrs,
     }
@@ -331,14 +331,14 @@ pub(crate) async fn add_member(
         .map_err(|op_err| HtmxError::new(&kopid, op_err, domain_info.clone()))
         .await?;
 
-    let before_len = if let Some(ScimValueKanidm::EntryReferences(members_before)) =
+    let before_len = if let Some(ScimValueNetidm::EntryReferences(members_before)) =
         before.attrs.get(&Attribute::Member)
     {
         members_before.len()
     } else {
         0
     };
-    let after_len = if let Some(ScimValueKanidm::EntryReferences(members_after)) =
+    let after_len = if let Some(ScimValueNetidm::EntryReferences(members_after)) =
         after.attrs.get(&Attribute::Member)
     {
         members_after.len()
@@ -359,7 +359,7 @@ pub(crate) async fn add_member(
             .map_err(|op_err| HtmxError::new(&kopid, op_err, domain_info.clone()))
             .await?;
 
-        let Some(ScimValueKanidm::String(added_member_spn)) =
+        let Some(ScimValueNetidm::String(added_member_spn)) =
             added_member_scim.attrs.get(&Attribute::Spn)
         else {
             return Ok((ErrorToastPartial {
@@ -414,7 +414,7 @@ pub(crate) async fn remove_member(
 }
 
 fn scimentry_into_groupinfo(
-    scim_entry: ScimEntryKanidm,
+    scim_entry: ScimEntryNetidm,
 ) -> Option<(ScimGroup, ScimEffectiveAccess)> {
     let scim_effective_access = scim_entry.ext_access_check.clone()?; // TODO: This should be an error msg.
     let group = ScimGroup::try_from(scim_entry).ok()?;

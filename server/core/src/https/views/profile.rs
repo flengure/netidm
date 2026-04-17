@@ -5,7 +5,7 @@ use crate::https::errors::WebError;
 use crate::https::extractors::{DomainInfo, VerifiedClientInformation};
 use crate::https::middleware::KOpId;
 use crate::https::views::reauth::{uat_privileges_active, uat_privileges_possible};
-use crate::https::views::KanidmHxEventName;
+use crate::https::views::NetidmHxEventName;
 use crate::https::ServerState;
 use askama::Template;
 use askama_web::WebTemplate;
@@ -15,11 +15,11 @@ use axum::Extension;
 use axum_extra::extract::Form;
 use axum_htmx::{HxEvent, HxPushUrl, HxResponseTrigger};
 use futures_util::TryFutureExt;
-use kanidm_proto::attribute::Attribute;
-use kanidm_proto::internal::{OperationError, UserAuthToken};
-use kanidm_proto::scim_v1::client::ScimEntryPutKanidm;
-use kanidm_proto::scim_v1::server::{ScimEffectiveAccess, ScimPerson, ScimValueKanidm};
-use kanidm_proto::scim_v1::ScimMail;
+use netidm_proto::attribute::Attribute;
+use netidm_proto::internal::{OperationError, UserAuthToken};
+use netidm_proto::scim_v1::client::ScimEntryPutNetidm;
+use netidm_proto::scim_v1::server::{ScimEffectiveAccess, ScimPerson, ScimValueNetidm};
+use netidm_proto::scim_v1::ScimMail;
 use serde::Deserialize;
 use serde::Serialize;
 use std::collections::BTreeMap;
@@ -125,7 +125,7 @@ pub(crate) async fn view_profile_get(
     let rw_possible = uat_privileges_possible(uat);
 
     let rehook_email_removal_buttons =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddEmailSwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(NetidmHxEventName::AddEmailSwapped)]);
     Ok((
         rehook_email_removal_buttons,
         HxPushUrl("/ui/profile".to_string()),
@@ -229,16 +229,16 @@ pub(crate) async fn view_profile_diff_confirm_save_post(
         .pre_validated_uat()
         .map_err(|op_err| HtmxError::new(&kopid, op_err, domain_info.clone()))?;
 
-    let mut attrs = BTreeMap::<Attribute, Option<ScimValueKanidm>>::new();
+    let mut attrs = BTreeMap::<Attribute, Option<ScimValueNetidm>>::new();
 
     if let Some(account_name) = query.account_name {
-        attrs.insert(Attribute::Name, Some(ScimValueKanidm::String(account_name)));
+        attrs.insert(Attribute::Name, Some(ScimValueNetidm::String(account_name)));
     }
 
     if let Some(display_name) = query.display_name {
         attrs.insert(
             Attribute::DisplayName,
-            Some(ScimValueKanidm::String(display_name)),
+            Some(ScimValueNetidm::String(display_name)),
         );
     }
 
@@ -267,19 +267,19 @@ pub(crate) async fn view_profile_diff_confirm_save_post(
             if scim_mails.is_empty() {
                 None
             } else {
-                Some(ScimValueKanidm::Mail(scim_mails))
+                Some(ScimValueNetidm::Mail(scim_mails))
             },
         );
     }
 
-    let generic = ScimEntryPutKanidm {
+    let generic = ScimEntryPutNetidm {
         id: uat.uuid,
         attrs,
     }
     .try_into()
     .map_err(|_| HtmxError::new(&kopid, OperationError::Backend, domain_info.clone()))?;
 
-    // TODO: Use returned KanidmScimPerson below instead of view_profile_get.
+    // TODO: Use returned NetidmScimPerson below instead of view_profile_get.
     state
         .qe_w_ref
         .handle_scim_entry_put(client_auth_info.clone(), kopid.eventid, generic)
@@ -313,7 +313,7 @@ pub(crate) async fn view_new_email_entry_partial(
     Query(email_query): Query<AddEmailQuery>,
 ) -> axum::response::Result<Response> {
     let add_email_trigger =
-        HxResponseTrigger::after_swap([HxEvent::from(KanidmHxEventName::AddEmailSwapped)]);
+        HxResponseTrigger::after_swap([HxEvent::from(NetidmHxEventName::AddEmailSwapped)]);
     Ok((
         add_email_trigger,
         FormEmailEntryListPartial {

@@ -14,7 +14,7 @@ fi
 
 echo "Building release binaries..."
 # shellcheck disable=SC2086
-cargo build --locked $BUILD_MODE --bin kanidm --bin kanidmd --quiet || {
+cargo build --locked $BUILD_MODE --bin netidm --bin netidmd --quiet || {
     echo "Failed to build release binaries, please check the output above."
     exit 1
 }
@@ -31,53 +31,53 @@ if [ ! -f "run_insecure_dev_server.sh" ]; then
     exit 1
 fi
 
-export KANIDM_CONFIG="./insecure_server.toml"
+export NETIDM_CONFIG="./insecure_server.toml"
 
-mkdir -p /tmp/kanidm/client_ca
+mkdir -p /tmp/netidm/client_ca
 
 echo "Generating certificates..."
 # shellcheck disable=SC2086
-cargo run --bin kanidmd $BUILD_MODE cert-generate
+cargo run --bin netidmd $BUILD_MODE cert-generate
 
 echo "Making sure it runs with the DB..."
 # shellcheck disable=SC2086
-cargo run --bin kanidmd $BUILD_MODE scripting recover-account idm_admin
+cargo run --bin netidmd $BUILD_MODE scripting recover-account idm_admin
 
 echo "Running the server..."
 # shellcheck disable=SC2086
-cargo run --bin kanidmd $BUILD_MODE server  &
-KANIDMD_PID=$!
-echo "Kanidm PID: ${KANIDMD_PID}"
+cargo run --bin netidmd $BUILD_MODE server  &
+NETIDMD_PID=$!
+echo "Netidm PID: ${NETIDMD_PID}"
 
 if [ "$(jobs -p | wc -l)" -eq 0 ]; then
-    echo "Kanidmd failed to start!"
+    echo "Netidmd failed to start!"
     exit 1
 fi
 
 ATTEMPT=0
 
-KANIDM_CONFIG_FILE="./insecure_server.toml"
-if [ -f "${KANIDM_CONFIG_FILE}" ]; then
-    echo "Found config file ${KANIDM_CONFIG_FILE}"
+NETIDM_CONFIG_FILE="./insecure_server.toml"
+if [ -f "${NETIDM_CONFIG_FILE}" ]; then
+    echo "Found config file ${NETIDM_CONFIG_FILE}"
 else
-    echo "Config file ${KANIDM_CONFIG_FILE} not found!"
+    echo "Config file ${NETIDM_CONFIG_FILE} not found!"
     exit 1
 fi
-KANIDM_URL="$(grep -E '^origin.*https' "${KANIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
-KANIDM_CA_PATH="/tmp/kanidm/ca.pem"
+NETIDM_URL="$(grep -E '^origin.*https' "${NETIDM_CONFIG_FILE}" | awk '{print $NF}' | tr -d '"')"
+NETIDM_CA_PATH="/tmp/netidm/ca.pem"
 
 while true; do
-    echo "Waiting for the server to start... testing url '${KANIDM_URL}'"
-    curl --cacert "${KANIDM_CA_PATH}" -f "${KANIDM_URL}/status" >/dev/null && break
+    echo "Waiting for the server to start... testing url '${NETIDM_URL}'"
+    curl --cacert "${NETIDM_CA_PATH}" -f "${NETIDM_URL}/status" >/dev/null && break
     sleep 2
     ATTEMPT="$((ATTEMPT + 1))"
     if [ "${ATTEMPT}" -gt 3 ]; then
-        echo "Kanidmd failed to start!"
+        echo "Netidmd failed to start!"
         exit 1
     fi
 done
 
-BUILD_MODE=$BUILD_MODE ../../scripts/setup_dev_environment.sh || kill -9 "${KANIDMD_PID}"
+BUILD_MODE=$BUILD_MODE ../../scripts/setup_dev_environment.sh || kill -9 "${NETIDMD_PID}"
 
 
 if [ -n "$CURRENT_DIR" ]; then
@@ -88,8 +88,8 @@ echo "Running the OpenAPI schema checks"
 
 bash -c ./scripts/openapi_tests/check_openapi_spec.sh || exit 1
 
-echo "Waiting ${WAIT_TIMER} seconds and terminating Kanidmd"
+echo "Waiting ${WAIT_TIMER} seconds and terminating Netidmd"
 sleep "${WAIT_TIMER}"
-if [ "$(pgrep kanidmd | wc -l)" -gt 0 ]; then
-    kill $(pgrep kanidmd)
+if [ "$(pgrep netidmd | wc -l)" -gt 0 ]; then
+    kill $(pgrep netidmd)
 fi

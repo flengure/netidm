@@ -3,8 +3,8 @@
 // use std::time::Duration;
 
 // use criterion::{black_box, criterion_group, criterion_main, Criterion};
-// use kanidmd_lib::valueset::image::jpg;
-// use kanidmd_lib::valueset::image::png;
+// use netidmd_lib::valueset::image::jpg;
+// use netidmd_lib::valueset::image::png;
 
 // pub fn bench_png_lodepng_validate(c: &mut Criterion) {
 //     let mut group = c.benchmark_group("png_lodepng_validate");

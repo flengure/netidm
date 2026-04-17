@@ -1,20 +1,20 @@
 use compact_jwt::{traits::JwsVerifiable, JwsCompact, JwsEs256Verifier, JwsVerifier, JwtError};
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::{Confirm, Select};
-use kanidm_client::{KanidmClient, KanidmClientBuilder};
-use kanidm_proto::constants::{DEFAULT_CLIENT_CONFIG_PATH, DEFAULT_CLIENT_CONFIG_PATH_HOME};
-use kanidm_proto::internal::{PrivilegesActive, UserAuthToken};
+use netidm_client::{NetidmClient, NetidmClientBuilder};
+use netidm_proto::constants::{DEFAULT_CLIENT_CONFIG_PATH, DEFAULT_CLIENT_CONFIG_PATH_HOME};
+use netidm_proto::internal::{PrivilegesActive, UserAuthToken};
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
 use crate::session::{process_auth_state, read_tokens};
-use crate::{KanidmClientParser, LoginOpt};
+use crate::{NetidmClientParser, LoginOpt};
 
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]
 pub enum ToClientError {
     NeedLogin(String),
-    NeedReauth(String, KanidmClient),
+    NeedReauth(String, NetidmClient),
     ReadOnly,
     Other,
 }
@@ -27,13 +27,13 @@ pub(crate) enum OpType {
     Write,
 }
 
-impl KanidmClientParser {
-    pub fn to_unauth_client(&self) -> KanidmClient {
+impl NetidmClientParser {
+    pub fn to_unauth_client(&self) -> NetidmClient {
         let config_path: String = shellexpand::tilde(DEFAULT_CLIENT_CONFIG_PATH_HOME).into_owned();
 
         let instance_name: Option<&str> = self.instance.as_deref();
 
-        let client_builder = KanidmClientBuilder::new()
+        let client_builder = NetidmClientBuilder::new()
             .read_options_from_optional_instance_config(DEFAULT_CLIENT_CONFIG_PATH, instance_name)
             .map_err(|e| {
                 error!(
@@ -114,7 +114,7 @@ impl KanidmClientParser {
     pub(crate) async fn try_to_client(
         &self,
         optype: OpType,
-    ) -> Result<KanidmClient, ToClientError> {
+    ) -> Result<NetidmClient, ToClientError> {
         let client = self.to_unauth_client();
 
         // Read the token file.
@@ -300,7 +300,7 @@ impl KanidmClientParser {
         Ok(client)
     }
 
-    pub(crate) async fn to_client(&self, optype: OpType) -> KanidmClient {
+    pub(crate) async fn to_client(&self, optype: OpType) -> NetidmClient {
         loop {
             match self.try_to_client(optype).await {
                 Ok(c) => break c,

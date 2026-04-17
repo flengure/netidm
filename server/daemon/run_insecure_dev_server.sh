@@ -12,11 +12,11 @@ fi
 
 # also where the files are stored
 if [ -z "$KANI_TMP" ]; then
-    KANI_TMP=/tmp/kanidm/
+    KANI_TMP=/tmp/netidm/
 fi
 
 if [ ! -d "${KANI_TMP}" ]; then
-    echo "Creating temp kanidm dir: ${KANI_TMP}"
+    echo "Creating temp netidm dir: ${KANI_TMP}"
     mkdir -p "${KANI_TMP}"
 fi
 
@@ -35,11 +35,11 @@ cd "${SCRIPT_DIR}" || exit 1
 if [ -n "${1}" ]; then
     COMMAND=$*
     #shellcheck disable=SC2086
-    cargo run ${KANI_CARGO_OPTS} --bin kanidmd -- ${COMMAND} -c "${CONFIG_FILE}"
+    cargo run ${KANI_CARGO_OPTS} --bin netidmd -- ${COMMAND} -c "${CONFIG_FILE}"
 else
     #shellcheck disable=SC2086
-    cargo run ${KANI_CARGO_OPTS} --bin kanidmd -- cert-generate -c "${CONFIG_FILE}"
+    cargo run ${KANI_CARGO_OPTS} --bin netidmd -- cert-generate -c "${CONFIG_FILE}"
     #shellcheck disable=SC2086
-    cargo run ${KANI_CARGO_OPTS} --bin kanidmd -- server -c "${CONFIG_FILE}"
+    cargo run ${KANI_CARGO_OPTS} --bin netidmd -- server -c "${CONFIG_FILE}"
 fi
 cd "${OLD_DIR}" || exit 1

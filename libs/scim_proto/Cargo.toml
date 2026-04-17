@@ -1,7 +1,7 @@
 [package]
 name = "scim_proto"
-description = "Kanidm SCIM Protocol Bindings"
-documentation = "https://docs.rs/kanidm_client/latest/kanidm_client/"
+description = "Netidm SCIM Protocol Bindings"
+documentation = "https://docs.rs/netidm_client/latest/netidm_client/"
 
 version = { workspace = true }
 authors = { workspace = true }

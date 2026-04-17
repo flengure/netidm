@@ -1,20 +1,20 @@
 use compact_jwt::{JweCompact, Jwk, JwsCompact};
-use kanidm_proto::backup::BackupCompression;
-use kanidm_proto::internal::{
+use netidm_proto::backup::BackupCompression;
+use netidm_proto::internal::{
     ApiToken, AppLink, CURequest, CUSessionToken, CUStatus, CredentialStatus, IdentifyUserRequest,
     IdentifyUserResponse, ImageValue, OperationError, RadiusAuthToken, SearchRequest,
     SearchResponse, UserAuthToken,
 };
-use kanidm_proto::oauth2::OidcWebfingerResponse;
-use kanidm_proto::v1::{
+use netidm_proto::oauth2::OidcWebfingerResponse;
+use netidm_proto::v1::{
     AuthIssueSession, Entry as ProtoEntry, UatStatus, UnixGroupToken, UnixUserToken, WhoamiResponse,
 };
-use kanidmd_lib::be::BackendTransaction;
-use kanidmd_lib::idm::identityverification::{
+use netidmd_lib::be::BackendTransaction;
+use netidmd_lib::idm::identityverification::{
     IdentifyUserDisplayCodeEvent, IdentifyUserStartEvent, IdentifyUserSubmitCodeEvent,
 };
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::{
+use netidmd_lib::prelude::*;
+use netidmd_lib::{
     event::{OnlineBackupEvent, SearchEvent, SearchResult, WhoamiResult},
     filter::{Filter, FilterInvalid},
     idm::account::ListUserAuthTokenEvent,
@@ -1594,7 +1594,7 @@ impl QueryServerReadV1 {
         _client_auth_info: ClientAuthInfo,
         backend: String,
         eventid: Uuid,
-    ) -> Result<Vec<kanidm_proto::wg::WgTunnelResponse>, OperationError> {
+    ) -> Result<Vec<netidm_proto::wg::WgTunnelResponse>, OperationError> {
         let mut idms_prox_read = self.idms.proxy_read().await?;
         idms_prox_read.wg_list_tunnel_responses(&backend)
     }
@@ -1606,7 +1606,7 @@ impl QueryServerReadV1 {
         name: String,
         backend: String,
         eventid: Uuid,
-    ) -> Result<Option<kanidm_proto::wg::WgTunnelResponse>, OperationError> {
+    ) -> Result<Option<netidm_proto::wg::WgTunnelResponse>, OperationError> {
         let mut idms_prox_read = self.idms.proxy_read().await?;
         idms_prox_read.wg_tunnel_get_response(&name, 0, &backend)
     }
@@ -1617,7 +1617,7 @@ impl QueryServerReadV1 {
         _client_auth_info: ClientAuthInfo,
         tunnel_name: String,
         eventid: Uuid,
-    ) -> Result<Vec<kanidm_proto::wg::WgTokenInfo>, OperationError> {
+    ) -> Result<Vec<netidm_proto::wg::WgTokenInfo>, OperationError> {
         let mut idms_prox_read = self.idms.proxy_read().await?;
         idms_prox_read.wg_token_list(&tunnel_name)
     }
@@ -1628,7 +1628,7 @@ impl QueryServerReadV1 {
         _client_auth_info: ClientAuthInfo,
         tunnel_name: String,
         eventid: Uuid,
-    ) -> Result<Vec<kanidm_proto::wg::WgPeerResponse>, OperationError> {
+    ) -> Result<Vec<netidm_proto::wg::WgPeerResponse>, OperationError> {
         let mut idms_prox_read = self.idms.proxy_read().await?;
         idms_prox_read.wg_peer_list(&tunnel_name)
     }

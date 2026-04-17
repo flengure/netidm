@@ -1,6 +1,6 @@
 # Entry Management
 
-Kanidm supports a SCIM based entry management/migration process. This process allows configuration management tools such
+Netidm supports a SCIM based entry management/migration process. This process allows configuration management tools such
 Ansible or Salt to deploy HJSON formatted person and group records that can be imported to the server. HJSON is JSON
 that allows commenting.
 
@@ -32,22 +32,22 @@ Attributes of an entry can be removed by setting them to `null`.
 {{#rustdoc_include ../../examples/migrations/00-basic.hjson}}
 ```
 
-This example is located in [examples/migrations](https://github.com/kanidm/kanidm/blob/master/examples/migrations/) in
+This example is located in [examples/migrations](https://github.com/netidm/netidm/blob/master/examples/migrations/) in
 the repository. There are other migrations there you may find useful.
 
 ## Recommendations
 
-Migrations should only be deployed to a single node in your Kanidm topology. Replication will ensure that all nodes have
+Migrations should only be deployed to a single node in your Netidm topology. Replication will ensure that all nodes have
 a consistent state. This prevents races or flip-flop conditions that could otherwise occur.
 
 ## Application Details
 
-There are some important details for how Kanidm applies these migrations. This is due to the fact that Kanidm is a
+There are some important details for how Netidm applies these migrations. This is due to the fact that Netidm is a
 distributed system, and we strive to ensure that all data is consistent and correct.
 
 ### Filesystem Access
 
-Since these migrations are on the filesystem of the Kanidm server, this implies that access to the machine (and
+Since these migrations are on the filesystem of the Netidm server, this implies that access to the machine (and
 subsequently this folder) has a high level of access. As a result, these migrations can perform almost all actions that
 you would expect of the `idm_admin` or `admin` account.
 

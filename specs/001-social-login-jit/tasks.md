@@ -48,9 +48,9 @@
 
 ## Phase 3: User Story 1 — First-Time Social Login (Priority: P1) 🎯 MVP
 
-**Goal**: A first-time user authenticating via GitHub or Google gets a Kanidm account created automatically and is logged in, all within one flow.
+**Goal**: A first-time user authenticating via GitHub or Google gets a Netidm account created automatically and is logged in, all within one flow.
 
-**Independent Test**: Configure a JIT-enabled GitHub provider, attempt login with a brand-new GitHub account, verify a Kanidm account is created and the user lands on the dashboard. See `quickstart.md` § "Validation: First-Time Login (Happy Path)".
+**Independent Test**: Configure a JIT-enabled GitHub provider, attempt login with a brand-new GitHub account, verify a Netidm account is created and the user lands on the dashboard. See `quickstart.md` § "Validation: First-Time Login (Happy Path)".
 
 ### Implementation for User Story 1
 
@@ -78,20 +78,20 @@
 
 **Goal**: An administrator can register GitHub or Google as a social login provider, enable JIT provisioning, and map claims using only CLI commands.
 
-**Independent Test**: Run the CLI commands from `quickstart.md` § "Setup: GitHub Provider", then verify `kanidm system oauth2 get mygithub` shows correct JIT and claim-map fields.
+**Independent Test**: Run the CLI commands from `quickstart.md` § "Setup: GitHub Provider", then verify `netidm system oauth2 get mygithub` shows correct JIT and claim-map fields.
 
 ### Implementation for User Story 2
 
-- [X] T033 [P] [US2] Add `CreateGithub { name, client_id, client_secret }` variant to `Oauth2Opt` enum in `tools/cli/src/opt/kanidm.rs`
-- [X] T034 [P] [US2] Add `CreateGoogle { name, client_id, client_secret }` variant to `Oauth2Opt` enum in `tools/cli/src/opt/kanidm.rs`
-- [X] T035 [P] [US2] Add `EnableJitProvisioning { name }` variant to `Oauth2Opt` enum in `tools/cli/src/opt/kanidm.rs`
-- [X] T036 [P] [US2] Add `DisableJitProvisioning { name }` variant to `Oauth2Opt` enum in `tools/cli/src/opt/kanidm.rs`
-- [X] T037 [P] [US2] Add `SetIdentityClaimMap { name, kanidm_attr, provider_claim }` variant to `Oauth2Opt` enum in `tools/cli/src/opt/kanidm.rs`
+- [X] T033 [P] [US2] Add `CreateGithub { name, client_id, client_secret }` variant to `Oauth2Opt` enum in `tools/cli/src/opt/netidm.rs`
+- [X] T034 [P] [US2] Add `CreateGoogle { name, client_id, client_secret }` variant to `Oauth2Opt` enum in `tools/cli/src/opt/netidm.rs`
+- [X] T035 [P] [US2] Add `EnableJitProvisioning { name }` variant to `Oauth2Opt` enum in `tools/cli/src/opt/netidm.rs`
+- [X] T036 [P] [US2] Add `DisableJitProvisioning { name }` variant to `Oauth2Opt` enum in `tools/cli/src/opt/netidm.rs`
+- [X] T037 [P] [US2] Add `SetIdentityClaimMap { name, netidm_attr, provider_claim }` variant to `Oauth2Opt` enum in `tools/cli/src/opt/netidm.rs`
 - [X] T038 [US2] Implement `exec()` for `CreateGithub` in `tools/cli/src/cli/oauth2.rs`: call `idm_oauth2_client_create_github()` with pre-filled GitHub defaults (authorisation/token/userinfo endpoints, scopes `read:user user:email`) (depends on T033)
 - [X] T039 [US2] Implement `exec()` for `CreateGoogle` in `tools/cli/src/cli/oauth2.rs`: call `idm_oauth2_client_create_google()` with pre-filled Google defaults (OIDC endpoints, scopes `openid email profile`) (depends on T034)
 - [X] T040 [US2] Implement `exec()` for `EnableJitProvisioning` and `DisableJitProvisioning` in `tools/cli/src/cli/oauth2.rs`: single attribute write to `oauth2_jit_provisioning` (depends on T035, T036)
-- [X] T041 [US2] Implement `exec()` for `SetIdentityClaimMap` in `tools/cli/src/cli/oauth2.rs`: validate `kanidm_attr` ∈ {name, displayname, mail}, write the corresponding `oauth2_claim_map_*` attribute (depends on T037)
-- [X] T042 [US2] Update `kanidm system oauth2 get` output: added `GET /v1/oauth2/_client/{name}` endpoint and `idm_oauth2_client_get()` client method; CLI `Get` falls back to client provider lookup when RS entry not found
+- [X] T041 [US2] Implement `exec()` for `SetIdentityClaimMap` in `tools/cli/src/cli/oauth2.rs`: validate `netidm_attr` ∈ {name, displayname, mail}, write the corresponding `oauth2_claim_map_*` attribute (depends on T037)
+- [X] T042 [US2] Update `netidm system oauth2 get` output: added `GET /v1/oauth2/_client/{name}` endpoint and `idm_oauth2_client_get()` client method; CLI `Get` falls back to client provider lookup when RS entry not found
 - [X] T043 [US2] Run `cargo test` and `cargo clippy -- -D warnings`; resolve all warnings
 
 **Checkpoint**: User Stories 1 and 2 both independently functional. Full admin setup + first-time user flow works end-to-end.
@@ -104,7 +104,7 @@
 
 **Note**: The confirmation page UI (T028–T031) was already implemented as part of User Story 1 because it is integral to the provisioning flow. This phase covers validation hardening, username collision UX, and edge-case flows that are specific to User Story 3's acceptance scenarios.
 
-**Independent Test**: Pre-create a Kanidm account with the same name as your GitHub `login`. Trigger a first-time GitHub login. Verify the confirmation page appears with a suggested alternate username (e.g. `login_2`). See `quickstart.md` § "Validation: Username Collision".
+**Independent Test**: Pre-create a Netidm account with the same name as your GitHub `login`. Trigger a first-time GitHub login. Verify the confirmation page appears with a suggested alternate username (e.g. `login_2`). See `quickstart.md` § "Validation: Username Collision".
 
 ### Implementation for User Story 3
 
@@ -122,7 +122,7 @@
 
 **Purpose**: Error message quality, logging, and full end-to-end validation.
 
-- [X] T049 [P] Review all user-facing error messages added in this feature across `server/core/src/https/views/login.rs` and `server/lib/src/idm/server.rs` for clarity and consistency with existing Kanidm message style
+- [X] T049 [P] Review all user-facing error messages added in this feature across `server/core/src/https/views/login.rs` and `server/lib/src/idm/server.rs` for clarity and consistency with existing Netidm message style
 - [X] T050 [P] Verify no sensitive fields (`access_token`, `client_secret`, `sub`, `email`) appear in any log output added by this feature; audit all `tracing::` calls added in `server/lib/src/idm/authsession/handler_oauth2_client.rs` and `server/lib/src/idm/server.rs`
 - [ ] T051 Validate the full quickstart.md scenario end-to-end: GitHub happy path, returning user, JIT disabled denial, username collision (depends on T048)
 - [X] T052 [P] Added `book/src/integrations/social_login.md` documenting `create-github`, `create-google`, `enable-jit-provisioning`, `disable-jit-provisioning`, and `set-identity-claim-map` CLI commands; linked from SUMMARY.md

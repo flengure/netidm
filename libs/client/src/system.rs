@@ -1,6 +1,6 @@
-use crate::{ClientError, KanidmClient};
+use crate::{ClientError, NetidmClient};
 
-impl KanidmClient {
+impl NetidmClient {
     pub async fn system_password_badlist_get(&self) -> Result<Vec<String>, ClientError> {
         let list: Option<Vec<String>> = self
             .perform_get_request("/v1/system/_attr/badlist_password")

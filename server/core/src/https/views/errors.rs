@@ -1,14 +1,14 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_htmx::{HxEvent, HxResponseTrigger, HxReswap, HxRetarget, SwapOption};
-use kanidmd_lib::idm::server::DomainInfoRead;
+use netidmd_lib::idm::server::DomainInfoRead;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
-use kanidm_proto::internal::OperationError;
+use netidm_proto::internal::OperationError;
 
 use crate::https::middleware::KOpId;
-use crate::https::views::{ErrorToastPartial, KanidmHxEventName, UnrecoverableErrorView};
+use crate::https::views::{ErrorToastPartial, NetidmHxEventName, UnrecoverableErrorView};
 
 /// The web app's top level error type, this takes an `OperationError` and converts it into a HTTP response.
 #[derive(Debug, ToSchema)]
@@ -34,7 +34,7 @@ impl IntoResponse for HtmxError {
                     | OperationError::InvalidSessionState => Redirect::to("/ui").into_response(),
                     OperationError::SystemProtectedObject | OperationError::AccessDenied => {
                         let trigger = HxResponseTrigger::after_swap([HxEvent::from(
-                            KanidmHxEventName::PermissionDenied,
+                            NetidmHxEventName::PermissionDenied,
                         )]);
                         (
                             trigger,

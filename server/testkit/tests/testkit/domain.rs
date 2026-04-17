@@ -1,9 +1,9 @@
-use kanidm_client::KanidmClient;
-use kanidm_proto::constants::ATTR_DOMAIN_DISPLAY_NAME;
-use kanidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
+use netidm_client::NetidmClient;
+use netidm_proto::constants::ATTR_DOMAIN_DISPLAY_NAME;
+use netidmd_testkit::{ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 
-#[kanidmd_testkit::test]
-async fn test_idm_set_ldap_allow_unix_password_bind(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_idm_set_ldap_allow_unix_password_bind(rsclient: &NetidmClient) {
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await
@@ -14,8 +14,8 @@ async fn test_idm_set_ldap_allow_unix_password_bind(rsclient: &KanidmClient) {
         .expect("Failed to set LDAP allow unix password bind to true");
 }
 
-#[kanidmd_testkit::test]
-async fn test_idm_domain_set_ldap_basedn(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_idm_domain_set_ldap_basedn(rsclient: &NetidmClient) {
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await
@@ -27,8 +27,8 @@ async fn test_idm_domain_set_ldap_basedn(rsclient: &KanidmClient) {
         .expect("Failed to set idm_domain_set_ldap_basedn");
 }
 
-#[kanidmd_testkit::test]
-async fn test_idm_domain_set_ldap_max_queryable_attrs(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_idm_domain_set_ldap_max_queryable_attrs(rsclient: &NetidmClient) {
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await
@@ -40,14 +40,14 @@ async fn test_idm_domain_set_ldap_max_queryable_attrs(rsclient: &KanidmClient) {
         .expect("Failed to set idm_domain_set_ldap_max_queryable_attrs");
 }
 
-#[kanidmd_testkit::test]
-async fn test_idm_domain_set_display_name(rsclient: &KanidmClient) {
+#[netidmd_testkit::test]
+async fn test_idm_domain_set_display_name(rsclient: &NetidmClient) {
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await
         .expect("Failed to login as admin");
 
-    let new_domain_display_name = "hello kanidm 12345667";
+    let new_domain_display_name = "hello netidm 12345667";
 
     rsclient
         .idm_domain_set_display_name(new_domain_display_name)

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 use crate::migration_data;
-use kanidm_proto::internal::{
+use netidm_proto::internal::{
     DomainUpgradeCheckItem as ProtoDomainUpgradeCheckItem,
     DomainUpgradeCheckReport as ProtoDomainUpgradeCheckReport,
     DomainUpgradeCheckStatus as ProtoDomainUpgradeCheckStatus,
@@ -69,6 +69,7 @@ impl QueryServer {
                 DOMAIN_LEVEL_15 => write_txn.migrate_domain_14_to_15()?,
                 DOMAIN_LEVEL_16 => write_txn.migrate_domain_15_to_16()?,
                 DOMAIN_LEVEL_17 => write_txn.migrate_domain_16_to_17()?,
+                DOMAIN_LEVEL_18 => write_txn.migrate_domain_17_to_18()?,
                 _ => {
                     error!("Invalid requested domain target level for server bootstrap");
                     debug_assert!(false);
@@ -147,7 +148,7 @@ impl QueryServer {
                     "UNABLE TO PROCEED. You are attempting a skip update which is NOT SUPPORTED."
                 );
                 error!(
-                    "For more see: https://kanidm.github.io/kanidm/stable/support.html#upgrade-policy and https://kanidm.github.io/kanidm/stable/server_updates.html"
+                    "For more see: https://netidm.github.io/netidm/stable/support.html#upgrade-policy and https://netidm.github.io/netidm/stable/server_updates.html"
                 );
                 error!(domain_previous_version = ?domain_info_version, domain_target_version = ?domain_target_level, domain_migration_minimum_limit = ?DOMAIN_MIGRATION_FROM_MIN);
                 return Err(OperationError::MG0008SkipUpgradeAttempted);
@@ -181,7 +182,7 @@ impl QueryServer {
             // This is a DOWNGRADE which may not proceed.
             error!("UNABLE TO PROCEED. You are attempting a downgrade which is NOT SUPPORTED.");
             error!(
-                "For more see: https://kanidm.github.io/kanidm/stable/support.html#upgrade-policy and https://kanidm.github.io/kanidm/stable/server_updates.html"
+                "For more see: https://netidm.github.io/netidm/stable/support.html#upgrade-policy and https://netidm.github.io/netidm/stable/server_updates.html"
             );
             error!(domain_previous_version = ?domain_info_version, domain_target_version = ?domain_target_level);
             return Err(OperationError::MG0010DowngradeNotAllowed);
@@ -231,7 +232,7 @@ impl QueryServer {
 
         // Now set the db/domain devel taint flag to match our current release status
         // if it changes. This is what breaks the cycle of db taint from dev -> stable
-        let current_devel_flag = option_env!("KANIDM_PRE_RELEASE").is_some();
+        let current_devel_flag = option_env!("NETIDM_PRE_RELEASE").is_some();
         if current_devel_flag {
             warn!("Domain Development Taint mode is enabled");
         }
@@ -1061,6 +1062,67 @@ impl QueryServerWriteTransaction<'_> {
         self.internal_delete_batch(
             "phase 8 - delete UUIDs",
             migration_data::dl17::phase_8_delete_uuids(),
+        )?;
+
+        self.reload()?;
+
+        Ok(())
+    }
+
+    #[instrument(level = "info", skip_all)]
+    pub(crate) fn migrate_domain_17_to_18(&mut self) -> Result<(), OperationError> {
+        if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_18 {
+            error!("Unable to raise domain level from 17 to 18.");
+            return Err(OperationError::MG0004DomainLevelInDevelopment);
+        }
+
+        self.internal_migrate_or_create_batch(
+            &format!("phase 1 - schema attrs target {}", DOMAIN_TGT_LEVEL),
+            migration_data::dl18::phase_1_schema_attrs(),
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 2 - schema classes",
+            migration_data::dl18::phase_2_schema_classes(),
+        )?;
+
+        self.reload()?;
+        self.reindex(false)?;
+        self.set_phase(ServerPhase::SchemaReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 3 - key provider",
+            migration_data::dl18::phase_3_key_provider(),
+        )?;
+
+        self.reload()?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 4 - dl18 system entries",
+            migration_data::dl18::phase_4_system_entries(),
+        )?;
+
+        self.reload()?;
+        self.set_phase(ServerPhase::DomainInfoReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 5 - builtin admin entries",
+            migration_data::dl18::phase_5_builtin_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 6 - builtin not admin entries",
+            migration_data::dl18::phase_6_builtin_non_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 7 - builtin access control profiles",
+            migration_data::dl18::phase_7_builtin_access_control_profiles(),
+        )?;
+
+        self.internal_delete_batch(
+            "phase 8 - delete UUIDs",
+            migration_data::dl18::phase_8_delete_uuids(),
         )?;
 
         self.reload()?;

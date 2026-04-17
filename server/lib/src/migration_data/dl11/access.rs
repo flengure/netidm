@@ -5,7 +5,7 @@ use crate::constants::uuids::*;
 use crate::entry::EntryInitNew;
 use crate::prelude::*;
 use crate::value::Value;
-use kanidm_proto::internal::Filter as ProtoFilter;
+use netidm_proto::internal::Filter as ProtoFilter;
 use std::sync::LazyLock;
 
 /// either recycled or tombstone

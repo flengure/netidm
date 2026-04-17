@@ -1,7 +1,7 @@
 unixd homes task
 ----------------
 
-Kanidm attempts to promote uuid's as the primary foreign key that should be
+Netidm attempts to promote uuid's as the primary foreign key that should be
 used by applications. A classic feature of pam and nsswitch tools is to create
 the home directory of the account on first login.
 
@@ -62,7 +62,7 @@ the security of this is required.
 ::
 
     ┌───────────────┐                                                       
-    │      Pam      │    /var/run/kanidm-unixd/sock                         
+    │      Pam      │    /var/run/netidm-unixd/sock                         
     │               │───────────┐(mode 777)                                 
     └───────────────┘           │                                           
                                 │           ┌──────────────────────────────┐
@@ -73,7 +73,7 @@ the security of this is required.
      │              │───────────┘                           │               
      └──────────────┘                                       │               
                                                             │               
-                           /var/run/kanidm-unixd/tasks-sock │               
+                           /var/run/netidm-unixd/tasks-sock │               
                                (mode 600, isolated user)    │               
                                                             │               
                                                             │               
@@ -85,7 +85,7 @@ the security of this is required.
 
 The tasks daemon runs as root and has no network facing elements. It connects to the
 unixd daemon via a protected unix socket. The unixd daemon establishes a listening
-unix domain socket that only root or itself can access at /var/run/kanidm-unixd/tasks-sock which
+unix domain socket that only root or itself can access at /var/run/netidm-unixd/tasks-sock which
 the unixd tasks daemon connects to. This is because with systemd dynamic users
 the tasks daemon may not know what user account it has to chown sockets to, so it is
 not viable for the tasks daemon to create the listening socket with the correct permissions.
@@ -94,7 +94,7 @@ daemon persists.
 
 The tasks daemon only receives a single datagram, which informs it of the details of
 the path and symlinks to create. The daemon filters for a number of path injection attacks
-that may be present in the names of the accounts. The Kanidm server also filters for path injections in
+that may be present in the names of the accounts. The Netidm server also filters for path injections in
 usernames.
 
 The unixd daemon maintains a work queue that it ships to the tasks daemon. This queue is
@@ -110,7 +110,7 @@ example:
     CapabilityBoundingSet=CAP_CHOWN,CAP_FOWNER
     SystemCallFilter=@aio @basic-io @chown @file-system @io-event @network-io @sync
     ProtectSystem=strict
-    ReadWritePaths=/home /var/run/kanidm-unixd
+    ReadWritePaths=/home /var/run/netidm-unixd
     RestrictAddressFamilies=AF_UNIX
     NoNewPrivileges=true
     PrivateTmp=true

@@ -1,4 +1,4 @@
-"""entrypoint for kanidm's RADIUS module"""
+"""entrypoint for netidm's RADIUS module"""
 
 import atexit
 import os
@@ -10,10 +10,10 @@ import sys
 from typing import Any, Optional
 
 # import toml
-import kanidm.radius
-from kanidm.radius import CONFIG_PATHS
-from kanidm.types import KanidmClientConfig
-from kanidm.utils import load_config
+import netidm.radius
+from netidm.radius import CONFIG_PATHS
+from netidm.types import NetidmClientConfig
+from netidm.utils import load_config
 
 DEBUG = False
 if os.environ.get("DEBUG", False):
@@ -36,13 +36,13 @@ def _sigchild_handler(
 
 
 def write_clients_conf(
-    kanidm_config_object: KanidmClientConfig,
+    netidm_config_object: NetidmClientConfig,
 ) -> None:
     """writes out the config file"""
     raddb_config_file = Path("/etc/raddb/clients.conf")
 
     with raddb_config_file.open("w", encoding="utf-8") as file_handle:
-        for client in kanidm_config_object.radius_clients:
+        for client in netidm_config_object.radius_clients:
             file_handle.write(f"client {client.name} {{\n")
             file_handle.write(f"    ipaddr = {client.ipaddr}\n")
             file_handle.write(f"    secret = {client.secret}\n")
@@ -51,12 +51,12 @@ def write_clients_conf(
 
 
 def setup_certs(
-    kanidm_config_object: KanidmClientConfig,
+    netidm_config_object: NetidmClientConfig,
 ) -> None:
     """sets up certificates"""
 
-    if kanidm_config_object.radius_ca_path:
-        cert_ca = Path(kanidm_config_object.radius_ca_path).expanduser().resolve()
+    if netidm_config_object.radius_ca_path:
+        cert_ca = Path(netidm_config_object.radius_ca_path).expanduser().resolve()
         if not cert_ca.exists():
             print(
                 f"Failed to find radiusd ca file ({cert_ca}), quitting!",
@@ -71,8 +71,8 @@ def setup_certs(
                 pass
 
     # This dir can also contain crls!
-    if kanidm_config_object.radius_ca_dir:
-        cert_ca_dir = Path(kanidm_config_object.radius_ca_dir).expanduser().resolve()
+    if netidm_config_object.radius_ca_dir:
+        cert_ca_dir = Path(netidm_config_object.radius_ca_dir).expanduser().resolve()
         if not cert_ca_dir.exists():
             print(
                 f"Failed to find radiusd ca dir ({cert_ca_dir}), quitting!",
@@ -87,7 +87,7 @@ def setup_certs(
     # not hashed as a ca.
     subprocess.check_call(["openssl", "rehash", CERT_CA_DIR])
 
-    server_key = Path(kanidm_config_object.radius_key_path).expanduser().resolve()
+    server_key = Path(netidm_config_object.radius_key_path).expanduser().resolve()
     if not server_key.exists() or not server_key.is_file():
         print(
             f"Failed to find server keyfile ({server_key}), quitting!",
@@ -95,7 +95,7 @@ def setup_certs(
         )
         sys.exit(1)
 
-    server_cert = Path(kanidm_config_object.radius_cert_path).expanduser().resolve()
+    server_cert = Path(netidm_config_object.radius_cert_path).expanduser().resolve()
     if not server_cert.exists() or not server_cert.is_file():
         print(
             f"Failed to find server cert file ({server_cert}), quitting!",
@@ -167,7 +167,7 @@ def run_radiusd() -> None:
 if __name__ == "__main__":
     signal.signal(signal.SIGCHLD, _sigchild_handler)
 
-    config_file = kanidm.radius.find_radius_config_path()
+    config_file = netidm.radius.find_radius_config_path()
     if config_file is None:
         print(
             f"Failed to find configuration file in ({CONFIG_PATHS}), quitting!",
@@ -175,9 +175,9 @@ if __name__ == "__main__":
         )
         sys.exit(1)
     else:
-        kanidm_config = KanidmClientConfig.model_validate(load_config(config_file))
-        setup_certs(kanidm_config)
-        write_clients_conf(kanidm_config)
+        netidm_config = NetidmClientConfig.model_validate(load_config(config_file))
+        setup_certs(netidm_config)
+        write_clients_conf(netidm_config)
         print("Configuration set up, starting...")
         try:
             run_radiusd()

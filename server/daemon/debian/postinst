@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for kanidmd
+# postinst script for netidmd
 #
 # see: dh_installdeb(1)
 
@@ -8,17 +8,17 @@ set -e
 
 case "$1" in
     configure)
-        echo "Creating the kanidmd group for config & cert ownership..."
+        echo "Creating the netidmd group for config & cert ownership..."
         systemd-sysusers
         echo "Fixing ownership of server configuration ..."
-        chown :kanidmd /etc/kanidmd/server.toml*
+        chown :netidmd /etc/netidmd/server.toml*
 
         echo "============================="
-        echo "Thanks for installing Kanidm!"
+        echo "Thanks for installing Netidm!"
         echo "============================="
-        echo "Please ensure you modify the configuration file at /etc/kanidmd/server.toml"
-        echo "Only then: systemctl enable kanidmd.service"
-        echo "Full examples are in /usr/share/kanidmd/"
+        echo "Please ensure you modify the configuration file at /etc/netidmd/server.toml"
+        echo "Only then: systemctl enable netidmd.service"
+        echo "Full examples are in /usr/share/netidmd/"
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

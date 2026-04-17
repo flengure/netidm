@@ -13,7 +13,7 @@ use crate::utils::uuid_from_duration;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-use kanidm_proto::v1::AuthIssueSession;
+use netidm_proto::v1::AuthIssueSession;
 
 use super::server::CredSoftLockMutex;
 
@@ -180,7 +180,7 @@ mod tests {
     use crate::idm::server::IdmServerTransaction;
     use crate::prelude::*;
 
-    use kanidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
+    use netidm_proto::v1::{AuthAllowed, AuthIssueSession, AuthMech};
 
     use compact_jwt::JwsCompact;
     use uuid::uuid;

@@ -8,11 +8,11 @@ There are two methods for configuration:
 
 1. Providing a configuration file in the volume named `server.toml`. (Within the container it should be
    `/data/server.toml`)
-2. Using environment variables to specify configuration options (uppercased, prefixed with `KANIDM_`).
+2. Using environment variables to specify configuration options (uppercased, prefixed with `NETIDM_`).
 
 You can use one or both methods, but environment variables take precedence over options specified in files.The full
 options and explanations are in the
-[kanidmd_core::config::ServerConfig](https://kanidm.github.io/kanidm/master/rustdoc/kanidmd_core/config/struct.ServerConfig.html)
+[netidmd_core::config::ServerConfig](https://netidm.github.io/netidm/master/rustdoc/netidmd_core/config/struct.ServerConfig.html)
 docs page for your particular build.
 
 > [!WARNING]
@@ -27,7 +27,7 @@ The following is a commented example configuration.
 ```
 
 This example is located in
-[examples/server_container.toml](https://github.com/kanidm/kanidm/blob/master/examples/server_container.toml).
+[examples/server_container.toml](https://github.com/netidm/netidm/blob/master/examples/server_container.toml).
 
 > [!WARNING]
 >
@@ -37,11 +37,11 @@ This example is located in
 ### Check the configuration is valid
 
 You should test your configuration is valid before you proceed. This defaults to using `-c /data/server.toml`. The
-`kanidmd` volume was created in the [evaluation quickstart](evaluation_quickstart.md)
+`netidmd` volume was created in the [evaluation quickstart](evaluation_quickstart.md)
 
 ```bash
-docker run --rm -i -t -v kanidmd:/data \
-    kanidm/server:latest /sbin/kanidmd configtest
+docker run --rm -i -t -v netidmd:/data \
+    netidm/server:latest /sbin/netidmd configtest
 ```
 
 ## Run the Server
@@ -50,7 +50,7 @@ Now we can run the server so that it can accept connections. The container defau
 `/data/server.toml`.
 
 ```bash
-docker run -p 443:8443 -v kanidmd:/data kanidm/server:latest
+docker run -p 443:8443 -v netidmd:/data netidm/server:latest
 ```
 
 ### Using the `NET_BIND_SERVICE` capability
@@ -62,8 +62,8 @@ can add this with `--cap-add` in your docker run command.
 ```bash
 docker run --cap-add NET_BIND_SERVICE \
   --network [host OR macvlan OR ipvlan] \
-  -v kanidmd:/data \
-  kanidm/server:latest
+  -v netidmd:/data \
+  netidm/server:latest
 ```
 
 > [!TIP]
@@ -74,23 +74,23 @@ docker run --cap-add NET_BIND_SERVICE \
 ### Default Admin Accounts
 
 Now that the server is running, you can initialise the default admin accounts. There are two parallel admin accounts
-that have separate functions. `admin` which manages Kanidm's configuration, and `idm_admin` which manages accounts and
-groups in Kanidm.
+that have separate functions. `admin` which manages Netidm's configuration, and `idm_admin` which manages accounts and
+groups in Netidm.
 
 You should consider these as "break-glass" accounts. They exist to allow the server to be bootstrapped and accessed in
 emergencies. They are not intended for day-to-day use.
 
 These commands will generate a new random password for the admin accounts. You must run the commands as the same user as
-the kanidmd process or as root. This defaults to using `-c /data/server.toml`.
+the netidmd process or as root. This defaults to using `-c /data/server.toml`.
 
 ```bash
 docker exec -i -t <container name> \
-  kanidmd recover-account admin
+  netidmd recover-account admin
 #  new_password: "xjgG4..."
 ```
 
 ```bash
 docker exec -i -t <container name> \
-  kanidmd recover-account idm_admin
+  netidmd recover-account idm_admin
 #  new_password: "9Eux1..."
 ```

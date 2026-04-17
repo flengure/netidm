@@ -19,11 +19,11 @@ use std::collections::BTreeSet;
 #[cfg(test)]
 use std::sync::Arc;
 
-use kanidm_proto::internal::{
+use netidm_proto::internal::{
     CreateRequest, DeleteRequest, ModifyList as ProtoModifyList, ModifyRequest, OperationError,
     SearchRequest, SearchResponse,
 };
-use kanidm_proto::v1::{Entry as ProtoEntry, WhoamiResponse};
+use netidm_proto::v1::{Entry as ProtoEntry, WhoamiResponse};
 use ldap3_proto::simple::LdapFilter;
 use uuid::Uuid;
 
@@ -296,7 +296,7 @@ impl SearchEvent {
         lf: &LdapFilter,
         attrs: Option<BTreeSet<Attribute>>,
     ) -> Result<Self, OperationError> {
-        // Kanidm Filter from LdapFilter
+        // Netidm Filter from LdapFilter
         let f = Filter::from_ldap_ro(&ident, lf, qs)?;
         let filter_orig = f
             .validate(qs.get_schema())

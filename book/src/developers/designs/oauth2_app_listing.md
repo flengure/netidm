@@ -21,11 +21,11 @@ design is:
 - scope maps - a relation of groups to the set of scopes that they grant
 - implicit scopes - a set of scopes granted to all persons
 
-While this works well for the OAuth2 authorisation design, it doesn't work well from the kanidm side for managing _our_
+While this works well for the OAuth2 authorisation design, it doesn't work well from the netidm side for managing _our_
 knowledge of who is granted access to the application.
 
 In order to limit who can see what applications we will need a new method to define who is allowed access to the
-resource server on the Kanidm side, while also preserving OAuth2 semantics.
+resource server on the Netidm side, while also preserving OAuth2 semantics.
 
 To fix this the current definition of scopes on OAuth2 resource servers need to change.
 
@@ -37,7 +37,7 @@ To fix this the current definition of scopes on OAuth2 resource servers need to 
 
 By changing to this method this removes the arbitrary implicit scope/scope map rules, and clearly defines the set of
 scopes that grant access to the application, while also allow extended scopes to be sent that can attenuate the
-application behaviour. This also allows the access members reference to be used to generate knowledge on the kanidm side
+application behaviour. This also allows the access members reference to be used to generate knowledge on the netidm side
 of "who can access this OAuth2 resource". This can be used to limit the listed applications to these OAuth2
 applications. In addition we can then use these access members to create access controls to strictly limit who can see
 what OAuth2 applications to the admins of OAuth2 applications, and the users of them.

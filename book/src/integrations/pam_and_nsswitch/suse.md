@@ -28,7 +28,7 @@ cp /etc/pam.d/common-session-pc  /etc/pam.d/common-session
 cp /etc/pam.d/common-password-pc /etc/pam.d/common-password
 ```
 
-> NOTE: Unlike other PAM modules, Kanidm replaces the functionality of `pam_unix` and can authenticate local users
+> NOTE: Unlike other PAM modules, Netidm replaces the functionality of `pam_unix` and can authenticate local users
 > securely.
 
 The content should look like:
@@ -36,18 +36,18 @@ The content should look like:
 ```text
 # /etc/pam.d/common-account
 # Controls authorisation to this system (who may login)
-account    sufficient    pam_kanidm.so ignore_unknown_user
+account    sufficient    pam_netidm.so ignore_unknown_user
 account    required      pam_deny.so
 
 # /etc/pam.d/common-auth
 # Controls authentication to this system (verification of credentials)
 auth        required      pam_env.so
-auth        sufficient    pam_kanidm.so ignore_unknown_user
+auth        sufficient    pam_netidm.so ignore_unknown_user
 auth        required      pam_deny.so
 
 # /etc/pam.d/common-password
 # Controls flow of what happens when a user invokes the passwd command. Currently does NOT
-# push password changes back to kanidm
+# push password changes back to netidm
 password    required    pam_unix.so nullok shadow try_first_pass
 
 # /etc/pam.d/common-session
@@ -56,11 +56,11 @@ password    required    pam_unix.so nullok shadow try_first_pass
 session optional    pam_systemd.so
 session required    pam_limits.so
 session optional    pam_umask.so
-session optional    pam_kanidm.so
+session optional    pam_netidm.so
 session optional    pam_env.so
 ```
 
 > [!WARNING]
 >
 > Ensure that `pam_mkhomedir` or `pam_oddjobd` are _not_ present in any stage of your PAM configuration, as they
-> interfere with the correct operation of the Kanidm tasks daemon.
+> interfere with the correct operation of the Netidm tasks daemon.

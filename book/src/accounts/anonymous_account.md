@@ -1,13 +1,13 @@
 # Anonymous Account
 
-Within Kanidm there is a single "special" account. This is the anonymous service account. This allows clients without
-any credentials to perform limited read actions against Kanidm.
+Within Netidm there is a single "special" account. This is the anonymous service account. This allows clients without
+any credentials to perform limited read actions against Netidm.
 
 The anonymous account is primarily used by stateless unix clients to read account and group information.
 
 ## Authentication
 
-Even though anonymous does not have credentials it still must authenticate to establish a session to access Kanidm. To
+Even though anonymous does not have credentials it still must authenticate to establish a session to access Netidm. To
 achieve this there is a special `anonymous` credential method. Anonymous is the only account that may use this
 credential method.
 
@@ -17,7 +17,7 @@ Anonymous is a service account which prevents it from using OAuth2/OIDC to acces
 
 ## Access
 
-By default anonymous has limited access to information in Kanidm. Anonymous may read the following data.
+By default anonymous has limited access to information in Netidm. Anonymous may read the following data.
 
 > NOTE: The `Name` attribute is the user's public username. This is different to their private and sensitive `LegalName`
 > attribute.
@@ -44,4 +44,4 @@ By default anonymous has limited access to information in Kanidm. Anonymous may 
 The anonymous is like any other and can be expired to prevent its use. See the
 [account validity section](./people_accounts.md#account-validity)
 
-When disabled, this will prevent stateless unix clients from authenticating to Kanidm.
+When disabled, this will prevent stateless unix clients from authenticating to Netidm.

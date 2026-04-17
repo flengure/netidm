@@ -37,12 +37,12 @@ information bound to a token based on properties of the session that may allow
 the resource server to make extended authorisation decisions without the need
 to contact the authorisation server to arbitrate.
 
-In this model, Kanidm will function as the authorisation server.
+In this model, Netidm will function as the authorisation server.
 
-Kanidm UAT Claims
+Netidm UAT Claims
 -----------------
 
-To ensure that we can filter and make certain authorisation decisions, the Kanidm UAT
+To ensure that we can filter and make certain authorisation decisions, the Netidm UAT
 needs to be extended with extra claims similar to the token claims. Since we have the
 ability to strongly type these, we can add these to the UAT. These should include.
 
@@ -56,7 +56,7 @@ ability to strongly type these, we can add these to the UAT. These should includ
 The UAT should be signed with ECDSA so that client applications may inspect the content
 IE the session expiry time. This may also allow offline validation.
 
-The ECDSA public key for this should be stored in the Kanidm "domain" configuration. The
+The ECDSA public key for this should be stored in the Netidm "domain" configuration. The
 private key should also be stored in this configuration, but thought will be needed about how
 to handle this with replication securely IE readonly servers.
 
@@ -86,7 +86,7 @@ application within the authorisation server.
 Each registered resource server will have an associated secret for authentication. The
 most simple for of this is a "basic" authorisation header.
 
-This resource server entry will nominally list what scopes map to which kanidm roles,
+This resource server entry will nominally list what scopes map to which netidm roles,
 which scopes are "always" available to all authenticated users. Additionally, it may
 be that we have an extra set of "filter rules" to allow authorisation decisions to be
 made based on other factors like group membership.
@@ -119,7 +119,7 @@ introspection/reflection without needing to access the database.
 Token Introspection
 -------------------
 
-Claims will be mapped to a kanidm namespace. Otherwise the rfc will be followed.
+Claims will be mapped to a netidm namespace. Otherwise the rfc will be followed.
 
 Security
 --------

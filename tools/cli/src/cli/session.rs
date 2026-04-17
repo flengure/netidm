@@ -1,15 +1,15 @@
 use crate::common::prompt_for_username_get_username;
 use crate::common::ToClientError;
 use crate::OpType;
-use crate::{KanidmClientParser, LoginOpt, LogoutOpt, SessionOpt};
+use crate::{NetidmClientParser, LoginOpt, LogoutOpt, SessionOpt};
 use compact_jwt::{
     traits::JwsVerifiable, Jwk, JwsCompact, JwsEs256Verifier, JwsVerifier, JwtError,
 };
 use dialoguer::theme::ColorfulTheme;
 use dialoguer::Select;
-use kanidm_client::{ClientError, KanidmClient};
-use kanidm_proto::internal::UserAuthToken;
-use kanidm_proto::v1::{AuthAllowed, AuthResponse, AuthState};
+use netidm_client::{ClientError, NetidmClient};
+use netidm_proto::internal::UserAuthToken;
+use netidm_proto::v1::{AuthAllowed, AuthResponse, AuthState};
 use serde::{Deserialize, Serialize};
 use std::cmp::Reverse;
 use std::collections::BTreeMap;
@@ -236,7 +236,7 @@ fn get_index_choice_dialoguer(msg: &str, options: &[String]) -> usize {
 }
 
 async fn do_password(
-    client: &mut KanidmClient,
+    client: &mut NetidmClient,
     password: &Option<String>,
 ) -> Result<AuthResponse, ClientError> {
     let password = match password {
@@ -255,7 +255,7 @@ async fn do_password(
     client.auth_step_password(password.as_str()).await
 }
 
-async fn do_backup_code(client: &mut KanidmClient) -> Result<AuthResponse, ClientError> {
+async fn do_backup_code(client: &mut NetidmClient) -> Result<AuthResponse, ClientError> {
     print!("Enter Backup Code: ");
     // We flush stdout so it'll write the buffer to screen, continuing operation. Without it, the application halts.
     #[allow(clippy::unwrap_used)]
@@ -273,7 +273,7 @@ async fn do_backup_code(client: &mut KanidmClient) -> Result<AuthResponse, Clien
     client.auth_step_backup_code(backup_code.trim()).await
 }
 
-async fn do_totp(client: &mut KanidmClient) -> Result<AuthResponse, ClientError> {
+async fn do_totp(client: &mut NetidmClient) -> Result<AuthResponse, ClientError> {
     let totp = loop {
         print!("Enter TOTP: ");
         // We flush stdout so it'll write the buffer to screen, continuing operation. Without it, the application halts.
@@ -297,7 +297,7 @@ async fn do_totp(client: &mut KanidmClient) -> Result<AuthResponse, ClientError>
 
 #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 async fn do_passkey(
-    _client: &mut KanidmClient,
+    _client: &mut NetidmClient,
     _pkr: RequestChallengeResponse,
 ) -> Result<AuthResponse, ClientError> {
     eprintln!("Passkey authentication is not supported on this platform");
@@ -306,7 +306,7 @@ async fn do_passkey(
 
 #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
 async fn do_passkey(
-    client: &mut KanidmClient,
+    client: &mut NetidmClient,
     pkr: RequestChallengeResponse,
 ) -> Result<AuthResponse, ClientError> {
     let mut wa = get_authenticator();
@@ -327,7 +327,7 @@ async fn do_passkey(
 
 #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 async fn do_securitykey(
-    _client: &mut KanidmClient,
+    _client: &mut NetidmClient,
     _pkr: RequestChallengeResponse,
 ) -> Result<AuthResponse, ClientError> {
     eprintln!("Security Key authentication is not supported on this platform");
@@ -336,7 +336,7 @@ async fn do_securitykey(
 
 #[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
 async fn do_securitykey(
-    client: &mut KanidmClient,
+    client: &mut NetidmClient,
     pkr: RequestChallengeResponse,
 ) -> Result<AuthResponse, ClientError> {
     let mut wa = get_authenticator();
@@ -354,7 +354,7 @@ async fn do_securitykey(
 
 pub(crate) async fn process_auth_state(
     mut allowed: Vec<AuthAllowed>,
-    mut client: KanidmClient,
+    mut client: NetidmClient,
     maybe_password: &Option<String>,
     instance_name: &Option<String>,
 ) {
@@ -509,7 +509,7 @@ pub(crate) async fn process_auth_state(
 }
 
 impl LoginOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         let client = opt.to_unauth_client();
         let username = match opt.username.as_deref() {
             Some(val) => val,
@@ -573,7 +573,7 @@ impl LoginOpt {
 }
 
 impl LogoutOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         let mut tokens = read_tokens(&opt.get_token_cache_path()).unwrap_or_else(|_| {
             error!("Error retrieving authentication token store");
             std::process::exit(1);
@@ -707,7 +707,7 @@ impl LogoutOpt {
 }
 
 impl SessionOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             SessionOpt::List => {
                 let token_store = read_tokens(&opt.get_token_cache_path()).unwrap_or_else(|_| {

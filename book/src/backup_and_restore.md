@@ -1,17 +1,17 @@
 # Backup and Restore
 
 With any Identity Management (IDM) software, it's important you have the capability to restore in case of a disaster -
-be that physical damage or a mistake. Kanidm supports backup and restore of the database with three methods.
+be that physical damage or a mistake. Netidm supports backup and restore of the database with three methods.
 
 It is important that you only attempt to restore data with the same version of the server that the backup originated
 from.
 
 ## Method 1 - Automatic Backup
 
-Automatic backups can be generated online by a `kanidmd server` instance by including the `[online_backup]` section in
+Automatic backups can be generated online by a `netidmd server` instance by including the `[online_backup]` section in
 the `server.toml`. This allows you to run regular backups, defined by a cron schedule, and maintain the number of backup
 versions to keep. An example is located in
-[examples/server.toml](https://github.com/kanidm/kanidm/blob/master/examples/server.toml).
+[examples/server.toml](https://github.com/netidm/netidm/blob/master/examples/server.toml).
 
 ## Method 2 - Manual Backup
 
@@ -22,9 +22,9 @@ To take the backup (assuming our docker environment) you first need to stop the 
 
 ```bash
 docker stop <container name>
-docker run --rm -i -t -v kanidmd:/data -v kanidmd_backups:/backup \
-    kanidm/server:latest /sbin/kanidmd database backup -c /data/server.toml \
-    /backup/kanidm.backup.json
+docker run --rm -i -t -v netidmd:/data -v netidmd_backups:/backup \
+    netidm/server:latest /sbin/netidmd database backup -c /data/server.toml \
+    /backup/netidm.backup.json
 docker start <container name>
 ```
 
@@ -34,9 +34,9 @@ To restore from the backup:
 
 ```bash
 docker stop <container name>
-docker run --rm -i -t -v kanidmd:/data -v kanidmd_backups:/backup \
-    kanidm/server:latest /sbin/kanidmd database restore -c /data/server.toml \
-    /backup/kanidm.backup.json
+docker run --rm -i -t -v netidmd:/data -v netidmd_backups:/backup \
+    netidm/server:latest /sbin/netidmd database restore -c /data/server.toml \
+    /backup/netidm.backup.json
 docker start <container name>
 ```
 

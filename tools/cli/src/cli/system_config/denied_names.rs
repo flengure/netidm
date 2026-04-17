@@ -1,9 +1,9 @@
 use crate::OpType;
 
-use crate::{handle_client_error, DeniedNamesOpt, KanidmClientParser, OutputMode};
+use crate::{handle_client_error, DeniedNamesOpt, NetidmClientParser, OutputMode};
 
 impl DeniedNamesOpt {
-    pub async fn exec(&self, opt: KanidmClientParser) {
+    pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
             DeniedNamesOpt::Show => {
                 let client = opt.to_client(OpType::Read).await;

@@ -1,13 +1,13 @@
 # Accounts and groups
 
-Accounts and Groups are the primary reasons for Kanidm to exist. Kanidm is optimised as a repository for these data. As
+Accounts and Groups are the primary reasons for Netidm to exist. Netidm is optimised as a repository for these data. As
 a result, there are many concepts and important details to understand.
 
 ## Service Accounts vs Person Accounts
 
-Kanidm separates accounts into two types. Person accounts (or persons) are intended for use by humans that will access
+Netidm separates accounts into two types. Person accounts (or persons) are intended for use by humans that will access
 the system in an interactive way. Service accounts are intended for use by computers or services that need to identify
-themself to Kanidm. Generally a person or group of persons will be responsible for and will manage service accounts.
+themself to Netidm. Generally a person or group of persons will be responsible for and will manage service accounts.
 Because of this distinction these classes of accounts have different properties and methods of authentication and
 management.
 
@@ -23,12 +23,12 @@ again for easier administration.
 
 ## Default Accounts and Groups
 
-Kanidm ships with a number of default service accounts and groups. This is to give you the best out-of-box experience
+Netidm ships with a number of default service accounts and groups. This is to give you the best out-of-box experience
 possible, as well as supplying best practice examples related to modern Identity Management (IDM) systems.
 
 There are two "break-glass" system administration accounts.
 
-`admin` is the default service account which has privileges to configure and administer Kanidm as a whole. This account
+`admin` is the default service account which has privileges to configure and administer Netidm as a whole. This account
 can manage access controls, schema, integrations and more. However the `admin` can not manage persons by default.
 
 `idm_admin` is the default service account which has privileges to create persons and to manage these accounts and
@@ -38,7 +38,7 @@ Both the `admin` and the `idm_admin` user should _NOT_ be used for daily activit
 configuration, and for disaster recovery scenarios. You should delegate permissions as required to named user accounts
 instead.
 
-The majority of the builtin groups are privilege groups that provide rights over Kanidm administrative actions. These
+The majority of the builtin groups are privilege groups that provide rights over Netidm administrative actions. These
 include groups for account management, person management (personal and sensitive data), group management, and more.
 
 `admin` and `idm_admin` both inherit their privileges from these default groups. This allows you to assign persons to
@@ -46,7 +46,7 @@ these roles instead.
 
 ## Reauthentication and Session Privilege
 
-Kanidm sessions have a concept of session privilege. Conceptually you can consider this like `sudo` on unix systems or
+Netidm sessions have a concept of session privilege. Conceptually you can consider this like `sudo` on unix systems or
 `uac` on windows. This allows a session to briefly access its write permissions by reauthentication with the identical
 credential they logged in with.
 
@@ -62,7 +62,7 @@ considered a risk.
 ## Recovering the Initial Admin Accounts
 
 By default the `admin` and `idm_admin` accounts have no password, and can not be accessed. They need to be "recovered"
-from the server that is running the kanidmd server.
+from the server that is running the netidmd server.
 
 You should have already recovered the admin account during your setup process. If not, refer to the
 [server configuration chapter](../server_configuration.md#default-admin-account) on how to recover these accounts.
@@ -75,6 +75,6 @@ You should take some time to inspect the default groups which are related to def
 has a description to explain its purpose. These can be viewed with:
 
 ```bash
-kanidm group list --name idm_admin
-kanidm group get <name>
+netidm group list --name idm_admin
+netidm group get <name>
 ```

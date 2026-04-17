@@ -58,7 +58,7 @@ a majority of nodes to acknowledge changes. However, it avoids a need for comple
 means that clients can be in a situation where they can't write. For IDM this would mean new sessions could not be
 created or accounts locked for security reasons.
 
-Kanidm has chosen availability, as the needs of IDM dictate that we always function even in the face of partition
+Netidm has chosen availability, as the needs of IDM dictate that we always function even in the face of partition
 tolerance, and when other failures occur. This comes at the cost of needing to manage conflict resolution. This AP
 selection is often called "eventually consistent" as nodes will convenge to an identical state over time.
 
@@ -105,7 +105,7 @@ after the former transaction. This means CID's always advance - and never go bac
 Despite the ability to order writes by time, consistency is not a property that we can guarantee in an AP system. we
 must be able to handle the possibility of inconsistent data and the correct methods to bring all nodes into a consistent
 state with cross communication. These consistency errors are called conflicts. There are multiple types of conflict that
-can occur in a system like Kanidm.
+can occur in a system like Netidm.
 
 ### Entry Conflicts
 
@@ -169,7 +169,7 @@ Using this, our entries would resolve to:
     attr_c: 2, 3
     attr_d: 3
 
-Each of these strategies has pros and cons. In Kanidm we have used a modified attribute level strategy where individual
+Each of these strategies has pros and cons. In Netidm we have used a modified attribute level strategy where individual
 attributes can internally perform value level resolution if needed in limited cases. This allows fast and simple
 replication, while still allowing the best properties of value level resolution in limited cases.
 
@@ -180,7 +180,7 @@ but when combined create an inconsistent entry that is not valid with respect to
 
 ### Plugin Conflicts
 
-Kanidm has a number of "plugins" that can enforce logical rules in the database such as referential integrity and
+Netidm has a number of "plugins" that can enforce logical rules in the database such as referential integrity and
 attribute uniqueness. In cases that these rules are violated due to incremental updates, the plugins in some cases can
 repair the data. However in cases where this can not occur, entries may become conflicts.
 
@@ -230,7 +230,7 @@ some kind occurred at cid 2.
 ## Resolving Conflicts
 
 With knowledge of the change state structure we can now demonstrate how the lower level entry and attribute conflicts
-are detected and managed in Kanidm.
+are detected and managed in Netidm.
 
 ### Entry
 
@@ -290,7 +290,7 @@ We can expand the metadata of the modifications to help understand the process h
     Time 5:        -- incremental -->
 
 When the incremental is sent in time 4 from B to A, since the modification of the attribute is earlier than the content
-of A, the incoming attribute state is discarded. (A future version of Kanidm may preserve the data instead).
+of A, the incoming attribute state is discarded. (A future version of Netidm may preserve the data instead).
 
 At time 5 when the increment returns from A to B, the higher cid causes the value of attr A to be replaced with the
 content from server A.
@@ -314,7 +314,7 @@ It is rare (if not will never happen) that an entry is morphed in place from a g
 fundamentally different class. But the possibility exists so we must account for it.
 
 In this case, what would occur is that the attribute of 'member' would be applied to a person, which is invalid for the
-kanidm schema. In this case, the entry would be moved into a conflict state since logically it is not valid for
+netidm schema. In this case, the entry would be moved into a conflict state since logically it is not valid for
 directory operations (even if the attributes and entry level replication requirements for consistency have been met).
 
 ### Plugin

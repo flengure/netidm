@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for kanidm
+# postinst script for netidm
 #
 # see: dh_installdeb(1)
 
@@ -7,11 +7,11 @@ set -e
 
 case "$1" in
     configure)
-        if [ ! -f /etc/kanidm/config ]; then
+        if [ ! -f /etc/netidm/config ]; then
             echo "============================="
-            echo "Thanks for installing Kanidm!"
+            echo "Thanks for installing Netidm!"
             echo "============================="
-            echo "Please ensure you create a configuration file at /etc/kanidm/config or ~/.config/kanidm. An example file is located in /usr/share/kanidm/"
+            echo "Please ensure you create a configuration file at /etc/netidm/config or ~/.config/netidm. An example file is located in /usr/share/netidm/"
         fi
     ;;
 

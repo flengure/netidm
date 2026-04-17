@@ -1,30 +1,30 @@
-use kanidm_client::{KanidmClient, KanidmClientBuilder};
+use netidm_client::{NetidmClient, NetidmClientBuilder};
 
 use crate::error::Error;
 use crate::profile::Profile;
 
 // This client contains our admin and idm_admin connections that are
-// pre-authenticated for use against the kanidm server. In addition,
+// pre-authenticated for use against the netidm server. In addition,
 // new clients can be requested for our test actors.
-pub struct KanidmOrcaClient {
+pub struct NetidmOrcaClient {
     #[allow(dead_code)]
-    admin_client: KanidmClient,
-    idm_admin_client: KanidmClient,
+    admin_client: NetidmClient,
+    idm_admin_client: NetidmClient,
     // In future we probably need a way to connect to all the nodes?
     // Or we just need all their uris.
 }
 
-impl KanidmOrcaClient {
+impl NetidmOrcaClient {
     pub async fn new(profile: &Profile) -> Result<Self, Error> {
-        let admin_client = KanidmClientBuilder::new()
+        let admin_client = NetidmClientBuilder::new()
             .address(profile.control_uri().to_string())
             .danger_accept_invalid_hostnames(true)
             .danger_accept_invalid_certs(true)
             .request_timeout(1200)
             .build()
             .map_err(|err| {
-                error!(?err, "Unable to create kanidm client");
-                Error::KanidmClient
+                error!(?err, "Unable to create netidm client");
+                Error::NetidmClient
             })?;
 
         admin_client
@@ -32,12 +32,12 @@ impl KanidmOrcaClient {
             .await
             .map_err(|err| {
                 error!(?err, "Unable to authenticate as admin");
-                Error::KanidmClient
+                Error::NetidmClient
             })?;
 
         let idm_admin_client = admin_client.new_session().map_err(|err| {
             error!(?err, "Unable to create new session");
-            Error::KanidmClient
+            Error::NetidmClient
         })?;
 
         idm_admin_client
@@ -45,10 +45,10 @@ impl KanidmOrcaClient {
             .await
             .map_err(|err| {
                 error!(?err, "Unable to authenticate as idm_admin");
-                Error::KanidmClient
+                Error::NetidmClient
             })?;
 
-        Ok(KanidmOrcaClient {
+        Ok(NetidmOrcaClient {
             admin_client,
             idm_admin_client,
         })
@@ -60,7 +60,7 @@ impl KanidmOrcaClient {
             .await
             .map_err(|err| {
                 error!(?err, "Unable to modify idm_all_persons policy");
-                Error::KanidmClient
+                Error::NetidmClient
             })
     }
 
@@ -70,7 +70,7 @@ impl KanidmOrcaClient {
             .await
             .map_err(|err| {
                 error!(?err, "Unable to modify idm_all_persons policy");
-                Error::KanidmClient
+                Error::NetidmClient
             })?;
 
         self.idm_admin_client
@@ -78,7 +78,7 @@ impl KanidmOrcaClient {
             .await
             .map_err(|err| {
                 error!(?err, "Unable to modify idm_all_accounts policy");
-                Error::KanidmClient
+                Error::NetidmClient
             })
     }
 
@@ -89,7 +89,7 @@ impl KanidmOrcaClient {
             .map(|e| e.is_some())
             .map_err(|err| {
                 error!(?err, ?username, "Unable to check person");
-                Error::KanidmClient
+                Error::NetidmClient
             })
     }
 
@@ -99,7 +99,7 @@ impl KanidmOrcaClient {
             .await
             .map_err(|err| {
                 error!(?err, ?username, "Unable to create person");
-                Error::KanidmClient
+                Error::NetidmClient
             })
     }
 
@@ -113,7 +113,7 @@ impl KanidmOrcaClient {
             .await
             .map_err(|err| {
                 error!(?err, ?username, "Unable to set person password");
-                Error::KanidmClient
+                Error::NetidmClient
             })
     }
 
@@ -123,7 +123,7 @@ impl KanidmOrcaClient {
             .await
             .map_err(|err| {
                 error!(?err, ?group_name, "Unable to set group members");
-                Error::KanidmClient
+                Error::NetidmClient
             })
     }
 
@@ -133,7 +133,7 @@ impl KanidmOrcaClient {
             .await
             .map_err(|err| {
                 error!(?err, ?group_name, "Unable to add group members");
-                Error::KanidmClient
+                Error::NetidmClient
             })
     }
 
@@ -144,7 +144,7 @@ impl KanidmOrcaClient {
             .map(|e| e.is_some())
             .map_err(|err| {
                 error!(?err, ?group_name, "Unable to check group");
-                Error::KanidmClient
+                Error::NetidmClient
             })
     }
 
@@ -154,7 +154,7 @@ impl KanidmOrcaClient {
             .await
             .map_err(|err| {
                 error!(?err, ?group_name, "Unable to create group");
-                Error::KanidmClient
+                Error::NetidmClient
             })
     }
 }

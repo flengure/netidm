@@ -18,14 +18,14 @@ use crate::idprovider::system::{
 };
 use hashbrown::HashMap;
 use kanidm_hsm_crypto::provider::BoxedDynTpm;
-use kanidm_lib_file_permissions::diagnose_path;
-use kanidm_unix_common::constants::{
+use netidm_lib_file_permissions::diagnose_path;
+use netidm_unix_common::constants::{
     DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_CACHE_TIMEOUT_MAXIMUM, DEFAULT_CACHE_TIMEOUT_MINIMUM,
     DEFAULT_SHELL_SEARCH_PATHS, SYSTEM_SHADOW_PATH,
 };
-use kanidm_unix_common::unix_config::{HomeAttr, UidAttr};
-use kanidm_unix_common::unix_passwd::{EtcGroup, EtcShadow, EtcUser};
-use kanidm_unix_common::unix_proto::{
+use netidm_unix_common::unix_config::{HomeAttr, UidAttr};
+use netidm_unix_common::unix_passwd::{EtcGroup, EtcShadow, EtcUser};
+use netidm_unix_common::unix_proto::{
     HomeDirectoryInfo, NssGroup, NssUser, PamAuthRequest, PamAuthResponse, PamServiceInfo,
     ProviderStatus,
 };
@@ -1012,7 +1012,7 @@ impl Resolver {
                 debug!(?account_id, "account unknown to system provider, continue.");
             }
             // The provider knows the account, and is unable to proceed,
-            // We return unknown here so that pam_kanidm can be skipped and fall back
+            // We return unknown here so that pam_netidm can be skipped and fall back
             // to pam_unix.so.
             SystemProviderAuthInit::ShadowMissing => {
                 warn!(
@@ -1369,7 +1369,7 @@ impl Resolver {
         let (_shutdown_tx, shutdown_rx) = broadcast::channel(1);
 
         let pam_info = PamServiceInfo {
-            service: "kanidm-unix-test".to_string(),
+            service: "netidm-unix-test".to_string(),
             tty: Some("/dev/null".to_string()),
             rhost: None,
         };

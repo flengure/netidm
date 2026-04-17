@@ -1,7 +1,7 @@
 //! Constant Entries for the IDM
 use crate::constants::uuids::*;
 use crate::migration_data::types::BuiltinAccount;
-use kanidm_proto::v1::AccountType;
+use netidm_proto::v1::AccountType;
 
 /// Builtin System Admin account.
 pub static BUILTIN_ACCOUNT_IDM_ADMIN: BuiltinAccount = BuiltinAccount {

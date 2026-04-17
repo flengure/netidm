@@ -3,15 +3,15 @@ use crate::constants::uuids::*;
 use crate::entry::EntryInitNew;
 use crate::prelude::EntryClass;
 use crate::value::Value;
-pub use kanidm_proto::attribute::Attribute;
-use kanidm_proto::v1::AccountType;
+pub use netidm_proto::attribute::Attribute;
+use netidm_proto::v1::AccountType;
 
 use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 /// Built in accounts such as anonymous, idm_admin and admin
 pub struct BuiltinAccount {
-    pub account_type: kanidm_proto::v1::AccountType,
+    pub account_type: netidm_proto::v1::AccountType,
     pub entry_managed_by: Option<uuid::Uuid>,
     pub name: &'static str,
     pub uuid: Uuid,

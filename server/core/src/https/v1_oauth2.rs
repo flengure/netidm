@@ -11,10 +11,10 @@ use super::ServerState;
 use crate::https::extractors::VerifiedClientInformation;
 use axum::extract::{Path, State};
 use axum::{Extension, Json};
-use kanidm_proto::internal::{ImageType, ImageValue, Oauth2ClaimMapJoin};
-use kanidm_proto::v1::Entry as ProtoEntry;
-use kanidmd_lib::prelude::*;
-use kanidmd_lib::valueset::image::ImageValueThings;
+use netidm_proto::internal::{ImageType, ImageValue, Oauth2ClaimMapJoin};
+use netidm_proto::v1::Entry as ProtoEntry;
+use netidmd_lib::prelude::*;
+use netidmd_lib::valueset::image::ImageValueThings;
 use sketching::admin_error;
 
 #[utoipa::path(
@@ -601,7 +601,7 @@ pub(crate) async fn oauth2_client_id_get(
         .map_err(WebError::from)
 }
 
-/// Create a new OAuth2 Client Provider (Kanidm acts as the OAuth2 client to an external provider).
+/// Create a new OAuth2 Client Provider (Netidm acts as the OAuth2 client to an external provider).
 pub(crate) async fn oauth2_client_post(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,

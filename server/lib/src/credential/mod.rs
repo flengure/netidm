@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 
 use hashbrown::{HashMap as Map, HashSet};
-use kanidm_proto::internal::{CredentialDetail, CredentialDetailType, OperationError};
+use netidm_proto::internal::{CredentialDetail, CredentialDetailType, OperationError};
 use time::OffsetDateTime;
 use uuid::Uuid;
 use webauthn_rs::prelude::{AuthenticationResult, Passkey, SecurityKey};
@@ -15,7 +15,7 @@ pub mod totp;
 
 use self::totp::TOTP_DEFAULT_STEP;
 
-use kanidm_lib_crypto::CryptoPolicy;
+use netidm_lib_crypto::CryptoPolicy;
 
 use crate::credential::softlock::CredSoftLockPolicy;
 use crate::credential::totp::Totp;
@@ -31,7 +31,7 @@ pub enum Policy {
 }
 */
 
-pub use kanidm_lib_crypto::Password;
+pub use netidm_lib_crypto::Password;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BackupCodes {
@@ -900,7 +900,7 @@ mod tests {
 
     use crate::credential::totp::{Totp, TOTP_DEFAULT_STEP};
     use crate::credential::Credential;
-    use kanidm_lib_crypto::{CryptoPolicy, Password};
+    use netidm_lib_crypto::{CryptoPolicy, Password};
     use time::OffsetDateTime;
 
     #[test]

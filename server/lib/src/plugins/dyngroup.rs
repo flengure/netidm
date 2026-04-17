@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-use kanidm_proto::internal::Filter as ProtoFilter;
+use netidm_proto::internal::Filter as ProtoFilter;
 
 use crate::filter::FilterInvalid;
 use crate::prelude::*;
@@ -432,7 +432,7 @@ impl DynGroup {
 
 #[cfg(test)]
 mod tests {
-    use kanidm_proto::internal::Filter as ProtoFilter;
+    use netidm_proto::internal::Filter as ProtoFilter;
 
     use crate::prelude::*;
 

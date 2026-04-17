@@ -1,5 +1,5 @@
 use crate::error::Error;
-use crate::kani::KanidmOrcaClient;
+use crate::kani::NetidmOrcaClient;
 use crate::model::ActorRole;
 use crate::profile::Profile;
 use crate::state::{Credential, Flag, Group, GroupName, Person, PreflightState, State};
@@ -29,7 +29,7 @@ fn random_password(rng: &mut ChaCha8Rng) -> String {
     Alphanumeric.sample_string(rng, 24)
 }
 
-pub async fn populate(_client: &KanidmOrcaClient, profile: Profile) -> Result<State, Error> {
+pub async fn populate(_client: &NetidmOrcaClient, profile: Profile) -> Result<State, Error> {
     // IMPORTANT: We have to perform these steps in order so that the RNG is deterministic between
     // multiple invocations.
     let mut seeded_rng = ChaCha8Rng::seed_from_u64(profile.seed());

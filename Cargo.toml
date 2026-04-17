@@ -7,8 +7,8 @@ authors = [
 rust-version = "1.93"
 edition = "2021"
 license = "MPL-2.0"
-homepage = "https://github.com/kanidm/kanidm/"
-repository = "https://github.com/kanidm/kanidm/"
+homepage = "https://github.com/netidm/netidm/"
+repository = "https://github.com/netidm/netidm/"
 
 [workspace]
 resolver = "2"
@@ -20,8 +20,8 @@ members = [
     "tools/iam_migrations/ldap",
     "tools/orca",
     "unix_integration/common",
-    "unix_integration/nss_kanidm",
-    "unix_integration/pam_kanidm",
+    "unix_integration/nss_netidm",
+    "unix_integration/pam_netidm",
     "unix_integration/resolver",
     "server/daemon",
     "server/lib",
@@ -100,7 +100,7 @@ opt-level = 0
 codegen-units = 256
 
 [patch.crates-io]
-## As Kanidm maintains a number of libraries, sometimes during development we need to override them
+## As Netidm maintains a number of libraries, sometimes during development we need to override them
 ## with local or git versions. This patch table allows quick uncommenting to achieve that.
 
 # compact_jwt = { path = "../compact-jwt" }
@@ -111,8 +111,8 @@ codegen-units = 256
 
 # ldap3_client = { path = "../ldap3/client" }
 # ldap3_proto = { path = "../ldap3/proto" }
-# ldap3_client = { git = "https://github.com/kanidm/ldap3.git" }
-# ldap3_proto = { git = "https://github.com/kanidm/ldap3.git" }
+# ldap3_client = { git = "https://github.com/netidm/ldap3.git" }
+# ldap3_proto = { git = "https://github.com/netidm/ldap3.git" }
 
 # base64urlsafedata = { path = "../webauthn-rs/base64urlsafedata" }
 # webauthn-authenticator-rs = { path = "../webauthn-rs/webauthn-authenticator-rs" }
@@ -122,17 +122,17 @@ codegen-units = 256
 # sshkey-attest = { path = "../webauthn-rs/sshkey-attest" }
 
 [workspace.dependencies]
-kanidmd_core = { path = "./server/core", version = "=1.10.0-dev" }
-kanidmd_lib = { path = "./server/lib", version = "=1.10.0-dev" }
-kanidmd_lib_macros = { path = "./server/lib-macros", version = "=1.10.0-dev" }
-kanidmd_testkit = { path = "./server/testkit", version = "=1.10.0-dev" }
-kanidm_build_profiles = { path = "./libs/profiles", version = "=1.10.0-dev" }
-kanidm_client = { path = "./libs/client", version = "=1.10.0-dev" }
-kanidm_lib_crypto = { path = "./libs/crypto", version = "=1.10.0-dev" }
-kanidm_lib_file_permissions = { path = "./libs/file_permissions", version = "=1.10.0-dev" }
-kanidm_proto = { path = "./proto", version = "=1.10.0-dev" }
-kanidm_unix_common = { path = "./unix_integration/common", version = "=1.10.0-dev" }
-kanidm_utils_users = { path = "./libs/users", version = "=1.10.0-dev" }
+netidmd_core = { path = "./server/core", version = "=1.10.0-dev" }
+netidmd_lib = { path = "./server/lib", version = "=1.10.0-dev" }
+netidmd_lib_macros = { path = "./server/lib-macros", version = "=1.10.0-dev" }
+netidmd_testkit = { path = "./server/testkit", version = "=1.10.0-dev" }
+netidm_build_profiles = { path = "./libs/profiles", version = "=1.10.0-dev" }
+netidm_client = { path = "./libs/client", version = "=1.10.0-dev" }
+netidm_lib_crypto = { path = "./libs/crypto", version = "=1.10.0-dev" }
+netidm_lib_file_permissions = { path = "./libs/file_permissions", version = "=1.10.0-dev" }
+netidm_proto = { path = "./proto", version = "=1.10.0-dev" }
+netidm_unix_common = { path = "./unix_integration/common", version = "=1.10.0-dev" }
+netidm_utils_users = { path = "./libs/users", version = "=1.10.0-dev" }
 scim_proto = { path = "./libs/scim_proto", version = "=1.10.0-dev" }
 sketching = { path = "./libs/sketching", version = "=1.10.0-dev" }
 

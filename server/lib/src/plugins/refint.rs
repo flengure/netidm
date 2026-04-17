@@ -593,8 +593,8 @@ mod tests {
     use crate::prelude::*;
     use crate::value::{AuthType, Oauth2Session, OauthClaimMapJoin, Session, SessionState};
     use crypto_glue::{traits::DecodePem, x509::Certificate};
-    use kanidm_lib_crypto::CryptoPolicy;
-    use kanidm_proto::internal::Filter as ProtoFilter;
+    use netidm_lib_crypto::CryptoPolicy;
+    use netidm_proto::internal::Filter as ProtoFilter;
     use time::OffsetDateTime;
 
     const TEST_TESTGROUP_A_UUID: &str = "d2b496bd-8493-47b7-8142-f568b5cf47ee";

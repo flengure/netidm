@@ -9,7 +9,7 @@ use axum::{
     response::{IntoResponse, Response},
     RequestExt,
 };
-use kanidm_proto::constants::{KOPID, KVERSION, X_FORWARDED_FOR};
+use netidm_proto::constants::{KOPID, KVERSION, X_FORWARDED_FOR};
 use std::net::IpAddr;
 use uuid::Uuid;
 
@@ -22,14 +22,14 @@ pub(crate) mod hsts_header;
 pub(crate) mod security_headers;
 
 // the version middleware injects
-const KANIDM_VERSION: &str = env!("CARGO_PKG_VERSION");
+const NETIDM_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-/// Injects a header into the response with "X-KANIDM-VERSION" matching the version of the package.
+/// Injects a header into the response with "X-NETIDM-VERSION" matching the version of the package.
 pub async fn version_middleware(request: Request<Body>, next: Next) -> Response {
     let mut response = next.run(request).await;
     response
         .headers_mut()
-        .insert(KVERSION, HeaderValue::from_static(KANIDM_VERSION));
+        .insert(KVERSION, HeaderValue::from_static(NETIDM_VERSION));
     response
 }
 
@@ -47,7 +47,7 @@ pub async fn are_we_json_yet(request: Request<Body>, next: Next) -> Response {
         assert!(
             headers.get(axum::http::header::CONTENT_TYPE)
                 == Some(&HeaderValue::from_static(
-                    kanidm_proto::constants::APPLICATION_JSON
+                    netidm_proto::constants::APPLICATION_JSON
                 ))
         );
     }

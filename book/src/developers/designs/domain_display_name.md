@@ -2,5 +2,5 @@
 
 A human-facing string to use in places like web page titles, TOTP issuer codes, the Oauth authorisation server name etc.
 
-On system creation, or if it hasn't been set, it'll default to `format!("Kanidm {}", domain_name)` so that you'll see
-`Kanidm idm.example.com` if your domain is `idm.example.com`.
+On system creation, or if it hasn't been set, it'll default to `format!("Netidm {}", domain_name)` so that you'll see
+`Netidm idm.example.com` if your domain is `idm.example.com`.
