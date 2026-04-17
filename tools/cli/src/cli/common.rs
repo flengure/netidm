@@ -8,7 +8,7 @@ use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 
 use crate::session::{process_auth_state, read_tokens};
-use crate::{NetidmClientParser, LoginOpt};
+use crate::{LoginOpt, NetidmClientParser};
 
 #[derive(Debug)]
 #[allow(clippy::large_enum_variant)]

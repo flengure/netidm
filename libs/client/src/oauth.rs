@@ -520,10 +520,7 @@ impl NetidmClient {
 
     // ==== OAuth2 Client Provider (Netidm as OAuth2 client to external providers)
 
-    pub async fn idm_oauth2_client_get(
-        &self,
-        name: &str,
-    ) -> Result<Option<Entry>, ClientError> {
+    pub async fn idm_oauth2_client_get(&self, name: &str) -> Result<Option<Entry>, ClientError> {
         self.perform_get_request(format!("/v1/oauth2/_client/{name}").as_str())
             .await
     }
@@ -535,10 +532,20 @@ impl NetidmClient {
         client_secret: &str,
     ) -> Result<(), ClientError> {
         let mut entry = Entry::default();
-        entry.attrs.insert(ATTR_NAME.to_string(), vec![name.to_string()]);
-        entry.attrs.insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
-        entry.attrs.insert(ATTR_OAUTH2_CLIENT_ID.to_string(), vec![client_id.to_string()]);
-        entry.attrs.insert(ATTR_OAUTH2_CLIENT_SECRET.to_string(), vec![client_secret.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_ID.to_string(),
+            vec![client_id.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
         entry.attrs.insert(
             ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
             vec!["https://github.com/login/oauth/authorize".to_string()],
@@ -565,10 +572,20 @@ impl NetidmClient {
         client_secret: &str,
     ) -> Result<(), ClientError> {
         let mut entry = Entry::default();
-        entry.attrs.insert(ATTR_NAME.to_string(), vec![name.to_string()]);
-        entry.attrs.insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
-        entry.attrs.insert(ATTR_OAUTH2_CLIENT_ID.to_string(), vec![client_id.to_string()]);
-        entry.attrs.insert(ATTR_OAUTH2_CLIENT_SECRET.to_string(), vec![client_secret.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_ID.to_string(),
+            vec![client_id.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
         entry.attrs.insert(
             ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
             vec!["https://accounts.google.com/o/oauth2/v2/auth".to_string()],
@@ -579,7 +596,11 @@ impl NetidmClient {
         );
         entry.attrs.insert(
             ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
-            vec!["openid".to_string(), "email".to_string(), "profile".to_string()],
+            vec![
+                "openid".to_string(),
+                "email".to_string(),
+                "profile".to_string(),
+            ],
         );
         self.perform_post_request("/v1/oauth2/_client", entry).await
     }
@@ -588,48 +609,60 @@ impl NetidmClient {
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
-        let mut entry = Entry { attrs: BTreeMap::new() };
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
         entry.attrs.insert(
             ATTR_OAUTH2_JIT_PROVISIONING.to_string(),
             vec!["true".to_string()],
         );
-        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry)
+            .await
     }
 
     pub async fn idm_oauth2_client_disable_jit_provisioning(
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
-        let mut entry = Entry { attrs: BTreeMap::new() };
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
         entry.attrs.insert(
             ATTR_OAUTH2_JIT_PROVISIONING.to_string(),
             vec!["false".to_string()],
         );
-        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry)
+            .await
     }
 
     pub async fn idm_oauth2_client_enable_email_link_accounts(
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
-        let mut entry = Entry { attrs: BTreeMap::new() };
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
         entry.attrs.insert(
             ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS.to_string(),
             vec!["true".to_string()],
         );
-        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry)
+            .await
     }
 
     pub async fn idm_oauth2_client_disable_email_link_accounts(
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
-        let mut entry = Entry { attrs: BTreeMap::new() };
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
         entry.attrs.insert(
             ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS.to_string(),
             vec!["false".to_string()],
         );
-        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry)
+            .await
     }
 
     pub async fn idm_oauth2_domain_enable_email_link_accounts(&self) -> Result<(), ClientError> {
@@ -664,8 +697,13 @@ impl NetidmClient {
                 )));
             }
         };
-        let mut entry = Entry { attrs: BTreeMap::new() };
-        entry.attrs.insert(attr_key.to_string(), vec![provider_claim.to_string()]);
-        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry).await
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry
+            .attrs
+            .insert(attr_key.to_string(), vec![provider_claim.to_string()]);
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry)
+            .await
     }
 }

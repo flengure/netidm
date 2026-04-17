@@ -95,7 +95,10 @@ impl WgOpt {
                 match client.wg_token_list(tunnel).await {
                     Ok(tokens) => {
                         for t in tokens {
-                            let uses = t.uses_left.map(|u| u.to_string()).unwrap_or_else(|| "unlimited".to_string());
+                            let uses = t
+                                .uses_left
+                                .map(|u| u.to_string())
+                                .unwrap_or_else(|| "unlimited".to_string());
                             let expiry = t.expiry.as_deref().unwrap_or("never");
                             println!("{} uses={} expires={}", t.name, uses, expiry);
                         }
@@ -103,7 +106,11 @@ impl WgOpt {
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
-            WgOpt::TokenCreate { tunnel, uses, expiry } => {
+            WgOpt::TokenCreate {
+                tunnel,
+                uses,
+                expiry,
+            } => {
                 let client = opt.to_client(OpType::Write).await;
                 let req = WgTokenCreate {
                     uses: *uses,

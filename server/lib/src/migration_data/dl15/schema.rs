@@ -1,6 +1,5 @@
 //! Schema entries for DL15: OAuth2 social login with JIT provisioning.
 
-
 use crate::constants::{
     UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME, UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_EMAIL,
     UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_NAME, UUID_SCHEMA_ATTR_OAUTH2_JIT_PROVISIONING,
@@ -20,8 +19,9 @@ pub static SCHEMA_ATTR_OAUTH2_USERINFO_ENDPOINT_DL15: LazyLock<SchemaAttribute> 
     });
 
 // T006
-pub static SCHEMA_ATTR_OAUTH2_JIT_PROVISIONING_DL15: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
+pub static SCHEMA_ATTR_OAUTH2_JIT_PROVISIONING_DL15: LazyLock<SchemaAttribute> = LazyLock::new(
+    || {
+        SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_OAUTH2_JIT_PROVISIONING,
         name: Attribute::OAuth2JitProvisioning,
         description:
@@ -29,11 +29,14 @@ pub static SCHEMA_ATTR_OAUTH2_JIT_PROVISIONING_DL15: LazyLock<SchemaAttribute> =
                 .to_string(),
         syntax: SyntaxType::Boolean,
         ..Default::default()
-    });
+    }
+    },
+);
 
 // T007
-pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_NAME_DL15: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
+pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_NAME_DL15: LazyLock<SchemaAttribute> = LazyLock::new(
+    || {
+        SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_NAME,
         name: Attribute::OAuth2ClaimMapName,
         description:
@@ -41,7 +44,9 @@ pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_NAME_DL15: LazyLock<SchemaAttribute> =
                 .to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()
-    });
+    }
+    },
+);
 
 // T008
 pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME_DL15: LazyLock<SchemaAttribute> =
@@ -56,8 +61,9 @@ pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME_DL15: LazyLock<SchemaAttribu
     });
 
 // T009
-pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_EMAIL_DL15: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
+pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_EMAIL_DL15: LazyLock<SchemaAttribute> = LazyLock::new(
+    || {
+        SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_EMAIL,
         name: Attribute::OAuth2ClaimMapEmail,
         description:
@@ -65,10 +71,13 @@ pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_EMAIL_DL15: LazyLock<SchemaAttribute> =
                 .to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()
-    });
+    }
+    },
+);
 
 // T010 — updated OAuth2Client class with new optional attributes
-pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL15: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL15: LazyLock<SchemaClass> = LazyLock::new(|| {
+    SchemaClass {
     uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
     name: EntryClass::OAuth2Client.into(),
     description:
@@ -90,4 +99,5 @@ pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL15: LazyLock<SchemaClass> = LazyLock::ne
         Attribute::OAuth2ClaimMapEmail,
     ],
     ..Default::default()
+}
 });

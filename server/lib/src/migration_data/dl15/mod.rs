@@ -1,6 +1,5 @@
 pub(crate) mod schema;
 
-
 use self::schema::*;
 use crate::prelude::*;
 

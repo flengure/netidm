@@ -1,9 +1,9 @@
 #![deny(warnings)]
-use netidm_client::{NetidmClient, NetidmClientBuilder};
 use kanidm_hsm_crypto::{
     provider::{BoxedDynTpm, SoftTpm, Tpm},
     AuthValue,
 };
+use netidm_client::{NetidmClient, NetidmClientBuilder};
 use netidm_proto::config::ServerRole;
 use netidm_proto::constants::ATTR_ACCOUNT_EXPIRE;
 use netidm_unix_common::constants::{

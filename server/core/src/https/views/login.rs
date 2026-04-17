@@ -1187,7 +1187,10 @@ async fn view_login_step(
                             debug!("OAuth2 email-link: no matching account found, proceeding to provision");
                         }
                         Err(e) => {
-                            warn!(?e, "OAuth2 email-link: link attempt failed, proceeding to provision");
+                            warn!(
+                                ?e,
+                                "OAuth2 email-link: link attempt failed, proceeding to provision"
+                            );
                         }
                     }
                 }
@@ -1201,7 +1204,9 @@ async fn view_login_step(
                     username_hint: claims.username_hint.clone(),
                 };
 
-                if let Some(ck) = cookies::make_signed(&state, COOKIE_OAUTH2_PROVISION_REQ, &cookie_data) {
+                if let Some(ck) =
+                    cookies::make_signed(&state, COOKIE_OAUTH2_PROVISION_REQ, &cookie_data)
+                {
                     jar = jar.add(ck);
                 } else {
                     error!("Failed to sign provision cookie — cannot redirect to provision page");

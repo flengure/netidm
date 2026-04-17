@@ -1,7 +1,7 @@
 use crate::common::prompt_for_username_get_username;
 use crate::common::ToClientError;
 use crate::OpType;
-use crate::{NetidmClientParser, LoginOpt, LogoutOpt, SessionOpt};
+use crate::{LoginOpt, LogoutOpt, NetidmClientParser, SessionOpt};
 use compact_jwt::{
     traits::JwsVerifiable, Jwk, JwsCompact, JwsEs256Verifier, JwsVerifier, JwtError,
 };

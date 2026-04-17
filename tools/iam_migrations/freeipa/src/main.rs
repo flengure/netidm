@@ -19,6 +19,10 @@ use crate::error::SyncError;
 use chrono::Utc;
 use clap::Parser;
 use cron::Schedule;
+use ldap3_client::{
+    proto, proto::LdapFilter, LdapClient, LdapClientBuilder, LdapSyncRepl, LdapSyncReplEntry,
+    LdapSyncStateValue,
+};
 use netidm_client::NetidmClientBuilder;
 use netidm_lib_crypto::{Password, PasswordError};
 use netidm_lib_file_permissions::readonly as file_permissions_readonly;
@@ -30,10 +34,6 @@ use netidm_proto::scim_v1::{
     ScimSyncRetentionMode, ScimSyncState, ScimTotp,
 };
 use netidmd_lib::prelude::{Attribute, EntryClass, ENTRYCLASS_PERSON};
-use ldap3_client::{
-    proto, proto::LdapFilter, LdapClient, LdapClientBuilder, LdapSyncRepl, LdapSyncReplEntry,
-    LdapSyncStateValue,
-};
 use rustls::pki_types::pem::PemObject;
 use std::collections::BTreeMap;
 use std::fs::metadata;

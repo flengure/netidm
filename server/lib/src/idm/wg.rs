@@ -24,10 +24,7 @@ impl IdmServerProxyReadTransaction<'_> {
     pub fn wg_list_tunnels(&mut self) -> Result<Vec<WgTunnelConfig>, OperationError> {
         let filter = filter!(f_eq(Attribute::Class, EntryClass::WgTunnel.into()));
         let entries = self.qs_read.internal_search(filter)?;
-        entries
-            .iter()
-            .map(wg_tunnel_config_from_entry)
-            .collect()
+        entries.iter().map(wg_tunnel_config_from_entry).collect()
     }
 
     /// Return all tunnels as API response objects (peer counts come from the caller).
@@ -64,16 +61,10 @@ impl IdmServerProxyReadTransaction<'_> {
     ) -> Result<Vec<WgPeerConfig>, OperationError> {
         let filter = filter!(f_and!([
             f_eq(Attribute::Class, EntryClass::WgPeer.into()),
-            f_eq(
-                Attribute::WgTunnelRef,
-                PartialValue::Refer(tunnel_uuid)
-            )
+            f_eq(Attribute::WgTunnelRef, PartialValue::Refer(tunnel_uuid))
         ]));
         let entries = self.qs_read.internal_search(filter)?;
-        entries
-            .iter()
-            .map(wg_peer_config_from_entry)
-            .collect()
+        entries.iter().map(wg_peer_config_from_entry).collect()
     }
 
     /// Return (uuid, pubkey) pairs for all peers on a tunnel.
@@ -83,10 +74,7 @@ impl IdmServerProxyReadTransaction<'_> {
     ) -> Result<Vec<(Uuid, String)>, OperationError> {
         let filter = filter!(f_and!([
             f_eq(Attribute::Class, EntryClass::WgPeer.into()),
-            f_eq(
-                Attribute::WgTunnelRef,
-                PartialValue::Refer(tunnel_uuid)
-            )
+            f_eq(Attribute::WgTunnelRef, PartialValue::Refer(tunnel_uuid))
         ]));
         let entries = self.qs_read.internal_search(filter)?;
         Ok(entries
@@ -128,7 +116,10 @@ impl IdmServerProxyWriteTransaction<'_> {
             (Attribute::WgInterface, Value::new_iname(&req.interface)),
             (Attribute::WgPrivateKey, Value::new_utf8s(&req.private_key)),
             (Attribute::WgEndpoint, Value::new_utf8s(&req.endpoint)),
-            (Attribute::WgListenPort, Value::Uint32(u32::from(req.listen_port)))
+            (
+                Attribute::WgListenPort,
+                Value::Uint32(u32::from(req.listen_port))
+            )
         );
 
         for addr in &req.address {
@@ -165,11 +156,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         let secret = base64url_encode(&secret_bytes);
         let hash = sha256_of(secret.as_bytes());
 
-        let token_name = format!(
-            "wgtoken-{}-{}",
-            tunnel_name,
-            Uuid::new_v4().as_simple()
-        );
+        let token_name = format!("wgtoken-{}-{}", tunnel_name, Uuid::new_v4().as_simple());
 
         let mut entry = entry_init!(
             (Attribute::Class, EntryClass::Object.to_value()),
@@ -183,8 +170,11 @@ impl IdmServerProxyWriteTransaction<'_> {
             entry.add_ava(Attribute::WgTokenUsesLeft, Value::Uint32(uses));
         }
         if let Some(expiry_str) = &req.expiry {
-            let expiry = time::OffsetDateTime::parse(expiry_str, &time::format_description::well_known::Rfc3339)
-                .map_err(|_| OperationError::InvalidAttribute("Invalid expiry datetime".into()))?;
+            let expiry = time::OffsetDateTime::parse(
+                expiry_str,
+                &time::format_description::well_known::Rfc3339,
+            )
+            .map_err(|_| OperationError::InvalidAttribute("Invalid expiry datetime".into()))?;
             entry.add_ava(Attribute::WgTokenExpiry, Value::new_datetime(expiry));
         }
 
@@ -318,8 +308,8 @@ impl IdmServerProxyWriteTransaction<'_> {
             })
             .collect();
 
-        let allocated = allocate(&tunnel.address, &existing)
-            .map_err(|_| OperationError::ResourceLimit)?;
+        let allocated =
+            allocate(&tunnel.address, &existing).map_err(|_| OperationError::ResourceLimit)?;
 
         // Create WgPeer entry.
         let peer_name = format!("peer-{}-{}", caller_name, &tunnel.name);
@@ -366,7 +356,11 @@ impl IdmServerProxyWriteTransaction<'_> {
     }
 
     /// Delete a WgToken by name.
-    pub fn wg_token_delete(&mut self, tunnel_uuid: Uuid, token_name: &str) -> Result<(), OperationError> {
+    pub fn wg_token_delete(
+        &mut self,
+        tunnel_uuid: Uuid,
+        token_name: &str,
+    ) -> Result<(), OperationError> {
         let filter = filter!(f_and!([
             f_eq(Attribute::Class, EntryClass::WgToken.into()),
             f_eq(Attribute::WgTunnelRef, PartialValue::Refer(tunnel_uuid)),
@@ -400,7 +394,10 @@ impl IdmServerProxyReadTransaction<'_> {
                 uses_left: e.get_ava_single_uint32(Attribute::WgTokenUsesLeft),
                 expiry: e
                     .get_ava_single_datetime(Attribute::WgTokenExpiry)
-                    .map(|dt| dt.format(&time::format_description::well_known::Rfc3339).unwrap_or_default()),
+                    .map(|dt| {
+                        dt.format(&time::format_description::well_known::Rfc3339)
+                            .unwrap_or_default()
+                    }),
                 principal: e
                     .get_ava_single_refer(Attribute::WgTokenPrincipalRef)
                     .map(|u| u.to_string()),
@@ -409,7 +406,10 @@ impl IdmServerProxyReadTransaction<'_> {
     }
 
     /// List peers for a tunnel by name.
-    pub fn wg_peer_list(&mut self, tunnel_name: &str) -> Result<Vec<WgPeerResponse>, OperationError> {
+    pub fn wg_peer_list(
+        &mut self,
+        tunnel_name: &str,
+    ) -> Result<Vec<WgPeerResponse>, OperationError> {
         let tunnel_uuid = self
             .qs_read
             .name_to_uuid(tunnel_name)
@@ -422,16 +422,23 @@ impl IdmServerProxyReadTransaction<'_> {
         Ok(entries
             .iter()
             .map(|e| {
-                let name = e.get_ava_single_iname(Attribute::Name).unwrap_or("").to_string();
-                let pubkey = e.get_ava_single_utf8(Attribute::WgPubkey).unwrap_or("").to_string();
+                let name = e
+                    .get_ava_single_iname(Attribute::Name)
+                    .unwrap_or("")
+                    .to_string();
+                let pubkey = e
+                    .get_ava_single_utf8(Attribute::WgPubkey)
+                    .unwrap_or("")
+                    .to_string();
                 let allowed_ips = e
                     .get_ava_set(Attribute::WgAllowedIps)
                     .and_then(|vs| vs.as_utf8_iter())
                     .map(|iter| iter.map(|s| s.to_string()).collect::<Vec<_>>())
                     .unwrap_or_default();
-                let last_seen = e
-                    .get_ava_single_datetime(Attribute::WgLastSeen)
-                    .map(|dt| dt.format(&time::format_description::well_known::Rfc3339).unwrap_or_default());
+                let last_seen = e.get_ava_single_datetime(Attribute::WgLastSeen).map(|dt| {
+                    dt.format(&time::format_description::well_known::Rfc3339)
+                        .unwrap_or_default()
+                });
                 let keepalive = e.get_ava_single_uint32(Attribute::WgPersistentKeepalive);
                 WgPeerResponse {
                     name,
@@ -613,9 +620,18 @@ mod tests {
     #[test]
     fn base64url_encode_produces_no_padding() {
         let encoded = base64url_encode(b"hello world");
-        assert!(!encoded.contains('='), "URL-safe base64 should have no padding");
-        assert!(!encoded.contains('+'), "URL-safe base64 should not contain '+'");
-        assert!(!encoded.contains('/'), "URL-safe base64 should not contain '/'");
+        assert!(
+            !encoded.contains('='),
+            "URL-safe base64 should have no padding"
+        );
+        assert!(
+            !encoded.contains('+'),
+            "URL-safe base64 should not contain '+'"
+        );
+        assert!(
+            !encoded.contains('/'),
+            "URL-safe base64 should not contain '/'"
+        );
         assert_eq!(encoded, "aGVsbG8gd29ybGQ");
     }
 

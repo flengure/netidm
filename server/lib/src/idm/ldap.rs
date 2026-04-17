@@ -6,9 +6,9 @@ use std::iter;
 use std::str::FromStr;
 
 use compact_jwt::JwsCompact;
+use ldap3_proto::simple::*;
 use netidm_proto::constants::*;
 use netidm_proto::internal::{ApiToken, UserAuthToken};
-use ldap3_proto::simple::*;
 use regex::{Regex, RegexBuilder};
 use std::net::IpAddr;
 use tracing::trace;
@@ -863,11 +863,11 @@ mod tests {
 
     use compact_jwt::{dangernoverify::JwsDangerReleaseWithoutVerify, JwsVerifier};
     use hashbrown::HashSet;
-    use netidm_proto::internal::ApiToken;
     use ldap3_proto::proto::{
         LdapFilter, LdapMsg, LdapOp, LdapResultCode, LdapSearchScope, LdapSubstringFilter,
     };
     use ldap3_proto::simple::*;
+    use netidm_proto::internal::ApiToken;
 
     use super::{LdapServer, LdapSession};
     use crate::idm::application::GenerateApplicationPasswordEvent;

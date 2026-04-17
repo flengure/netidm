@@ -13,10 +13,7 @@ impl WgBackend for KernelBackend {
     async fn bring_up(&self, tunnel: &WgTunnelConfig, peers: &[WgPeerConfig]) -> Result<()> {
         info!(interface = %tunnel.interface, "bringing up kernel WireGuard interface");
 
-        let ifname: InterfaceName = tunnel
-            .interface
-            .parse()
-            .context("invalid interface name")?;
+        let ifname: InterfaceName = tunnel.interface.parse().context("invalid interface name")?;
 
         let private_key = Key::from_base64(&tunnel.private_key).context("invalid private key")?;
 
@@ -40,20 +37,14 @@ impl WgBackend for KernelBackend {
 
     async fn tear_down(&self, tunnel: &WgTunnelConfig) -> Result<()> {
         info!(interface = %tunnel.interface, "tearing down kernel WireGuard interface");
-        let ifname: InterfaceName = tunnel
-            .interface
-            .parse()
-            .context("invalid interface name")?;
+        let ifname: InterfaceName = tunnel.interface.parse().context("invalid interface name")?;
         let device = Device::get(&ifname, Backend::Kernel).context("failed to get device")?;
         device.delete().context("failed to delete interface")?;
         Ok(())
     }
 
     async fn add_peer(&self, tunnel: &WgTunnelConfig, peer: &WgPeerConfig) -> Result<()> {
-        let ifname: InterfaceName = tunnel
-            .interface
-            .parse()
-            .context("invalid interface name")?;
+        let ifname: InterfaceName = tunnel.interface.parse().context("invalid interface name")?;
         DeviceUpdate::new()
             .add_peer(build_peer(peer)?)
             .apply(&ifname, Backend::Kernel)
@@ -62,10 +53,7 @@ impl WgBackend for KernelBackend {
     }
 
     async fn remove_peer(&self, tunnel: &WgTunnelConfig, pubkey: &str) -> Result<()> {
-        let ifname: InterfaceName = tunnel
-            .interface
-            .parse()
-            .context("invalid interface name")?;
+        let ifname: InterfaceName = tunnel.interface.parse().context("invalid interface name")?;
         let key = Key::from_base64(pubkey).context("invalid pubkey")?;
         DeviceUpdate::new()
             .remove_peer_by_key(&key)
@@ -75,10 +63,7 @@ impl WgBackend for KernelBackend {
     }
 
     async fn peer_handshakes(&self, tunnel: &WgTunnelConfig) -> Result<Vec<(String, u64)>> {
-        let ifname: InterfaceName = tunnel
-            .interface
-            .parse()
-            .context("invalid interface name")?;
+        let ifname: InterfaceName = tunnel.interface.parse().context("invalid interface name")?;
         let device = Device::get(&ifname, Backend::Kernel).context("device get failed")?;
         let pairs = device
             .peers

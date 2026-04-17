@@ -36,7 +36,8 @@ pub static SCHEMA_ATTR_WG_TOKEN_EXPIRY_DL17: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_WG_TOKEN_EXPIRY,
         name: Attribute::WgTokenExpiry,
-        description: "Expiry datetime for this registration token (absent = no expiry).".to_string(),
+        description: "Expiry datetime for this registration token (absent = no expiry)."
+            .to_string(),
         syntax: SyntaxType::DateTime,
         ..Default::default()
     });
@@ -45,7 +46,8 @@ pub static SCHEMA_ATTR_WG_TOKEN_PRINCIPAL_REF_DL17: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_WG_TOKEN_PRINCIPAL_REF,
         name: Attribute::WgTokenPrincipalRef,
-        description: "Optional reference to the person/account this token is restricted to.".to_string(),
+        description: "Optional reference to the person/account this token is restricted to."
+            .to_string(),
         syntax: SyntaxType::ReferenceUuid,
         ..Default::default()
     });

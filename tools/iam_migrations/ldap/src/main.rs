@@ -16,6 +16,10 @@ use crate::error::SyncError;
 use chrono::Utc;
 use clap::Parser;
 use cron::Schedule;
+use ldap3_client::{
+    proto::{self, LdapFilter},
+    LdapClient, LdapClientBuilder, LdapSyncRepl, LdapSyncReplEntry, LdapSyncStateValue,
+};
 use netidm_client::NetidmClientBuilder;
 use netidm_lib_file_permissions::readonly as file_permissions_readonly;
 use netidm_proto::constants::ATTR_OBJECTCLASS;
@@ -26,10 +30,6 @@ use netidm_proto::scim_v1::{
 #[cfg(target_family = "unix")]
 use netidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
 use netidmd_lib::prelude::Attribute;
-use ldap3_client::{
-    proto::{self, LdapFilter},
-    LdapClient, LdapClientBuilder, LdapSyncRepl, LdapSyncReplEntry, LdapSyncStateValue,
-};
 use rustls::pki_types::pem::PemObject;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs::metadata;

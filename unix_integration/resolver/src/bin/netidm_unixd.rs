@@ -12,11 +12,13 @@
 
 use clap::{Arg, ArgAction, Command};
 use futures::{SinkExt, StreamExt};
-use netidm_client::NetidmClientBuilder;
 use kanidm_hsm_crypto::{
     provider::{BoxedDynTpm, SoftTpm, Tpm},
     AuthValue,
 };
+use libc::umask;
+use lru::LruCache;
+use netidm_client::NetidmClientBuilder;
 use netidm_lib_file_permissions::diagnose_path;
 use netidm_proto::constants::DEFAULT_CLIENT_CONFIG_PATH;
 use netidm_proto::internal::OperationError;
@@ -36,8 +38,6 @@ use netidm_unix_resolver::{
     db::{Cache, Db},
 };
 use netidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
-use libc::umask;
-use lru::LruCache;
 use sketching::tracing::span;
 use sketching::tracing_forest::util::*;
 use sketching::tracing_forest::{self, traits::*};

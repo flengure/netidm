@@ -179,8 +179,9 @@ pub async fn wg_peer_delete(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
 ) -> Result<Json<()>, WebError> {
-    let peer_uuid = uuid::Uuid::parse_str(&peer_id)
-        .map_err(|_| WebError::OperationError(OperationError::InvalidAttribute("Invalid UUID".to_string())))?;
+    let peer_uuid = uuid::Uuid::parse_str(&peer_id).map_err(|_| {
+        WebError::OperationError(OperationError::InvalidAttribute("Invalid UUID".to_string()))
+    })?;
     state
         .qe_w_ref
         .handle_wg_peer_delete(client_auth_info, peer_uuid, kopid.eventid)
@@ -299,10 +300,7 @@ pub async fn wg_connect(
 
 pub fn route_setup() -> Router<ServerState> {
     Router::new()
-        .route(
-            "/v1/wg/tunnel",
-            get(wg_tunnel_list).post(wg_tunnel_create),
-        )
+        .route("/v1/wg/tunnel", get(wg_tunnel_list).post(wg_tunnel_create))
         .route(
             "/v1/wg/tunnel/{id}",
             get(wg_tunnel_get)
@@ -310,10 +308,7 @@ pub fn route_setup() -> Router<ServerState> {
                 .delete(wg_tunnel_delete),
         )
         .route("/v1/wg/tunnel/{id}/peer", get(wg_peer_list))
-        .route(
-            "/v1/wg/tunnel/{id}/peer/{peer_id}",
-            delete(wg_peer_delete),
-        )
+        .route("/v1/wg/tunnel/{id}/peer/{peer_id}", delete(wg_peer_delete))
         .route(
             "/v1/wg/tunnel/{id}/token",
             get(wg_token_list).post(wg_token_create),

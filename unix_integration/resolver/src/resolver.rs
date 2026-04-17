@@ -18,6 +18,7 @@ use crate::idprovider::system::{
 };
 use hashbrown::HashMap;
 use kanidm_hsm_crypto::provider::BoxedDynTpm;
+use lru::LruCache;
 use netidm_lib_file_permissions::diagnose_path;
 use netidm_unix_common::constants::{
     DEFAULT_CACHE_TIMEOUT_JITTER_MS, DEFAULT_CACHE_TIMEOUT_MAXIMUM, DEFAULT_CACHE_TIMEOUT_MINIMUM,
@@ -29,7 +30,6 @@ use netidm_unix_common::unix_proto::{
     HomeDirectoryInfo, NssGroup, NssUser, PamAuthRequest, PamAuthResponse, PamServiceInfo,
     ProviderStatus,
 };
-use lru::LruCache;
 use std::fmt::Display;
 use std::num::NonZeroUsize;
 use std::ops::DerefMut;

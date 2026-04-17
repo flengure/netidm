@@ -32,7 +32,7 @@ pub fn allocate_peer_ip(tunnel_cidr: &IpNet, used: &HashSet<IpAddr>) -> Result<I
         match tunnel_cidr.network() {
             IpAddr::V6(_) => {
                 h.next(); // skip ::0 (network)
-                h.next()  // this is ::1 (server)
+                h.next() // this is ::1 (server)
             }
             IpAddr::V4(_) => {
                 h.next() // .0 is excluded, first is .1 (server)

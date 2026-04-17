@@ -16,16 +16,16 @@ use chrono::Utc;
 use clap::Parser;
 use cron::Schedule;
 use hashbrown::HashSet;
-use netidm_client::NetidmClient;
-use netidm_client::NetidmClientBuilder;
-use netidm_lib_file_permissions::readonly as file_permissions_readonly;
-use netidm_proto::v1::OutboundMessage;
-use netidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
 use lettre::{
     address::Address, message::header::ContentType, message::Mailbox,
     transport::smtp::authentication::Credentials, AsyncSmtpTransport, AsyncTransport, Message,
     Tokio1Executor,
 };
+use netidm_client::NetidmClient;
+use netidm_client::NetidmClientBuilder;
+use netidm_lib_file_permissions::readonly as file_permissions_readonly;
+use netidm_proto::v1::OutboundMessage;
+use netidm_utils_users::{get_current_gid, get_current_uid, get_effective_gid, get_effective_uid};
 use std::fs::metadata;
 use std::fs::File;
 use std::io::Read;

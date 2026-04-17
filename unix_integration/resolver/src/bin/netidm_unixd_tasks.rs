@@ -11,6 +11,7 @@
 #![deny(clippy::trivially_copy_pass_by_ref)]
 
 use futures::{SinkExt, StreamExt};
+use libc::{lchown, umask};
 use netidm_unix_common::constants::{
     DEFAULT_CONFIG_PATH, SYSTEM_GROUP_PATH, SYSTEM_PASSWD_PATH, SYSTEM_SHADOW_PATH,
 };
@@ -21,7 +22,6 @@ use netidm_unix_common::unix_proto::{
     HomeDirectoryInfo, TaskRequest, TaskRequestFrame, TaskResponse,
 };
 use netidm_utils_users::{get_effective_gid, get_effective_uid};
-use libc::{lchown, umask};
 use notify_debouncer_full::notify::RecommendedWatcher;
 use notify_debouncer_full::Debouncer;
 use notify_debouncer_full::RecommendedCache;

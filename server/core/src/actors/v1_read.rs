@@ -1,4 +1,5 @@
 use compact_jwt::{JweCompact, Jwk, JwsCompact};
+use ldap3_proto::simple::*;
 use netidm_proto::backup::BackupCompression;
 use netidm_proto::internal::{
     ApiToken, AppLink, CURequest, CUSessionToken, CUStatus, CredentialStatus, IdentifyUserRequest,
@@ -33,7 +34,6 @@ use netidmd_lib::{
     idm::server::{DomainInfoRead, IdmServerTransaction},
     idm::serviceaccount::ListApiTokenEvent,
 };
-use ldap3_proto::simple::*;
 use regex::Regex;
 use std::convert::TryFrom;
 use std::fs;

@@ -1,3 +1,4 @@
+use ldap3_client::LdapClientBuilder;
 use netidm_proto::scim_v1::{
     client::{ScimEntryApplicationPost, ScimReference},
     ScimApplicationPasswordCreate,
@@ -5,7 +6,6 @@ use netidm_proto::scim_v1::{
 use netidmd_testkit::{
     setup_account_passkey, AsyncTestEnvironment, IDM_ADMIN_TEST_PASSWORD, IDM_ADMIN_TEST_USER,
 };
-use ldap3_client::LdapClientBuilder;
 use tracing::debug;
 
 const TEST_PERSON: &str = "user_mcuserton";

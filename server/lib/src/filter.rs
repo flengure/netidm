@@ -21,10 +21,10 @@ use concread::arcache::{ARCache, ARCacheReadTxn};
 use hashbrown::HashMap;
 #[cfg(test)]
 use hashbrown::HashSet;
+use ldap3_proto::proto::{LdapFilter, LdapSubstringFilter};
 use netidm_proto::constants::ATTR_UUID;
 use netidm_proto::internal::{Filter as ProtoFilter, OperationError, SchemaError};
 use netidm_proto::scim_v1::{AttrPath as ScimAttrPath, ScimFilter};
-use ldap3_proto::proto::{LdapFilter, LdapSubstringFilter};
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -1794,8 +1794,8 @@ mod tests {
     use std::collections::BTreeSet;
     use std::time::Duration;
 
-    use netidm_proto::internal::Filter as ProtoFilter;
     use ldap3_proto::simple::LdapFilter;
+    use netidm_proto::internal::Filter as ProtoFilter;
 
     use crate::event::{CreateEvent, DeleteEvent};
     use crate::filter::{Filter, FilterInvalid, DEFAULT_LIMIT_FILTER_DEPTH_MAX};

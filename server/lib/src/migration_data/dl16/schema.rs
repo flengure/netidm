@@ -33,24 +33,22 @@ pub static SCHEMA_ATTR_WG_ADDRESS_DL16: LazyLock<SchemaAttribute> =
         ..Default::default()
     });
 
-pub static SCHEMA_ATTR_WG_DNS_DL16: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_WG_DNS,
-        name: Attribute::WgDns,
-        description: "DNS servers pushed to clients (multi-value).".to_string(),
-        syntax: SyntaxType::Utf8String,
-        multivalue: true,
-        ..Default::default()
-    });
+pub static SCHEMA_ATTR_WG_DNS_DL16: LazyLock<SchemaAttribute> = LazyLock::new(|| SchemaAttribute {
+    uuid: UUID_SCHEMA_ATTR_WG_DNS,
+    name: Attribute::WgDns,
+    description: "DNS servers pushed to clients (multi-value).".to_string(),
+    syntax: SyntaxType::Utf8String,
+    multivalue: true,
+    ..Default::default()
+});
 
-pub static SCHEMA_ATTR_WG_MTU_DL16: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_WG_MTU,
-        name: Attribute::WgMtu,
-        description: "Optional MTU override for the tunnel interface.".to_string(),
-        syntax: SyntaxType::Uint32,
-        ..Default::default()
-    });
+pub static SCHEMA_ATTR_WG_MTU_DL16: LazyLock<SchemaAttribute> = LazyLock::new(|| SchemaAttribute {
+    uuid: UUID_SCHEMA_ATTR_WG_MTU,
+    name: Attribute::WgMtu,
+    description: "Optional MTU override for the tunnel interface.".to_string(),
+    syntax: SyntaxType::Uint32,
+    ..Default::default()
+});
 
 pub static SCHEMA_ATTR_WG_TABLE_DL16: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
@@ -114,7 +112,8 @@ pub static SCHEMA_ATTR_WG_PUBLIC_KEY_DL16: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_WG_PUBLIC_KEY,
         name: Attribute::WgPublicKey,
-        description: "Server WireGuard public key (sent to clients as [Peer] PublicKey).".to_string(),
+        description: "Server WireGuard public key (sent to clients as [Peer] PublicKey)."
+            .to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });
@@ -123,7 +122,8 @@ pub static SCHEMA_ATTR_WG_ENDPOINT_DL16: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_WG_ENDPOINT,
         name: Attribute::WgEndpoint,
-        description: "Public host:port of this tunnel (sent to clients as [Peer] Endpoint).".to_string(),
+        description: "Public host:port of this tunnel (sent to clients as [Peer] Endpoint)."
+            .to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });
@@ -154,7 +154,9 @@ pub static SCHEMA_ATTR_WG_PRESHARED_KEY_DL16: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_WG_PRESHARED_KEY,
         name: Attribute::WgPresharedKey,
-        description: "Optional per-peer preshared key stored in netidm, readable by the daemon via ACP.".to_string(),
+        description:
+            "Optional per-peer preshared key stored in netidm, readable by the daemon via ACP."
+                .to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });
@@ -186,14 +188,15 @@ pub static SCHEMA_ATTR_WG_USER_REF_DL16: LazyLock<SchemaAttribute> =
         ..Default::default()
     });
 
-pub static SCHEMA_ATTR_WG_PRIVATE_KEY_DL16: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
+pub static SCHEMA_ATTR_WG_PRIVATE_KEY_DL16: LazyLock<SchemaAttribute> = LazyLock::new(|| {
+    SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_WG_PRIVATE_KEY,
         name: Attribute::WgPrivateKey,
         description: "WireGuard tunnel private key, readable only by the daemon via ACP. Public key is derived from this whenever it changes.".to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()
-    });
+    }
+});
 
 // ---- Classes ----
 
@@ -210,7 +213,7 @@ pub static SCHEMA_CLASS_WG_TUNNEL_DL16: LazyLock<SchemaClass> = LazyLock::new(||
         Attribute::WgAddress,
     ],
     systemmay: vec![
-        Attribute::WgPublicKey,  // cached; daemon derives and writes this on private key change
+        Attribute::WgPublicKey, // cached; daemon derives and writes this on private key change
         Attribute::WgDns,
         Attribute::WgMtu,
         Attribute::WgTable,
@@ -234,9 +237,6 @@ pub static SCHEMA_CLASS_WG_PEER_DL16: LazyLock<SchemaClass> = LazyLock::new(|| S
         Attribute::WgTunnelRef,
         Attribute::WgUserRef,
     ],
-    systemmay: vec![
-        Attribute::WgPresharedKey,
-        Attribute::WgPersistentKeepalive,
-    ],
+    systemmay: vec![Attribute::WgPresharedKey, Attribute::WgPersistentKeepalive],
     ..Default::default()
 });

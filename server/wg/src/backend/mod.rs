@@ -22,10 +22,7 @@ pub trait WgBackend: Send + Sync {
     async fn remove_peer(&self, tunnel: &WgTunnelConfig, pubkey: &str) -> Result<()>;
 
     /// Return the last handshake time (Unix seconds) for each peer pubkey.
-    async fn peer_handshakes(
-        &self,
-        tunnel: &WgTunnelConfig,
-    ) -> Result<Vec<(String, u64)>>;
+    async fn peer_handshakes(&self, tunnel: &WgTunnelConfig) -> Result<Vec<(String, u64)>>;
 }
 
 /// Probe `/sys/module/wireguard` to decide which backend to use.

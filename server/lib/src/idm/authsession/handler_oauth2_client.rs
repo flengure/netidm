@@ -7,11 +7,11 @@ use crate::prelude::*;
 use crate::utils;
 use crate::value::{AuthType, SessionExtMetadata};
 use base64::{engine::general_purpose, Engine as _};
-use serde_json;
 use netidm_proto::oauth2::{
     AccessTokenRequest, AccessTokenResponse, AuthorisationRequest, AuthorisationRequestOidc,
     GrantTypeReq, ResponseType,
 };
+use serde_json;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
@@ -232,9 +232,11 @@ impl CredHandlerOAuth2Client {
         json: &serde_json::Value,
         claim_map: &BTreeMap<Attribute, String>,
     ) -> Option<ExternalUserClaims> {
-        let sub = json
-            .get("id")
-            .and_then(|v| v.as_i64().map(|n| n.to_string()).or_else(|| v.as_str().map(str::to_string)))?;
+        let sub = json.get("id").and_then(|v| {
+            v.as_i64()
+                .map(|n| n.to_string())
+                .or_else(|| v.as_str().map(str::to_string))
+        })?;
 
         let email_claim = claim_map
             .get(&Attribute::Mail)
@@ -343,9 +345,7 @@ impl CredHandlerOAuth2Client {
             .and_then(|v| v.as_str())
             .map(str::to_string);
 
-        let email_verified = json
-            .get("email_verified")
-            .and_then(|v| v.as_bool());
+        let email_verified = json.get("email_verified").and_then(|v| v.as_bool());
 
         let display_name_claim = claim_map
             .get(&Attribute::DisplayName)

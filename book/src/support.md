@@ -7,8 +7,7 @@ This document describes the Netidm project teams support and release version pro
 While we have made every effort to ensure this document is complete, in the event that something is missing or if you
 have a question, please [open a discussion](https://github.com/flengure/netidm/discussions).
 
-The version of this document found
-[on the project page](https://github.com/flengure/netidm/blob/master/book/src/support.md) is considered authoritative and
+The version of this document found in the project repository is considered authoritative and
 applies to all versions.
 
 ## Release Schedule and Versioning

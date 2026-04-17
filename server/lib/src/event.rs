@@ -19,12 +19,12 @@ use std::collections::BTreeSet;
 #[cfg(test)]
 use std::sync::Arc;
 
+use ldap3_proto::simple::LdapFilter;
 use netidm_proto::internal::{
     CreateRequest, DeleteRequest, ModifyList as ProtoModifyList, ModifyRequest, OperationError,
     SearchRequest, SearchResponse,
 };
 use netidm_proto::v1::{Entry as ProtoEntry, WhoamiResponse};
-use ldap3_proto::simple::LdapFilter;
 use uuid::Uuid;
 
 use crate::entry::{Entry, EntryCommitted, EntryInit, EntryNew, EntryReduced};

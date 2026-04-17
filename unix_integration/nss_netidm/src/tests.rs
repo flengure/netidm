@@ -1,6 +1,6 @@
 use crate::core::{self, RequestOptions};
-use netidm_unix_common::unix_passwd::{EtcGroup, EtcUser};
 use libnss::interop::Response;
+use netidm_unix_common::unix_passwd::{EtcGroup, EtcUser};
 
 impl RequestOptions {
     fn fallback_fixture() -> Self {

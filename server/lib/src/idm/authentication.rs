@@ -108,7 +108,10 @@ impl fmt::Debug for AuthState {
                 write!(f, "AuthState::Success({})", issue)
             }
             AuthState::ProvisioningRequired { provider_uuid, .. } => {
-                write!(f, "AuthState::ProvisioningRequired(provider={provider_uuid})")
+                write!(
+                    f,
+                    "AuthState::ProvisioningRequired(provider={provider_uuid})"
+                )
             }
         }
     }
@@ -123,10 +126,17 @@ pub enum AuthCredential {
     Passkey(Box<PublicKeyCredential>),
 
     // Internal Credential Types
-    OAuth2AuthorisationResponse { code: String, state: Option<String> },
-    OAuth2AccessTokenResponse { response: AccessTokenResponse },
+    OAuth2AuthorisationResponse {
+        code: String,
+        state: Option<String>,
+    },
+    OAuth2AccessTokenResponse {
+        response: AccessTokenResponse,
+    },
     /// Raw JSON body from the provider's userinfo endpoint (for GitHub and similar).
-    OAuth2UserinfoResponse { body: JsonValue },
+    OAuth2UserinfoResponse {
+        body: JsonValue,
+    },
 }
 
 impl From<ProtoAuthCredential> for AuthCredential {

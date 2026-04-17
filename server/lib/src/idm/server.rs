@@ -2308,16 +2308,17 @@ impl IdmServerProxyWriteTransaction<'_> {
         ]));
 
         let mut entries = self.qs_write.internal_search(filter).map_err(|e| {
-            admin_error!(?e, "find_account_by_oauth2_provider_and_user_id search failed");
+            admin_error!(
+                ?e,
+                "find_account_by_oauth2_provider_and_user_id search failed"
+            );
             e
         })?;
 
         match entries.len() {
             0 => Ok(None),
             1 => {
-                let entry = entries
-                    .pop()
-                    .ok_or(OperationError::InvalidState)?;
+                let entry = entries.pop().ok_or(OperationError::InvalidState)?;
                 crate::idm::account::Account::try_from_entry_rw(&entry, &mut self.qs_write)
                     .map(Some)
             }
@@ -2363,7 +2364,10 @@ impl IdmServerProxyWriteTransaction<'_> {
         entry.add_ava(Attribute::Uuid, Value::Uuid(new_account_uuid));
         entry.add_ava(Attribute::Name, Value::new_iname(desired_name));
         entry.add_ava(Attribute::DisplayName, Value::new_utf8s(&display_name));
-        entry.add_ava(Attribute::OAuth2AccountProvider, Value::Refer(provider_uuid));
+        entry.add_ava(
+            Attribute::OAuth2AccountProvider,
+            Value::Refer(provider_uuid),
+        );
         entry.add_ava(
             Attribute::OAuth2AccountUniqueUserId,
             Value::new_utf8s(&claims.sub),
@@ -2397,10 +2401,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         };
 
         let mut matches = self.qs_write.internal_search(filter!(f_and!([
-            f_eq(
-                Attribute::Mail,
-                PartialValue::EmailAddress(email.clone())
-            ),
+            f_eq(Attribute::Mail, PartialValue::EmailAddress(email.clone())),
             f_eq(Attribute::Class, EntryClass::Person.into()),
         ])))?;
 
@@ -2414,10 +2415,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         let cred_id = Uuid::new_v4();
 
         let modlist = ModifyList::new_list(vec![
-            Modify::Present(
-                Attribute::Class,
-                EntryClass::OAuth2Account.to_value(),
-            ),
+            Modify::Present(Attribute::Class, EntryClass::OAuth2Account.to_value()),
             Modify::Present(
                 Attribute::OAuth2AccountProvider,
                 Value::Refer(provider_uuid),
@@ -2426,10 +2424,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 Attribute::OAuth2AccountUniqueUserId,
                 Value::new_utf8s(&claims.sub),
             ),
-            Modify::Present(
-                Attribute::OAuth2AccountCredentialUuid,
-                Value::Uuid(cred_id),
-            ),
+            Modify::Present(Attribute::OAuth2AccountCredentialUuid, Value::Uuid(cred_id)),
         ]);
 
         self.qs_write
@@ -2496,7 +2491,9 @@ impl IdmServerProxyWriteTransaction<'_> {
 
         let mut name_is_free = |name: &str| -> Result<bool, OperationError> {
             let filter = filter_all!(f_eq(Attribute::Name, PartialValue::new_iname(name)));
-            self.qs_write.internal_search(filter).map(|res| res.is_empty())
+            self.qs_write
+                .internal_search(filter)
+                .map(|res| res.is_empty())
         };
 
         if name_is_free(&base)? {

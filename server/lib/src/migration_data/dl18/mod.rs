@@ -10,7 +10,9 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl17::phase_1_schema_attrs();
     attrs.extend([
         SCHEMA_ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS_DL18.clone().into(),
-        SCHEMA_ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS_DL18.clone().into(),
+        SCHEMA_ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS_DL18
+            .clone()
+            .into(),
     ]);
     attrs
 }

@@ -1,6 +1,6 @@
 use crate::OpType;
 
-use crate::{NetidmClientParser, MessageOpt, OutputMode};
+use crate::{MessageOpt, NetidmClientParser, OutputMode};
 // use netidm_proto::scim_v1::{ScimEntryGetQuery};
 
 impl MessageOpt {

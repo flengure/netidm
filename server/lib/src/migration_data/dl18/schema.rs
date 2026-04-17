@@ -32,7 +32,8 @@ pub static SCHEMA_ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS_DL18: LazyLock<SchemaAt
         ..Default::default()
     });
 
-pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL18: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL18: LazyLock<SchemaClass> = LazyLock::new(|| {
+    SchemaClass {
     uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
     name: EntryClass::OAuth2Client.into(),
     description:
@@ -55,6 +56,7 @@ pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL18: LazyLock<SchemaClass> = LazyLock::ne
         Attribute::OAuth2EmailLinkAccounts,
     ],
     ..Default::default()
+}
 });
 
 pub static SCHEMA_CLASS_DOMAIN_INFO_DL18: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {

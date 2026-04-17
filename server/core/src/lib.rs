@@ -53,12 +53,14 @@ use netidm_proto::config::ServerRole;
 use netidm_proto::internal::OperationError;
 use netidm_proto::scim_v1::client::ScimAssertGeneric;
 use netidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
-use netidmd_wg::{backend::boringtun::BoringtunBackend, backend::kernel::KernelBackend, BackendKind, WgManager};
 use netidmd_lib::idm::ldap::LdapServer;
 use netidmd_lib::prelude::*;
 use netidmd_lib::schema::Schema;
 use netidmd_lib::status::StatusActor;
 use netidmd_lib::value::CredentialType;
+use netidmd_wg::{
+    backend::boringtun::BoringtunBackend, backend::kernel::KernelBackend, BackendKind, WgManager,
+};
 use regex::Regex;
 use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
@@ -1166,7 +1168,10 @@ pub async fn create_server_core(
         let mut idms_prox_read = match idms_arc.proxy_read().await {
             Ok(r) => r,
             Err(e) => {
-                error!("Unable to acquire read transaction for WG startup -> {:?}", e);
+                error!(
+                    "Unable to acquire read transaction for WG startup -> {:?}",
+                    e
+                );
                 return Err(());
             }
         };
@@ -1187,14 +1192,22 @@ pub async fn create_server_core(
                                         netidmd_lib::prelude::Attribute::WgPublicKey,
                                         netidmd_lib::prelude::Value::new_utf8s(&pubkey),
                                     );
-                                    if let Err(e) = w.qs_write.internal_modify_uuid(tunnel_uuid, &ml) {
-                                        error!("Failed to write public key for tunnel {} -> {:?}", tunnel_name, e);
+                                    if let Err(e) =
+                                        w.qs_write.internal_modify_uuid(tunnel_uuid, &ml)
+                                    {
+                                        error!(
+                                            "Failed to write public key for tunnel {} -> {:?}",
+                                            tunnel_name, e
+                                        );
                                     } else {
                                         let _ = w.commit();
                                     }
                                 }
                             }
-                            Err(e) => error!("Failed to derive public key for tunnel {} -> {:?}", tunnel_name, e),
+                            Err(e) => error!(
+                                "Failed to derive public key for tunnel {} -> {:?}",
+                                tunnel_name, e
+                            ),
                         }
                     }
 
@@ -1203,18 +1216,27 @@ pub async fn create_server_core(
                         Ok(mut r) => match r.wg_list_peers_for_tunnel(tunnel_uuid) {
                             Ok(p) => p,
                             Err(e) => {
-                                error!("Failed to list peers for tunnel {} -> {:?}", tunnel_name, e);
+                                error!(
+                                    "Failed to list peers for tunnel {} -> {:?}",
+                                    tunnel_name, e
+                                );
                                 continue;
                             }
                         },
                         Err(e) => {
-                            error!("Failed to acquire read txn for peers of tunnel {} -> {:?}", tunnel_name, e);
+                            error!(
+                                "Failed to acquire read txn for peers of tunnel {} -> {:?}",
+                                tunnel_name, e
+                            );
                             continue;
                         }
                     };
 
                     if let Err(e) = manager.bring_up(&tunnel, &peers).await {
-                        error!("Failed to bring up WireGuard tunnel {} -> {:?}", tunnel_name, e);
+                        error!(
+                            "Failed to bring up WireGuard tunnel {} -> {:?}",
+                            tunnel_name, e
+                        );
                     }
                 }
             }

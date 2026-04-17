@@ -1,8 +1,8 @@
 use crate::core::{self, RequestOptions};
-use netidm_unix_common::constants::DEFAULT_CONFIG_PATH;
 use libnss::group::{Group, GroupHooks};
 use libnss::interop::Response;
 use libnss::passwd::{Passwd, PasswdHooks};
+use netidm_unix_common::constants::DEFAULT_CONFIG_PATH;
 
 struct NetidmPasswd;
 libnss_passwd_hooks!(netidm, NetidmPasswd);

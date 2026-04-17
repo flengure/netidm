@@ -46,13 +46,13 @@ use crate::valueset::{self, ScimResolveStatus, ValueSet, ValueSetSpn};
 use compact_jwt::JwsEs256Signer;
 use crypto_glue::s256::Sha256Output;
 use hashbrown::{HashMap, HashSet};
+use ldap3_proto::simple::{LdapPartialAttribute, LdapSearchResultEntry};
 use netidm_proto::internal::ImageValue;
 use netidm_proto::internal::{
     ConsistencyError, Filter as ProtoFilter, OperationError, SchemaError, UiHint,
 };
 use netidm_proto::scim_v1::server::ScimEffectiveAccess;
 use netidm_proto::v1::Entry as ProtoEntry;
-use ldap3_proto::simple::{LdapPartialAttribute, LdapSearchResultEntry};
 use std::cmp::Ordering;
 pub use std::collections::BTreeSet as Set;
 use std::collections::{BTreeMap as Map, BTreeMap, BTreeSet};
