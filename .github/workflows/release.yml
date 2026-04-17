@@ -77,12 +77,13 @@ jobs:
         run: |
           VERSION=${{ steps.version.outputs.version }}
           TARBALL="netidm-${VERSION}-${{ matrix.target }}.tar.gz"
-          mkdir -p dist
+          mkdir -p dist/static
           cp target/${{ matrix.target }}/release/netidmd dist/
           cp target/${{ matrix.target }}/release/netidm dist/
           cp target/${{ matrix.target }}/release/netidm_ssh_authorizedkeys_direct dist/
           cp server/daemon/debian/server.toml dist/server.toml.example
           cp server/daemon/debian/netidmd.service dist/netidmd.service
+          cp -r server/core/static/. dist/static/
           tar -czf "$TARBALL" -C dist .
           echo "TARBALL=$TARBALL" >> "$GITHUB_ENV"
           sha256sum "$TARBALL" > "$TARBALL.sha256"
