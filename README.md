@@ -43,7 +43,7 @@ If you want to read more about what Netidm can do, you should read our documenta
 
 - [Netidm book (latest stable)](https://netidm.github.io/netidm/stable/)
 
-We also have a set of [support guidelines](https://github.com/netidm/netidm/blob/master/book/src/support.md) for what
+We also have a set of [support guidelines](https://github.com/flengure/netidm/blob/master/book/src/support.md) for what
 the project team will support.
 
 ## Code of Conduct / Ethics
@@ -52,8 +52,8 @@ All interactions with the project are covered by our [code of conduct].
 
 When we develop features, we follow our project's guidelines on [rights and ethics].
 
-[code of conduct]: https://github.com/netidm/netidm/blob/master/CODE_OF_CONDUCT.md
-[rights and ethics]: https://github.com/netidm/netidm/blob/master/book/src/developers/developer_ethics.md
+[code of conduct]: https://github.com/flengure/netidm/blob/master/CODE_OF_CONDUCT.md
+[rights and ethics]: https://github.com/flengure/netidm/blob/master/book/src/developers/developer_ethics.md
 
 ## Getting in Contact / Questions
 
@@ -61,7 +61,7 @@ We have a Matrix-powered [gitter community channel] where project members are al
 Alternately you can open a new [GitHub discussion].
 
 [gitter community channel]: https://app.gitter.im/#/room/#netidm_community:gitter.im
-[github discussion]: https://github.com/netidm/netidm/discussions
+[github discussion]: https://github.com/flengure/netidm/discussions
 
 ## What does Netidm mean?
 
@@ -83,7 +83,7 @@ The Netidm anthem is [Crab Rave - Noisestorm](https://www.youtube.com/watch?v=LD
 
 [LLDAP](https://github.com/nitnelave/lldap) is a similar project focused on providing a small, easy-to-administer LDAP
 server with a web administration portal. Both LLDAP and Netidm use the
-[Netidm LDAP bindings](https://github.com/netidm/ldap3) and share many common design ideas.
+[Netidm LDAP bindings](https://github.com/kanidm/ldap3) and share many common design ideas.
 
 The primary advantage of Netidm over LLDAP is its broader built-in feature set, including native support for OAuth2 and
 OIDC. In contrast, LLDAP requires integration with an external portal like Keycloak to provide these features. However,

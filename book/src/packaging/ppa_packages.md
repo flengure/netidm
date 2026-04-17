@@ -2,11 +2,11 @@
 
 > [!NOTE]
 > These are not supported in the main repo, please raise issues in the
-> [netidm/netidm_ppa_automation](https://github.com/netidm/netidm_ppa_automation) repository, and understand that it is
+> [netidm/netidm_ppa_automation](https://github.com/flengure/netidm_ppa_automation) repository, and understand that it is
 > a community-supported effort, rather than by the core Netidm project.
 
 - The Netidm PPA repository contains Debian & Ubuntu packages built from the
-  [main Netidm repository](https://github.com/netidm/netidm).
+  [main Netidm repository](https://github.com/flengure/netidm).
 - Two separate components are available, `stable` for released versions and `nightly` which only provides the latest
   bleeding edge, refreshed once a day.
 - Packages are distributed for current LTS versions of Debian & Ubuntu that natively package the required dependencies;

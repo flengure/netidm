@@ -10,8 +10,8 @@ create-missing = true
 use-default-preprocessors = true
 
 [output.html]
-edit-url-template = "https://github.com/netidm/netidm/edit/master/book/{path}"
-git-repository-url = "https://github.com/netidm/netidm"
+edit-url-template = "https://github.com/flengure/netidm/edit/master/book/{path}"
+git-repository-url = "https://github.com/flengure/netidm"
 additional-js = ["mermaid.min.js", "mermaid-init.js"]
 
 # # mermaid graph rendering, you need mdbook-mermaid

@@ -49,6 +49,8 @@ jobs:
             libsystemd-dev
 
       - name: Build release binaries
+        env:
+          NETIDM_BUILD_PROFILE: release_linux
         run: |
           cargo build --release --locked \
             --target ${{ matrix.target }} \

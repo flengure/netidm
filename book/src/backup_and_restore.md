@@ -11,7 +11,7 @@ from.
 Automatic backups can be generated online by a `netidmd server` instance by including the `[online_backup]` section in
 the `server.toml`. This allows you to run regular backups, defined by a cron schedule, and maintain the number of backup
 versions to keep. An example is located in
-[examples/server.toml](https://github.com/netidm/netidm/blob/master/examples/server.toml).
+[examples/server.toml](https://github.com/flengure/netidm/blob/master/examples/server.toml).
 
 ## Method 2 - Manual Backup
 

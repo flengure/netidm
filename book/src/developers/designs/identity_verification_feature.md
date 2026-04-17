@@ -20,7 +20,7 @@ Below you can find said subset along with an explanation for every response.
 ![generic api responses](diagrams/idv_generic_responses.drawio.svg)
 
 Here are the _IdentifyUserRequest_ and _IdentifyUserResponse_ enums just described as found inside the
-[source code](https://github.com/netidm/netidm/blob/05b35df413e017ca44cc4410cc255b63728ef373/proto/src/internal.rs#L32)
+[source code](https://github.com/flengure/netidm/blob/05b35df413e017ca44cc4410cc255b63728ef373/proto/src/internal.rs#L32)
 :
 
 ```rust

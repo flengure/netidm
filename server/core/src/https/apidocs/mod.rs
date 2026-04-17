@@ -351,7 +351,7 @@ impl Modify for SecurityAddon {
         description = "API for interacting with the Netidm system. This is a work in progress.",
         contact( // <https://docs.rs/utoipa-gen/3.5.0/utoipa_gen/derive.OpenApi.html#info-attribute-syntax>
             name="Netidm Github",
-            url="https://github.com/netidm/netidm",
+            url="https://github.com/flengure/netidm",
         )
     )
 )]

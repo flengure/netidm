@@ -5,10 +5,10 @@
 This document describes the Netidm project teams support and release version processes.
 
 While we have made every effort to ensure this document is complete, in the event that something is missing or if you
-have a question, please [open a discussion](https://github.com/netidm/netidm/discussions).
+have a question, please [open a discussion](https://github.com/flengure/netidm/discussions).
 
 The version of this document found
-[on the project page](https://github.com/netidm/netidm/blob/master/book/src/support.md) is considered authoritative and
+[on the project page](https://github.com/flengure/netidm/blob/master/book/src/support.md) is considered authoritative and
 applies to all versions.
 
 ## Release Schedule and Versioning
@@ -123,7 +123,7 @@ Stable APIs are:
 
 - LDAP protocol operations
 - JSON HTTP end points which use elements from
-  [`proto/src/v1`](https://github.com/netidm/netidm/blob/master/proto/src/v1)
+  [`proto/src/v1`](https://github.com/flengure/netidm/blob/master/proto/src/v1)
 
 All other APIs and interactions are not considered stable. Changes will be minimised if possible. This includes but is
 not limited to:
@@ -134,19 +134,19 @@ not limited to:
 - entry schema
 - CLI interface of any command provided by netidm unless otherwise noted above
 - JSON HTTP end points which use elements from
-  [`proto/src/internal.rs`](https://github.com/netidm/netidm/blob/master/proto/src/internal.rs)
-- SCIM operations from [`proto/src/scim_v1`](https://github.com/netidm/netidm/blob/master/proto/src/scim_v1)
+  [`proto/src/internal.rs`](https://github.com/flengure/netidm/blob/master/proto/src/internal.rs)
+- SCIM operations from [`proto/src/scim_v1`](https://github.com/flengure/netidm/blob/master/proto/src/scim_v1)
 
 ### Deprecation Policy
 
 Features or APIs may be removed with 1 release versions notice. Deprecations will be announced in
-[the Release Notes](https://github.com/netidm/netidm/blob/master/RELEASE_NOTES.md)
+[the Release Notes](https://github.com/flengure/netidm/blob/master/RELEASE_NOTES.md)
 
 ### Python module
 
 The Python module will typically trail changes in functionality of the core Rust code, and has been developed as we have
 needed it - please feel free to add functionality or improvements, or
-[ask for them in a Github issue](http://github.com/netidm/netidm/issues/new/choose)!
+[ask for them in a Github issue](http://github.com/flengure/netidm/issues/new/choose)!
 
 All code changes will include full type-casting wherever possible.
 

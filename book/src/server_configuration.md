@@ -27,7 +27,7 @@ The following is a commented example configuration.
 ```
 
 This example is located in
-[examples/server_container.toml](https://github.com/netidm/netidm/blob/master/examples/server_container.toml).
+[examples/server_container.toml](https://github.com/flengure/netidm/blob/master/examples/server_container.toml).
 
 > [!WARNING]
 >

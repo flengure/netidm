@@ -24,7 +24,7 @@ The sync tool specific components are configured in its own configuration file.
 ```
 
 This example is located in
-[examples/netidm-ipa-sync](https://github.com/netidm/netidm/blob/master/examples/netidm-ipa-sync).
+[examples/netidm-ipa-sync](https://github.com/flengure/netidm/blob/master/examples/netidm-ipa-sync).
 
 In addition to this, you must make some configuration changes to FreeIPA to enable synchronisation.
 

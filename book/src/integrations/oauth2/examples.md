@@ -7,7 +7,7 @@
 > [!TIP]
 >
 > More examples can be found in the
-> [Show and tell category](https://github.com/netidm/netidm/discussions/categories/show-and-tell) of Netidm's GitHub
+> [Show and tell category](https://github.com/flengure/netidm/discussions/categories/show-and-tell) of Netidm's GitHub
 > discussions.
 
 ## Apache `mod_auth_openidc`

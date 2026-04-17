@@ -1,7 +1,7 @@
 # Monitoring the platform
 
 The monitoring design of Netidm is still very much in its infancy -
-[take part in the discussion at github.com/netidm/netidm/issues/216](https://github.com/netidm/netidm/issues/216).
+[take part in the discussion at github.com/flengure/netidm/issues/216](https://github.com/flengure/netidm/issues/216).
 
 ## netidmd status endpoint
 

@@ -7,8 +7,8 @@ authors = [
 rust-version = "1.93"
 edition = "2021"
 license = "MPL-2.0"
-homepage = "https://github.com/netidm/netidm/"
-repository = "https://github.com/netidm/netidm/"
+homepage = "https://github.com/flengure/netidm/"
+repository = "https://github.com/flengure/netidm/"
 
 [workspace]
 resolver = "2"
@@ -111,8 +111,8 @@ codegen-units = 256
 
 # ldap3_client = { path = "../ldap3/client" }
 # ldap3_proto = { path = "../ldap3/proto" }
-# ldap3_client = { git = "https://github.com/netidm/ldap3.git" }
-# ldap3_proto = { git = "https://github.com/netidm/ldap3.git" }
+# ldap3_client = { git = "https://github.com/kanidm/ldap3.git" }
+# ldap3_proto = { git = "https://github.com/kanidm/ldap3.git" }
 
 # base64urlsafedata = { path = "../webauthn-rs/base64urlsafedata" }
 # webauthn-authenticator-rs = { path = "../webauthn-rs/webauthn-authenticator-rs" }

@@ -12,7 +12,7 @@ theme:
     - yaml
 
 repo_name: "netidm/netidm"
-repo_url: "https://github.com/netidm/netidm"
+repo_url: "https://github.com/flengure/netidm"
 
 plugins:
   - search:

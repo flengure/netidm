@@ -13,7 +13,7 @@ LICENSE=        MPL20
 LICENSE_FILE=   ${WRKSRC}/LICENSE.md
 MAINTAINER=	william@blackhats.net.au
 COMMENT=	Simple and secure identity management platform
-WWW=		https://github.com/netidm/netidm/
+WWW=		https://github.com/flengure/netidm/
 
 USES=		cargo ssl
 USE_GITHUB=	yes

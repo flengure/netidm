@@ -25,7 +25,7 @@ The sync tool specific components are configured in its own configuration file.
 ```
 
 This example is located in
-[examples/netidm-ldap-sync](https://github.com/netidm/netidm/blob/master/examples/netidm-ldap-sync).
+[examples/netidm-ldap-sync](https://github.com/flengure/netidm/blob/master/examples/netidm-ldap-sync).
 
 In addition to this, you may be required to make some configuration changes to your LDAP server to enable
 synchronisation.

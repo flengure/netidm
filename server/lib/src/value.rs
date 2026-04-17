@@ -2612,7 +2612,7 @@ mod tests {
     fn test_value_url() {
         // https://html.spec.whatwg.org/multipage/forms.html#valid-e-mail-address
         let val1 = Value::new_url_s("https://localhost:8000/search?q=text#hello");
-        let val2 = Value::new_url_s("https://github.com/netidm/netidm");
+        let val2 = Value::new_url_s("https://github.com/flengure/netidm");
         let val3 = Value::new_url_s("ldap://foo.com");
         let inv1 = Value::new_url_s("127.0.");
         let inv2 = Value::new_url_s("🤔");

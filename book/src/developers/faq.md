@@ -28,7 +28,7 @@ This last point is key. It is a critical part of Netidm that the following must 
 single test in the suite.
 
 ```shell
-git clone https://github.com/netidm/netidm.git
+git clone https://github.com/flengure/netidm.git
 cd netidm
 cargo test
 ```

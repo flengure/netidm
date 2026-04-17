@@ -66,7 +66,7 @@ all data is loaded and then immediately granted authority to Netidm.
 First a user must be able to retrieve their data from their supplying IDM source. Initially we will target LDAP and
 systems with LDAP interfaces, but in the future there is no barrier to supporting other transports.
 
-To achieve this, we initially provide synchronisation primitives in the [ldap3 crate](https://github.com/netidm/ldap3).
+To achieve this, we initially provide synchronisation primitives in the [ldap3 crate](https://github.com/kanidm/ldap3).
 
 ### Transform
 

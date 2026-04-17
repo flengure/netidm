@@ -45,7 +45,7 @@ pkg install netidm-client
 
 ### macOS - Homebrew
 
-[Netidm provides a Homebrew cask](https://github.com/netidm/homebrew-netidm), which lets [Homebrew](https://brew.sh/)
+[Netidm provides a Homebrew cask](https://github.com/flengure/homebrew-netidm), which lets [Homebrew](https://brew.sh/)
 build and install the CLI client tools from source:
 
 ```bash

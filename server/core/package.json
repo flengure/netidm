@@ -5,12 +5,12 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/netidm/netidm.git"
+    "url": "git+https://github.com/flengure/netidm.git"
   },
   "author": "",
   "license": "MPL-2.0",
   "bugs": {
-    "url": "https://github.com/netidm/netidm/issues"
+    "url": "https://github.com/flengure/netidm/issues"
   },
   "homepage": "https://netidm.com",
   "devDependencies": {

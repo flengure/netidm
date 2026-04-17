@@ -28,7 +28,7 @@ classifiers = [
 
 [project.urls]
 homepage = "https://netidm.com/"
-repository = "https://github.com/netidm/netidm"
+repository = "https://github.com/flengure/netidm"
 
 [project.scripts]
 netidm_openapi_codegen = "netidm.openapi_codegen:main"

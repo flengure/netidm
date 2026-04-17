@@ -32,7 +32,7 @@ Attributes of an entry can be removed by setting them to `null`.
 {{#rustdoc_include ../../examples/migrations/00-basic.hjson}}
 ```
 
-This example is located in [examples/migrations](https://github.com/netidm/netidm/blob/master/examples/migrations/) in
+This example is located in [examples/migrations](https://github.com/flengure/netidm/blob/master/examples/migrations/) in
 the repository. There are other migrations there you may find useful.
 
 ## Recommendations

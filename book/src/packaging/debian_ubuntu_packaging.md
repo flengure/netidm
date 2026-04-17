@@ -3,7 +3,7 @@
 ## Building packages
 
 - Debian packaging is complex enough that it lives in a separate repository:
-  [netidm/netidm_ppa_automation](https://github.com/netidm/netidm_ppa_automation).
+  [netidm/netidm_ppa_automation](https://github.com/flengure/netidm_ppa_automation).
 - While community-maintained packages are available at <https://netidm.github.io/netidm_ppa/> these instructions will
   guide you through replicating the same process locally, using Docker to isolate the build process from your normal
   computer.
@@ -12,7 +12,7 @@
 - While the examples below will use `aarch64-unknown-linux-gnu` aka `arm64`, the same process works for
   `x86_64-unknown-linux-gnu` aka `amd64` as well.
 
-1. Start in the root directory of the main [netidm/netidm](https://github.com/netidm/netidm) repository.
+1. Start in the root directory of the main [netidm/netidm](https://github.com/flengure/netidm) repository.
 2. Pull in the separate deb packaging submodule:
 
 ```shell
@@ -62,7 +62,7 @@ In theory steps 1 & 3 could be done in one PR, but this way is simpler.
 
 ### Configuration in the main repo
 
-- The repo is: [netidm/netidm](https://github.com/netidm/netidm)
+- The repo is: [netidm/netidm](https://github.com/flengure/netidm)
 - Packages are primarily based on their package specific `Cargo.toml` definition read by `cargo-deb`. For an example,
   see `unix_integration/resolver/Cargo.toml`
 - A package specific `debian` folder is used for static assets. See: `unix_integration/resolver/debian` for an example.
@@ -73,7 +73,7 @@ In theory steps 1 & 3 could be done in one PR, but this way is simpler.
 
 ### Configuration in the netidm_ppa_automation repo
 
-- The repo is: [netidm/netidm_ppa_automation](https://github.com/netidm/netidm_ppa_automation)
+- The repo is: [netidm/netidm_ppa_automation](https://github.com/flengure/netidm_ppa_automation)
 - Changes are needed if a new binary and/or package is added, or if build time dependencies change.
 - Amend `scripts/build_native.sh` build rules to include new binaries or packages with shared libraries.
 - Add any new build time system dependencies to `scripts/install_ci_build_dependencies.sh`, be aware of any difference

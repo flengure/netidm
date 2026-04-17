@@ -747,9 +747,9 @@ especially like to thank:
 - Recycle Bin
 - Performance analysis tools
 
-[issue tracker]: https://github.com/netidm/netidm/issues
+[issue tracker]: https://github.com/flengure/netidm/issues
 [gitter community channel]: https://gitter.im/netidm/community
-[code of conduct]: https://github.com/netidm/netidm/blob/master/CODE_OF_CONDUCT.md
+[code of conduct]: https://github.com/flengure/netidm/blob/master/CODE_OF_CONDUCT.md
 [netidm book]: https://netidm.github.io/netidm/stable/
-[our upgrade documentation]: https://github.com/netidm/netidm/blob/master/book/src/server_updates.md#general-update-notes
-[support documentation]: https://github.com/netidm/netidm/blob/master/book/src/support.md
+[our upgrade documentation]: https://github.com/flengure/netidm/blob/master/book/src/server_updates.md#general-update-notes
+[support documentation]: https://github.com/flengure/netidm/blob/master/book/src/support.md

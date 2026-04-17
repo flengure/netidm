@@ -146,7 +146,7 @@ netidm group account-policy privilege-expiry my_admin_group 86400 # NB: will be 
 ### Setting Webauthn Attestation CA Lists
 
 To verify Webauthn authenticators with attestation, Netidm needs an allowlist of authenticators to trust. Generate this
-list with the `fido-mds-tool` from the [webauthn-rs project](https://github.com/netidm/webauthn-rs). If you have a Rust
+list with the `fido-mds-tool` from the [webauthn-rs project](https://github.com/kanidm/webauthn-rs). If you have a Rust
 toolchain installed, it can built and installed from source with
 
 ```bash

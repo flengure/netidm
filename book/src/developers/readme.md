@@ -183,7 +183,7 @@ To get started, you'll need to fork or branch, and we'll merge based on pull req
 Netidm is (largely) a monorepo. This can be checked out with:
 
 ```bash
-git clone https://github.com/netidm/netidm.git
+git clone https://github.com/flengure/netidm.git
 cd netidm
 ```
 

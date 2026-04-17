@@ -23,4 +23,4 @@ We will endeavour to respond to your request as soon as possible.
 
 We do not offer bounties, but acknowledgement will be made if you like.
 
-[1]: https://github.com/netidm/netidm/security/advisories/new
+[1]: https://github.com/flengure/netidm/security/advisories/new
