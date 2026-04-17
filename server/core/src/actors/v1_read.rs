@@ -1587,4 +1587,49 @@ impl QueryServerReadV1 {
     pub fn domain_info_read(&self) -> DomainInfoRead {
         self.idms.domain_read()
     }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_tunnel_list(
+        &self,
+        _client_auth_info: ClientAuthInfo,
+        backend: String,
+        eventid: Uuid,
+    ) -> Result<Vec<kanidm_proto::wg::WgTunnelResponse>, OperationError> {
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        idms_prox_read.wg_list_tunnel_responses(&backend)
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_tunnel_get(
+        &self,
+        _client_auth_info: ClientAuthInfo,
+        name: String,
+        backend: String,
+        eventid: Uuid,
+    ) -> Result<Option<kanidm_proto::wg::WgTunnelResponse>, OperationError> {
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        idms_prox_read.wg_tunnel_get_response(&name, 0, &backend)
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_token_list(
+        &self,
+        _client_auth_info: ClientAuthInfo,
+        tunnel_name: String,
+        eventid: Uuid,
+    ) -> Result<Vec<kanidm_proto::wg::WgTokenInfo>, OperationError> {
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        idms_prox_read.wg_token_list(&tunnel_name)
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_peer_list(
+        &self,
+        _client_auth_info: ClientAuthInfo,
+        tunnel_name: String,
+        eventid: Uuid,
+    ) -> Result<Vec<kanidm_proto::wg::WgPeerResponse>, OperationError> {
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        idms_prox_read.wg_peer_list(&tunnel_name)
+    }
 }

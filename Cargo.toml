@@ -27,6 +27,7 @@ members = [
     "server/lib",
     "server/lib-macros",
     "server/core",
+    "server/wg",
     "server/testkit",
     "server/testkit-macros",
     "libs/client",

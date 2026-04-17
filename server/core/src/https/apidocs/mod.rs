@@ -1,5 +1,5 @@
 use axum::{middleware::from_fn, response::Redirect, routing::get, Router};
-use kanidm_proto::{attribute, internal, scim_v1, v1};
+use kanidm_proto::{attribute, internal, scim_v1, v1, wg};
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
     Modify, OpenApi,
@@ -94,6 +94,18 @@ impl Modify for SecurityAddon {
         super::v1_scim::scim_message_id_get,
         super::v1_scim::scim_message_ready_get,
         super::v1_scim::scim_message_id_sent_post,
+
+        super::v1_wg::wg_tunnel_list,
+        super::v1_wg::wg_tunnel_create,
+        super::v1_wg::wg_tunnel_get,
+        super::v1_wg::wg_tunnel_patch,
+        super::v1_wg::wg_tunnel_delete,
+        super::v1_wg::wg_peer_list,
+        super::v1_wg::wg_peer_delete,
+        super::v1_wg::wg_token_list,
+        super::v1_wg::wg_token_create,
+        super::v1_wg::wg_token_delete,
+        super::v1_wg::wg_connect,
 
         super::v1::schema_get,
         super::v1::whoami,
@@ -319,6 +331,15 @@ impl Modify for SecurityAddon {
             response_schema::Jwk,
             response_schema::ScimComplexAttr,
             WebError,
+            wg::WgTunnelCreate,
+            wg::WgTunnelPatch,
+            wg::WgTunnelResponse,
+            wg::WgPeerResponse,
+            wg::WgTokenCreate,
+            wg::WgTokenCreatedResponse,
+            wg::WgTokenInfo,
+            wg::WgConnectRequest,
+            wg::WgConnectResponse,
         )
     ),
     modifiers(&SecurityAddon),

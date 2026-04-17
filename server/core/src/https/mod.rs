@@ -63,6 +63,7 @@ mod v1;
 mod v1_domain;
 mod v1_oauth2;
 mod v1_scim;
+mod v1_wg;
 mod views;
 
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
@@ -97,6 +98,8 @@ pub struct ServerState {
     pub(crate) secure_cookies: bool,
     /// So that we can work out which ID to use for spans
     pub(crate) logging_pipeline: LoggerType,
+    /// Live WireGuard interface manager.
+    pub(crate) wg_manager: Arc<kanidmd_wg::WgManager>,
 }
 
 impl ServerState {
@@ -191,6 +194,14 @@ async fn handler_404() -> Response {
     (StatusCode::NOT_FOUND, "Route not found").into_response()
 }
 
+/// Bundles TLS setup and optional WireGuard manager so that `create_https_server` stays within
+/// the argument-count limit enforced by clippy.
+pub struct ServerServices {
+    pub maybe_tls_acceptor: Option<TlsAcceptor>,
+    pub tls_acceptor_reload_tx: broadcast::Sender<TlsAcceptor>,
+    pub wg_manager: Arc<kanidmd_wg::WgManager>,
+}
+
 pub async fn create_https_server(
     config: Configuration,
     jws_signer: JwsHs256Signer,
@@ -198,9 +209,13 @@ pub async fn create_https_server(
     qe_w_ref: &'static QueryServerWriteV1,
     qe_r_ref: &'static QueryServerReadV1,
     server_message_tx: broadcast::Sender<CoreAction>,
-    maybe_tls_acceptor: Option<TlsAcceptor>,
-    tls_acceptor_reload_tx: &broadcast::Sender<TlsAcceptor>,
+    services: ServerServices,
 ) -> Result<Vec<task::JoinHandle<()>>, ()> {
+    let ServerServices {
+        maybe_tls_acceptor,
+        tls_acceptor_reload_tx,
+        wg_manager,
+    } = services;
     let all_js_files = get_js_files(config.role)?;
     // set up the CSP headers
     // script-src 'self'
@@ -288,6 +303,7 @@ pub async fn create_https_server(
         domain: config.domain.clone(),
         secure_cookies: config.integration_test_config.is_none(),
         logging_pipeline,
+        wg_manager,
     };
 
     let static_routes = match config.role {
@@ -309,6 +325,7 @@ pub async fn create_https_server(
     let app = Router::new()
         .merge(oauth2::route_setup(state.clone()))
         .merge(v1_scim::route_setup())
+        .merge(v1_wg::route_setup())
         .merge(v1::route_setup(state.clone()))
         .route("/robots.txt", get(generic::robots_txt))
         .route(

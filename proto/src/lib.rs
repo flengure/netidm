@@ -28,5 +28,6 @@ pub mod scim_v1;
 pub mod v1;
 
 pub mod attribute;
+pub mod wg;
 
 pub use webauthn_rs_proto as webauthn;

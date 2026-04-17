@@ -449,6 +449,20 @@ pub const UUID_SCHEMA_ATTR_WG_USER_REF: Uuid =
 pub const UUID_SCHEMA_ATTR_WG_PRIVATE_KEY: Uuid =
     uuid!("00000000-0000-0000-0000-ffff0000023e");
 
+// DL17 — WireGuard token and peer monitoring
+pub const UUID_SCHEMA_ATTR_WG_LAST_SEEN: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff0000023f");
+pub const UUID_SCHEMA_ATTR_WG_TOKEN_SECRET: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000240");
+pub const UUID_SCHEMA_ATTR_WG_TOKEN_USES_LEFT: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000241");
+pub const UUID_SCHEMA_ATTR_WG_TOKEN_EXPIRY: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000242");
+pub const UUID_SCHEMA_ATTR_WG_TOKEN_PRINCIPAL_REF: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000243");
+pub const UUID_SCHEMA_CLASS_WG_TOKEN: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000244");
+
 // =====
 // Incorrectly name spaced.
 pub const UUID_SCHEMA_ATTR_OAUTH2_DEVICE_FLOW_ENABLE: Uuid =

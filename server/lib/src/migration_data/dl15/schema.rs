@@ -1,8 +1,5 @@
 //! Schema entries for DL15: OAuth2 social login with JIT provisioning.
 
-// Re-export dl14 schema items used by test code via `latest::schema`.
-#[cfg(test)]
-pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
 
 use crate::constants::{
     UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME, UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_EMAIL,

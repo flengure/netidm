@@ -235,6 +235,12 @@ pub enum Attribute {
     WgTunnelRef,
     WgUserRef,
     WgPrivateKey,
+    // DL17 — WireGuard token and peer monitoring
+    WgLastSeen,
+    WgTokenSecret,
+    WgTokenUsesLeft,
+    WgTokenExpiry,
+    WgTokenPrincipalRef,
 
     #[cfg(any(debug_assertions, test, feature = "test"))]
     NonExist,
@@ -352,6 +358,11 @@ impl Attribute {
             Attribute::WgTunnelRef => ATTR_WG_TUNNEL_REF,
             Attribute::WgUserRef => ATTR_WG_USER_REF,
             Attribute::WgPrivateKey => ATTR_WG_PRIVATE_KEY,
+            Attribute::WgLastSeen => ATTR_WG_LAST_SEEN,
+            Attribute::WgTokenSecret => ATTR_WG_TOKEN_SECRET,
+            Attribute::WgTokenUsesLeft => ATTR_WG_TOKEN_USES_LEFT,
+            Attribute::WgTokenExpiry => ATTR_WG_TOKEN_EXPIRY,
+            Attribute::WgTokenPrincipalRef => ATTR_WG_TOKEN_PRINCIPAL_REF,
             Attribute::ApiTokenSession => ATTR_API_TOKEN_SESSION,
             Attribute::ApplicationPassword => ATTR_APPLICATION_PASSWORD,
             Attribute::ApplicationUrl => ATTR_APPLICATION_URL,
@@ -776,6 +787,11 @@ impl Attribute {
             ATTR_WG_TUNNEL_REF => Attribute::WgTunnelRef,
             ATTR_WG_USER_REF => Attribute::WgUserRef,
             ATTR_WG_PRIVATE_KEY => Attribute::WgPrivateKey,
+            ATTR_WG_LAST_SEEN => Attribute::WgLastSeen,
+            ATTR_WG_TOKEN_SECRET => Attribute::WgTokenSecret,
+            ATTR_WG_TOKEN_USES_LEFT => Attribute::WgTokenUsesLeft,
+            ATTR_WG_TOKEN_EXPIRY => Attribute::WgTokenExpiry,
+            ATTR_WG_TOKEN_PRINCIPAL_REF => Attribute::WgTokenPrincipalRef,
 
             #[cfg(any(debug_assertions, test, feature = "test"))]
             TEST_ATTR_NON_EXIST => Attribute::NonExist,

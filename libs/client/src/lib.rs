@@ -61,6 +61,7 @@ mod scim;
 mod service_account;
 mod sync_account;
 mod system;
+mod wg;
 
 const EXPECT_VERSION: &str = env!("CARGO_PKG_VERSION");
 

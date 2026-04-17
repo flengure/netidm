@@ -84,6 +84,9 @@ image = { workspace = true, default-features = false, features = [
 ] }
 svg = { workspace = true }
 flate2 = "1.1.9"
+kanidmd_wg = { version = "1.10.0-dev", path = "../wg" }
+sha2.workspace = true
+ipnet = "2.12.0"
 
 # because windows really can't build without the bundled one
 [target.'cfg(target_family = "windows")'.dependencies]

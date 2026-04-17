@@ -220,6 +220,13 @@ pub const ATTR_WG_USER_REF: &str = "wg_user_ref";
 pub const ATTR_WG_PRIVATE_KEY: &str = "wg_private_key";
 pub const ENTRYCLASS_WG_TUNNEL: &str = "wg_tunnel";
 pub const ENTRYCLASS_WG_PEER: &str = "wg_peer";
+// DL17 — WireGuard token and monitoring
+pub const ATTR_WG_LAST_SEEN: &str = "wg_last_seen";
+pub const ATTR_WG_TOKEN_SECRET: &str = "wg_token_secret";
+pub const ATTR_WG_TOKEN_USES_LEFT: &str = "wg_token_uses_left";
+pub const ATTR_WG_TOKEN_EXPIRY: &str = "wg_token_expiry";
+pub const ATTR_WG_TOKEN_PRINCIPAL_REF: &str = "wg_token_principal_ref";
+pub const ENTRYCLASS_WG_TOKEN: &str = "wg_token";
 pub const ATTR_OBJECTCLASS: &str = "objectclass";
 pub const ATTR_OTHER_NO_INDEX: &str = "other-no-index";
 pub const ATTR_PASSKEYS: &str = "passkeys";

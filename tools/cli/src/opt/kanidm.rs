@@ -1523,8 +1523,95 @@ pub enum KanidmClientOpt {
         #[clap(subcommand)]
         commands: RawOpt,
     },
+    /// WireGuard tunnel and peer management
+    Wg {
+        #[clap(subcommand)]
+        commands: WgOpt,
+    },
     /// Print the program version and exit
     Version,
+}
+
+// ---- WireGuard CLI types ----
+
+#[derive(Debug, clap::Subcommand, Clone)]
+pub enum WgOpt {
+    /// Create a new WireGuard tunnel entry
+    TunnelCreate {
+        /// Tunnel name
+        name: String,
+        /// Kernel interface name (e.g. wg0)
+        interface: String,
+        /// Base64-encoded WireGuard private key
+        private_key: String,
+        /// Endpoint address (host:port)
+        endpoint: String,
+        /// UDP listen port
+        listen_port: u16,
+        /// Tunnel address(es) in CIDR notation (repeatable)
+        #[clap(long, required = true, num_args = 1..)]
+        address: Vec<String>,
+        /// DNS server(s) (repeatable)
+        #[clap(long)]
+        dns: Vec<String>,
+        /// MTU override
+        #[clap(long)]
+        mtu: Option<u32>,
+    },
+    /// List all WireGuard tunnels
+    TunnelList,
+    /// Get details of a specific tunnel
+    TunnelGet {
+        /// Tunnel name
+        name: String,
+    },
+    /// Delete a WireGuard tunnel
+    TunnelDelete {
+        /// Tunnel name
+        name: String,
+    },
+    /// List peers on a tunnel
+    PeerList {
+        /// Tunnel name
+        tunnel: String,
+    },
+    /// Remove a peer from a tunnel (by UUID)
+    PeerDelete {
+        /// Tunnel name
+        tunnel: String,
+        /// Peer UUID
+        peer_uuid: String,
+    },
+    /// List registration tokens for a tunnel
+    TokenList {
+        /// Tunnel name
+        tunnel: String,
+    },
+    /// Create a registration token for a tunnel
+    TokenCreate {
+        /// Tunnel name
+        tunnel: String,
+        /// Maximum uses (omit for unlimited)
+        #[clap(long)]
+        uses: Option<u32>,
+        /// Expiry in RFC3339 format (omit for no expiry)
+        #[clap(long)]
+        expiry: Option<String>,
+    },
+    /// Delete a registration token
+    TokenDelete {
+        /// Tunnel name
+        tunnel: String,
+        /// Token name
+        token: String,
+    },
+    /// Register this device with a WireGuard tunnel using a token
+    Connect {
+        /// Registration token secret
+        token: String,
+        /// WireGuard public key (base64)
+        pubkey: String,
+    },
 }
 
 #[derive(Debug, clap::Parser, Clone)]

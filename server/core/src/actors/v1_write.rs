@@ -1833,4 +1833,114 @@ impl QueryServerWriteV1 {
             .derive_jit_username(&claims)
             .and_then(|name| idms_prox_write.commit().map(|_| name))
     }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_tunnel_create(
+        &self,
+        _client_auth_info: ClientAuthInfo,
+        req: kanidm_proto::wg::WgTunnelCreate,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        idms_prox_write
+            .wg_tunnel_create(&req)
+            .and_then(|_| idms_prox_write.commit())
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_tunnel_delete(
+        &self,
+        _client_auth_info: ClientAuthInfo,
+        name: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        idms_prox_write
+            .wg_tunnel_delete(&name)
+            .and_then(|_| idms_prox_write.commit())
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_token_create(
+        &self,
+        _client_auth_info: ClientAuthInfo,
+        tunnel_name: String,
+        req: kanidm_proto::wg::WgTokenCreate,
+        eventid: Uuid,
+    ) -> Result<kanidm_proto::wg::WgTokenCreatedResponse, OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        // Resolve the tunnel UUID.
+        let tunnel_uuid = idms_prox_write
+            .qs_write
+            .name_to_uuid(tunnel_name.as_str())
+            .map_err(|_| OperationError::NoMatchingEntries)?;
+        let resp = idms_prox_write.wg_token_create(tunnel_uuid, &tunnel_name, &req)?;
+        idms_prox_write.commit()?;
+        Ok(resp)
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_token_delete(
+        &self,
+        _client_auth_info: ClientAuthInfo,
+        tunnel_name: String,
+        token_name: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        let tunnel_uuid = idms_prox_write
+            .qs_write
+            .name_to_uuid(tunnel_name.as_str())
+            .map_err(|_| OperationError::NoMatchingEntries)?;
+        idms_prox_write
+            .wg_token_delete(tunnel_uuid, &token_name)
+            .and_then(|_| idms_prox_write.commit())
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_connect(
+        &self,
+        _client_auth_info: ClientAuthInfo,
+        caller_name: String,
+        req: kanidm_proto::wg::WgConnectRequest,
+        eventid: Uuid,
+    ) -> Result<kanidm_proto::wg::WgConnectResponse, OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        let resp = idms_prox_write.wg_connect(&caller_name, &req, ct)?;
+        idms_prox_write.commit()?;
+        Ok(resp)
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_update_last_seen(
+        &self,
+        peer_uuid: Uuid,
+        ts: time::OffsetDateTime,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        idms_prox_write
+            .wg_update_last_seen(peer_uuid, ts)
+            .and_then(|_| idms_prox_write.commit())
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_wg_peer_delete(
+        &self,
+        _client_auth_info: ClientAuthInfo,
+        peer_uuid: Uuid,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        idms_prox_write
+            .wg_peer_delete(peer_uuid)
+            .and_then(|_| idms_prox_write.commit())
+    }
 }

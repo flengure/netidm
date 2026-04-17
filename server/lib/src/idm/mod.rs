@@ -23,3 +23,4 @@ pub(crate) mod reauth;
 pub mod scim;
 pub mod server;
 pub mod serviceaccount;
+pub mod wg;

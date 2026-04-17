@@ -38,6 +38,7 @@ mod session;
 mod synch;
 mod system_config;
 mod webauthn;
+mod wg;
 
 /// Throws an error and exits the program when we get an error
 pub(crate) fn handle_client_error(response: ClientError, _output_mode: OutputMode) {
@@ -178,6 +179,7 @@ impl KanidmClientParser {
                 commands: SchemaOpt::Attribute { commands },
             } => commands.exec(self).await,
             KanidmClientOpt::Recycle { commands } => commands.exec(self).await,
+            KanidmClientOpt::Wg { commands } => commands.exec(self).await,
             KanidmClientOpt::Version => {
                 self.output_mode
                     .print_message(format!("kanidm {}", env!("KANIDM_PKG_VERSION")));

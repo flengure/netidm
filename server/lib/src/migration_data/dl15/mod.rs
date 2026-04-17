@@ -1,8 +1,5 @@
 pub(crate) mod schema;
 
-// Re-export from dl14 — dl15 introduces no new accounts.
-#[cfg(test)]
-pub(crate) use super::dl14::accounts;
 
 use self::schema::*;
 use crate::prelude::*;

@@ -53,6 +53,7 @@
     - [Fedora](integrations/pam_and_nsswitch/fedora.md)
     - [Troubleshooting](integrations/pam_and_nsswitch/troubleshooting.md)
   - [RADIUS](integrations/radius.md)
+  - [WireGuard](integrations/wireguard.md)
   - [SSSD](integrations/sssd.md)
   - [SSH Key Distribution](integrations/ssh_key_distribution.md)
 

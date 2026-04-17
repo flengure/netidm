@@ -53,6 +53,7 @@ use kanidm_proto::config::ServerRole;
 use kanidm_proto::internal::OperationError;
 use kanidm_proto::scim_v1::client::ScimAssertGeneric;
 use kanidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
+use kanidmd_wg::{backend::boringtun::BoringtunBackend, backend::kernel::KernelBackend, BackendKind, WgManager};
 use kanidmd_lib::idm::ldap::LdapServer;
 use kanidmd_lib::prelude::*;
 use kanidmd_lib::schema::Schema;
@@ -921,6 +922,8 @@ pub(crate) enum TaskName {
     Replication,
     TlsAcceptorReload,
     MigrationReload,
+    WgHandshakePoller,
+    WgPeerRevocation,
 }
 
 impl Display for TaskName {
@@ -939,6 +942,8 @@ impl Display for TaskName {
                 TaskName::Replication => "Replication",
                 TaskName::TlsAcceptorReload => "TlsAcceptor Reload Monitor",
                 TaskName::MigrationReload => "Migration Reload Monitor",
+                TaskName::WgHandshakePoller => "WireGuard Handshake Poller",
+                TaskName::WgPeerRevocation => "WireGuard Peer Revocation",
             }
         )
     }
@@ -1150,12 +1155,211 @@ pub async fn create_server_core(
     let idms_arc = Arc::new(idms);
     let ldap_arc = Arc::new(ldap);
 
+    // Start the WireGuard manager and bring up configured tunnels.
+    let wg_manager = {
+        let backend_kind = kanidmd_wg::backend::detect_backend();
+        let backend: Arc<dyn kanidmd_wg::backend::WgBackend> = match backend_kind {
+            BackendKind::Kernel => Arc::new(KernelBackend),
+            BackendKind::Boringtun => Arc::new(BoringtunBackend),
+        };
+        let manager = Arc::new(WgManager::new(backend, backend_kind));
+        let mut idms_prox_read = match idms_arc.proxy_read().await {
+            Ok(r) => r,
+            Err(e) => {
+                error!("Unable to acquire read transaction for WG startup -> {:?}", e);
+                return Err(());
+            }
+        };
+        match idms_prox_read.wg_list_tunnels() {
+            Ok(tunnels) => {
+                let ct_now = duration_from_epoch_now();
+                drop(idms_prox_read);
+                for tunnel in tunnels {
+                    let tunnel_name = tunnel.name.clone();
+                    let tunnel_uuid = tunnel.uuid;
+
+                    // Derive public key and persist if absent.
+                    if tunnel.public_key.is_empty() {
+                        match WgManager::derive_public_key(&tunnel.private_key) {
+                            Ok(pubkey) => {
+                                if let Ok(mut w) = idms_arc.proxy_write(ct_now).await {
+                                    let ml = kanidmd_lib::prelude::ModifyList::new_purge_and_set(
+                                        kanidmd_lib::prelude::Attribute::WgPublicKey,
+                                        kanidmd_lib::prelude::Value::new_utf8s(&pubkey),
+                                    );
+                                    if let Err(e) = w.qs_write.internal_modify_uuid(tunnel_uuid, &ml) {
+                                        error!("Failed to write public key for tunnel {} -> {:?}", tunnel_name, e);
+                                    } else {
+                                        let _ = w.commit();
+                                    }
+                                }
+                            }
+                            Err(e) => error!("Failed to derive public key for tunnel {} -> {:?}", tunnel_name, e),
+                        }
+                    }
+
+                    // Read peers fresh for this tunnel.
+                    let peers = match idms_arc.proxy_read().await {
+                        Ok(mut r) => match r.wg_list_peers_for_tunnel(tunnel_uuid) {
+                            Ok(p) => p,
+                            Err(e) => {
+                                error!("Failed to list peers for tunnel {} -> {:?}", tunnel_name, e);
+                                continue;
+                            }
+                        },
+                        Err(e) => {
+                            error!("Failed to acquire read txn for peers of tunnel {} -> {:?}", tunnel_name, e);
+                            continue;
+                        }
+                    };
+
+                    if let Err(e) = manager.bring_up(&tunnel, &peers).await {
+                        error!("Failed to bring up WireGuard tunnel {} -> {:?}", tunnel_name, e);
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Failed to list WireGuard tunnels at startup -> {:?}", e);
+                drop(idms_prox_read);
+            }
+        }
+        manager
+    };
+
     // Pass it to the actor for threading.
     // Start the read query server with the given be path: future config
     let server_read_ref = QueryServerReadV1::start_static(idms_arc.clone(), ldap_arc.clone());
 
     // Create the server async write entry point.
     let server_write_ref = QueryServerWriteV1::start_static(idms_arc.clone());
+
+    // Background task: poll WireGuard handshake timestamps every 60 seconds and
+    // write last_seen back to WgPeer entries.
+    let wg_handshake_handle = {
+        let mut broadcast_rx = broadcast_tx.subscribe();
+        let wg_poll_manager = wg_manager.clone();
+        let wg_poll_idms = idms_arc.clone();
+        task::spawn(async move {
+            let mut ticker = tokio::time::interval(std::time::Duration::from_secs(60));
+            ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            loop {
+                tokio::select! {
+                    _ = ticker.tick() => {
+                        let tunnels = {
+                            let Ok(mut read_txn) = wg_poll_idms.proxy_read().await else { continue };
+                            match read_txn.wg_list_tunnels() {
+                                Ok(t) => t,
+                                Err(e) => {
+                                    error!("WG poller: failed to list tunnels: {:?}", e);
+                                    continue;
+                                }
+                            }
+                        };
+                        for tunnel in &tunnels {
+                            let handshakes = match wg_poll_manager.peer_handshakes(tunnel).await {
+                                Ok(h) => h,
+                                Err(e) => {
+                                    error!("WG poller: handshake query for {} failed: {:?}", tunnel.name, e);
+                                    continue;
+                                }
+                            };
+                            let peer_map = {
+                                let Ok(mut read_txn) = wg_poll_idms.proxy_read().await else { continue };
+                                match read_txn.wg_list_peer_pubkeys_for_tunnel(tunnel.uuid) {
+                                    Ok(pairs) => pairs,
+                                    Err(e) => {
+                                        error!("WG poller: peer list for {} failed: {:?}", tunnel.name, e);
+                                        continue;
+                                    }
+                                }
+                            };
+                            for (pubkey, secs) in handshakes {
+                                if secs == 0 {
+                                    continue;
+                                }
+                                if let Some((peer_uuid, _)) = peer_map.iter().find(|(_, pk)| *pk == pubkey) {
+                                    let ts = time::OffsetDateTime::from_unix_timestamp(secs as i64)
+                                        .unwrap_or(time::OffsetDateTime::UNIX_EPOCH);
+                                    let eventid = Uuid::new_v4();
+                                    if let Err(e) = server_write_ref.handle_wg_update_last_seen(*peer_uuid, ts, eventid).await {
+                                        error!("WG poller: failed to write last_seen for {}: {:?}", pubkey, e);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Ok(action) = broadcast_rx.recv() => {
+                        match action {
+                            CoreAction::Shutdown => break,
+                            CoreAction::Reload => {},
+                        }
+                    }
+                }
+            }
+            info!("Stopped {}", TaskName::WgHandshakePoller);
+        })
+    };
+
+    // Background task: compare live WireGuard peers against Kanidm DB every 30 seconds
+    // and remove any peers that have been deleted from Kanidm.
+    let wg_revoke_handle = {
+        let mut broadcast_rx = broadcast_tx.subscribe();
+        let wg_revoke_manager = wg_manager.clone();
+        let wg_revoke_idms = idms_arc.clone();
+        task::spawn(async move {
+            let mut ticker = tokio::time::interval(std::time::Duration::from_secs(30));
+            ticker.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+            loop {
+                tokio::select! {
+                    _ = ticker.tick() => {
+                        let tunnels = {
+                            let Ok(mut read_txn) = wg_revoke_idms.proxy_read().await else { continue };
+                            match read_txn.wg_list_tunnels() {
+                                Ok(t) => t,
+                                Err(e) => {
+                                    error!("WG revoke: failed to list tunnels: {:?}", e);
+                                    continue;
+                                }
+                            }
+                        };
+                        for tunnel in &tunnels {
+                            let db_pubkeys: std::collections::BTreeSet<String> = {
+                                let Ok(mut read_txn) = wg_revoke_idms.proxy_read().await else { continue };
+                                match read_txn.wg_list_peer_pubkeys_for_tunnel(tunnel.uuid) {
+                                    Ok(pairs) => pairs.into_iter().map(|(_, pk)| pk).collect(),
+                                    Err(e) => {
+                                        error!("WG revoke: peer list for {} failed: {:?}", tunnel.name, e);
+                                        continue;
+                                    }
+                                }
+                            };
+                            let live_handshakes = match wg_revoke_manager.peer_handshakes(tunnel).await {
+                                Ok(h) => h,
+                                Err(e) => {
+                                    error!("WG revoke: handshake query for {} failed: {:?}", tunnel.name, e);
+                                    continue;
+                                }
+                            };
+                            for (pubkey, _) in live_handshakes {
+                                if !db_pubkeys.contains(&pubkey) {
+                                    if let Err(e) = wg_revoke_manager.remove_peer(tunnel, &pubkey).await {
+                                        error!("WG revoke: failed to remove {} from {}: {:?}", pubkey, tunnel.name, e);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Ok(action) = broadcast_rx.recv() => {
+                        match action {
+                            CoreAction::Shutdown => break,
+                            CoreAction::Reload => {},
+                        }
+                    }
+                }
+            }
+            info!("Stopped {}", TaskName::WgPeerRevocation);
+        })
+    };
 
     let delayed_handle = task::spawn(async move {
         let mut buffer = Vec::with_capacity(DELAYED_ACTION_BATCH_SIZE);
@@ -1362,8 +1566,11 @@ pub async fn create_server_core(
             server_write_ref,
             server_read_ref,
             broadcast_tx.clone(),
-            maybe_tls_acceptor,
-            &tls_acceptor_reload_tx,
+            https::ServerServices {
+                maybe_tls_acceptor,
+                tls_acceptor_reload_tx: tls_acceptor_reload_tx.clone(),
+                wg_manager: wg_manager.clone(),
+            },
         )
         .await
         .inspect_err(|err| {
@@ -1402,6 +1609,8 @@ pub async fn create_server_core(
         (TaskName::AuditdActor, auditd_handle),
         (TaskName::TlsAcceptorReload, tls_acceptor_reload_handle),
         (TaskName::MigrationReload, migration_reload_handle),
+        (TaskName::WgHandshakePoller, wg_handshake_handle),
+        (TaskName::WgPeerRevocation, wg_revoke_handle),
     ];
 
     if let Some(backup_handle) = maybe_backup_handle {

@@ -93,6 +93,7 @@ webauthn-rs = { workspace = true, features = [
     "preview-features",
     "danger-credential-internals",
 ] }
+kanidmd_wg = { version = "1.10.0-dev", path = "../wg" }
 
 [dev-dependencies]
 walkdir = { workspace = true }
