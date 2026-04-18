@@ -37,6 +37,8 @@ pub fn readonly(meta: &Metadata) -> bool {
     let f_mode = meta.st_mode();
 
     !(
+        // root can always write regardless of permission bits
+        cuid == 0 ||
         // If we are the owner, we have write perms as we can alter the DAC rights
         cuid == f_uid ||
         // If we are the group owner, check the mode bits do not have write.
