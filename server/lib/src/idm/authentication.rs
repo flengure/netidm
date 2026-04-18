@@ -24,6 +24,12 @@ pub enum AuthStep {
     },
     Begin(AuthMech),
     Cred(AuthCredential),
+    /// Begin a provider-initiated OAuth2 flow without a known username.
+    /// The provider is identified by its internal name (e.g. "github").
+    InitOAuth2Provider {
+        provider_name: String,
+        issue: AuthIssueSession,
+    },
 }
 
 impl From<ProtoAuthStep> for AuthStep {

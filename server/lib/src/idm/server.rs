@@ -6,6 +6,7 @@ use crate::idm::application::{
 };
 use crate::idm::audit::AuditEvent;
 use crate::idm::authentication::{AuthState, PreValidatedTokenStatus};
+use crate::idm::authsession::provider_initiated::ProviderInitiatedSession;
 use crate::idm::authsession::{AuthSession, AuthSessionData};
 use crate::idm::credupdatesession::CredentialUpdateSessionMutex;
 use crate::idm::delayed::{
@@ -59,9 +60,18 @@ use zxcvbn::{zxcvbn, Score};
 use crate::idm::event::PasswordChangeEvent;
 
 pub(crate) type AuthSessionMutex = Arc<Mutex<AuthSession>>;
+pub(crate) type ProviderInitiatedSessionMutex = Arc<Mutex<ProviderInitiatedSession>>;
 pub(crate) type CredSoftLockMutex = Arc<Mutex<CredSoftLock>>;
 
 pub type DomainInfoRead = CowCellReadTxn<DomainInfo>;
+
+/// Lightweight descriptor for an upstream OAuth2 SSO provider, used to render login buttons.
+#[derive(Clone)]
+pub struct SsoProviderInfo {
+    pub name: String,
+    pub display_name: String,
+    pub logo_uri: Option<Url>,
+}
 
 pub struct IdmServer {
     // There is a good reason to keep this single thread - it
@@ -70,6 +80,8 @@ pub struct IdmServer {
     // in memory caches related to locking.
     session_ticket: Semaphore,
     sessions: BptreeMap<Uuid, AuthSessionMutex>,
+    /// Provider-initiated OAuth2 sessions (SSO-first flow — no pre-bound user account).
+    provider_sessions: BptreeMap<Uuid, ProviderInitiatedSessionMutex>,
     softlocks: HashMap<Uuid, CredSoftLockMutex>,
     /// A set of in progress credential registrations
     cred_update_sessions: BptreeMap<Uuid, CredentialUpdateSessionMutex>,
@@ -93,6 +105,7 @@ pub struct IdmServer {
 pub struct IdmServerAuthTransaction<'a> {
     pub(crate) session_ticket: &'a Semaphore,
     pub(crate) sessions: &'a BptreeMap<Uuid, AuthSessionMutex>,
+    pub(crate) provider_sessions: &'a BptreeMap<Uuid, ProviderInitiatedSessionMutex>,
     pub(crate) softlocks: &'a HashMap<Uuid, CredSoftLockMutex>,
     pub(crate) oauth2_client_providers: HashMapReadTxn<'a, Uuid, OAuth2ClientProvider>,
 
@@ -118,6 +131,7 @@ pub struct IdmServerCredUpdateTransaction<'a> {
 pub struct IdmServerProxyReadTransaction<'a> {
     pub qs_read: QueryServerReadTransaction<'a>,
     pub(crate) oauth2rs: Oauth2ResourceServersReadTransaction,
+    pub(crate) oauth2_client_providers: HashMapReadTxn<'a, Uuid, OAuth2ClientProvider>,
 }
 
 pub struct IdmServerProxyWriteTransaction<'a> {
@@ -216,6 +230,7 @@ impl IdmServer {
         let idm_server = IdmServer {
             session_ticket: Semaphore::new(1),
             sessions: BptreeMap::new(),
+            provider_sessions: BptreeMap::new(),
             softlocks: HashMap::new(),
             cred_update_sessions: BptreeMap::new(),
             qs,
@@ -253,6 +268,7 @@ impl IdmServer {
         Ok(IdmServerAuthTransaction {
             session_ticket: &self.session_ticket,
             sessions: &self.sessions,
+            provider_sessions: &self.provider_sessions,
             softlocks: &self.softlocks,
             qs_read,
             sid,
@@ -279,6 +295,7 @@ impl IdmServer {
         Ok(IdmServerProxyReadTransaction {
             qs_read,
             oauth2rs: self.oauth2rs.read(),
+            oauth2_client_providers: self.oauth2_client_providers.read(),
             // async_tx: self.async_tx.clone(),
         })
     }
@@ -1333,7 +1350,67 @@ impl IdmServerAuthTransaction<'_> {
                     state: aus,
                 })
             } // End AuthEventStep::Mech
+            AuthEventStep::InitOAuth2Provider(init_provider) => {
+                let sessionid = uuid_from_duration(ct, self.sid);
+
+                let provider = self
+                    .oauth2_client_providers
+                    .values()
+                    .find(|p| p.name == init_provider.provider_name)
+                    .ok_or_else(|| {
+                        info!(
+                            provider_name = %init_provider.provider_name,
+                            "provider-initiated auth: unknown provider name"
+                        );
+                        OperationError::NoMatchingEntries
+                    })?;
+
+                let session =
+                    ProviderInitiatedSession::new(provider, init_provider.issue);
+                let (authorisation_url, request) = session.start_auth_request();
+
+                let _session_ticket = self.session_ticket.acquire().await;
+                let mut provider_session_write = self.provider_sessions.write();
+                provider_session_write.insert(
+                    sessionid,
+                    Arc::new(Mutex::new(session)),
+                );
+                provider_session_write.commit();
+
+                Ok(AuthResult {
+                    sessionid,
+                    state: AuthState::External(
+                        crate::idm::authentication::AuthExternal::OAuth2AuthorisationRequest {
+                            authorisation_url,
+                            request,
+                        },
+                    ),
+                })
+            }
             AuthEventStep::Cred(creds) => {
+                // Check provider_sessions first (SSO-first flow — no pre-bound user).
+                let provider_session_ref = self.provider_sessions.read().get(&creds.sessionid).cloned();
+                if let Some(provider_session_mutex) = provider_session_ref {
+                    let mut provider_session = provider_session_mutex.lock().await;
+                    let aus = provider_session.validate(&creds.cred, ct);
+                    // Remove the session from provider_sessions on terminal states.
+                    match &aus {
+                        AuthState::Denied(_)
+                        | AuthState::ProvisioningRequired { .. }
+                        | AuthState::Success(_, _) => {
+                            let _session_ticket = self.session_ticket.acquire().await;
+                            let mut provider_session_write = self.provider_sessions.write();
+                            provider_session_write.remove(&creds.sessionid);
+                            provider_session_write.commit();
+                        }
+                        _ => {}
+                    }
+                    return Ok(AuthResult {
+                        sessionid: creds.sessionid,
+                        state: aus,
+                    });
+                }
+
                 // lperf_segment!("idm::server::auth<Creds>", || {
                 // let _session_ticket = self.session_ticket.acquire().await;
 
@@ -1666,6 +1743,21 @@ fn gen_password_upgrade_mod(
 }
 
 impl IdmServerProxyReadTransaction<'_> {
+    /// Return all configured upstream OAuth2 providers, sorted by display name.
+    pub fn list_sso_providers(&self) -> Vec<SsoProviderInfo> {
+        let mut providers: Vec<SsoProviderInfo> = self
+            .oauth2_client_providers
+            .values()
+            .map(|p| SsoProviderInfo {
+                name: p.name.clone(),
+                display_name: p.display_name.clone(),
+                logo_uri: p.logo_uri.clone(),
+            })
+            .collect();
+        providers.sort_by(|a, b| a.display_name.cmp(&b.display_name));
+        providers
+    }
+
     pub fn jws_public_jwk(&mut self, key_id: &str) -> Result<Jwk, OperationError> {
         self.qs_read
             .get_key_providers()

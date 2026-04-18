@@ -90,6 +90,7 @@ pub(crate) async fn render_reauth(
             purpose: reauth_purpose,
         }),
         error: None,
+        available_sso_providers: Vec::new(),
     };
 
     Ok(super::login::view_reauth_get(

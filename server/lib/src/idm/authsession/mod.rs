@@ -2,6 +2,7 @@
 //! Generally this has to process an authentication attempt, and validate each
 //! factor to assert that the user is legitimate. This also contains some
 //! support code for asynchronous task execution.
+pub(crate) mod provider_initiated;
 use self::handler_oauth2_client::CredHandlerOAuth2Client;
 use crate::credential::totp::Totp;
 use crate::credential::{BackupCodes, Credential, CredentialType, Password};
