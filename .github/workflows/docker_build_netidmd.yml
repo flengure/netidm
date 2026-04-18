@@ -2,7 +2,7 @@
 name: Container - Netidmd
 
 # This is always built and uploads an OCI image as a build artifact, but only
-# pushes to "ghcr.io/netidm/netidmd:devel" when on "netidm/netidm@master".
+# pushes to "ghcr.io/netidm/netidmd:devel" when on "netidm/netidm@main".
 "on":
   pull_request:
   push:
@@ -68,7 +68,7 @@ jobs:
     # This step is split so that we don't apply "packages: write" permission
     # except when uploading the final Docker image to GHCR.
     runs-on: ubuntu-latest
-    if: ( github.ref_type== 'tag' || github.ref == 'refs/heads/master' )
+    if: ( github.ref_type== 'tag' || github.ref == 'refs/heads/main' )
     needs: [netidmd_build, set_tag_values]
     permissions:
       packages: write

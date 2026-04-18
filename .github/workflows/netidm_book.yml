@@ -4,7 +4,7 @@ name: GitHub Pages
 "on":
   push:
     branches:
-      - "master"
+      - "main"
   pull_request:
 
 # yamllint disable-line rule:line-length
@@ -69,10 +69,10 @@ jobs:
     with:
       tag: ${{ matrix.tag }}
       parent_id: ${{ github.ref }}
-  docs_master:
+  docs_main:
     uses: './.github/workflows/netidm_individual_book.yml'
     with:
-      tag: "master"
+      tag: "main"
       parent_id: ${{ github.ref }}
 
   deploy:
@@ -82,10 +82,10 @@ jobs:
     needs:
       - pre_deploy
       - fanout
-      - docs_master
+      - docs_main
     runs-on: ubuntu-latest
     # yamllint disable-line rule:line-length
-    if: ${{ github.ref == 'refs/heads/master' && github.repository == 'netidm/netidm' }}
+    if: ${{ github.ref == 'refs/heads/main' && github.repository == 'netidm/netidm' }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -97,10 +97,10 @@ jobs:
           path: ./docs/
         env:
           ACTIONS_RUNNER_DEBUG: true
-      - name: Download master artifact
+      - name: Download main artifact
         uses: actions/download-artifact@v8
         with:
-          name: individualmaster
+          name: individualmain
           path: ./docs/
         env:
           ACTIONS_RUNNER_DEBUG: true
