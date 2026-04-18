@@ -100,6 +100,9 @@ pub struct ServerState {
     pub(crate) logging_pipeline: LoggerType,
     /// Live WireGuard interface manager.
     pub(crate) wg_manager: Arc<netidmd_wg::WgManager>,
+    /// Compiled skip-auth rules evaluated by the forward auth gate before any
+    /// session check. An empty vec means every request is authenticated normally.
+    pub(crate) skip_auth_rules: Arc<Vec<views::oauth2_proxy::SkipAuthRule>>,
 }
 
 impl ServerState {
@@ -291,6 +294,19 @@ pub async fn create_https_server(
         LoggerType::TracingForest
     };
 
+    // Load skip-auth rules from the database (managed via CLI) and merge with
+    // any rules defined in the server config file.
+    let db_skip_auth_routes = qe_r_ref
+        .handle_skip_auth_routes_get(uuid::Uuid::new_v4())
+        .await
+        .unwrap_or_default();
+    let skip_auth_rules: Vec<views::oauth2_proxy::SkipAuthRule> = config
+        .skip_auth_routes
+        .iter()
+        .chain(db_skip_auth_routes.iter())
+        .filter_map(|rule| views::oauth2_proxy::SkipAuthRule::parse(rule))
+        .collect();
+
     let state = ServerState {
         status_ref,
         qe_w_ref,
@@ -304,6 +320,7 @@ pub async fn create_https_server(
         secure_cookies: config.integration_test_config.is_none(),
         logging_pipeline,
         wg_manager,
+        skip_auth_rules: Arc::new(skip_auth_rules),
     };
 
     let static_routes = match config.role {
@@ -317,6 +334,21 @@ pub async fn create_https_server(
                 .layer(middleware::compression::new())
                 .layer(from_fn(middleware::caching::cache_me_short))
                 .route("/", get(|| async { Redirect::to("/ui") }))
+                // Forward auth / proxy auth endpoints (oauth2-proxy compatibility).
+                // Registered at root level (not under /ui) so reverse proxies can
+                // reach them without a /ui prefix.
+                .route(
+                    netidm_proto::constants::uri::OAUTH2_PROXY_AUTH,
+                    get(views::oauth2_proxy::view_oauth2_auth_get),
+                )
+                .route(
+                    netidm_proto::constants::uri::OAUTH2_PROXY_USERINFO,
+                    get(views::oauth2_proxy::view_oauth2_proxy_userinfo_get),
+                )
+                .route(
+                    netidm_proto::constants::uri::OAUTH2_PROXY_SIGN_OUT,
+                    get(views::oauth2_proxy::view_oauth2_sign_out_get),
+                )
                 .nest("/ui", views::view_router(state.clone()))
             // Can't compress on anything that changes
         }

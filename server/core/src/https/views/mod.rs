@@ -25,6 +25,7 @@ mod errors;
 mod login;
 mod navbar;
 mod oauth2;
+pub(crate) mod oauth2_proxy;
 mod profile;
 mod radius;
 mod reauth;

@@ -1,9 +1,5 @@
 //! Schema entries for DL18: OAuth2 email-based account linking.
 
-// Re-export schema items used by test code via `latest::schema`.
-#[cfg(test)]
-pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
-
 use crate::constants::{
     UUID_SCHEMA_ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS,
     UUID_SCHEMA_ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS, UUID_SCHEMA_CLASS_DOMAIN_INFO,

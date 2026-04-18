@@ -40,4 +40,27 @@ impl NetidmClient {
         self.perform_delete_request_with_body("/v1/system/_attr/denied_name", list)
             .await
     }
+
+    pub async fn system_skip_auth_routes_get(&self) -> Result<Vec<String>, ClientError> {
+        let list: Option<Vec<String>> = self
+            .perform_get_request("/v1/system/_attr/skip_auth_route")
+            .await?;
+        Ok(list.unwrap_or_default())
+    }
+
+    pub async fn system_skip_auth_routes_append(
+        &self,
+        list: Vec<String>,
+    ) -> Result<(), ClientError> {
+        self.perform_post_request("/v1/system/_attr/skip_auth_route", list)
+            .await
+    }
+
+    pub async fn system_skip_auth_routes_remove(
+        &self,
+        list: Vec<String>,
+    ) -> Result<(), ClientError> {
+        self.perform_delete_request_with_body("/v1/system/_attr/skip_auth_route", list)
+            .await
+    }
 }

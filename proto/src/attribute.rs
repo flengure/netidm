@@ -180,6 +180,7 @@ pub enum Attribute {
     Scope,
     SendAfter,
     SentAt,
+    SkipAuthRoute,
     SourceUuid,
     Spn,
     /// An LDAP-compatible sshpublickey
@@ -513,6 +514,7 @@ impl Attribute {
             Attribute::ScimSchemas => ATTR_SCIM_SCHEMAS,
             Attribute::SendAfter => ATTR_SEND_AFTER,
             Attribute::SentAt => ATTR_SENT_AT,
+            Attribute::SkipAuthRoute => ATTR_SKIP_AUTH_ROUTE,
             Attribute::SourceUuid => ATTR_SOURCE_UUID,
             Attribute::Spn => ATTR_SPN,
             Attribute::SshPublicKey => ATTR_SSH_PUBLICKEY,
@@ -742,6 +744,7 @@ impl Attribute {
             ATTR_SEND_AFTER => Attribute::SendAfter,
             ATTR_SENT_AT => Attribute::SentAt,
             ATTR_SCOPE => Attribute::Scope,
+            ATTR_SKIP_AUTH_ROUTE => Attribute::SkipAuthRoute,
             ATTR_SOURCE_UUID => Attribute::SourceUuid,
             ATTR_SPN => Attribute::Spn,
             ATTR_LDAP_SSHPUBLICKEY => Attribute::LdapSshPublicKey,

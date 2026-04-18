@@ -36,6 +36,20 @@ impl QueryServerReadV1 {
         skip_all,
         fields(uuid = ?eventid)
     )]
+    pub(crate) async fn handle_skip_auth_routes_get(
+        &self,
+        eventid: Uuid,
+    ) -> Result<Vec<String>, OperationError> {
+        let idms_prox_read = self.idms.proxy_read().await?;
+        let routes = idms_prox_read.qs_read.skip_auth_routes();
+        Ok(routes.iter().cloned().collect())
+    }
+
+    #[instrument(
+        level = "info",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
     pub(crate) async fn handle_domain_upgrade_check(
         &self,
         eventid: Uuid,

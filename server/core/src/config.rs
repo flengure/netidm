@@ -453,6 +453,13 @@ pub struct Configuration {
     /// This allows internally setting some unsafe options for replication.
     pub integration_repl_config: Option<Box<IntegrationReplConfig>>,
     pub otel_grpc_url: Option<String>,
+    /// Skip-auth rules for the forward auth gate (`/oauth2/auth`).
+    ///
+    /// Each entry is a string of the form `METHOD=^/regex$` or `^/regex$`.
+    /// Requests whose `X-Forwarded-Uri` path matches a rule bypass session
+    /// validation and receive `200 OK` immediately. Rules with invalid regexes
+    /// are logged and skipped; they never cause a server startup failure.
+    pub skip_auth_routes: Vec<String>,
 }
 
 impl Configuration {
@@ -513,6 +520,7 @@ impl Configuration {
             repl_config: None,
             integration_repl_config: None,
             otel_grpc_url: None,
+            skip_auth_routes: Vec::new(),
         }
     }
 }
@@ -1055,6 +1063,7 @@ impl ConfigurationBuilder {
             otel_grpc_url,
             integration_repl_config: None,
             integration_test_config: None,
+            skip_auth_routes: Vec::new(),
         })
     }
 }
