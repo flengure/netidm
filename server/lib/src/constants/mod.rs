@@ -90,18 +90,21 @@ pub const DOMAIN_LEVEL_17: DomainVersion = 17;
 /// Domain Level introduced with 1.14.0.
 pub const DOMAIN_LEVEL_18: DomainVersion = 18;
 
+/// Domain Level introduced with 1.15.0.
+pub const DOMAIN_LEVEL_19: DomainVersion = 19;
+
 // The target supported domain functional level. During development this is
 // the NEXT level that users will upgrade too. In other words if we are
 // developing 1.6.0-dev, then we need to set TGT_LEVEL to 10 which is
 // the corresponding level.
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_18;
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_19;
 // The current patch level if any out of band fixes are required.
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
 
 // The maximum supported domain functional level. This generally
 // represents a *future* version of the server which doesn't exist
 // yet.
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_18;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_19;
 
 // This is the LOWEST level of database we can recreate. This is important for testing,
 // but we don't actually expect it to be used.

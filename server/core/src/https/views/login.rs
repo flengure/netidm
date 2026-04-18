@@ -19,7 +19,7 @@ use axum_extra::extract::cookie::{CookieJar, SameSite};
 use hyper::Uri;
 use netidm_proto::internal::{
     UserAuthToken, COOKIE_AUTH_SESSION_ID, COOKIE_BEARER_TOKEN, COOKIE_CU_SESSION_TOKEN,
-    COOKIE_OAUTH2_PROVISION_REQ, COOKIE_OAUTH2_REQ, COOKIE_USERNAME,
+    COOKIE_NEXT_REDIRECT, COOKIE_OAUTH2_PROVISION_REQ, COOKIE_OAUTH2_REQ, COOKIE_USERNAME,
 };
 use netidm_proto::{
     oauth2::{AccessTokenRequest, AccessTokenResponse},
@@ -387,6 +387,11 @@ pub fn view_oauth2_get(
 pub struct LoginIndexQuery {
     #[serde(default)]
     reason: Option<String>,
+    /// Post-login redirect URL supplied by the forward auth endpoint.
+    /// Only relative paths (starting with `/`) are accepted to prevent
+    /// open-redirect attacks.
+    #[serde(default)]
+    next: Option<String>,
 }
 
 pub async fn view_index_get(
@@ -424,6 +429,19 @@ pub async fn view_index_get(
             let flash_error = match query.reason.as_deref() {
                 Some("session_expired") => Some(LoginError::SessionExpired),
                 _ => None,
+            };
+
+            // Store the post-login redirect in a short-lived cookie so the
+            // multi-step login flow can consume it after `AuthState::Success`.
+            // Only relative paths are accepted to prevent open-redirect attacks.
+            let jar = if let Some(next) = query.next.as_deref() {
+                if next.starts_with('/') {
+                    jar.add(cookies::make_unsigned(&state, COOKIE_NEXT_REDIRECT, next.to_string()))
+                } else {
+                    jar
+                }
+            } else {
+                jar
             };
 
             let display_ctx = LoginDisplayCtx {
@@ -497,13 +515,19 @@ pub async fn view_login_begin_post(
 
     let remember_me = remember_me.is_some();
 
+    // Consume the next-redirect cookie set by the forward auth endpoint so
+    // the success handler can redirect there instead of the default landing.
+    let after_auth_loc = cookies::get_unsigned(&jar, COOKIE_NEXT_REDIRECT)
+        .map(|s| s.to_string());
+    let jar = cookies::destroy(jar, COOKIE_NEXT_REDIRECT, &state);
+
     let session_context = SessionContext {
         id: None,
         username: username.clone(),
         password,
         totp,
         remember_me,
-        after_auth_loc: None,
+        after_auth_loc,
     };
 
     let mut display_ctx = LoginDisplayCtx {

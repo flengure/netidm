@@ -251,6 +251,7 @@ pub const ATTR_SEND_AFTER: &str = "send_after";
 pub const ATTR_SENT_AT: &str = "sent_at";
 pub const ATTR_SCOPE: &str = "scope";
 pub const ATTR_SELF: &str = "self";
+pub const ATTR_SKIP_AUTH_ROUTE: &str = "skip_auth_route";
 pub const ATTR_SOURCE_UUID: &str = "source_uuid";
 pub const ATTR_SPN: &str = "spn";
 pub const ATTR_SUDOHOST: &str = "sudohost";

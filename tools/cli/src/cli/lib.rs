@@ -150,6 +150,7 @@ impl SystemOpt {
             SystemOpt::Api { commands } => commands.exec(opt).await,
             SystemOpt::PwBadlist { commands } => commands.exec(opt).await,
             SystemOpt::DeniedNames { commands } => commands.exec(opt).await,
+            SystemOpt::SkipAuth { commands } => commands.exec(opt).await,
             SystemOpt::Oauth2 { commands } => commands.exec(opt).await,
             SystemOpt::Domain { commands } => commands.exec(opt).await,
             SystemOpt::Message { commands } => commands.exec(opt).await,

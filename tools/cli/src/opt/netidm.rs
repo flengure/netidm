@@ -1187,6 +1187,25 @@ pub enum DeniedNamesOpt {
 }
 
 #[derive(Debug, Subcommand, Clone)]
+pub enum SkipAuthOpt {
+    #[clap(name = "show")]
+    /// Show the current skip-auth rules for the forward auth gate
+    Show,
+    #[clap(name = "add")]
+    /// Add a skip-auth rule (e.g. "GET=^/health$" or "^/metrics$")
+    Add {
+        #[clap(value_parser, required = true, num_args(1..))]
+        rules: Vec<String>,
+    },
+    #[clap(name = "remove")]
+    /// Remove a skip-auth rule
+    Remove {
+        #[clap(value_parser, required = true, num_args(1..))]
+        rules: Vec<String>,
+    },
+}
+
+#[derive(Debug, Subcommand, Clone)]
 pub enum DomainOpt {
     #[clap[name = "set-displayname"]]
     /// Set the domain display name
@@ -1438,6 +1457,12 @@ pub enum SystemOpt {
     DeniedNames {
         #[clap(subcommand)]
         commands: DeniedNamesOpt,
+    },
+    #[clap(name = "skip-auth")]
+    /// Configure skip-auth rules for the forward auth gate (/oauth2/auth)
+    SkipAuth {
+        #[clap(subcommand)]
+        commands: SkipAuthOpt,
     },
     #[clap(name = "oauth2")]
     /// Configure and display oauth2/oidc client configuration
