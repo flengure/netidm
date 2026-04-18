@@ -89,6 +89,35 @@ privilege escalation paths.
 - All new schema attributes MUST be introduced via a numbered data-level (DL) migration.
 - PRs MUST be reviewed for compliance with Principles I–V before merge.
 
+## Documentation Standards
+
+All new and modified public Rust items MUST have doc comments following standard Rust conventions:
+
+- `//!` at the top of every new module file (one-line summary, blank line, extended description).
+- `///` on every `pub fn`, `pub struct`, `pub enum`, `pub trait`, and `pub type`.
+- `# Errors` section on every `Result`-returning public function, listing each `OperationError` variant that can be returned.
+- `# Examples` section with a working ` ```rust ` code block on every public handler function and any non-trivial public API.
+- `# Panics` section on any function that can panic.
+- Intra-doc links (`[TypeName]`) used to cross-reference related types within the same crate.
+- `cargo doc --no-deps 2>&1 | grep "warning\[missing"` MUST produce no output for all new items.
+
+These requirements apply to every feature. Tasks for doc comments MUST be included in every feature's tasks.md.
+
+## Testing Standards
+
+Every feature MUST include unit tests and/or integration tests as part of its definition of done:
+
+- Each user story MUST have tests covering:
+  - The primary success path (happy path).
+  - The primary failure path (authentication failure, validation failure, etc.).
+  - Any edge cases identified in the spec (e.g., missing optional fields, boundary conditions).
+- Tests MUST be written in the same PR as the implementation — never deferred.
+- Tests that exercise HTTP handlers MUST assert both the response status code and the relevant response headers or body.
+- Tests MUST NOT use mocks for the database layer — use the existing `server/testkit` integration test infrastructure that runs against a real in-process netidmd instance.
+- `cargo test` MUST pass before any PR is considered ready for review.
+
+These requirements apply to every feature. Test tasks MUST be included in every feature's tasks.md.
+
 ## Governance
 
 This constitution supersedes all other development practices and guidelines for this project.
@@ -105,4 +134,4 @@ The versioning policy follows semantic versioning:
 All PRs and code reviews MUST verify compliance with this constitution. Complexity that violates
 a principle MUST be justified in the implementation plan's Complexity Tracking table.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-16
+**Version**: 1.1.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-18

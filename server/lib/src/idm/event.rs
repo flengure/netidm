@@ -277,6 +277,12 @@ pub struct AuthEventStepInit {
 }
 
 #[derive(Debug)]
+pub struct AuthEventStepInitProvider {
+    pub provider_name: String,
+    pub issue: AuthIssueSession,
+}
+
+#[derive(Debug)]
 pub struct AuthEventStepCred {
     pub sessionid: Uuid,
     pub cred: AuthCredential,
@@ -293,6 +299,8 @@ pub enum AuthEventStep {
     Init(AuthEventStepInit),
     Begin(AuthEventStepMech),
     Cred(AuthEventStepCred),
+    /// Provider-initiated OAuth2 flow — no username known upfront.
+    InitOAuth2Provider(AuthEventStepInitProvider),
 }
 
 impl AuthEventStep {
@@ -337,6 +345,15 @@ impl AuthEventStep {
                     "session id not present in cred to 'cred' step".to_string(),
                 )),
             },
+            AuthStep::InitOAuth2Provider {
+                provider_name,
+                issue,
+            } => Ok(AuthEventStep::InitOAuth2Provider(
+                AuthEventStepInitProvider {
+                    provider_name,
+                    issue,
+                },
+            )),
         }
     }
 

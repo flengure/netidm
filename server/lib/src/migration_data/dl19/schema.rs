@@ -2,6 +2,7 @@
 
 // Re-export schema items used by test code via `latest::schema`.
 #[cfg(test)]
+#[allow(unused_imports)]
 pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
 
 use crate::constants::{UUID_SCHEMA_ATTR_SKIP_AUTH_ROUTE, UUID_SCHEMA_CLASS_SYSTEM_CONFIG};

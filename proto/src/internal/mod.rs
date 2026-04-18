@@ -34,6 +34,10 @@ pub const COOKIE_OAUTH2_PROVISION_REQ: &str = "o2-provision-req";
 /// Short-lived cookie that carries the post-login redirect URL set by the
 /// forward auth endpoint. Cleared immediately after it is consumed.
 pub const COOKIE_NEXT_REDIRECT: &str = "next-redirect";
+/// Session cookie recording the auth method used on last successful login.
+/// Value is either `"internal"` (password/TOTP/passkey) or `"sso"` (OAuth2 provider).
+/// Used by the login page to pre-expand the internal auth form for users who prefer it.
+pub const COOKIE_AUTH_METHOD_PREF: &str = "auth-method-pref";
 
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 /// This is a description of a linked or connected application for a user. This is

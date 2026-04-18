@@ -1632,4 +1632,11 @@ impl QueryServerReadV1 {
         let mut idms_prox_read = self.idms.proxy_read().await?;
         idms_prox_read.wg_peer_list(&tunnel_name)
     }
+
+    pub async fn handle_list_sso_providers(
+        &self,
+    ) -> Result<Vec<netidmd_lib::idm::server::SsoProviderInfo>, OperationError> {
+        let idms_prox_read = self.idms.proxy_read().await?;
+        Ok(idms_prox_read.list_sso_providers())
+    }
 }
