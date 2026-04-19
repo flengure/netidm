@@ -47,4 +47,18 @@ Rust (stable, current toolchain — check `rust-toolchain.toml`): Follow standar
 
 
 <!-- MANUAL ADDITIONS START -->
+## Release Etiquette
+
+- **Never create a git tag without immediately verifying it points to `main` HEAD.**
+  Run `git log --oneline <tag>..main` — if output is non-empty, move the tag first:
+  `git tag -d <tag> && git tag <tag> main && git push origin :refs/tags/<tag> && git push origin <tag>`
+
+- **Never use `gh release create` manually.** The `release.yml` workflow builds binaries and
+  creates the release. Just push the tag and let the workflow do everything.
+
+- **Never trigger `workflow_dispatch` on a release before verifying the tag points to `main` HEAD.**
+
+- **Next version = highest existing tag + 1 patch.** Always run `git tag --sort=-version:refname | head -1`
+  to find the current highest tag before deciding the next version. A tag without a GitHub release
+  is still a tag — do not reuse it, do not ignore it.
 <!-- MANUAL ADDITIONS END -->

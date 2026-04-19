@@ -134,4 +134,15 @@ The versioning policy follows semantic versioning:
 All PRs and code reviews MUST verify compliance with this constitution. Complexity that violates
 a principle MUST be justified in the implementation plan's Complexity Tracking table.
 
-**Version**: 1.1.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-18
+## Release Etiquette
+
+1. **Verify tag position before any release action.** Run `git log --oneline <tag>..main`. If
+   non-empty, move the tag to `main` HEAD before proceeding.
+2. **Never create GitHub releases manually.** Push the tag; `release.yml` builds binaries and
+   creates the release automatically.
+3. **Determine next version by inspecting tags**, not releases. Run
+   `git tag --sort=-version:refname | head -1`. A tag without a GitHub release is still a tag.
+4. **Before every commit**, run `cargo fmt --check` and `cargo clippy --all-features` locally.
+   Do not rely on CI to catch formatting or lint errors.
+
+**Version**: 1.2.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-19
