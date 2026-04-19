@@ -81,6 +81,10 @@ pub fn migration_entry_attrs(
             Attribute::Mail,
             Attribute::SshPublicKey,
             Attribute::Description,
+            Attribute::GidNumber,
+            Attribute::UidNumber,
+            Attribute::LoginShell,
+            Attribute::HomeDirectory,
         ])
     }
 
