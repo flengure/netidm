@@ -1107,6 +1107,17 @@ pub enum Oauth2Opt {
         #[clap(name = "client-secret")]
         client_secret: String,
     },
+    /// Create a generic OIDC upstream provider via discovery URL.
+    #[clap(name = "create-oidc")]
+    CreateOidc {
+        name: String,
+        #[clap(long)]
+        issuer: Url,
+        #[clap(name = "client-id")]
+        client_id: String,
+        #[clap(name = "client-secret")]
+        client_secret: String,
+    },
     /// Enable Just-In-Time provisioning for an OAuth2 client provider.
     #[clap(name = "enable-jit-provisioning")]
     EnableJitProvisioning { name: String },

@@ -2671,10 +2671,14 @@ impl<'a> QueryServerWriteTransaction<'a> {
             self.migrate_domain_19_to_20()?;
         }
 
+        if previous_version <= DOMAIN_LEVEL_20 && domain_info_version >= DOMAIN_LEVEL_21 {
+            self.migrate_domain_20_to_21()?;
+        }
+
         // This is here to catch when we increase domain levels but didn't create the migration
         // hooks. If this fails it probably means you need to add another migration hook
         // in the above.
-        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_20) };
+        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_21) };
         debug_assert!(domain_info_version <= DOMAIN_MAX_LEVEL);
 
         Ok(())
@@ -3674,5 +3678,31 @@ mod tests {
         // Sorted, note we skipped entry "testgroup 1" using pagination.
         assert_eq!(testgroup_name_0, "testgroup2");
         assert_eq!(testgroup_name_1, "testgroup3");
+    }
+
+    #[qs_test]
+    async fn test_dl21_oauth2_client_admin_acp_has_create_attrs(server: &QueryServer) {
+        use crate::constants::UUID_IDM_ACP_OAUTH2_CLIENT_ADMIN;
+        let mut server_txn = server.read().await.unwrap();
+        let entry = server_txn
+            .internal_search_uuid(UUID_IDM_ACP_OAUTH2_CLIENT_ADMIN)
+            .expect("ACP entry not found");
+        let create_attrs: Vec<String> = entry
+            .get_ava_iter_iutf8(Attribute::AcpCreateAttr)
+            .map(|i| i.map(|s| s.to_string()).collect())
+            .unwrap_or_default();
+        eprintln!("AcpCreateAttr values: {:?}", create_attrs);
+        assert!(
+            create_attrs.contains(&"displayname".to_string()),
+            "ACP missing displayname in create_attrs: {:?}", create_attrs
+        );
+        assert!(
+            create_attrs.contains(&"oauth2_issuer".to_string()),
+            "ACP missing oauth2_issuer in create_attrs: {:?}", create_attrs
+        );
+        assert!(
+            create_attrs.contains(&"oauth2_jwks_uri".to_string()),
+            "ACP missing oauth2_jwks_uri in create_attrs: {:?}", create_attrs
+        );
     }
 }

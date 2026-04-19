@@ -541,6 +541,26 @@ impl Oauth2Opt {
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
+            Oauth2Opt::CreateOidc {
+                name,
+                issuer,
+                client_id,
+                client_secret,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_oauth2_client_create_oidc(
+                        name.as_str(),
+                        issuer,
+                        client_id.as_str(),
+                        client_secret.as_str(),
+                    )
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
             Oauth2Opt::EnableJitProvisioning { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client

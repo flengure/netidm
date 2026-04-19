@@ -4972,6 +4972,7 @@ dependencies = [
 name = "netidmd_testkit"
 version = "1.10.0-dev"
 dependencies = [
+ "axum",
  "cidr",
  "compact_jwt",
  "escargot",

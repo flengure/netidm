@@ -1,9 +1,5 @@
 //! Schema entries for DL20: OAuth2 client logo URI for SSO button branding.
 
-// Re-export schema items needed by tests that reference `migration_data::latest::schema`.
-#[cfg(test)]
-pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
-
 use crate::constants::{UUID_SCHEMA_ATTR_OAUTH2_CLIENT_LOGO_URI, UUID_SCHEMA_CLASS_OAUTH2_CLIENT};
 use crate::prelude::*;
 

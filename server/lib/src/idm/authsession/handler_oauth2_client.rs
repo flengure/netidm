@@ -48,6 +48,8 @@ pub struct CredHandlerOAuth2Client {
     pkce_secret: PkceS256Secret,
     csrf_state: String,
     userinfo_endpoint: Option<Url>,
+    /// JWKS endpoint for cryptographic id_token verification. `None` → unverified decode.
+    jwks_uri: Option<Url>,
     jit_provisioning: bool,
     email_link_accounts: bool,
     claim_map: BTreeMap<Attribute, String>,
@@ -88,6 +90,7 @@ impl CredHandlerOAuth2Client {
             pkce_secret,
             csrf_state,
             userinfo_endpoint: client_provider.userinfo_endpoint.clone(),
+            jwks_uri: client_provider.jwks_uri.clone(),
             jit_provisioning: client_provider.jit_provisioning,
             email_link_accounts: client_provider.email_link_accounts,
             claim_map: client_provider.claim_map.clone(),
@@ -129,6 +132,9 @@ impl CredHandlerOAuth2Client {
             }
             AuthCredential::OAuth2UserinfoResponse { body } => {
                 self.validate_userinfo_response(body, current_time)
+            }
+            AuthCredential::OAuth2JwksTokenResponse { claims_body } => {
+                self.validate_jwks_token_response(claims_body)
             }
             _ => CredState::Denied(BAD_AUTH_TYPE_MSG),
         }
@@ -176,6 +182,17 @@ impl CredHandlerOAuth2Client {
         };
 
         if self.jit_provisioning {
+            // OIDC path: verify id_token via JWKS when jwks_uri is configured.
+            if let (Some(id_token), Some(ref jwks_url)) =
+                (&response.id_token, &self.jwks_uri)
+            {
+                return CredState::External(AuthExternal::OAuth2JwksRequest {
+                    jwks_url: jwks_url.clone(),
+                    id_token: id_token.clone(),
+                    access_token: response.access_token.clone(),
+                });
+            }
+
             if response.id_token.is_none() {
                 if let Some(ref userinfo_url) = self.userinfo_endpoint {
                     return CredState::External(AuthExternal::OAuth2UserinfoRequest {
@@ -360,6 +377,94 @@ impl CredHandlerOAuth2Client {
             .as_deref()
             .and_then(|e| e.split('@').next())
             .map(str::to_string);
+
+        Some(ExternalUserClaims {
+            sub,
+            email,
+            email_verified,
+            display_name,
+            username_hint,
+        })
+    }
+
+    /// Process a JWKS-verified id_token claims body (JSON string) returned by `server/core`.
+    ///
+    /// The claims were already cryptographically verified against the provider's JWKS by
+    /// `server/core`; this function only extracts the identity fields.
+    fn validate_jwks_token_response(&self, claims_body: &str) -> CredState {
+        let json: serde_json::Value = match serde_json::from_str(claims_body) {
+            Ok(v) => v,
+            Err(e) => {
+                warn!(provider_id = ?self.provider_id, ?e, "Failed to parse JWKS token claims body");
+                return CredState::Denied("Failed to parse verified id_token claims");
+            }
+        };
+        match Self::claims_from_oidc_json(&json, &self.claim_map) {
+            Some(claims) => CredState::ProvisioningRequired {
+                provider_uuid: self.provider_id,
+                claims,
+                email_link_accounts: self.email_link_accounts,
+            },
+            None => {
+                warn!(
+                    provider_id = ?self.provider_id,
+                    "Could not extract required claims from verified id_token"
+                );
+                CredState::Denied("Failed to extract identity claims from id_token")
+            }
+        }
+    }
+
+    /// Extract identity claims from standard OIDC id_token claims JSON.
+    ///
+    /// Uses `sub` (not `id`) as the subject identifier, as required by the OIDC specification.
+    /// Distinct from [`claims_from_userinfo_json`] which handles the GitHub `id` field.
+    fn claims_from_oidc_json(
+        json: &serde_json::Value,
+        claim_map: &BTreeMap<Attribute, String>,
+    ) -> Option<ExternalUserClaims> {
+        let sub = json
+            .get("sub")
+            .and_then(|v| v.as_str())
+            .map(str::to_string)?;
+
+        let email_claim = claim_map
+            .get(&Attribute::Mail)
+            .map(String::as_str)
+            .unwrap_or("email");
+        let email = json
+            .get(email_claim)
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(str::to_string);
+
+        let email_verified = json.get("email_verified").and_then(|v| v.as_bool());
+
+        let display_name_claim = claim_map
+            .get(&Attribute::DisplayName)
+            .map(String::as_str)
+            .unwrap_or("name");
+        let display_name = json
+            .get(display_name_claim)
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(str::to_string);
+
+        let username_hint_claim = claim_map
+            .get(&Attribute::Name)
+            .map(String::as_str)
+            .unwrap_or("preferred_username");
+        let username_hint = json
+            .get(username_hint_claim)
+            .and_then(|v| v.as_str())
+            .filter(|s| !s.is_empty())
+            .map(str::to_string)
+            .or_else(|| {
+                email
+                    .as_deref()
+                    .and_then(|e| e.split('@').next())
+                    .map(str::to_string)
+            });
 
         Some(ExternalUserClaims {
             sub,

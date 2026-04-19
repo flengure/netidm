@@ -7,11 +7,12 @@ use netidm_proto::constants::{
     ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME, ATTR_OAUTH2_CLIENT_ID,
     ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
     ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS,
-    ATTR_OAUTH2_JIT_PROVISIONING, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE,
-    ATTR_OAUTH2_PREFER_SHORT_USERNAME, ATTR_OAUTH2_REQUEST_SCOPES, ATTR_OAUTH2_RS_BASIC_SECRET,
-    ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING, ATTR_OAUTH2_STRICT_REDIRECT_URI,
-    ATTR_OAUTH2_TOKEN_ENDPOINT, ATTR_OAUTH2_USERINFO_ENDPOINT,
+    ATTR_OAUTH2_ISSUER, ATTR_OAUTH2_JIT_PROVISIONING, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE,
+    ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_PREFER_SHORT_USERNAME, ATTR_OAUTH2_REQUEST_SCOPES,
+    ATTR_OAUTH2_RS_BASIC_SECRET, ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING,
+    ATTR_OAUTH2_STRICT_REDIRECT_URI, ATTR_OAUTH2_TOKEN_ENDPOINT, ATTR_OAUTH2_USERINFO_ENDPOINT,
 };
+use serde::Deserialize;
 use netidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin};
 use netidm_proto::v1::Entry;
 use reqwest::multipart;
@@ -602,6 +603,109 @@ impl NetidmClient {
                 "profile".to_string(),
             ],
         );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    pub async fn idm_oauth2_client_create_oidc(
+        &self,
+        name: &str,
+        issuer: &Url,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<(), ClientError> {
+        #[derive(Deserialize)]
+        struct OidcDiscovery {
+            issuer: String,
+            authorization_endpoint: String,
+            token_endpoint: String,
+            #[serde(default)]
+            userinfo_endpoint: Option<String>,
+            #[serde(default)]
+            jwks_uri: Option<String>,
+        }
+
+        let discovery_url = format!(
+            "{}/.well-known/openid-configuration",
+            issuer.as_str().trim_end_matches('/')
+        );
+
+        let resp = self
+            .client()
+            .get(&discovery_url)
+            .send()
+            .await
+            .map_err(ClientError::Transport)?;
+
+        if !resp.status().is_success() {
+            return Err(ClientError::Http(
+                resp.status(),
+                None,
+                "OIDC discovery request failed".to_string(),
+            ));
+        }
+
+        let doc: OidcDiscovery = resp
+            .json()
+            .await
+            .map_err(|e| ClientError::JsonDecode(e, "OIDC discovery document".to_string()))?;
+
+        if doc.issuer != issuer.as_str().trim_end_matches('/') {
+            return Err(ClientError::Http(
+                reqwest::StatusCode::BAD_REQUEST,
+                None,
+                format!(
+                    "OIDC discovery issuer mismatch: expected {}, got {}",
+                    issuer, doc.issuer
+                ),
+            ));
+        }
+
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_ID.to_string(),
+            vec![client_id.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec![doc.authorization_endpoint],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec![doc.token_endpoint],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_ISSUER.to_string(),
+            vec![issuer.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec![
+                "openid".to_string(),
+                "profile".to_string(),
+                "email".to_string(),
+            ],
+        );
+        if let Some(userinfo_url) = doc.userinfo_endpoint {
+            entry.attrs.insert(
+                ATTR_OAUTH2_USERINFO_ENDPOINT.to_string(),
+                vec![userinfo_url],
+            );
+        }
+        if let Some(jwks_url) = doc.jwks_uri {
+            entry
+                .attrs
+                .insert(ATTR_OAUTH2_JWKS_URI.to_string(), vec![jwks_url]);
+        }
         self.perform_post_request("/v1/oauth2/_client", entry).await
     }
 

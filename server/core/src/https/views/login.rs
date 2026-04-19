@@ -29,6 +29,10 @@ use netidm_proto::{
 use netidmd_lib::idm::authentication::{AuthCredential, AuthExternal, AuthState, AuthStep};
 use netidmd_lib::idm::event::AuthResult;
 use netidmd_lib::idm::server::SsoProviderInfo;
+use compact_jwt::compact::{Jwk, JwkKeySet, JwaAlg};
+use compact_jwt::crypto::{JwsEs256Verifier, JwsRs256Verifier};
+use compact_jwt::traits::{JwsVerifiable, JwsVerifier};
+use compact_jwt::OidcUnverified;
 use netidmd_lib::prelude::OperationError;
 use netidmd_lib::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -1210,6 +1214,31 @@ async fn view_login_step(
                         auth_state = inter.state;
                         continue;
                     }
+                    AuthExternal::OAuth2JwksRequest {
+                        jwks_url,
+                        id_token,
+                        access_token: _,
+                    } => {
+                        let now_secs = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_secs() as i64)
+                            .unwrap_or(0);
+                        let claims_body =
+                            verify_oidc_id_token(&jwks_url, &id_token, now_secs).await?;
+                        let auth_cred =
+                            AuthCredential::OAuth2JwksTokenResponse { claims_body };
+                        let inter = state
+                            .qe_r_ref
+                            .handle_auth(
+                                Some(sessionid),
+                                AuthStep::Cred(auth_cred),
+                                kopid.eventid,
+                                client_auth_info.clone(),
+                            )
+                            .await?;
+                        auth_state = inter.state;
+                        continue;
+                    }
                 }
             }
             AuthState::Success(token, issue) => {
@@ -1449,6 +1478,125 @@ async fn submit_userinfo_request(
         error!(status = ?res.status(), "Userinfo request returned non-200 status");
         Err(OperationError::InvalidState)
     }
+}
+
+/// Fetch a provider's JWKS, verify the `id_token` signature and expiry, and return the
+/// claims payload as a JSON string for further processing by the auth handler.
+///
+/// On key-not-found the JWKS is re-fetched once to handle provider key rotation.
+///
+/// # Errors
+///
+/// Returns [`OperationError::NotAuthenticated`] if the token cannot be verified (invalid
+/// signature, unknown algorithm, expired, missing `sub`, or network failure).
+async fn fetch_jwks(url: &Url) -> Result<JwkKeySet, OperationError> {
+    let client = reqwest::ClientBuilder::new()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .map_err(|err| {
+            error!(?err, "Failed to build HTTP client for JWKS request");
+            OperationError::NotAuthenticated
+        })?;
+    let res = client
+        .get(url.as_str())
+        .header("User-Agent", "netidm/1.0")
+        .send()
+        .await
+        .map_err(|err| {
+            error!(?err, ?url, "JWKS request failed");
+            OperationError::NotAuthenticated
+        })?;
+    if res.status() == reqwest::StatusCode::OK {
+        res.json::<JwkKeySet>().await.map_err(|err| {
+            error!(?err, "JWKS response was not valid JSON");
+            OperationError::NotAuthenticated
+        })
+    } else {
+        error!(status = ?res.status(), "JWKS request returned non-200 status");
+        Err(OperationError::NotAuthenticated)
+    }
+}
+
+fn jwk_kid(jwk: &Jwk) -> Option<&str> {
+    match jwk {
+        Jwk::EC { kid, .. } => kid.as_deref(),
+        Jwk::RSA { kid, .. } => kid.as_deref(),
+    }
+}
+
+fn find_key_in_set<'a>(keyset: &'a JwkKeySet, token_kid: Option<&str>) -> Option<&'a Jwk> {
+    keyset.keys.iter().find(|jwk| match (token_kid, jwk_kid(jwk)) {
+        (Some(tk), Some(jk)) => tk == jk,
+        (None, _) => true,
+        _ => false,
+    })
+}
+
+async fn verify_oidc_id_token(
+    jwks_url: &Url,
+    id_token: &str,
+    now_secs: i64,
+) -> Result<String, OperationError> {
+    let unverified = OidcUnverified::from_str(id_token).map_err(|err| {
+        warn!(?err, "Failed to parse id_token as OidcUnverified");
+        OperationError::NotAuthenticated
+    })?;
+
+    let token_kid = unverified.kid().map(str::to_owned);
+    let token_alg = unverified.alg();
+
+    let mut keyset = fetch_jwks(jwks_url).await?;
+    let jwk = match find_key_in_set(&keyset, token_kid.as_deref()) {
+        Some(k) => k.clone(),
+        None => {
+            // Key not found — re-fetch once to handle key rotation.
+            keyset = fetch_jwks(jwks_url).await?;
+            find_key_in_set(&keyset, token_kid.as_deref())
+                .ok_or_else(|| {
+                    warn!("id_token kid not found in JWKS after re-fetch");
+                    OperationError::NotAuthenticated
+                })?
+                .clone()
+        }
+    };
+
+    let exp_unverified = match token_alg {
+        JwaAlg::ES256 => {
+            let verifier = JwsEs256Verifier::try_from(&jwk).map_err(|err| {
+                warn!(?err, "Failed to build ES256 verifier from JWK");
+                OperationError::NotAuthenticated
+            })?;
+            verifier.verify(&unverified).map_err(|err| {
+                warn!(?err, "ES256 id_token signature verification failed");
+                OperationError::NotAuthenticated
+            })?
+        }
+        JwaAlg::RS256 => {
+            let verifier = JwsRs256Verifier::try_from(&jwk).map_err(|err| {
+                warn!(?err, "Failed to build RS256 verifier from JWK");
+                OperationError::NotAuthenticated
+            })?;
+            verifier.verify(&unverified).map_err(|err| {
+                warn!(?err, "RS256 id_token signature verification failed");
+                OperationError::NotAuthenticated
+            })?
+        }
+        alg => {
+            warn!(?alg, "Unsupported id_token signing algorithm");
+            return Err(OperationError::NotAuthenticated);
+        }
+    };
+
+    let token = exp_unverified.verify_exp(now_secs).map_err(|err| {
+        warn!(?err, "id_token expiry verification failed");
+        OperationError::NotAuthenticated
+    })?;
+
+    // Serialise the verified claims as JSON for the auth handler.
+    serde_json::to_string(&token).map_err(|err| {
+        error!(?err, "Failed to serialise verified id_token claims");
+        OperationError::NotAuthenticated
+    })
 }
 
 #[derive(Deserialize)]
