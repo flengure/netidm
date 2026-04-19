@@ -36,6 +36,7 @@ crypto-glue = { workspace = true }
 filetime = { workspace = true }
 futures = { workspace = true }
 futures-util = { workspace = true }
+hashbrown = { workspace = true }
 haproxy-protocol = { workspace = true, features = ["tokio"] }
 hyper = { workspace = true }
 hyper-util = { workspace = true }
@@ -87,6 +88,7 @@ utoipa = { workspace = true, features = [
     "uuid",
 ] }
 utoipa-swagger-ui = { workspace = true, default-features = false, features = ["axum"] }
+samael = { version = "0.0.20", features = ["xmlsec"] }
 
 webauthn-rs = { workspace = true, features = [
     "resident-key-support",

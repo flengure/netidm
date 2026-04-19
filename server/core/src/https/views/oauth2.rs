@@ -177,6 +177,7 @@ async fn oauth2_auth_req(
                         oauth2: Some(Oauth2Ctx { client_name }),
                         reauth: None,
                         error: None,
+                        available_sso_providers: Vec::new(),
                     };
 
                     super::login::view_oauth2_get(new_jar, display_ctx, login_hint)

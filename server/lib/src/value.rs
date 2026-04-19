@@ -1166,6 +1166,7 @@ pub enum AuthType {
     Passkey,
     AttestedPasskey,
     OAuth2Trust,
+    SamlFederated,
 }
 
 impl fmt::Display for AuthType {
@@ -1180,6 +1181,7 @@ impl fmt::Display for AuthType {
             AuthType::Passkey => write!(f, "passkey"),
             AuthType::AttestedPasskey => write!(f, "attested_passkey"),
             AuthType::OAuth2Trust => write!(f, "oauth2_trust"),
+            AuthType::SamlFederated => write!(f, "saml_federated"),
         }
     }
 }

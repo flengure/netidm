@@ -134,6 +134,7 @@ impl DomainInfo {
 pub struct SystemConfig {
     pub(crate) denied_names: HashSet<String>,
     pub(crate) pw_badlist: HashSet<String>,
+    pub(crate) skip_auth_routes: HashSet<String>,
 }
 
 #[derive(Clone, Default)]
@@ -201,6 +202,7 @@ bitflags::bitflags! {
         const APPLICATION    =              0b0000_0000_1000_0000;
         const OAUTH2_CLIENT            =    0b0000_0001_0000_0000;
         const FEATURE                  =    0b0000_0010_0000_0000;
+        const SAML_CLIENT              =    0b0000_0100_0000_0000;
     }
 }
 
@@ -274,6 +276,8 @@ pub trait QueryServerTransaction<'a> {
     fn pw_badlist(&self) -> &HashSet<String>;
 
     fn denied_names(&self) -> &HashSet<String>;
+
+    fn skip_auth_routes(&self) -> &HashSet<String>;
 
     fn get_domain_version(&self) -> DomainVersion;
 
@@ -1330,6 +1334,21 @@ pub trait QueryServerTransaction<'a> {
             })
     }
 
+    fn get_sc_skip_auth_routes(&mut self) -> Result<HashSet<String>, OperationError> {
+        self.internal_search_uuid(UUID_SYSTEM_CONFIG)
+            .map(|e| match e.get_ava_iter_iutf8(Attribute::SkipAuthRoute) {
+                Some(vs_str_iter) => vs_str_iter.map(str::to_string).collect::<HashSet<_>>(),
+                None => HashSet::default(),
+            })
+            .map_err(|e| {
+                error!(
+                    ?e,
+                    "Failed to retrieve skip_auth_routes from system configuration"
+                );
+                e
+            })
+    }
+
     fn get_oauth2rs_set(&mut self) -> Result<Vec<Arc<EntrySealedCommitted>>, OperationError> {
         self.internal_search(filter!(f_eq(
             Attribute::Class,
@@ -1444,6 +1463,10 @@ impl<'a> QueryServerTransaction<'a> for QueryServerReadTransaction<'a> {
 
     fn denied_names(&self) -> &HashSet<String> {
         &self.system_config.denied_names
+    }
+
+    fn skip_auth_routes(&self) -> &HashSet<String> {
+        &self.system_config.skip_auth_routes
     }
 
     fn get_domain_version(&self) -> DomainVersion {
@@ -1793,6 +1816,10 @@ impl<'a> QueryServerTransaction<'a> for QueryServerWriteTransaction<'a> {
 
     fn denied_names(&self) -> &HashSet<String> {
         &self.system_config.denied_names
+    }
+
+    fn skip_auth_routes(&self) -> &HashSet<String> {
+        &self.system_config.skip_auth_routes
     }
 
     fn get_domain_version(&self) -> DomainVersion {
@@ -2482,10 +2509,12 @@ impl<'a> QueryServerWriteTransaction<'a> {
     pub(crate) fn reload_system_config(&mut self) -> Result<(), OperationError> {
         let denied_names = self.get_sc_denied_names()?;
         let pw_badlist = self.get_sc_password_badlist()?;
+        let skip_auth_routes = self.get_sc_skip_auth_routes()?;
 
         let mut_system_config = self.system_config.get_mut();
         mut_system_config.denied_names = denied_names;
         mut_system_config.pw_badlist = pw_badlist;
+        mut_system_config.skip_auth_routes = skip_auth_routes;
         Ok(())
     }
 
@@ -2633,10 +2662,28 @@ impl<'a> QueryServerWriteTransaction<'a> {
             self.migrate_domain_17_to_18()?;
         }
 
+        if previous_version <= DOMAIN_LEVEL_18 && domain_info_version >= DOMAIN_LEVEL_19 {
+            // 1.14 -> 1.15
+            self.migrate_domain_18_to_19()?;
+        }
+
+        if previous_version <= DOMAIN_LEVEL_19 && domain_info_version >= DOMAIN_LEVEL_20 {
+            // 1.15 -> 1.16
+            self.migrate_domain_19_to_20()?;
+        }
+
+        if previous_version <= DOMAIN_LEVEL_20 && domain_info_version >= DOMAIN_LEVEL_21 {
+            self.migrate_domain_20_to_21()?;
+        }
+
+        if previous_version <= DOMAIN_LEVEL_21 && domain_info_version >= DOMAIN_LEVEL_22 {
+            self.migrate_domain_21_to_22()?;
+        }
+
         // This is here to catch when we increase domain levels but didn't create the migration
         // hooks. If this fails it probably means you need to add another migration hook
         // in the above.
-        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_18) };
+        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_22) };
         debug_assert!(domain_info_version <= DOMAIN_MAX_LEVEL);
 
         Ok(())
@@ -2830,6 +2877,11 @@ impl<'a> QueryServerWriteTransaction<'a> {
     #[inline]
     pub(crate) fn get_changed_oauth2_client(&self) -> bool {
         self.changed_flags.contains(ChangeFlag::OAUTH2_CLIENT)
+    }
+
+    #[inline]
+    pub(crate) fn get_changed_saml_client(&self) -> bool {
+        self.changed_flags.contains(ChangeFlag::SAML_CLIENT)
     }
 
     /// Indicate that we are about to re-bootstrap this server. You should ONLY
@@ -3636,5 +3688,31 @@ mod tests {
         // Sorted, note we skipped entry "testgroup 1" using pagination.
         assert_eq!(testgroup_name_0, "testgroup2");
         assert_eq!(testgroup_name_1, "testgroup3");
+    }
+
+    #[qs_test]
+    async fn test_dl21_oauth2_client_admin_acp_has_create_attrs(server: &QueryServer) {
+        use crate::constants::UUID_IDM_ACP_OAUTH2_CLIENT_ADMIN;
+        let mut server_txn = server.read().await.unwrap();
+        let entry = server_txn
+            .internal_search_uuid(UUID_IDM_ACP_OAUTH2_CLIENT_ADMIN)
+            .expect("ACP entry not found");
+        let create_attrs: Vec<String> = entry
+            .get_ava_iter_iutf8(Attribute::AcpCreateAttr)
+            .map(|i| i.map(|s| s.to_string()).collect())
+            .unwrap_or_default();
+        eprintln!("AcpCreateAttr values: {:?}", create_attrs);
+        assert!(
+            create_attrs.contains(&"displayname".to_string()),
+            "ACP missing displayname in create_attrs: {:?}", create_attrs
+        );
+        assert!(
+            create_attrs.contains(&"oauth2_issuer".to_string()),
+            "ACP missing oauth2_issuer in create_attrs: {:?}", create_attrs
+        );
+        assert!(
+            create_attrs.contains(&"oauth2_jwks_uri".to_string()),
+            "ACP missing oauth2_jwks_uri in create_attrs: {:?}", create_attrs
+        );
     }
 }

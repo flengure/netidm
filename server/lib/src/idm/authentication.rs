@@ -24,6 +24,12 @@ pub enum AuthStep {
     },
     Begin(AuthMech),
     Cred(AuthCredential),
+    /// Begin a provider-initiated OAuth2 flow without a known username.
+    /// The provider is identified by its internal name (e.g. "github").
+    InitOAuth2Provider {
+        provider_name: String,
+        issue: AuthIssueSession,
+    },
 }
 
 impl From<ProtoAuthStep> for AuthStep {
@@ -62,6 +68,20 @@ pub enum AuthExternal {
         userinfo_url: Url,
         access_token: String,
     },
+    /// Fetch the provider's JWKS and verify the id_token signature.
+    /// Used when the provider has a `jwks_uri` configured (OIDC discovery path).
+    OAuth2JwksRequest {
+        jwks_url: Url,
+        id_token: String,
+        access_token: String,
+    },
+    /// SP-initiated SAML AuthnRequest ready to send to the IdP.
+    SamlAuthnRequest {
+        sso_url: Url,
+        /// Deflate-compressed, base64-encoded AuthnRequest XML.
+        saml_request: String,
+        relay_state: String,
+    },
 }
 
 impl fmt::Debug for AuthExternal {
@@ -70,6 +90,8 @@ impl fmt::Debug for AuthExternal {
             Self::OAuth2AuthorisationRequest { .. } => write!(f, "OAuth2AuthorisationRequest"),
             Self::OAuth2AccessTokenRequest { .. } => write!(f, "OAuth2AccessTokenRequest"),
             Self::OAuth2UserinfoRequest { .. } => write!(f, "OAuth2UserinfoRequest"),
+            Self::OAuth2JwksRequest { .. } => write!(f, "OAuth2JwksRequest"),
+            Self::SamlAuthnRequest { .. } => write!(f, "SamlAuthnRequest"),
         }
     }
 }
@@ -137,6 +159,16 @@ pub enum AuthCredential {
     OAuth2UserinfoResponse {
         body: JsonValue,
     },
+    /// Claims JSON extracted from a JWKS-verified id_token.
+    OAuth2JwksTokenResponse {
+        claims_body: String,
+    },
+    /// Raw base64-encoded SAML Response from the IdP's HTTP-POST ACS binding.
+    SamlAcsResponse {
+        saml_response: String,
+        relay_state: String,
+        provider_name: String,
+    },
 }
 
 impl From<ProtoAuthCredential> for AuthCredential {
@@ -169,6 +201,12 @@ impl fmt::Debug for AuthCredential {
             }
             AuthCredential::OAuth2UserinfoResponse { .. } => {
                 write!(fmt, "OAuth2UserinfoResponse{{..}}")
+            }
+            AuthCredential::OAuth2JwksTokenResponse { .. } => {
+                write!(fmt, "OAuth2JwksTokenResponse{{..}}")
+            }
+            AuthCredential::SamlAcsResponse { .. } => {
+                write!(fmt, "SamlAcsResponse{{..}}")
             }
         }
     }

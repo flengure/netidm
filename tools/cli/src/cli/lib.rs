@@ -32,6 +32,7 @@ mod oauth2;
 mod person;
 mod raw;
 mod recycle;
+mod saml;
 mod schema;
 mod serviceaccount;
 mod session;
@@ -150,10 +151,12 @@ impl SystemOpt {
             SystemOpt::Api { commands } => commands.exec(opt).await,
             SystemOpt::PwBadlist { commands } => commands.exec(opt).await,
             SystemOpt::DeniedNames { commands } => commands.exec(opt).await,
+            SystemOpt::SkipAuth { commands } => commands.exec(opt).await,
             SystemOpt::Oauth2 { commands } => commands.exec(opt).await,
             SystemOpt::Domain { commands } => commands.exec(opt).await,
             SystemOpt::Message { commands } => commands.exec(opt).await,
             SystemOpt::Synch { commands } => commands.exec(opt).await,
+            SystemOpt::SamlClient { commands } => commands.exec(opt).await,
         }
     }
 }

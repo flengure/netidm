@@ -1107,6 +1107,17 @@ pub enum Oauth2Opt {
         #[clap(name = "client-secret")]
         client_secret: String,
     },
+    /// Create a generic OIDC upstream provider via discovery URL.
+    #[clap(name = "create-oidc")]
+    CreateOidc {
+        name: String,
+        #[clap(long)]
+        issuer: Url,
+        #[clap(name = "client-id")]
+        client_id: String,
+        #[clap(name = "client-secret")]
+        client_secret: String,
+    },
     /// Enable Just-In-Time provisioning for an OAuth2 client provider.
     #[clap(name = "enable-jit-provisioning")]
     EnableJitProvisioning { name: String },
@@ -1183,6 +1194,25 @@ pub enum DeniedNamesOpt {
     Remove {
         #[clap(value_parser, required = true, num_args(1..))]
         names: Vec<String>,
+    },
+}
+
+#[derive(Debug, Subcommand, Clone)]
+pub enum SkipAuthOpt {
+    #[clap(name = "show")]
+    /// Show the current skip-auth rules for the forward auth gate
+    Show,
+    #[clap(name = "add")]
+    /// Add a skip-auth rule (e.g. "GET=^/health$" or "^/metrics$")
+    Add {
+        #[clap(value_parser, required = true, num_args(1..))]
+        rules: Vec<String>,
+    },
+    #[clap(name = "remove")]
+    /// Remove a skip-auth rule
+    Remove {
+        #[clap(value_parser, required = true, num_args(1..))]
+        rules: Vec<String>,
     },
 }
 
@@ -1426,6 +1456,7 @@ pub enum SchemaOpt {
 }
 
 #[derive(Debug, Subcommand, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum SystemOpt {
     #[clap(name = "pw-badlist")]
     /// Configure and manage the password badlist entry
@@ -1438,6 +1469,12 @@ pub enum SystemOpt {
     DeniedNames {
         #[clap(subcommand)]
         commands: DeniedNamesOpt,
+    },
+    #[clap(name = "skip-auth")]
+    /// Configure skip-auth rules for the forward auth gate (/oauth2/auth)
+    SkipAuth {
+        #[clap(subcommand)]
+        commands: SkipAuthOpt,
     },
     #[clap(name = "oauth2")]
     /// Configure and display oauth2/oidc client configuration
@@ -1469,10 +1506,73 @@ pub enum SystemOpt {
         #[clap(subcommand)]
         commands: ApiOpt,
     },
+    #[clap(name = "saml-client")]
+    /// Configure SAML 2.0 upstream identity provider connectors
+    SamlClient {
+        #[clap(subcommand)]
+        commands: SamlClientOpt,
+    },
+}
+
+#[derive(Debug, Subcommand, Clone)]
+#[allow(clippy::large_enum_variant)]
+pub enum SamlClientOpt {
+    /// List all configured SAML client providers
+    #[clap(name = "list")]
+    List,
+    /// Display a selected SAML client provider
+    #[clap(name = "get")]
+    Get { name: String },
+    /// Create a new SAML 2.0 upstream identity provider connector
+    #[clap(name = "create")]
+    Create {
+        name: String,
+        #[clap(long)]
+        displayname: String,
+        /// IdP HTTP-POST SSO endpoint URL
+        #[clap(long)]
+        sso_url: Url,
+        /// Path to the IdP's X.509 signing certificate (PEM)
+        #[clap(long)]
+        idp_cert: PathBuf,
+        /// SP entity ID (our SAML entity ID, typically the ACS URL base)
+        #[clap(long)]
+        entity_id: Url,
+        /// ACS (Assertion Consumer Service) URL where the IdP will POST responses
+        #[clap(long)]
+        acs_url: Url,
+        /// NameID format (optional, e.g. urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress)
+        #[clap(long)]
+        nameid_format: Option<String>,
+        /// SAML attribute name to map to the user's email
+        #[clap(long)]
+        email_attr: Option<String>,
+        /// SAML attribute name to map to the user's display name
+        #[clap(long)]
+        displayname_attr: Option<String>,
+        /// SAML attribute name to map to group memberships
+        #[clap(long)]
+        groups_attr: Option<String>,
+        /// Enable just-in-time account provisioning on first login
+        #[clap(long, default_value = "false")]
+        jit_provisioning: bool,
+    },
+    /// Delete a SAML client provider
+    #[clap(name = "delete")]
+    Delete { name: String },
+    /// Update the IdP signing certificate for a SAML client provider
+    #[clap(name = "update-cert")]
+    UpdateCert {
+        name: String,
+        /// Path to the new IdP X.509 signing certificate (PEM)
+        #[clap(long)]
+        idp_cert: PathBuf,
+    },
 }
 
 #[derive(Debug, Subcommand, Clone)]
 #[clap(about = "Netidm Client Utility")]
+#[allow(clippy::large_enum_variant)]
 pub enum NetidmClientOpt {
     /// Login to an account to use with future cli operations
     Login(LoginOpt),

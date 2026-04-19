@@ -85,6 +85,7 @@ image = { workspace = true, default-features = false, features = [
 svg = { workspace = true }
 flate2 = "1.1.9"
 netidmd_wg = { version = "1.10.0-dev", path = "../wg" }
+samael = { version = "0.0.20", features = ["xmlsec"] }
 sha2.workspace = true
 ipnet = "2.12.0"
 

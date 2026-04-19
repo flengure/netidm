@@ -200,6 +200,11 @@ pub const ATTR_OAUTH2_CLAIM_MAP_EMAIL: &str = "oauth2_claim_map_email";
 // DL18 — OAuth2 email-based account linking
 pub const ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS: &str = "oauth2_email_link_accounts";
 pub const ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS: &str = "oauth2_domain_email_link_accounts";
+// DL20 — OAuth2 client logo URI
+pub const ATTR_OAUTH2_CLIENT_LOGO_URI: &str = "oauth2_client_logo_uri";
+// DL21 — Generic OIDC upstream connector
+pub const ATTR_OAUTH2_ISSUER: &str = "oauth2_issuer";
+pub const ATTR_OAUTH2_JWKS_URI: &str = "oauth2_jwks_uri";
 // DL16 — WireGuard
 pub const ATTR_WG_INTERFACE: &str = "wg_interface";
 pub const ATTR_WG_LISTEN_PORT: &str = "wg_listen_port";
@@ -230,6 +235,7 @@ pub const ATTR_WG_TOKEN_USES_LEFT: &str = "wg_token_uses_left";
 pub const ATTR_WG_TOKEN_EXPIRY: &str = "wg_token_expiry";
 pub const ATTR_WG_TOKEN_PRINCIPAL_REF: &str = "wg_token_principal_ref";
 pub const ENTRYCLASS_WG_TOKEN: &str = "wg_token";
+pub const ENTRYCLASS_SAML_CLIENT: &str = "samlclient";
 pub const ATTR_OBJECTCLASS: &str = "objectclass";
 pub const ATTR_OTHER_NO_INDEX: &str = "other-no-index";
 pub const ATTR_PASSKEYS: &str = "passkeys";
@@ -251,6 +257,7 @@ pub const ATTR_SEND_AFTER: &str = "send_after";
 pub const ATTR_SENT_AT: &str = "sent_at";
 pub const ATTR_SCOPE: &str = "scope";
 pub const ATTR_SELF: &str = "self";
+pub const ATTR_SKIP_AUTH_ROUTE: &str = "skip_auth_route";
 pub const ATTR_SOURCE_UUID: &str = "source_uuid";
 pub const ATTR_SPN: &str = "spn";
 pub const ATTR_SUDOHOST: &str = "sudohost";

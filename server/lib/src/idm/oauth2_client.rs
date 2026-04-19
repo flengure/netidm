@@ -11,6 +11,8 @@ pub const OAUTH2_CLIENT_AUTHORISATION_RESPONSE_PATH: &str = "/ui/login/oauth2_la
 #[derive(Clone)]
 pub struct OAuth2ClientProvider {
     pub(crate) name: String,
+    /// Human-readable button label. Falls back to `name` when no DisplayName is set.
+    pub(crate) display_name: String,
     pub(crate) uuid: Uuid,
     pub(crate) client_id: String,
     pub(crate) client_basic_secret: String,
@@ -23,6 +25,13 @@ pub struct OAuth2ClientProvider {
     pub(crate) jit_provisioning: bool,
     /// Effective email-link-accounts setting: per-provider if set, otherwise global domain default.
     pub(crate) email_link_accounts: bool,
+    /// Optional logo image URL shown on the SSO login button (DL20+).
+    pub(crate) logo_uri: Option<Url>,
+    /// OIDC issuer URL, set when this provider was configured via OIDC discovery (DL21+).
+    pub(crate) issuer: Option<Url>,
+    /// JWKS endpoint URL for cryptographic verification of id_tokens (DL21+).
+    /// When set, `id_token` JWTs are verified against this JWKS rather than decoded unverified.
+    pub(crate) jwks_uri: Option<Url>,
     /// Maps a Netidm attribute to the provider claim name used at JIT provisioning time.
     pub(crate) claim_map: BTreeMap<Attribute, String>,
 }
@@ -31,6 +40,7 @@ impl fmt::Debug for OAuth2ClientProvider {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("OAuth2ClientProvider")
             .field("provider_id", &self.name)
+            .field("display_name", &self.display_name)
             .field("provider_name", &self.uuid)
             .field("client_id", &self.client_id)
             .finish()
@@ -63,6 +73,7 @@ impl OAuth2ClientProvider {
 
         Self {
             name: "test_client_provider".to_string(),
+            display_name: "Test Client Provider".to_string(),
             uuid: Uuid::new_v4(),
             client_id: client_id.to_string(),
             client_basic_secret,
@@ -73,6 +84,9 @@ impl OAuth2ClientProvider {
             userinfo_endpoint: None,
             jit_provisioning: false,
             email_link_accounts: false,
+            logo_uri: None,
+            issuer: None,
+            jwks_uri: None,
             claim_map: BTreeMap::new(),
         }
     }
@@ -108,6 +122,11 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .get_ava_single_iname(Attribute::Name)
                 .map(str::to_string)
                 .ok_or(OperationError::InvalidValueState)?;
+
+            let display_name = provider_entry
+                .get_ava_single_utf8(Attribute::DisplayName)
+                .map(str::to_string)
+                .unwrap_or_else(|| name.clone());
 
             let client_id = provider_entry
                 .get_ava_single_utf8(Attribute::OAuth2ClientId)
@@ -147,6 +166,18 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .get_ava_single_bool(Attribute::OAuth2EmailLinkAccounts)
                 .unwrap_or(global_email_link_accounts);
 
+            let logo_uri = provider_entry
+                .get_ava_single_url(Attribute::OAuth2ClientLogoUri)
+                .cloned();
+
+            let issuer = provider_entry
+                .get_ava_single_url(Attribute::OAuth2Issuer)
+                .cloned();
+
+            let jwks_uri = provider_entry
+                .get_ava_single_url(Attribute::OAuth2JwksUri)
+                .cloned();
+
             let mut claim_map = BTreeMap::new();
             if let Some(v) = provider_entry
                 .get_ava_single_utf8(Attribute::OAuth2ClaimMapName)
@@ -169,6 +200,7 @@ impl IdmServerProxyWriteTransaction<'_> {
 
             let provider = OAuth2ClientProvider {
                 name,
+                display_name,
                 uuid,
                 client_id,
                 client_basic_secret,
@@ -179,6 +211,9 @@ impl IdmServerProxyWriteTransaction<'_> {
                 userinfo_endpoint,
                 jit_provisioning,
                 email_link_accounts,
+                logo_uri,
+                issuer,
+                jwks_uri,
                 claim_map,
             };
 

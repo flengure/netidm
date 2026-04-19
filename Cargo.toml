@@ -121,6 +121,9 @@ codegen-units = 256
 # webauthn-rs-proto = { path = "../webauthn-rs/webauthn-rs-proto" }
 # sshkey-attest = { path = "../webauthn-rs/sshkey-attest" }
 
+# Patched samael 0.0.20: cast xmlSecBufferGetSize return from u32 to usize (u32/usize mismatch on x86_64-linux)
+samael = { path = "./vendor/samael" }
+
 [workspace.dependencies]
 netidmd_core = { path = "./server/core", version = "=1.10.0-dev" }
 netidmd_lib = { path = "./server/lib", version = "=1.10.0-dev" }

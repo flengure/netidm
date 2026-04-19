@@ -11,15 +11,16 @@ use askama_web::WebTemplate;
 
 use axum::http::HeaderMap;
 use axum::{
-    extract::{Query, State},
+    extract::{Path, Query, State},
     response::{IntoResponse, Redirect, Response},
     Extension, Form, Json,
 };
 use axum_extra::extract::cookie::{CookieJar, SameSite};
 use hyper::Uri;
 use netidm_proto::internal::{
-    UserAuthToken, COOKIE_AUTH_SESSION_ID, COOKIE_BEARER_TOKEN, COOKIE_CU_SESSION_TOKEN,
-    COOKIE_OAUTH2_PROVISION_REQ, COOKIE_OAUTH2_REQ, COOKIE_USERNAME,
+    UserAuthToken, COOKIE_AUTH_METHOD_PREF, COOKIE_AUTH_SESSION_ID, COOKIE_BEARER_TOKEN,
+    COOKIE_CU_SESSION_TOKEN, COOKIE_NEXT_REDIRECT, COOKIE_OAUTH2_PROVISION_REQ, COOKIE_OAUTH2_REQ,
+    COOKIE_USERNAME,
 };
 use netidm_proto::{
     oauth2::{AccessTokenRequest, AccessTokenResponse},
@@ -27,6 +28,11 @@ use netidm_proto::{
 };
 use netidmd_lib::idm::authentication::{AuthCredential, AuthExternal, AuthState, AuthStep};
 use netidmd_lib::idm::event::AuthResult;
+use netidmd_lib::idm::server::SsoProviderInfo;
+use compact_jwt::compact::{Jwk, JwkKeySet, JwaAlg};
+use compact_jwt::crypto::{JwsEs256Verifier, JwsRs256Verifier};
+use compact_jwt::traits::{JwsVerifiable, JwsVerifier};
+use compact_jwt::OidcUnverified;
 use netidmd_lib::prelude::OperationError;
 use netidmd_lib::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -98,6 +104,7 @@ pub struct LoginDisplayCtx {
     pub reauth: Option<Reauth>,
     pub oauth2: Option<Oauth2Ctx>,
     pub error: Option<LoginError>,
+    pub available_sso_providers: Vec<SsoProviderInfo>,
 }
 
 #[derive(Template, WebTemplate)]
@@ -106,6 +113,7 @@ struct LoginView {
     display_ctx: LoginDisplayCtx,
     username: String,
     remember_me: bool,
+    show_internal_first: bool,
 }
 
 pub struct Mech<'a> {
@@ -253,6 +261,7 @@ pub async fn view_reauth_to_referer_get(
             purpose: ReauthPurpose::ProfileSettings,
         }),
         error: None,
+        available_sso_providers: Vec::new(),
     };
 
     Ok(view_reauth_get(state, client_auth_info, kopid, jar, redirect, display_ctx).await)
@@ -343,6 +352,7 @@ pub async fn view_reauth_get(
                     display_ctx,
                     username,
                     remember_me,
+                    show_internal_first: false,
                 },
             )
                 .into_response()
@@ -378,6 +388,7 @@ pub fn view_oauth2_get(
             display_ctx,
             username,
             remember_me,
+                    show_internal_first: false,
         },
     )
         .into_response()
@@ -387,6 +398,221 @@ pub fn view_oauth2_get(
 pub struct LoginIndexQuery {
     #[serde(default)]
     reason: Option<String>,
+    /// Post-login redirect URL supplied by the forward auth endpoint.
+    /// Only relative paths (starting with `/`) are accepted to prevent
+    /// open-redirect attacks.
+    #[serde(default)]
+    next: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Default)]
+pub struct SsoInitiateQuery {
+    #[serde(default)]
+    next: Option<String>,
+}
+
+/// Initiate a provider-initiated OAuth2 flow by redirecting to the provider's authorization URL.
+///
+/// # Errors
+/// Returns 404 if the provider name is not found. Returns a redirect on success.
+pub async fn view_sso_initiate_get(
+    State(state): State<ServerState>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Extension(kopid): Extension<KOpId>,
+    Path(provider_name): Path<String>,
+    Query(query): Query<SsoInitiateQuery>,
+    jar: CookieJar,
+) -> Response {
+    use axum::http::StatusCode;
+    use netidm_proto::v1::AuthIssueSession;
+
+    let auth_result = state
+        .qe_r_ref
+        .handle_auth(
+            None,
+            AuthStep::InitOAuth2Provider {
+                provider_name,
+                issue: AuthIssueSession::Cookie,
+            },
+            kopid.eventid,
+            client_auth_info,
+        )
+        .await;
+
+    match auth_result {
+        Err(OperationError::NoMatchingEntries) => StatusCode::NOT_FOUND.into_response(),
+        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Ok(AuthResult {
+            sessionid,
+            state: AuthState::External(AuthExternal::OAuth2AuthorisationRequest {
+                mut authorisation_url,
+                request,
+            }),
+        }) => {
+            let session_context = SessionContext {
+                id: Some(sessionid),
+                ..Default::default()
+            };
+
+            let jar = if let Some(next) = query.next.as_deref() {
+                if next.starts_with('/') {
+                    jar.add(cookies::make_unsigned(&state, COOKIE_NEXT_REDIRECT, next.to_string()))
+                } else {
+                    jar
+                }
+            } else {
+                jar
+            };
+
+            let jar = match add_session_cookie(&state, jar, &session_context) {
+                Ok(j) => j,
+                Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+            };
+
+            let Ok(encoded) = serde_urlencoded::to_string(&request) else {
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            };
+            authorisation_url.set_query(Some(&encoded));
+
+            (jar, Redirect::to(authorisation_url.as_str())).into_response()
+        }
+        Ok(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+/// `GET /ui/saml/sso/:name`
+///
+/// Initiates SP-initiated SAML SSO for the named SAML client provider.
+/// Generates an AuthnRequest, stores it in the pending map, and redirects
+/// the user's browser to the IdP SSO URL.
+pub async fn view_saml_sso_get(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    Path(provider_name): Path<String>,
+) -> Response {
+    use axum::http::StatusCode;
+    use std::time::Instant;
+
+    let result = state
+        .qe_r_ref
+        .handle_saml_authn_request(provider_name.clone(), kopid.eventid)
+        .await;
+
+    match result {
+        Err(OperationError::NoMatchingEntries) => StatusCode::NOT_FOUND.into_response(),
+        Err(e) => {
+            error!(?e, "Failed to initiate SAML SSO");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+        Ok((request_id, encoded_request, sso_url)) => {
+            let relay_state = uuid::Uuid::new_v4().to_string();
+
+            // Store the pending request for correlation when the ACS response arrives.
+            if let Ok(mut map) = state.saml_pending_requests.lock() {
+                map.insert(
+                    relay_state.clone(),
+                    crate::https::SamlPendingRequest {
+                        request_id,
+                        provider_name,
+                        issued_at: Instant::now(),
+                    },
+                );
+            }
+
+            let mut redirect_url = sso_url;
+            redirect_url
+                .query_pairs_mut()
+                .append_pair("SAMLRequest", &encoded_request)
+                .append_pair("RelayState", &relay_state);
+
+            Redirect::to(redirect_url.as_str()).into_response()
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+pub(crate) struct SamlAcsForm {
+    #[serde(rename = "SAMLResponse")]
+    saml_response: String,
+    #[serde(rename = "RelayState")]
+    relay_state: Option<String>,
+}
+
+/// `POST /ui/saml/:name/acs`
+///
+/// Receives the SAML Response from the IdP, validates it, and establishes
+/// a user session on success.
+pub async fn view_saml_acs_post(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    Path(provider_name): Path<String>,
+    jar: CookieJar,
+    Form(form): Form<SamlAcsForm>,
+) -> Response {
+    use axum::http::StatusCode;
+    use std::time::Duration;
+
+    let relay_state = match form.relay_state {
+        Some(rs) if !rs.is_empty() => rs,
+        _ => {
+            warn!("SAML ACS: missing RelayState");
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    };
+
+    // Look up and consume the pending request.
+    let pending = {
+        let mut map = match state.saml_pending_requests.lock() {
+            Ok(m) => m,
+            Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        };
+        let pending = map.remove(&relay_state);
+        // Evict stale entries (>5 min old) while we have the lock.
+        map.retain(|_, v| v.issued_at.elapsed() < Duration::from_secs(300));
+        pending
+    };
+
+    let pending = match pending {
+        Some(p) if p.issued_at.elapsed() < Duration::from_secs(300) => p,
+        Some(_) => {
+            warn!("SAML ACS: relay_state expired");
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+        None => {
+            warn!("SAML ACS: unknown relay_state");
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    };
+
+    if pending.provider_name != provider_name {
+        warn!("SAML ACS: provider name mismatch");
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
+    let login_result = state
+        .qe_w_ref
+        .handle_saml_complete_login(
+            provider_name,
+            form.saml_response,
+            pending.request_id,
+            kopid.eventid,
+        )
+        .await;
+
+    match login_result {
+        Err(e) => {
+            warn!(?e, "SAML ACS login failed");
+            StatusCode::UNAUTHORIZED.into_response()
+        }
+        Ok(token) => {
+            let token_str = token.to_string();
+            let mut bearer_cookie =
+                cookies::make_unsigned(&state, COOKIE_BEARER_TOKEN, token_str);
+            bearer_cookie.make_permanent();
+            let jar = jar.add(bearer_cookie);
+            (jar, Redirect::to("/ui/")).into_response()
+        }
+    }
 }
 
 pub async fn view_index_get(
@@ -426,11 +652,36 @@ pub async fn view_index_get(
                 _ => None,
             };
 
+            // Store the post-login redirect in a short-lived cookie so the
+            // multi-step login flow can consume it after `AuthState::Success`.
+            // Only relative paths are accepted to prevent open-redirect attacks.
+            let jar = if let Some(next) = query.next.as_deref() {
+                if next.starts_with('/') {
+                    jar.add(cookies::make_unsigned(&state, COOKIE_NEXT_REDIRECT, next.to_string()))
+                } else {
+                    jar
+                }
+            } else {
+                jar
+            };
+
+            let available_sso_providers = state
+                .qe_r_ref
+                .handle_list_sso_providers()
+                .await
+                .unwrap_or_default();
+
+            let show_internal_first = jar
+                .get(COOKIE_AUTH_METHOD_PREF)
+                .map(|c| c.value() == "internal")
+                .unwrap_or(false);
+
             let display_ctx = LoginDisplayCtx {
                 domain_info,
                 oauth2: None,
                 reauth: None,
                 error: flash_error,
+                available_sso_providers,
             };
 
             (
@@ -439,6 +690,7 @@ pub async fn view_index_get(
                     display_ctx,
                     username,
                     remember_me,
+                    show_internal_first,
                 },
             )
                 .into_response()
@@ -497,13 +749,19 @@ pub async fn view_login_begin_post(
 
     let remember_me = remember_me.is_some();
 
+    // Consume the next-redirect cookie set by the forward auth endpoint so
+    // the success handler can redirect there instead of the default landing.
+    let after_auth_loc = cookies::get_unsigned(&jar, COOKIE_NEXT_REDIRECT)
+        .map(|s| s.to_string());
+    let jar = cookies::destroy(jar, COOKIE_NEXT_REDIRECT, &state);
+
     let session_context = SessionContext {
         id: None,
         username: username.clone(),
         password,
         totp,
         remember_me,
-        after_auth_loc: None,
+        after_auth_loc,
     };
 
     let mut display_ctx = LoginDisplayCtx {
@@ -511,6 +769,7 @@ pub async fn view_login_begin_post(
         oauth2: None,
         reauth: None,
         error: None,
+        available_sso_providers: Vec::new(),
     };
 
     // Now process the response if ok.
@@ -545,6 +804,7 @@ pub async fn view_login_begin_post(
                     display_ctx,
                     username,
                     remember_me,
+                    show_internal_first: false,
                 }
                 .into_response()
             }
@@ -594,6 +854,7 @@ pub async fn view_login_mech_choose_post(
         oauth2: None,
         reauth: None,
         error: None,
+        available_sso_providers: Vec::new(),
     };
 
     // Now process the response if ok.
@@ -654,6 +915,7 @@ pub async fn view_login_totp_post(
                 oauth2: None,
                 reauth: None,
                 error: None,
+                available_sso_providers: Vec::new(),
             };
             // If not an int, we need to re-render with an error
             return LoginTotpView {
@@ -811,6 +1073,7 @@ async fn credential_step(
         oauth2: None,
         reauth: None,
         error: None,
+        available_sso_providers: Vec::new(),
     };
 
     let inter = state // This may change in the future ...
@@ -1086,6 +1349,35 @@ async fn view_login_step(
                         auth_state = inter.state;
                         continue;
                     }
+                    AuthExternal::OAuth2JwksRequest {
+                        jwks_url,
+                        id_token,
+                        access_token: _,
+                    } => {
+                        let now_secs = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.as_secs() as i64)
+                            .unwrap_or(0);
+                        let claims_body =
+                            verify_oidc_id_token(&jwks_url, &id_token, now_secs).await?;
+                        let auth_cred =
+                            AuthCredential::OAuth2JwksTokenResponse { claims_body };
+                        let inter = state
+                            .qe_r_ref
+                            .handle_auth(
+                                Some(sessionid),
+                                AuthStep::Cred(auth_cred),
+                                kopid.eventid,
+                                client_auth_info.clone(),
+                            )
+                            .await?;
+                        auth_state = inter.state;
+                        continue;
+                    }
+                    AuthExternal::SamlAuthnRequest { .. } => {
+                        error!("SamlAuthnRequest returned in auth session loop — this is a bug");
+                        return Err(OperationError::InvalidState);
+                    }
                 }
             }
             AuthState::Success(token, issue) => {
@@ -1124,6 +1416,19 @@ async fn view_login_step(
                         };
 
                         jar = jar.add(bearer_cookie);
+
+                        // Record whether this auth was via SSO or internal credentials
+                        // so the login page can show the preferred method next time.
+                        let auth_method_pref = if session_context.username.is_empty() {
+                            "sso"
+                        } else {
+                            "internal"
+                        };
+                        jar = jar.add(cookies::make_unsigned(
+                            &state,
+                            COOKIE_AUTH_METHOD_PREF,
+                            auth_method_pref.to_string(),
+                        ));
 
                         jar = cookies::destroy(jar, COOKIE_AUTH_SESSION_ID, &state);
 
@@ -1314,6 +1619,125 @@ async fn submit_userinfo_request(
     }
 }
 
+/// Fetch a provider's JWKS, verify the `id_token` signature and expiry, and return the
+/// claims payload as a JSON string for further processing by the auth handler.
+///
+/// On key-not-found the JWKS is re-fetched once to handle provider key rotation.
+///
+/// # Errors
+///
+/// Returns [`OperationError::NotAuthenticated`] if the token cannot be verified (invalid
+/// signature, unknown algorithm, expired, missing `sub`, or network failure).
+async fn fetch_jwks(url: &Url) -> Result<JwkKeySet, OperationError> {
+    let client = reqwest::ClientBuilder::new()
+        .timeout(std::time::Duration::from_secs(5))
+        .build()
+        .map_err(|err| {
+            error!(?err, "Failed to build HTTP client for JWKS request");
+            OperationError::NotAuthenticated
+        })?;
+    let res = client
+        .get(url.as_str())
+        .header("User-Agent", "netidm/1.0")
+        .send()
+        .await
+        .map_err(|err| {
+            error!(?err, ?url, "JWKS request failed");
+            OperationError::NotAuthenticated
+        })?;
+    if res.status() == reqwest::StatusCode::OK {
+        res.json::<JwkKeySet>().await.map_err(|err| {
+            error!(?err, "JWKS response was not valid JSON");
+            OperationError::NotAuthenticated
+        })
+    } else {
+        error!(status = ?res.status(), "JWKS request returned non-200 status");
+        Err(OperationError::NotAuthenticated)
+    }
+}
+
+fn jwk_kid(jwk: &Jwk) -> Option<&str> {
+    match jwk {
+        Jwk::EC { kid, .. } => kid.as_deref(),
+        Jwk::RSA { kid, .. } => kid.as_deref(),
+    }
+}
+
+fn find_key_in_set<'a>(keyset: &'a JwkKeySet, token_kid: Option<&str>) -> Option<&'a Jwk> {
+    keyset.keys.iter().find(|jwk| match (token_kid, jwk_kid(jwk)) {
+        (Some(tk), Some(jk)) => tk == jk,
+        (None, _) => true,
+        _ => false,
+    })
+}
+
+async fn verify_oidc_id_token(
+    jwks_url: &Url,
+    id_token: &str,
+    now_secs: i64,
+) -> Result<String, OperationError> {
+    let unverified = OidcUnverified::from_str(id_token).map_err(|err| {
+        warn!(?err, "Failed to parse id_token as OidcUnverified");
+        OperationError::NotAuthenticated
+    })?;
+
+    let token_kid = unverified.kid().map(str::to_owned);
+    let token_alg = unverified.alg();
+
+    let mut keyset = fetch_jwks(jwks_url).await?;
+    let jwk = match find_key_in_set(&keyset, token_kid.as_deref()) {
+        Some(k) => k.clone(),
+        None => {
+            // Key not found — re-fetch once to handle key rotation.
+            keyset = fetch_jwks(jwks_url).await?;
+            find_key_in_set(&keyset, token_kid.as_deref())
+                .ok_or_else(|| {
+                    warn!("id_token kid not found in JWKS after re-fetch");
+                    OperationError::NotAuthenticated
+                })?
+                .clone()
+        }
+    };
+
+    let exp_unverified = match token_alg {
+        JwaAlg::ES256 => {
+            let verifier = JwsEs256Verifier::try_from(&jwk).map_err(|err| {
+                warn!(?err, "Failed to build ES256 verifier from JWK");
+                OperationError::NotAuthenticated
+            })?;
+            verifier.verify(&unverified).map_err(|err| {
+                warn!(?err, "ES256 id_token signature verification failed");
+                OperationError::NotAuthenticated
+            })?
+        }
+        JwaAlg::RS256 => {
+            let verifier = JwsRs256Verifier::try_from(&jwk).map_err(|err| {
+                warn!(?err, "Failed to build RS256 verifier from JWK");
+                OperationError::NotAuthenticated
+            })?;
+            verifier.verify(&unverified).map_err(|err| {
+                warn!(?err, "RS256 id_token signature verification failed");
+                OperationError::NotAuthenticated
+            })?
+        }
+        alg => {
+            warn!(?alg, "Unsupported id_token signing algorithm");
+            return Err(OperationError::NotAuthenticated);
+        }
+    };
+
+    let token = exp_unverified.verify_exp(now_secs).map_err(|err| {
+        warn!(?err, "id_token expiry verification failed");
+        OperationError::NotAuthenticated
+    })?;
+
+    // Serialise the verified claims as JSON for the auth handler.
+    serde_json::to_string(&token).map_err(|err| {
+        error!(?err, "Failed to serialise verified id_token claims");
+        OperationError::NotAuthenticated
+    })
+}
+
 #[derive(Deserialize)]
 pub struct ProvisionForm {
     username: String,
@@ -1337,6 +1761,7 @@ pub async fn view_login_provision_get(
         oauth2: None,
         reauth: None,
         error: None,
+        available_sso_providers: Vec::new(),
     };
 
     use netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims;
@@ -1402,6 +1827,7 @@ pub async fn view_login_provision_post(
         oauth2: None,
         reauth: None,
         error: None,
+        available_sso_providers: Vec::new(),
     };
 
     let Some(cookie_data) =

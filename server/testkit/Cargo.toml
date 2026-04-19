@@ -50,6 +50,7 @@ url = { workspace = true, features = ["serde"] }
 netidm_build_profiles = { workspace = true }
 
 [dev-dependencies]
+axum = { workspace = true }
 cidr = { workspace = true }
 compact_jwt = { workspace = true, features = ["unsafe_release_without_verify"] }
 escargot = "0.5.15"

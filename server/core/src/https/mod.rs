@@ -26,11 +26,12 @@ use netidm_proto::{config::ServerRole, constants::KSESSIONID, internal::COOKIE_A
 use netidmd_lib::{idm::authentication::ClientCertInfo, status::StatusActor};
 use serde::de::DeserializeOwned;
 use sketching::*;
+use hashbrown::HashMap;
 use std::fmt::Write;
 use std::io::ErrorKind;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use std::{net::SocketAddr, str::FromStr};
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite},
@@ -62,6 +63,7 @@ pub(crate) mod trace;
 mod v1;
 mod v1_domain;
 mod v1_oauth2;
+mod v1_saml;
 mod v1_scim;
 mod v1_wg;
 mod views;
@@ -82,6 +84,18 @@ impl LoggerType {
     }
 }
 
+/// Holds state for an in-flight SP-initiated SAML AuthnRequest.
+#[derive(Clone)]
+#[allow(dead_code)]
+pub(crate) struct SamlPendingRequest {
+    /// The `ID` attribute from the AuthnRequest, matched against `InResponseTo`.
+    pub(crate) request_id: String,
+    /// Name of the SamlClientProvider that initiated this request.
+    pub(crate) provider_name: String,
+    /// Wall-clock time the request was issued (for TTL eviction after 5 min).
+    pub(crate) issued_at: Instant,
+}
+
 #[derive(Clone)]
 pub struct ServerState {
     pub(crate) status_ref: &'static StatusActor,
@@ -100,6 +114,13 @@ pub struct ServerState {
     pub(crate) logging_pipeline: LoggerType,
     /// Live WireGuard interface manager.
     pub(crate) wg_manager: Arc<netidmd_wg::WgManager>,
+        /// Compiled skip-auth rules evaluated by the forward auth gate before any
+    /// session check. An empty vec means every request is authenticated normally.
+    pub(crate) skip_auth_rules: Arc<Vec<views::oauth2_proxy::SkipAuthRule>>,
+    /// In-flight SAML SP-initiated SSO requests, keyed by relay_state.
+    /// Entries are evicted after 5 minutes on lookup.
+    #[allow(dead_code)]
+    pub(crate) saml_pending_requests: Arc<Mutex<HashMap<String, SamlPendingRequest>>>,
 }
 
 impl ServerState {
@@ -291,6 +312,19 @@ pub async fn create_https_server(
         LoggerType::TracingForest
     };
 
+    // Load skip-auth rules from the database (managed via CLI) and merge with
+    // any rules defined in the server config file.
+    let db_skip_auth_routes = qe_r_ref
+        .handle_skip_auth_routes_get(uuid::Uuid::new_v4())
+        .await
+        .unwrap_or_default();
+    let skip_auth_rules: Vec<views::oauth2_proxy::SkipAuthRule> = config
+        .skip_auth_routes
+        .iter()
+        .chain(db_skip_auth_routes.iter())
+        .filter_map(|rule| views::oauth2_proxy::SkipAuthRule::parse(rule))
+        .collect();
+
     let state = ServerState {
         status_ref,
         qe_w_ref,
@@ -304,6 +338,8 @@ pub async fn create_https_server(
         secure_cookies: config.integration_test_config.is_none(),
         logging_pipeline,
         wg_manager,
+        skip_auth_rules: Arc::new(skip_auth_rules),
+        saml_pending_requests: Arc::new(Mutex::new(HashMap::new())),
     };
 
     let static_routes = match config.role {
@@ -317,6 +353,21 @@ pub async fn create_https_server(
                 .layer(middleware::compression::new())
                 .layer(from_fn(middleware::caching::cache_me_short))
                 .route("/", get(|| async { Redirect::to("/ui") }))
+                // Forward auth / proxy auth endpoints (oauth2-proxy compatibility).
+                // Registered at root level (not under /ui) so reverse proxies can
+                // reach them without a /ui prefix.
+                .route(
+                    netidm_proto::constants::uri::OAUTH2_PROXY_AUTH,
+                    get(views::oauth2_proxy::view_oauth2_auth_get),
+                )
+                .route(
+                    netidm_proto::constants::uri::OAUTH2_PROXY_USERINFO,
+                    get(views::oauth2_proxy::view_oauth2_proxy_userinfo_get),
+                )
+                .route(
+                    netidm_proto::constants::uri::OAUTH2_PROXY_SIGN_OUT,
+                    get(views::oauth2_proxy::view_oauth2_sign_out_get),
+                )
                 .nest("/ui", views::view_router(state.clone()))
             // Can't compress on anything that changes
         }

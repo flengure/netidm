@@ -3187,6 +3187,17 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             "/v1/oauth2/{rs_name}/_claimmap/{claim_name}",
             post(super::v1_oauth2::oauth2_id_claimmap_join_post),
         )
+        // SAML client provider management
+        .route(
+            "/v1/saml_client",
+            get(super::v1_saml::saml_client_get).post(super::v1_saml::saml_client_post),
+        )
+        .route(
+            "/v1/saml_client/{name}",
+            get(super::v1_saml::saml_client_id_get)
+                .patch(super::v1_saml::saml_client_id_patch)
+                .delete(super::v1_saml::saml_client_id_delete),
+        )
         .route("/v1/raw/create", post(raw_create))
         .route("/v1/raw/modify", post(raw_modify))
         .route("/v1/raw/delete", post(raw_delete))
