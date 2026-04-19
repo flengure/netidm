@@ -1067,6 +1067,7 @@ pub static SCHEMA_CLASS_OAUTH2_RS_DL9: LazyLock<SchemaClass> = LazyLock::new(|| 
     description: "The class epresenting a configured OAuth2 Client".to_string(),
 
     systemmay: vec![
+        Attribute::DisplayName,
         Attribute::Description,
         Attribute::OAuth2RsScopeMap,
         Attribute::OAuth2RsSupScopeMap,
