@@ -74,6 +74,7 @@ impl QueryServer {
                 DOMAIN_LEVEL_20 => write_txn.migrate_domain_19_to_20()?,
                 DOMAIN_LEVEL_21 => write_txn.migrate_domain_20_to_21()?,
                 DOMAIN_LEVEL_22 => write_txn.migrate_domain_21_to_22()?,
+                DOMAIN_LEVEL_23 => write_txn.migrate_domain_22_to_23()?,
                 _ => {
                     error!("Invalid requested domain target level for server bootstrap");
                     debug_assert!(false);
@@ -1378,6 +1379,76 @@ impl QueryServerWriteTransaction<'_> {
         self.internal_delete_batch(
             "phase 8 - delete UUIDs",
             migration_data::dl22::phase_8_delete_uuids(),
+        )?;
+
+        self.reload()?;
+
+        Ok(())
+    }
+
+    /// Migrate the domain from level 22 to level 23.
+    ///
+    /// DL23 adds `DisplayName` to `systemmay` on `OAuth2ResourceServer` so that
+    /// existing databases accept the `displayname` attribute in migration assertions
+    /// without requiring a database wipe.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OperationError`] if any migration phase fails or if this level is not yet
+    /// enabled in the current build.
+    pub(crate) fn migrate_domain_22_to_23(&mut self) -> Result<(), OperationError> {
+        if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_23 {
+            error!("Unable to raise domain level from 22 to 23.");
+            return Err(OperationError::MG0004DomainLevelInDevelopment);
+        }
+
+        self.internal_migrate_or_create_batch(
+            &format!("phase 1 - schema attrs target {}", DOMAIN_TGT_LEVEL),
+            migration_data::dl23::phase_1_schema_attrs(),
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 2 - schema classes",
+            migration_data::dl23::phase_2_schema_classes(),
+        )?;
+
+        self.reload()?;
+        self.reindex(false)?;
+        self.set_phase(ServerPhase::SchemaReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 3 - key provider",
+            migration_data::dl23::phase_3_key_provider(),
+        )?;
+
+        self.reload()?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 4 - dl23 system entries",
+            migration_data::dl23::phase_4_system_entries(),
+        )?;
+
+        self.reload()?;
+        self.set_phase(ServerPhase::DomainInfoReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 5 - builtin admin entries",
+            migration_data::dl23::phase_5_builtin_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 6 - builtin not admin entries",
+            migration_data::dl23::phase_6_builtin_non_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 7 - builtin access control profiles",
+            migration_data::dl23::phase_7_builtin_access_control_profiles(),
+        )?;
+
+        self.internal_delete_batch(
+            "phase 8 - delete UUIDs",
+            migration_data::dl23::phase_8_delete_uuids(),
         )?;
 
         self.reload()?;

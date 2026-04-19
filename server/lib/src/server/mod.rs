@@ -2680,10 +2680,14 @@ impl<'a> QueryServerWriteTransaction<'a> {
             self.migrate_domain_21_to_22()?;
         }
 
+        if previous_version <= DOMAIN_LEVEL_22 && domain_info_version >= DOMAIN_LEVEL_23 {
+            self.migrate_domain_22_to_23()?;
+        }
+
         // This is here to catch when we increase domain levels but didn't create the migration
         // hooks. If this fails it probably means you need to add another migration hook
         // in the above.
-        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_22) };
+        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_23) };
         debug_assert!(domain_info_version <= DOMAIN_MAX_LEVEL);
 
         Ok(())

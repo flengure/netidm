@@ -102,18 +102,22 @@ pub const DOMAIN_LEVEL_21: DomainVersion = 21;
 /// Domain Level for SAML 2.0 upstream connector (SamlClient entry class).
 pub const DOMAIN_LEVEL_22: DomainVersion = 22;
 
+/// Domain Level 23: adds DisplayName to systemmay on OAuth2ResourceServer so
+/// existing databases accept displayname in migration assertions without a DB wipe.
+pub const DOMAIN_LEVEL_23: DomainVersion = 23;
+
 // The target supported domain functional level. During development this is
 // the NEXT level that users will upgrade too. In other words if we are
 // developing 1.6.0-dev, then we need to set TGT_LEVEL to 10 which is
 // the corresponding level.
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_22;
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_23;
 // The current patch level if any out of band fixes are required.
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
 
 // The maximum supported domain functional level. This generally
 // represents a *future* version of the server which doesn't exist
 // yet.
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_22;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_23;
 
 // This is the LOWEST level of database we can recreate. This is important for testing,
 // but we don't actually expect it to be used.
