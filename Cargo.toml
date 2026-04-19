@@ -1,8 +1,7 @@
 [workspace.package]
 version = "1.10.0-dev"
 authors = [
-    "William Brown <william@blackhats.net.au>",
-    "James Hodgkinson <james@terminaloutcomes.com>",
+    "Flengure Funke <flengure@gmail.com>",
 ]
 rust-version = "1.93"
 edition = "2021"
