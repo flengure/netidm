@@ -144,5 +144,7 @@ a principle MUST be justified in the implementation plan's Complexity Tracking t
    `git tag --sort=-version:refname | head -1`. A tag without a GitHub release is still a tag.
 4. **Before every commit**, run `cargo fmt --check` and `cargo clippy --all-features` locally.
    Do not rely on CI to catch formatting or lint errors.
+5. **Every release MUST have release notes.** Summarise new features, bug fixes, and breaking
+   changes since the previous tag. A release with no notes MUST NOT be published.
 
-**Version**: 1.2.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-19
+**Version**: 1.3.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-19

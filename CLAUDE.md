@@ -67,4 +67,10 @@ Rust (stable, current toolchain — check `rust-toolchain.toml`): Follow standar
   `[workspace.dependencies]` and any per-crate `Cargo.toml` files that pin internal crates).
   Before creating tag `v0.1.X`: set `version = "0.1.X"` everywhere, commit, tag, push.
   After release: bump to `0.1.(X+1)-dev` and commit.
+
+- **Always write release notes before tagging.** The `release.yml` workflow uses
+  `generate_release_notes: true` (auto-generated from commits). Before tagging, ensure every
+  commit since the last tag has a meaningful message — new features, bug fixes, and breaking
+  changes MUST be clearly described. A tag whose commits are all `chore:` or `fix: typo`
+  with no substantive description is not acceptable.
 <!-- MANUAL ADDITIONS END -->
