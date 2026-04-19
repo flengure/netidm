@@ -202,6 +202,7 @@ bitflags::bitflags! {
         const APPLICATION    =              0b0000_0000_1000_0000;
         const OAUTH2_CLIENT            =    0b0000_0001_0000_0000;
         const FEATURE                  =    0b0000_0010_0000_0000;
+        const SAML_CLIENT              =    0b0000_0100_0000_0000;
     }
 }
 
@@ -2675,10 +2676,14 @@ impl<'a> QueryServerWriteTransaction<'a> {
             self.migrate_domain_20_to_21()?;
         }
 
+        if previous_version <= DOMAIN_LEVEL_21 && domain_info_version >= DOMAIN_LEVEL_22 {
+            self.migrate_domain_21_to_22()?;
+        }
+
         // This is here to catch when we increase domain levels but didn't create the migration
         // hooks. If this fails it probably means you need to add another migration hook
         // in the above.
-        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_21) };
+        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_22) };
         debug_assert!(domain_info_version <= DOMAIN_MAX_LEVEL);
 
         Ok(())
@@ -2872,6 +2877,11 @@ impl<'a> QueryServerWriteTransaction<'a> {
     #[inline]
     pub(crate) fn get_changed_oauth2_client(&self) -> bool {
         self.changed_flags.contains(ChangeFlag::OAUTH2_CLIENT)
+    }
+
+    #[inline]
+    pub(crate) fn get_changed_saml_client(&self) -> bool {
+        self.changed_flags.contains(ChangeFlag::SAML_CLIENT)
     }
 
     /// Indicate that we are about to re-bootstrap this server. You should ONLY

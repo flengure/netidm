@@ -248,6 +248,17 @@ pub enum Attribute {
     WgTokenExpiry,
     WgTokenPrincipalRef,
 
+    // DL22 — SAML 2.0 client attributes
+    SamlIdpSsoUrl,
+    SamlIdpCertificate,
+    SamlEntityId,
+    SamlAcsUrl,
+    SamlNameIdFormat,
+    SamlAttrMapEmail,
+    SamlAttrMapDisplayname,
+    SamlAttrMapGroups,
+    SamlJitProvisioning,
+
     #[cfg(any(debug_assertions, test, feature = "test"))]
     NonExist,
     #[cfg(any(debug_assertions, test, feature = "test"))]
@@ -369,6 +380,15 @@ impl Attribute {
             Attribute::WgTokenUsesLeft => ATTR_WG_TOKEN_USES_LEFT,
             Attribute::WgTokenExpiry => ATTR_WG_TOKEN_EXPIRY,
             Attribute::WgTokenPrincipalRef => ATTR_WG_TOKEN_PRINCIPAL_REF,
+            Attribute::SamlIdpSsoUrl => "saml_idp_sso_url",
+            Attribute::SamlIdpCertificate => "saml_idp_certificate",
+            Attribute::SamlEntityId => "saml_entity_id",
+            Attribute::SamlAcsUrl => "saml_acs_url",
+            Attribute::SamlNameIdFormat => "saml_name_id_format",
+            Attribute::SamlAttrMapEmail => "saml_attr_map_email",
+            Attribute::SamlAttrMapDisplayname => "saml_attr_map_displayname",
+            Attribute::SamlAttrMapGroups => "saml_attr_map_groups",
+            Attribute::SamlJitProvisioning => "saml_jit_provisioning",
             Attribute::ApiTokenSession => ATTR_API_TOKEN_SESSION,
             Attribute::ApplicationPassword => ATTR_APPLICATION_PASSWORD,
             Attribute::ApplicationUrl => ATTR_APPLICATION_URL,
@@ -810,6 +830,15 @@ impl Attribute {
             ATTR_WG_TOKEN_USES_LEFT => Attribute::WgTokenUsesLeft,
             ATTR_WG_TOKEN_EXPIRY => Attribute::WgTokenExpiry,
             ATTR_WG_TOKEN_PRINCIPAL_REF => Attribute::WgTokenPrincipalRef,
+            "saml_idp_sso_url" => Attribute::SamlIdpSsoUrl,
+            "saml_idp_certificate" => Attribute::SamlIdpCertificate,
+            "saml_entity_id" => Attribute::SamlEntityId,
+            "saml_acs_url" => Attribute::SamlAcsUrl,
+            "saml_name_id_format" => Attribute::SamlNameIdFormat,
+            "saml_attr_map_email" => Attribute::SamlAttrMapEmail,
+            "saml_attr_map_displayname" => Attribute::SamlAttrMapDisplayname,
+            "saml_attr_map_groups" => Attribute::SamlAttrMapGroups,
+            "saml_jit_provisioning" => Attribute::SamlJitProvisioning,
 
             #[cfg(any(debug_assertions, test, feature = "test"))]
             TEST_ATTR_NON_EXIST => Attribute::NonExist,

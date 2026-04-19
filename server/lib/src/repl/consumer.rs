@@ -271,6 +271,15 @@ impl QueryServerWriteTransaction<'_> {
             self.changed_flags.insert(ChangeFlag::OAUTH2_CLIENT)
         }
 
+        if !self.changed_flags.contains(ChangeFlag::SAML_CLIENT)
+            && cand
+                .iter()
+                .chain(pre_cand.iter().map(|e| e.as_ref()))
+                .any(|e| e.attribute_equality(Attribute::Class, &EntryClass::SamlClient.into()))
+        {
+            self.changed_flags.insert(ChangeFlag::SAML_CLIENT)
+        }
+
         if !self.changed_flags.contains(ChangeFlag::FEATURE)
             && cand
                 .iter()

@@ -570,6 +570,8 @@ pub enum DbValueAuthTypeV1 {
     AttestedPasskey,
     #[serde(rename = "ot")]
     OAuth2Trust,
+    #[serde(rename = "sf")]
+    SamlFederated,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Default)]

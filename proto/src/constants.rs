@@ -235,6 +235,7 @@ pub const ATTR_WG_TOKEN_USES_LEFT: &str = "wg_token_uses_left";
 pub const ATTR_WG_TOKEN_EXPIRY: &str = "wg_token_expiry";
 pub const ATTR_WG_TOKEN_PRINCIPAL_REF: &str = "wg_token_principal_ref";
 pub const ENTRYCLASS_WG_TOKEN: &str = "wg_token";
+pub const ENTRYCLASS_SAML_CLIENT: &str = "samlclient";
 pub const ATTR_OBJECTCLASS: &str = "objectclass";
 pub const ATTR_OTHER_NO_INDEX: &str = "other-no-index";
 pub const ATTR_PASSKEYS: &str = "passkeys";

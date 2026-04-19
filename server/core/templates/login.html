@@ -10,7 +10,7 @@
 (% if !display_ctx.available_sso_providers.is_empty() %)
 <div class="mb-3">
 	(% for provider in display_ctx.available_sso_providers %)
-	<a href="/ui/sso/(( provider.name ))" class="btn btn-outline-secondary w-100 mb-2 d-flex align-items-center justify-content-center">
+	<a href="(( provider.sso_url_prefix ))/(( provider.name ))" class="btn btn-outline-secondary w-100 mb-2 d-flex align-items-center justify-content-center">
 		(% if let Some(logo) = provider.logo_uri %)<img src="(( logo ))" alt="" class="sso-logo me-2" height="20" loading="lazy" />(% endif %)Sign in with (( provider.display_name ))
 	</a>
 	(% endfor %)

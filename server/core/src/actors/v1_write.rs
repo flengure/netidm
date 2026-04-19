@@ -1960,4 +1960,33 @@ impl QueryServerWriteV1 {
             .wg_peer_delete(peer_uuid)
             .and_then(|_| idms_prox_write.commit())
     }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_complete_login(
+        &self,
+        provider_name: String,
+        encoded_response: String,
+        request_id: String,
+        eventid: Uuid,
+    ) -> Result<compact_jwt::JwsCompact, OperationError> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+
+        let provider = idms_prox_write
+            .get_saml_client_provider_by_name(&provider_name)
+            .ok_or(OperationError::NoMatchingEntries)?;
+
+        let token = idms_prox_write.saml_complete_login(
+            &provider,
+            &encoded_response,
+            &request_id,
+            ct,
+        )?;
+
+        idms_prox_write
+            .commit()
+            .map_err(|_| OperationError::InvalidState)?;
+
+        Ok(token)
+    }
 }

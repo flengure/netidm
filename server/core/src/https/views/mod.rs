@@ -59,6 +59,8 @@ pub fn view_router(state: ServerState) -> Router<ServerState> {
         // if a user attempts to reload the page.
         .route("/login", get(login::view_index_get))
         .route("/sso/{provider_name}", get(login::view_sso_initiate_get))
+        .route("/saml/sso/{provider_name}", get(login::view_saml_sso_get))
+        .route("/saml/{provider_name}/acs", post(login::view_saml_acs_post))
         .route(
             "/login/passkey",
             post(login::view_login_passkey_post).get(|| async { Redirect::to("/ui") }),

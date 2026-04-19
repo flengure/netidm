@@ -26,11 +26,12 @@ use netidm_proto::{config::ServerRole, constants::KSESSIONID, internal::COOKIE_A
 use netidmd_lib::{idm::authentication::ClientCertInfo, status::StatusActor};
 use serde::de::DeserializeOwned;
 use sketching::*;
+use hashbrown::HashMap;
 use std::fmt::Write;
 use std::io::ErrorKind;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 use std::{net::SocketAddr, str::FromStr};
 use tokio::{
     io::{AsyncRead, AsyncReadExt, AsyncWrite},
@@ -62,6 +63,7 @@ pub(crate) mod trace;
 mod v1;
 mod v1_domain;
 mod v1_oauth2;
+mod v1_saml;
 mod v1_scim;
 mod v1_wg;
 mod views;
@@ -82,6 +84,18 @@ impl LoggerType {
     }
 }
 
+/// Holds state for an in-flight SP-initiated SAML AuthnRequest.
+#[derive(Clone)]
+#[allow(dead_code)]
+pub(crate) struct SamlPendingRequest {
+    /// The `ID` attribute from the AuthnRequest, matched against `InResponseTo`.
+    pub(crate) request_id: String,
+    /// Name of the SamlClientProvider that initiated this request.
+    pub(crate) provider_name: String,
+    /// Wall-clock time the request was issued (for TTL eviction after 5 min).
+    pub(crate) issued_at: Instant,
+}
+
 #[derive(Clone)]
 pub struct ServerState {
     pub(crate) status_ref: &'static StatusActor,
@@ -100,9 +114,13 @@ pub struct ServerState {
     pub(crate) logging_pipeline: LoggerType,
     /// Live WireGuard interface manager.
     pub(crate) wg_manager: Arc<netidmd_wg::WgManager>,
-    /// Compiled skip-auth rules evaluated by the forward auth gate before any
+        /// Compiled skip-auth rules evaluated by the forward auth gate before any
     /// session check. An empty vec means every request is authenticated normally.
     pub(crate) skip_auth_rules: Arc<Vec<views::oauth2_proxy::SkipAuthRule>>,
+    /// In-flight SAML SP-initiated SSO requests, keyed by relay_state.
+    /// Entries are evicted after 5 minutes on lookup.
+    #[allow(dead_code)]
+    pub(crate) saml_pending_requests: Arc<Mutex<HashMap<String, SamlPendingRequest>>>,
 }
 
 impl ServerState {
@@ -321,6 +339,7 @@ pub async fn create_https_server(
         logging_pipeline,
         wg_manager,
         skip_auth_rules: Arc::new(skip_auth_rules),
+        saml_pending_requests: Arc::new(Mutex::new(HashMap::new())),
     };
 
     let static_routes = match config.role {

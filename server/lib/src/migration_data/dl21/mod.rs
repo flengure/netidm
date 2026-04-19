@@ -2,9 +2,6 @@ pub(crate) mod access;
 pub(crate) mod schema;
 
 #[cfg(test)]
-pub(crate) use super::dl14::accounts;
-
-#[cfg(test)]
 #[allow(unused_imports)]
 pub(crate) use self::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
 

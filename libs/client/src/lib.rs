@@ -55,6 +55,7 @@ mod domain;
 mod group;
 mod message;
 mod oauth;
+pub mod saml;
 mod person;
 mod schema;
 mod scim;

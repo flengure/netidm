@@ -75,6 +75,13 @@ pub enum AuthExternal {
         id_token: String,
         access_token: String,
     },
+    /// SP-initiated SAML AuthnRequest ready to send to the IdP.
+    SamlAuthnRequest {
+        sso_url: Url,
+        /// Deflate-compressed, base64-encoded AuthnRequest XML.
+        saml_request: String,
+        relay_state: String,
+    },
 }
 
 impl fmt::Debug for AuthExternal {
@@ -84,6 +91,7 @@ impl fmt::Debug for AuthExternal {
             Self::OAuth2AccessTokenRequest { .. } => write!(f, "OAuth2AccessTokenRequest"),
             Self::OAuth2UserinfoRequest { .. } => write!(f, "OAuth2UserinfoRequest"),
             Self::OAuth2JwksRequest { .. } => write!(f, "OAuth2JwksRequest"),
+            Self::SamlAuthnRequest { .. } => write!(f, "SamlAuthnRequest"),
         }
     }
 }
@@ -155,6 +163,12 @@ pub enum AuthCredential {
     OAuth2JwksTokenResponse {
         claims_body: String,
     },
+    /// Raw base64-encoded SAML Response from the IdP's HTTP-POST ACS binding.
+    SamlAcsResponse {
+        saml_response: String,
+        relay_state: String,
+        provider_name: String,
+    },
 }
 
 impl From<ProtoAuthCredential> for AuthCredential {
@@ -190,6 +204,9 @@ impl fmt::Debug for AuthCredential {
             }
             AuthCredential::OAuth2JwksTokenResponse { .. } => {
                 write!(fmt, "OAuth2JwksTokenResponse{{..}}")
+            }
+            AuthCredential::SamlAcsResponse { .. } => {
+                write!(fmt, "SamlAcsResponse{{..}}")
             }
         }
     }

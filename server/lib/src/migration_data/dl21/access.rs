@@ -37,20 +37,20 @@ pub(crate) enum BuiltinAcpTarget {
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct BuiltinAcp {
-    classes: Vec<EntryClass>,
-    name: &'static str,
-    uuid: Uuid,
-    description: &'static str,
-    receiver: BuiltinAcpReceiver,
-    target: BuiltinAcpTarget,
-    search_attrs: Vec<Attribute>,
-    modify_present_attrs: Vec<Attribute>,
-    modify_removed_attrs: Vec<Attribute>,
-    modify_classes: Vec<EntryClass>,
-    modify_present_classes: Vec<EntryClass>,
-    modify_remove_classes: Vec<EntryClass>,
-    create_classes: Vec<EntryClass>,
-    create_attrs: Vec<Attribute>,
+    pub(crate) classes: Vec<EntryClass>,
+    pub(crate) name: &'static str,
+    pub(crate) uuid: Uuid,
+    pub(crate) description: &'static str,
+    pub(crate) receiver: BuiltinAcpReceiver,
+    pub(crate) target: BuiltinAcpTarget,
+    pub(crate) search_attrs: Vec<Attribute>,
+    pub(crate) modify_present_attrs: Vec<Attribute>,
+    pub(crate) modify_removed_attrs: Vec<Attribute>,
+    pub(crate) modify_classes: Vec<EntryClass>,
+    pub(crate) modify_present_classes: Vec<EntryClass>,
+    pub(crate) modify_remove_classes: Vec<EntryClass>,
+    pub(crate) create_classes: Vec<EntryClass>,
+    pub(crate) create_attrs: Vec<Attribute>,
 }
 
 impl From<BuiltinAcp> for EntryInitNew {

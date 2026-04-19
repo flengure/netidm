@@ -480,6 +480,141 @@ pub async fn view_sso_initiate_get(
     }
 }
 
+/// `GET /ui/saml/sso/:name`
+///
+/// Initiates SP-initiated SAML SSO for the named SAML client provider.
+/// Generates an AuthnRequest, stores it in the pending map, and redirects
+/// the user's browser to the IdP SSO URL.
+pub async fn view_saml_sso_get(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    Path(provider_name): Path<String>,
+) -> Response {
+    use axum::http::StatusCode;
+    use std::time::Instant;
+
+    let result = state
+        .qe_r_ref
+        .handle_saml_authn_request(provider_name.clone(), kopid.eventid)
+        .await;
+
+    match result {
+        Err(OperationError::NoMatchingEntries) => StatusCode::NOT_FOUND.into_response(),
+        Err(e) => {
+            error!(?e, "Failed to initiate SAML SSO");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
+        Ok((request_id, encoded_request, sso_url)) => {
+            let relay_state = uuid::Uuid::new_v4().to_string();
+
+            // Store the pending request for correlation when the ACS response arrives.
+            if let Ok(mut map) = state.saml_pending_requests.lock() {
+                map.insert(
+                    relay_state.clone(),
+                    crate::https::SamlPendingRequest {
+                        request_id,
+                        provider_name,
+                        issued_at: Instant::now(),
+                    },
+                );
+            }
+
+            let mut redirect_url = sso_url;
+            redirect_url
+                .query_pairs_mut()
+                .append_pair("SAMLRequest", &encoded_request)
+                .append_pair("RelayState", &relay_state);
+
+            Redirect::to(redirect_url.as_str()).into_response()
+        }
+    }
+}
+
+#[derive(serde::Deserialize)]
+pub(crate) struct SamlAcsForm {
+    #[serde(rename = "SAMLResponse")]
+    saml_response: String,
+    #[serde(rename = "RelayState")]
+    relay_state: Option<String>,
+}
+
+/// `POST /ui/saml/:name/acs`
+///
+/// Receives the SAML Response from the IdP, validates it, and establishes
+/// a user session on success.
+pub async fn view_saml_acs_post(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    Path(provider_name): Path<String>,
+    jar: CookieJar,
+    Form(form): Form<SamlAcsForm>,
+) -> Response {
+    use axum::http::StatusCode;
+    use std::time::Duration;
+
+    let relay_state = match form.relay_state {
+        Some(rs) if !rs.is_empty() => rs,
+        _ => {
+            warn!("SAML ACS: missing RelayState");
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    };
+
+    // Look up and consume the pending request.
+    let pending = {
+        let mut map = match state.saml_pending_requests.lock() {
+            Ok(m) => m,
+            Err(_) => return StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        };
+        let pending = map.remove(&relay_state);
+        // Evict stale entries (>5 min old) while we have the lock.
+        map.retain(|_, v| v.issued_at.elapsed() < Duration::from_secs(300));
+        pending
+    };
+
+    let pending = match pending {
+        Some(p) if p.issued_at.elapsed() < Duration::from_secs(300) => p,
+        Some(_) => {
+            warn!("SAML ACS: relay_state expired");
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+        None => {
+            warn!("SAML ACS: unknown relay_state");
+            return StatusCode::BAD_REQUEST.into_response();
+        }
+    };
+
+    if pending.provider_name != provider_name {
+        warn!("SAML ACS: provider name mismatch");
+        return StatusCode::BAD_REQUEST.into_response();
+    }
+
+    let login_result = state
+        .qe_w_ref
+        .handle_saml_complete_login(
+            provider_name,
+            form.saml_response,
+            pending.request_id,
+            kopid.eventid,
+        )
+        .await;
+
+    match login_result {
+        Err(e) => {
+            warn!(?e, "SAML ACS login failed");
+            StatusCode::UNAUTHORIZED.into_response()
+        }
+        Ok(token) => {
+            let token_str = token.to_string();
+            let mut bearer_cookie =
+                cookies::make_unsigned(&state, COOKIE_BEARER_TOKEN, token_str);
+            bearer_cookie.make_permanent();
+            let jar = jar.add(bearer_cookie);
+            (jar, Redirect::to("/ui/")).into_response()
+        }
+    }
+}
+
 pub async fn view_index_get(
     State(state): State<ServerState>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
@@ -1238,6 +1373,10 @@ async fn view_login_step(
                             .await?;
                         auth_state = inter.state;
                         continue;
+                    }
+                    AuthExternal::SamlAuthnRequest { .. } => {
+                        error!("SamlAuthnRequest returned in auth session loop — this is a bug");
+                        return Err(OperationError::InvalidState);
                     }
                 }
             }

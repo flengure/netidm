@@ -1639,4 +1639,23 @@ impl QueryServerReadV1 {
         let idms_prox_read = self.idms.proxy_read().await?;
         Ok(idms_prox_read.list_sso_providers())
     }
+
+    #[allow(dead_code)]
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_authn_request(
+        &self,
+        provider_name: String,
+        eventid: Uuid,
+    ) -> Result<(String, String, Url), OperationError> {
+        let idms_prox_read = self.idms.proxy_read().await?;
+
+        let provider = idms_prox_read
+            .get_saml_client_provider_by_name(&provider_name)
+            .ok_or(OperationError::NoMatchingEntries)?;
+
+        let (request_id, encoded, sso_url) =
+            netidmd_lib::idm::authsession::handler_saml_client::generate_authn_request(&provider)?;
+
+        Ok((request_id, encoded, sso_url))
+    }
 }

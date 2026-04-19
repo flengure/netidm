@@ -24,6 +24,7 @@ use crate::idm::oauth2::{
     Oauth2ResourceServersWriteTransaction,
 };
 use crate::idm::oauth2_client::OAuth2ClientProvider;
+use crate::idm::saml_client::SamlClientProvider;
 use crate::idm::radius::RadiusAccount;
 use crate::idm::scim::SyncAccount;
 use crate::idm::serviceaccount::ServiceAccount;
@@ -73,6 +74,8 @@ pub struct SsoProviderInfo {
     pub logo_uri: Option<Url>,
     /// OIDC issuer URL when this provider was configured via discovery, otherwise `None`.
     pub issuer: Option<Url>,
+    /// URL path prefix for the SSO initiation link (e.g. `/ui/sso` or `/ui/saml/sso`).
+    pub sso_url_prefix: String,
 }
 
 pub struct IdmServer {
@@ -101,6 +104,7 @@ pub struct IdmServer {
     /// OAuth2ClientProviders
     origin: Url,
     oauth2_client_providers: HashMap<Uuid, OAuth2ClientProvider>,
+    saml_client_providers: HashMap<Uuid, SamlClientProvider>,
 }
 
 /// Contains methods that require writes, but in the context of writing to the idm in memory structures (maybe the query server too). This is things like authentication.
@@ -110,6 +114,8 @@ pub struct IdmServerAuthTransaction<'a> {
     pub(crate) provider_sessions: &'a BptreeMap<Uuid, ProviderInitiatedSessionMutex>,
     pub(crate) softlocks: &'a HashMap<Uuid, CredSoftLockMutex>,
     pub(crate) oauth2_client_providers: HashMapReadTxn<'a, Uuid, OAuth2ClientProvider>,
+    #[allow(dead_code)]
+    pub(crate) saml_client_providers: HashMapReadTxn<'a, Uuid, SamlClientProvider>,
 
     pub qs_read: QueryServerReadTransaction<'a>,
     /// Thread/Server ID
@@ -134,6 +140,7 @@ pub struct IdmServerProxyReadTransaction<'a> {
     pub qs_read: QueryServerReadTransaction<'a>,
     pub(crate) oauth2rs: Oauth2ResourceServersReadTransaction,
     pub(crate) oauth2_client_providers: HashMapReadTxn<'a, Uuid, OAuth2ClientProvider>,
+    pub(crate) saml_client_providers: HashMapReadTxn<'a, Uuid, SamlClientProvider>,
 }
 
 pub struct IdmServerProxyWriteTransaction<'a> {
@@ -150,6 +157,7 @@ pub struct IdmServerProxyWriteTransaction<'a> {
 
     pub(crate) origin: &'a Url,
     pub(crate) oauth2_client_providers: HashMapWriteTxn<'a, Uuid, OAuth2ClientProvider>,
+    pub(crate) saml_client_providers: HashMapWriteTxn<'a, Uuid, SamlClientProvider>,
 }
 
 pub struct IdmServerDelayed {
@@ -244,6 +252,7 @@ impl IdmServer {
             applications: Arc::new(applications),
             origin: origin.clone(),
             oauth2_client_providers: HashMap::new(),
+            saml_client_providers: HashMap::new(),
         };
         let idm_server_delayed = IdmServerDelayed { async_rx };
         let idm_server_audit = IdmServerAudit { audit_rx };
@@ -253,6 +262,7 @@ impl IdmServer {
         idm_write_txn.reload_applications()?;
         idm_write_txn.reload_oauth2()?;
         idm_write_txn.reload_oauth2_client_providers()?;
+        idm_write_txn.reload_saml_client_providers()?;
 
         idm_write_txn.commit()?;
 
@@ -279,6 +289,7 @@ impl IdmServer {
             webauthn: &self.webauthn,
             applications: self.applications.read(),
             oauth2_client_providers: self.oauth2_client_providers.read(),
+            saml_client_providers: self.saml_client_providers.read(),
         })
     }
 
@@ -298,6 +309,7 @@ impl IdmServer {
             qs_read,
             oauth2rs: self.oauth2rs.read(),
             oauth2_client_providers: self.oauth2_client_providers.read(),
+            saml_client_providers: self.saml_client_providers.read(),
             // async_tx: self.async_tx.clone(),
         })
     }
@@ -323,6 +335,7 @@ impl IdmServer {
             applications: self.applications.write(),
             origin: &self.origin,
             oauth2_client_providers: self.oauth2_client_providers.write(),
+            saml_client_providers: self.saml_client_providers.write(),
         })
     }
 
@@ -1745,7 +1758,7 @@ fn gen_password_upgrade_mod(
 }
 
 impl IdmServerProxyReadTransaction<'_> {
-    /// Return all configured upstream OAuth2 providers, sorted by display name.
+    /// Return all configured upstream SSO providers (OAuth2 + SAML), sorted by display name.
     pub fn list_sso_providers(&self) -> Vec<SsoProviderInfo> {
         let mut providers: Vec<SsoProviderInfo> = self
             .oauth2_client_providers
@@ -1755,7 +1768,15 @@ impl IdmServerProxyReadTransaction<'_> {
                 display_name: p.display_name.clone(),
                 logo_uri: p.logo_uri.clone(),
                 issuer: p.issuer.clone(),
+                sso_url_prefix: "/ui/sso".to_string(),
             })
+            .chain(self.saml_client_providers.values().map(|p| SsoProviderInfo {
+                name: p.name.clone(),
+                display_name: p.display_name.clone(),
+                logo_uri: None,
+                issuer: None,
+                sso_url_prefix: "/ui/saml/sso".to_string(),
+            }))
             .collect();
         providers.sort_by(|a, b| a.display_name.cmp(&b.display_name));
         providers
@@ -2606,6 +2627,232 @@ impl IdmServerProxyWriteTransaction<'_> {
         )))
     }
 
+    /// Find an account that was previously JIT-provisioned for a SAML provider,
+    /// keyed on `(OAuth2AccountProvider == provider_uuid, OAuth2AccountUniqueUserId == name_id)`.
+    pub fn find_account_by_saml_provider_and_name_id(
+        &mut self,
+        provider_uuid: Uuid,
+        name_id: &str,
+    ) -> Result<Option<Account>, OperationError> {
+        let filter = filter_all!(f_and!([
+            f_eq(
+                Attribute::OAuth2AccountProvider,
+                PartialValue::Refer(provider_uuid)
+            ),
+            f_eq(
+                Attribute::OAuth2AccountUniqueUserId,
+                PartialValue::Utf8(name_id.to_string())
+            ),
+        ]));
+
+        let mut entries = self.qs_write.internal_search(filter).map_err(|e| {
+            admin_error!(?e, "find_account_by_saml_provider_and_name_id search failed");
+            e
+        })?;
+
+        match entries.len() {
+            0 => Ok(None),
+            1 => {
+                let entry = entries.pop().ok_or(OperationError::InvalidState)?;
+                Account::try_from_entry_rw(&entry, &mut self.qs_write).map(Some)
+            }
+            _ => {
+                admin_error!(
+                    %provider_uuid, %name_id,
+                    "Multiple accounts matched SAML provider+name_id — data integrity violation"
+                );
+                Err(OperationError::InvalidState)
+            }
+        }
+    }
+
+    /// Derive a safe Netidm username from a SAML NameID.
+    fn derive_saml_username(&mut self, name_id: &str) -> Result<String, OperationError> {
+        let base: String = name_id
+            .split('@')
+            .next()
+            .unwrap_or(name_id)
+            .to_lowercase()
+            .chars()
+            .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+            .collect::<String>()
+            .trim_matches('_')
+            .to_string();
+
+        let base = if base.is_empty() { "saml_user".to_string() } else { base };
+
+        let mut name_is_free = |name: &str| {
+            let filter = filter_all!(f_eq(Attribute::Name, PartialValue::new_iname(name)));
+            self.qs_write
+                .internal_search(filter)
+                .map(|res| res.is_empty())
+        };
+
+        if name_is_free(&base)? {
+            return Ok(base);
+        }
+        for suffix in 2u32..=100 {
+            let candidate = format!("{}_{}", base, suffix);
+            if name_is_free(&candidate)? {
+                return Ok(candidate);
+            }
+        }
+        Err(OperationError::InvalidAttribute(format!(
+            "No available username derived from SAML NameID '{name_id}'"
+        )))
+    }
+
+    /// JIT-provision a new Netidm account from SAML assertion claims.
+    pub fn jit_provision_saml_account(
+        &mut self,
+        provider_uuid: Uuid,
+        name_id: &str,
+        claims: &crate::idm::authsession::handler_saml_client::SamlClaims,
+        groups: &[String],
+    ) -> Result<Uuid, OperationError> {
+        let desired_name = self.derive_saml_username(name_id)?;
+        let display_name = claims
+            .display_name
+            .clone()
+            .unwrap_or_else(|| desired_name.clone());
+
+        let new_account_uuid = Uuid::new_v4();
+        let cred_id = Uuid::new_v4();
+
+        let mut entry: Entry<EntryInit, EntryNew> = Entry::new();
+        entry.add_ava(Attribute::Class, EntryClass::Object.to_value());
+        entry.add_ava(Attribute::Class, EntryClass::Account.to_value());
+        entry.add_ava(Attribute::Class, EntryClass::Person.to_value());
+        entry.add_ava(Attribute::Class, EntryClass::OAuth2Account.to_value());
+        entry.add_ava(Attribute::Uuid, Value::Uuid(new_account_uuid));
+        entry.add_ava(Attribute::Name, Value::new_iname(&desired_name));
+        entry.add_ava(Attribute::DisplayName, Value::new_utf8s(&display_name));
+        entry.add_ava(
+            Attribute::OAuth2AccountProvider,
+            Value::Refer(provider_uuid),
+        );
+        entry.add_ava(
+            Attribute::OAuth2AccountUniqueUserId,
+            Value::new_utf8s(name_id),
+        );
+        entry.add_ava(Attribute::OAuth2AccountCredentialUuid, Value::Uuid(cred_id));
+        if let Some(ref email) = claims.email {
+            entry.add_ava(Attribute::Mail, Value::EmailAddress(email.clone(), true));
+        }
+
+        self.qs_write.internal_create(vec![entry]).map_err(|e| {
+            admin_error!(?e, "jit_provision_saml_account create failed");
+            e
+        })?;
+
+        // Apply group memberships.
+        for group_name in groups {
+            let group_filter = filter_all!(f_and!([
+                f_eq(Attribute::Class, EntryClass::Group.into()),
+                f_eq(Attribute::Name, PartialValue::new_iname(group_name)),
+            ]));
+            let group_entries = self.qs_write.internal_search(group_filter)?;
+            if let Some(group_entry) = group_entries.into_iter().next() {
+                let group_uuid = group_entry.get_uuid();
+                let ml = ModifyList::new_append(
+                    Attribute::Member,
+                    Value::Refer(new_account_uuid),
+                );
+                self.qs_write
+                    .internal_modify(
+                        &filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(group_uuid))),
+                        &ml,
+                    )
+                    .map_err(|e| {
+                        admin_error!(?e, group_name = %group_name, "Failed to add SAML account to group");
+                        e
+                    })?;
+            } else {
+                info!(group_name = %group_name, "SAML group not found in netidm — skipping group membership");
+            }
+        }
+
+        Ok(new_account_uuid)
+    }
+
+    /// Validate a SAML ACS response, JIT-provision if needed, and issue a signed session token.
+    /// This is the single entry-point for completing a SAML login from the ACS callback.
+    pub fn saml_complete_login(
+        &mut self,
+        provider: &crate::idm::saml_client::SamlClientProvider,
+        encoded_response: &str,
+        request_id: &str,
+        ct: Duration,
+    ) -> Result<compact_jwt::JwsCompact, OperationError> {
+        use crate::idm::authsession::handler_saml_client;
+        use crate::value::AuthType;
+        use compact_jwt::Jws;
+
+        let claims = handler_saml_client::validate_saml_response(provider, encoded_response, request_id)?;
+
+        // Find or provision the account.
+        let account_uuid = match self.find_account_by_saml_provider_and_name_id(provider.uuid, &claims.name_id)? {
+            Some(account) => account.uuid,
+            None if provider.jit_provisioning => {
+                self.jit_provision_saml_account(
+                    provider.uuid,
+                    &claims.name_id,
+                    &claims,
+                    &claims.groups.clone(),
+                )?
+            }
+            None => {
+                security_info!(
+                    name_id = %claims.name_id,
+                    provider = %provider.name,
+                    "SAML: no account found and JIT provisioning is disabled"
+                );
+                return Err(OperationError::NotAuthenticated);
+            }
+        };
+
+        // Load the account with its policy.
+        let entry = self.qs_write.internal_search_uuid(account_uuid)?;
+        let (account, account_policy) =
+            Account::try_from_entry_with_policy(&entry, &mut self.qs_write)?;
+
+        // Create session metadata.
+        let session_id = Uuid::new_v4();
+        let scope = SessionScope::ReadOnly;
+
+        let uat = account
+            .to_userauthtoken(session_id, scope, ct, &account_policy)
+            .ok_or(OperationError::AU0004UserAuthTokenInvalid)?;
+
+        // Record the session in the DB so future token validations succeed.
+        self.process_authsessionrecord(&AuthSessionRecord {
+            target_uuid: account.uuid,
+            session_id,
+            cred_id: Uuid::nil(),
+            label: "SAML Auth Session".to_string(),
+            expiry: uat.expiry,
+            issued_at: uat.issued_at,
+            issued_by: IdentityId::User(account.uuid),
+            scope,
+            type_: AuthType::SamlFederated,
+            ext_metadata: Default::default(),
+        })?;
+
+        // Sign and return the token.
+        let jwt = Jws::into_json(&uat).map_err(|e| {
+            admin_error!(?e, "Failed to serialise UAT into Jws");
+            OperationError::AU0002JwsSerialisation
+        })?;
+
+        self.qs_write
+            .get_domain_key_object_handle()?
+            .jws_es256_sign(&jwt, ct)
+            .map_err(|e| {
+                admin_error!(?e, "Failed to sign SAML UAT");
+                OperationError::AU0003JwsSignature
+            })
+    }
+
     fn reload_oauth2(&mut self) -> Result<(), OperationError> {
         let domain_level = self.qs_write.get_domain_version();
         self.qs_write.get_oauth2rs_set().and_then(|oauth2rs_set| {
@@ -2637,11 +2884,16 @@ impl IdmServerProxyWriteTransaction<'_> {
             self.reload_oauth2_client_providers()?;
         }
 
+        if self.qs_write.get_changed_saml_client() {
+            self.reload_saml_client_providers()?;
+        }
+
         // Commit everything.
         self.applications.commit();
         self.oauth2rs.commit();
         self.cred_update_sessions.commit();
         self.oauth2_client_providers.commit();
+        self.saml_client_providers.commit();
 
         trace!("cred_update_session.commit");
         self.qs_write.commit()

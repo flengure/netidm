@@ -1,6 +1,6 @@
 mod access;
 pub(super) mod accounts;
-mod groups;
+pub(crate) mod groups;
 mod key_providers;
 mod schema;
 mod system_config;

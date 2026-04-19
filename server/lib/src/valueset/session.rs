@@ -85,6 +85,7 @@ impl ValueSetSession {
                     AuthType::Passkey => DbValueAuthTypeV1::Passkey,
                     AuthType::AttestedPasskey => DbValueAuthTypeV1::AttestedPasskey,
                     AuthType::OAuth2Trust => DbValueAuthTypeV1::OAuth2Trust,
+                    AuthType::SamlFederated => DbValueAuthTypeV1::SamlFederated,
                 },
                 ext_metadata: match &m.ext_metadata {
                     SessionExtMetadata::None => DbValueSessionExtMetadataV1::None,
@@ -185,6 +186,7 @@ impl ValueSetSession {
                             DbValueAuthTypeV1::Passkey => AuthType::Passkey,
                             DbValueAuthTypeV1::AttestedPasskey => AuthType::AttestedPasskey,
                             DbValueAuthTypeV1::OAuth2Trust => AuthType::OAuth2Trust,
+                            DbValueAuthTypeV1::SamlFederated => AuthType::SamlFederated,
                         };
 
                         let ext_metadata = match ext_metadata {

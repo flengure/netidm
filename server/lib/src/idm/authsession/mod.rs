@@ -35,6 +35,7 @@ use webauthn_rs::prelude::{
 };
 
 pub mod handler_oauth2_client;
+pub mod handler_saml_client;
 
 // Each CredHandler takes one or more credentials and determines if the
 // handlers requirements can be 100% fulfilled. This is where MFA or other
@@ -1373,7 +1374,7 @@ impl AuthSession {
                         }
                     }
                 }
-                AuthType::Anonymous | AuthType::OAuth2Trust => {}
+                AuthType::Anonymous | AuthType::OAuth2Trust | AuthType::SamlFederated => {}
             }
 
             // Did anything get set-up?
@@ -1645,7 +1646,7 @@ impl AuthSession {
                 // We need to actually work this out better, and then
                 // pass it to to_userauthtoken
                 let scope = match auth_type {
-                    AuthType::Anonymous | AuthType::OAuth2Trust => SessionScope::ReadOnly,
+                    AuthType::Anonymous | AuthType::OAuth2Trust | AuthType::SamlFederated => SessionScope::ReadOnly,
                     AuthType::GeneratedPassword => SessionScope::ReadWrite,
                     AuthType::Password
                     | AuthType::PasswordTotp
@@ -1691,7 +1692,8 @@ impl AuthSession {
                     | AuthType::PasswordSecurityKey
                     | AuthType::Passkey
                     | AuthType::AttestedPasskey
-                    | AuthType::OAuth2Trust => {
+                    | AuthType::OAuth2Trust
+                    | AuthType::SamlFederated => {
                         trace!("⚠️   Queued AuthSessionRecord for {}", self.account.uuid);
                         async_tx.send(DelayedAction::AuthSessionRecord(AuthSessionRecord {
                             target_uuid: self.account.uuid,
@@ -1722,7 +1724,10 @@ impl AuthSession {
                 // Sanity check - We have already been really strict about what session types
                 // can actually trigger a re-auth, but we recheck here for paranoia!
                 let scope = match auth_type {
-                    AuthType::Anonymous | AuthType::GeneratedPassword | AuthType::OAuth2Trust => {
+                    AuthType::Anonymous
+                    | AuthType::GeneratedPassword
+                    | AuthType::OAuth2Trust
+                    | AuthType::SamlFederated => {
                         error!("AuthType used in Reauth is not valid for session re-issuance. Rejecting");
                         return Err(OperationError::AU0006CredentialMayNotReauthenticate);
                     }
