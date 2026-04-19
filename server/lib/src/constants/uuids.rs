@@ -444,6 +444,10 @@ pub const UUID_SCHEMA_ATTR_SKIP_AUTH_ROUTE: Uuid =
     uuid!("00000000-0000-0000-0000-ffff00000247");
 pub const UUID_SCHEMA_ATTR_OAUTH2_CLIENT_LOGO_URI: Uuid =
     uuid!("00000000-0000-0000-0000-ffff00000248");
+pub const UUID_SCHEMA_ATTR_OAUTH2_ISSUER: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000249");
+pub const UUID_SCHEMA_ATTR_OAUTH2_JWKS_URI: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff0000024a");
 
 // =====
 // Incorrectly name spaced.

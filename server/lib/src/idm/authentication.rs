@@ -68,6 +68,13 @@ pub enum AuthExternal {
         userinfo_url: Url,
         access_token: String,
     },
+    /// Fetch the provider's JWKS and verify the id_token signature.
+    /// Used when the provider has a `jwks_uri` configured (OIDC discovery path).
+    OAuth2JwksRequest {
+        jwks_url: Url,
+        id_token: String,
+        access_token: String,
+    },
 }
 
 impl fmt::Debug for AuthExternal {
@@ -76,6 +83,7 @@ impl fmt::Debug for AuthExternal {
             Self::OAuth2AuthorisationRequest { .. } => write!(f, "OAuth2AuthorisationRequest"),
             Self::OAuth2AccessTokenRequest { .. } => write!(f, "OAuth2AccessTokenRequest"),
             Self::OAuth2UserinfoRequest { .. } => write!(f, "OAuth2UserinfoRequest"),
+            Self::OAuth2JwksRequest { .. } => write!(f, "OAuth2JwksRequest"),
         }
     }
 }
@@ -143,6 +151,10 @@ pub enum AuthCredential {
     OAuth2UserinfoResponse {
         body: JsonValue,
     },
+    /// Claims JSON extracted from a JWKS-verified id_token.
+    OAuth2JwksTokenResponse {
+        claims_body: String,
+    },
 }
 
 impl From<ProtoAuthCredential> for AuthCredential {
@@ -175,6 +187,9 @@ impl fmt::Debug for AuthCredential {
             }
             AuthCredential::OAuth2UserinfoResponse { .. } => {
                 write!(fmt, "OAuth2UserinfoResponse{{..}}")
+            }
+            AuthCredential::OAuth2JwksTokenResponse { .. } => {
+                write!(fmt, "OAuth2JwksTokenResponse{{..}}")
             }
         }
     }

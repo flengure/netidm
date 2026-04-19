@@ -27,6 +27,11 @@ pub struct OAuth2ClientProvider {
     pub(crate) email_link_accounts: bool,
     /// Optional logo image URL shown on the SSO login button (DL20+).
     pub(crate) logo_uri: Option<Url>,
+    /// OIDC issuer URL, set when this provider was configured via OIDC discovery (DL21+).
+    pub(crate) issuer: Option<Url>,
+    /// JWKS endpoint URL for cryptographic verification of id_tokens (DL21+).
+    /// When set, `id_token` JWTs are verified against this JWKS rather than decoded unverified.
+    pub(crate) jwks_uri: Option<Url>,
     /// Maps a Netidm attribute to the provider claim name used at JIT provisioning time.
     pub(crate) claim_map: BTreeMap<Attribute, String>,
 }
@@ -80,6 +85,8 @@ impl OAuth2ClientProvider {
             jit_provisioning: false,
             email_link_accounts: false,
             logo_uri: None,
+            issuer: None,
+            jwks_uri: None,
             claim_map: BTreeMap::new(),
         }
     }
@@ -163,6 +170,14 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .get_ava_single_url(Attribute::OAuth2ClientLogoUri)
                 .cloned();
 
+            let issuer = provider_entry
+                .get_ava_single_url(Attribute::OAuth2Issuer)
+                .cloned();
+
+            let jwks_uri = provider_entry
+                .get_ava_single_url(Attribute::OAuth2JwksUri)
+                .cloned();
+
             let mut claim_map = BTreeMap::new();
             if let Some(v) = provider_entry
                 .get_ava_single_utf8(Attribute::OAuth2ClaimMapName)
@@ -197,6 +212,8 @@ impl IdmServerProxyWriteTransaction<'_> {
                 jit_provisioning,
                 email_link_accounts,
                 logo_uri,
+                issuer,
+                jwks_uri,
                 claim_map,
             };
 

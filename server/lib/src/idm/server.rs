@@ -71,6 +71,8 @@ pub struct SsoProviderInfo {
     pub name: String,
     pub display_name: String,
     pub logo_uri: Option<Url>,
+    /// OIDC issuer URL when this provider was configured via discovery, otherwise `None`.
+    pub issuer: Option<Url>,
 }
 
 pub struct IdmServer {
@@ -1752,6 +1754,7 @@ impl IdmServerProxyReadTransaction<'_> {
                 name: p.name.clone(),
                 display_name: p.display_name.clone(),
                 logo_uri: p.logo_uri.clone(),
+                issuer: p.issuer.clone(),
             })
             .collect();
         providers.sort_by(|a, b| a.display_name.cmp(&b.display_name));

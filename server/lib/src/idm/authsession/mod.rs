@@ -3595,4 +3595,322 @@ mod tests {
     // window of valid responses, and we can already carefully control pretty
     // much every error state as we'll never get the accessTokenResponse at
     // all.
+
+    /// Helper: drive an OAuth2 client auth session to the `OAuth2AccessTokenResponse` step.
+    /// Returns the session ready to receive the token response.
+    fn oauth2_client_session_to_token_step(
+        oauth2_client_provider: &OAuth2ClientProvider,
+    ) -> AuthSession {
+        let current_time = duration_from_epoch_now();
+        let webauthn = create_webauthn();
+        let pw_badlist_cache = create_pw_badlist_cache();
+        let (async_tx, _async_rx) = unbounded();
+        let (audit_tx, _audit_rx) = unbounded();
+        let privileged = false;
+
+        let mut account: Account = BUILTIN_ACCOUNT_TEST_PERSON.clone().into();
+        account.setup_oauth2_client_provider(oauth2_client_provider);
+
+        let asd = AuthSessionData {
+            account,
+            account_policy: ResolvedAccountPolicy::default(),
+            issue: AuthIssueSession::Token,
+            webauthn: &webauthn,
+            ct: current_time,
+            client_auth_info: Source::Internal.into(),
+            oauth2_client_provider: Some(oauth2_client_provider),
+        };
+        let key_object = KeyObjectInternal::new_test();
+        let (session, state) = AuthSession::new(asd, privileged, key_object);
+        assert!(matches!(state, AuthState::Choose(_)));
+
+        let mut session = session.expect("Missing auth session");
+        let state = session
+            .start_session(&AuthMech::OAuth2Trust)
+            .expect("Failed to start OAuth2Trust session");
+        let AuthState::External(AuthExternal::OAuth2AuthorisationRequest {
+            request: auth_req, ..
+        }) = state
+        else {
+            unreachable!("Expected OAuth2AuthorisationRequest");
+        };
+
+        let state = session
+            .validate_creds(
+                &AuthCredential::OAuth2AuthorisationResponse {
+                    code: "test_code_abc".into(),
+                    state: auth_req.state.clone(),
+                },
+                current_time,
+                &async_tx,
+                &audit_tx,
+                &webauthn,
+                &pw_badlist_cache,
+            )
+            .expect("Failed to validate authorisation response");
+
+        assert!(
+            matches!(
+                state,
+                AuthState::External(AuthExternal::OAuth2AccessTokenRequest { .. })
+            ),
+            "Expected OAuth2AccessTokenRequest, got {state:?}"
+        );
+
+        session
+    }
+
+    #[test]
+    fn test_idm_authsession_oauth2_client_jwks_request_emitted() {
+        sketching::test_init();
+        // Provider with jwks_uri + id_token in response → session emits OAuth2JwksRequest.
+        let mut provider =
+            OAuth2ClientProvider::new_test("oidc_provider", "https://issuer.example.com", ["openid"]);
+        provider.jit_provisioning = true;
+        provider.jwks_uri = Some(
+            Url::parse("https://issuer.example.com/.well-known/jwks.json")
+                .expect("invalid test URL"),
+        );
+
+        let current_time = duration_from_epoch_now();
+        let webauthn = create_webauthn();
+        let pw_badlist_cache = create_pw_badlist_cache();
+        let (async_tx, _async_rx) = unbounded();
+        let (audit_tx, _audit_rx) = unbounded();
+
+        let mut session = oauth2_client_session_to_token_step(&provider);
+
+        let response = AccessTokenResponse {
+            access_token: "access_tok".to_string(),
+            token_type: AccessTokenType::Bearer,
+            issued_token_type: Some(IssuedTokenType::AccessToken),
+            expires_in: 300,
+            refresh_token: None,
+            scope: provider.request_scopes.clone(),
+            id_token: Some("header.payload.sig".to_string()),
+        };
+
+        let state = session
+            .validate_creds(
+                &AuthCredential::OAuth2AccessTokenResponse { response },
+                current_time,
+                &async_tx,
+                &audit_tx,
+                &webauthn,
+                &pw_badlist_cache,
+            )
+            .expect("Failed to validate token response");
+
+        assert!(
+            matches!(
+                state,
+                AuthState::External(AuthExternal::OAuth2JwksRequest { .. })
+            ),
+            "Expected OAuth2JwksRequest when jwks_uri is set and id_token present, got {state:?}"
+        );
+    }
+
+    #[test]
+    fn test_idm_authsession_oauth2_client_no_jwks_uri_falls_through_to_userinfo() {
+        sketching::test_init();
+        // Provider WITHOUT jwks_uri but with userinfo_endpoint → emits OAuth2UserinfoRequest
+        // (regression: GitHub-style providers must not be affected by JWKS path).
+        let mut provider =
+            OAuth2ClientProvider::new_test("github_provider", "https://github.com", ["read:user"]);
+        provider.jit_provisioning = true;
+        provider.userinfo_endpoint = Some(
+            Url::parse("https://api.github.com/user").expect("invalid test URL"),
+        );
+
+        let current_time = duration_from_epoch_now();
+        let webauthn = create_webauthn();
+        let pw_badlist_cache = create_pw_badlist_cache();
+        let (async_tx, _async_rx) = unbounded();
+        let (audit_tx, _audit_rx) = unbounded();
+
+        let mut session = oauth2_client_session_to_token_step(&provider);
+
+        let response = AccessTokenResponse {
+            access_token: "access_tok".to_string(),
+            token_type: AccessTokenType::Bearer,
+            issued_token_type: Some(IssuedTokenType::AccessToken),
+            expires_in: 300,
+            refresh_token: None,
+            scope: provider.request_scopes.clone(),
+            id_token: None,
+        };
+
+        let state = session
+            .validate_creds(
+                &AuthCredential::OAuth2AccessTokenResponse { response },
+                current_time,
+                &async_tx,
+                &audit_tx,
+                &webauthn,
+                &pw_badlist_cache,
+            )
+            .expect("Failed to validate token response");
+
+        assert!(
+            matches!(
+                state,
+                AuthState::External(AuthExternal::OAuth2UserinfoRequest { .. })
+            ),
+            "Expected OAuth2UserinfoRequest for provider without jwks_uri, got {state:?}"
+        );
+    }
+
+    #[test]
+    fn test_idm_authsession_oauth2_client_jwks_token_valid_claims() {
+        sketching::test_init();
+        // Inject OAuth2JwksTokenResponse with valid claims → ProvisioningRequired.
+        let mut provider =
+            OAuth2ClientProvider::new_test("oidc_provider", "https://issuer.example.com", ["openid"]);
+        provider.jit_provisioning = true;
+        provider.jwks_uri = Some(
+            Url::parse("https://issuer.example.com/.well-known/jwks.json")
+                .expect("invalid test URL"),
+        );
+
+        let current_time = duration_from_epoch_now();
+        let webauthn = create_webauthn();
+        let pw_badlist_cache = create_pw_badlist_cache();
+        let (async_tx, mut async_rx) = unbounded();
+        let (audit_tx, mut audit_rx) = unbounded();
+
+        let mut session = oauth2_client_session_to_token_step(&provider);
+
+        // Simulate: core has verified the id_token, extracted claims JSON, and is
+        // feeding it back into the session as OAuth2JwksTokenResponse.
+        let claims_body = serde_json::json!({
+            "sub": "user-sub-12345",
+            "email": "alice@example.com",
+            "email_verified": true,
+            "name": "Alice Example",
+            "preferred_username": "alice",
+        })
+        .to_string();
+
+        let state = session
+            .validate_creds(
+                &AuthCredential::OAuth2JwksTokenResponse { claims_body },
+                current_time,
+                &async_tx,
+                &audit_tx,
+                &webauthn,
+                &pw_badlist_cache,
+            )
+            .expect("Failed to validate JWKS token response");
+
+        assert!(
+            matches!(state, AuthState::ProvisioningRequired { .. }),
+            "Expected ProvisioningRequired for valid JWKS claims, got {state:?}"
+        );
+
+        drop(async_tx);
+        assert!(async_rx.blocking_recv().is_none());
+        drop(audit_tx);
+        assert!(audit_rx.blocking_recv().is_none());
+    }
+
+    #[test]
+    fn test_idm_authsession_oauth2_client_jwks_token_missing_sub_denied() {
+        sketching::test_init();
+        // Inject OAuth2JwksTokenResponse with claims missing `sub` → Denied.
+        let mut provider =
+            OAuth2ClientProvider::new_test("oidc_provider", "https://issuer.example.com", ["openid"]);
+        provider.jit_provisioning = true;
+        provider.jwks_uri = Some(
+            Url::parse("https://issuer.example.com/.well-known/jwks.json")
+                .expect("invalid test URL"),
+        );
+
+        let current_time = duration_from_epoch_now();
+        let webauthn = create_webauthn();
+        let pw_badlist_cache = create_pw_badlist_cache();
+        let (async_tx, mut async_rx) = unbounded();
+        let (audit_tx, mut audit_rx) = unbounded();
+
+        let mut session = oauth2_client_session_to_token_step(&provider);
+
+        // Claims are missing the required `sub` field.
+        let claims_body = serde_json::json!({
+            "email": "alice@example.com",
+            "name": "Alice Example",
+        })
+        .to_string();
+
+        let state = session
+            .validate_creds(
+                &AuthCredential::OAuth2JwksTokenResponse { claims_body },
+                current_time,
+                &async_tx,
+                &audit_tx,
+                &webauthn,
+                &pw_badlist_cache,
+            )
+            .expect("Expected Ok(Denied), not Err");
+
+        assert!(
+            matches!(state, AuthState::Denied(_)),
+            "Expected Denied when sub is missing from JWKS token claims, got {state:?}"
+        );
+
+        drop(async_tx);
+        assert!(async_rx.blocking_recv().is_none());
+        drop(audit_tx);
+        match audit_rx.blocking_recv() {
+            Some(AuditEvent::AuthenticationDenied { .. }) => {}
+            other => panic!("Expected AuthenticationDenied audit event, got {other:?}"),
+        }
+        assert!(audit_rx.blocking_recv().is_none());
+    }
+
+    #[test]
+    fn test_idm_authsession_oauth2_client_jwks_token_invalid_json_denied() {
+        sketching::test_init();
+        // Inject OAuth2JwksTokenResponse with invalid JSON → Denied.
+        let mut provider =
+            OAuth2ClientProvider::new_test("oidc_provider", "https://issuer.example.com", ["openid"]);
+        provider.jit_provisioning = true;
+        provider.jwks_uri = Some(
+            Url::parse("https://issuer.example.com/.well-known/jwks.json")
+                .expect("invalid test URL"),
+        );
+
+        let current_time = duration_from_epoch_now();
+        let webauthn = create_webauthn();
+        let pw_badlist_cache = create_pw_badlist_cache();
+        let (async_tx, mut async_rx) = unbounded();
+        let (audit_tx, mut audit_rx) = unbounded();
+
+        let mut session = oauth2_client_session_to_token_step(&provider);
+
+        let state = session
+            .validate_creds(
+                &AuthCredential::OAuth2JwksTokenResponse {
+                    claims_body: "not valid json {{{".to_string(),
+                },
+                current_time,
+                &async_tx,
+                &audit_tx,
+                &webauthn,
+                &pw_badlist_cache,
+            )
+            .expect("Expected Ok(Denied), not Err");
+
+        assert!(
+            matches!(state, AuthState::Denied(_)),
+            "Expected Denied for invalid JSON in JWKS token response, got {state:?}"
+        );
+
+        drop(async_tx);
+        assert!(async_rx.blocking_recv().is_none());
+        drop(audit_tx);
+        match audit_rx.blocking_recv() {
+            Some(AuditEvent::AuthenticationDenied { .. }) => {}
+            other => panic!("Expected AuthenticationDenied audit event, got {other:?}"),
+        }
+        assert!(audit_rx.blocking_recv().is_none());
+    }
 }

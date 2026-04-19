@@ -1,5 +1,6 @@
 mod apidocs;
 mod domain;
+mod oauth2_client_test;
 mod group;
 mod http_manifest;
 mod https_middleware;

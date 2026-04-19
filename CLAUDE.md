@@ -18,6 +18,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-18
 - No new storage. Group resolution via existing MVCC read path (`qe_r_ref.handle_whoami`) (004-forward-auth-endpoint)
 - Rust stable (see `rust-toolchain.toml`) + `axum`, `axum-extra` (cookies), `askama` (templates), `compact_jwt`, `netidmd_lib`, `netidm_proto` — all already present; zero new external dependencies for P1/P2. P3 (logo) may require no new deps either (URL is rendered as `<img src>`). (005-sso-login-choice)
 - No new database storage for P1/P2. P3 adds `Attribute::OAuth2ClientLogoUri` via DL20 schema migration (URL type, optional, single-value on `EntryClass::OAuth2Client`). (005-sso-login-choice)
+- Rust stable (see `rust-toolchain.toml`) + `compact_jwt` 0.5.6 (workspace, already present — provides `OidcUnverified`, `JwkKeySet`, `JwsEs256Verifier`, `JwsRs256Verifier`); `reqwest` (workspace, already in `server/core` and `libs/client`); `serde_json` (already present) (006-oidc-connector)
+- Netidm MVCC entry database — DL21 migration adds two URL-type `systemmay` attributes to `EntryClass::OAuth2Client` (006-oidc-connector)
 
 - Rust (stable, current toolchain — check `rust-toolchain.toml`) + Internal Netidm crates; `reqwest` for userinfo HTTP calls; `jsonwebtoken`/existing JWT handling for Google `id_token` verification; `serde_json` for claim parsing (001-social-login-jit)
 
@@ -37,9 +39,9 @@ cargo test && cargo clippy
 Rust (stable, current toolchain — check `rust-toolchain.toml`): Follow standard conventions
 
 ## Recent Changes
+- 006-oidc-connector: Added Rust stable (see `rust-toolchain.toml`) + `compact_jwt` 0.5.6 (workspace, already present — provides `OidcUnverified`, `JwkKeySet`, `JwsEs256Verifier`, `JwsRs256Verifier`); `reqwest` (workspace, already in `server/core` and `libs/client`); `serde_json` (already present)
 - 005-sso-login-choice: Added Rust stable (see `rust-toolchain.toml`) + `axum`, `axum-extra` (cookies), `askama` (templates), `compact_jwt`, `netidmd_lib`, `netidm_proto` — all already present; zero new external dependencies for P1/P2. P3 (logo) may require no new deps either (URL is rendered as `<img src>`).
 - 004-forward-auth-endpoint: Added Rust stable (see `rust-toolchain.toml`) + `axum`, `axum-extra` (cookies), `compact_jwt`, `netidmd_lib`, `netidm_proto`, `regex` — all already present; zero new deps
-- 003-oauth2-email-linking: Added Rust stable (see `rust-toolchain.toml`) + Internal netidm crates (`netidmd_lib`, `netidm_proto`), `kanidm-hsm-crypto` (external, unchanged)
 
 
 <!-- MANUAL ADDITIONS START -->
