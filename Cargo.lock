@@ -1486,7 +1486,7 @@ dependencies = [
 
 [[package]]
 name = "daemon"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "clap",
  "clap_complete",
@@ -4585,7 +4585,7 @@ dependencies = [
 
 [[package]]
 name = "netidm-ipa-sync"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "chrono",
  "clap",
@@ -4611,7 +4611,7 @@ dependencies = [
 
 [[package]]
 name = "netidm-ldap-sync"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "chrono",
  "clap",
@@ -4638,7 +4638,7 @@ dependencies = [
 
 [[package]]
 name = "netidm-mail-sender"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "chrono",
  "clap",
@@ -4662,7 +4662,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_build_profiles"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "base64 0.22.1",
  "gix",
@@ -4673,7 +4673,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_client"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "compact_jwt",
  "http",
@@ -4696,7 +4696,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_device_flow"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "anyhow",
  "netidm_proto",
@@ -4709,7 +4709,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_lib_crypto"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "base64 0.22.1",
  "base64urlsafedata 0.6.0-dev",
@@ -4731,14 +4731,14 @@ dependencies = [
 
 [[package]]
 name = "netidm_lib_file_permissions"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "netidm_utils_users",
 ]
 
 [[package]]
 name = "netidm_proto"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "base32",
  "base64 0.22.1",
@@ -4767,7 +4767,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_tools"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "anyhow",
  "clap",
@@ -4797,7 +4797,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_unix_common"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "bytes",
  "csv",
@@ -4821,7 +4821,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_unix_int"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "async-trait",
  "clap",
@@ -4863,14 +4863,14 @@ dependencies = [
 
 [[package]]
 name = "netidm_utils_users"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "netidmd_core"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "askama",
  "askama_web",
@@ -4935,7 +4935,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_lib"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "base64 0.22.1",
  "base64urlsafedata 0.6.0-dev",
@@ -4992,7 +4992,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_lib_macros"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5001,7 +5001,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_testkit"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "axum",
  "cidr",
@@ -5036,7 +5036,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_wg"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5300,7 +5300,7 @@ dependencies = [
 
 [[package]]
 name = "nss_netidm"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "cc",
  "libc",
@@ -5703,7 +5703,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "orca"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5772,7 +5772,7 @@ dependencies = [
 
 [[package]]
 name = "pam_netidm"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "libc",
  "netidm_unix_common",
@@ -7036,7 +7036,7 @@ dependencies = [
 
 [[package]]
 name = "scim_proto"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "base64urlsafedata 0.6.0-dev",
  "peg",
@@ -7428,7 +7428,7 @@ checksum = "b2aa850e253778c88a04c3d7323b043aeda9d3e30d5971937c1855769763678e"
 
 [[package]]
 name = "sketching"
-version = "0.1.9"
+version = "0.1.10-dev"
 dependencies = [
  "gethostname",
  "num_enum",
