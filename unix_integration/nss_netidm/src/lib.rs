@@ -22,7 +22,7 @@
 /// we need to wrap and expose this shim function to convince rust to actually
 /// link to the archive
 ///
-/// https://github.com/rust-lang/rust/issues/78827
+/// <https://github.com/rust-lang/rust/issues/78827>
 mod bsd_nss_compat {
     use std::ffi::c_void;
 

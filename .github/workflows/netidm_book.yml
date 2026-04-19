@@ -60,6 +60,7 @@ jobs:
   fanout:
     uses: './.github/workflows/netidm_individual_book.yml'
     needs: pre_deploy
+    if: needs.pre_deploy.outputs.latest != ''
     # yamllint disable-line rule:line-length
     strategy:
       fail-fast: false
@@ -105,6 +106,7 @@ jobs:
         env:
           ACTIONS_RUNNER_DEBUG: true
       - name: Download stable artifact
+        if: needs.pre_deploy.outputs.latest != ''
         uses: actions/download-artifact@v8
         with:
           name: "individual${{ needs.pre_deploy.outputs.latest }}"
@@ -120,7 +122,9 @@ jobs:
           find $(pwd) -name '*.tar.gz' -ls -exec tar zxvf "{}" \;
           echo "Carrying on..."
           mkdir -p docs
-          cd docs && cp -R "${{ needs.pre_deploy.outputs.latest}}" stable && cd ..
+          if [ -n "${{ needs.pre_deploy.outputs.latest }}" ]; then
+            cd docs && cp -R "${{ needs.pre_deploy.outputs.latest }}" stable && cd ..
+          fi
           ls -la docs/
           echo "Cleaning up docs archives"
           rm docs/*.tar.gz
