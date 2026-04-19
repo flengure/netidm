@@ -3704,15 +3704,18 @@ mod tests {
         eprintln!("AcpCreateAttr values: {:?}", create_attrs);
         assert!(
             create_attrs.contains(&"displayname".to_string()),
-            "ACP missing displayname in create_attrs: {:?}", create_attrs
+            "ACP missing displayname in create_attrs: {:?}",
+            create_attrs
         );
         assert!(
             create_attrs.contains(&"oauth2_issuer".to_string()),
-            "ACP missing oauth2_issuer in create_attrs: {:?}", create_attrs
+            "ACP missing oauth2_issuer in create_attrs: {:?}",
+            create_attrs
         );
         assert!(
             create_attrs.contains(&"oauth2_jwks_uri".to_string()),
-            "ACP missing oauth2_jwks_uri in create_attrs: {:?}", create_attrs
+            "ACP missing oauth2_jwks_uri in create_attrs: {:?}",
+            create_attrs
         );
     }
 }

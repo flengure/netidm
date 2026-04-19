@@ -1,6 +1,5 @@
 mod apidocs;
 mod domain;
-mod oauth2_client_test;
 mod group;
 mod http_manifest;
 mod https_middleware;
@@ -8,6 +7,7 @@ mod identity_verification_tests;
 mod integration;
 mod ip_addr_extractors;
 mod ldap_basic;
+mod oauth2_client_test;
 mod oauth2_proxy_test;
 mod oauth2_test;
 mod person;

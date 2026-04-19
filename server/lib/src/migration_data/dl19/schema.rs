@@ -20,19 +20,17 @@ pub static SCHEMA_ATTR_SKIP_AUTH_ROUTE_DL19: LazyLock<SchemaAttribute> =
         ..Default::default()
     });
 
-pub static SCHEMA_CLASS_SYSTEM_CONFIG_DL19: LazyLock<SchemaClass> =
-    LazyLock::new(|| SchemaClass {
-        uuid: UUID_SCHEMA_CLASS_SYSTEM_CONFIG,
-        name: EntryClass::SystemConfig.into(),
-        description: "The class representing a system (topologies) configuration options"
-            .to_string(),
-        systemmay: vec![
-            Attribute::Description,
-            Attribute::BadlistPassword,
-            Attribute::AuthSessionExpiry,
-            Attribute::PrivilegeExpiry,
-            Attribute::DeniedName,
-            Attribute::SkipAuthRoute,
-        ],
-        ..Default::default()
-    });
+pub static SCHEMA_CLASS_SYSTEM_CONFIG_DL19: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_SYSTEM_CONFIG,
+    name: EntryClass::SystemConfig.into(),
+    description: "The class representing a system (topologies) configuration options".to_string(),
+    systemmay: vec![
+        Attribute::Description,
+        Attribute::BadlistPassword,
+        Attribute::AuthSessionExpiry,
+        Attribute::PrivilegeExpiry,
+        Attribute::DeniedName,
+        Attribute::SkipAuthRoute,
+    ],
+    ..Default::default()
+});

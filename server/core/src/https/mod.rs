@@ -20,13 +20,13 @@ use crypto_glue::{
     x509::{x509_digest_public_key_sha256, Certificate},
 };
 use futures::pin_mut;
+use hashbrown::HashMap;
 use hyper::body::Incoming;
 use hyper_util::rt::{TokioExecutor, TokioIo, TokioTimer};
 use netidm_proto::{config::ServerRole, constants::KSESSIONID, internal::COOKIE_AUTH_SESSION_ID};
 use netidmd_lib::{idm::authentication::ClientCertInfo, status::StatusActor};
 use serde::de::DeserializeOwned;
 use sketching::*;
-use hashbrown::HashMap;
 use std::fmt::Write;
 use std::io::ErrorKind;
 use std::path::PathBuf;
@@ -114,7 +114,7 @@ pub struct ServerState {
     pub(crate) logging_pipeline: LoggerType,
     /// Live WireGuard interface manager.
     pub(crate) wg_manager: Arc<netidmd_wg::WgManager>,
-        /// Compiled skip-auth rules evaluated by the forward auth gate before any
+    /// Compiled skip-auth rules evaluated by the forward auth gate before any
     /// session check. An empty vec means every request is authenticated normally.
     pub(crate) skip_auth_rules: Arc<Vec<views::oauth2_proxy::SkipAuthRule>>,
     /// In-flight SAML SP-initiated SSO requests, keyed by relay_state.

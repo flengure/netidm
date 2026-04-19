@@ -1976,12 +1976,8 @@ impl QueryServerWriteV1 {
             .get_saml_client_provider_by_name(&provider_name)
             .ok_or(OperationError::NoMatchingEntries)?;
 
-        let token = idms_prox_write.saml_complete_login(
-            &provider,
-            &encoded_response,
-            &request_id,
-            ct,
-        )?;
+        let token =
+            idms_prox_write.saml_complete_login(&provider, &encoded_response, &request_id, ct)?;
 
         idms_prox_write
             .commit()

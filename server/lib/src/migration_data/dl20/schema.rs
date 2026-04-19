@@ -7,14 +7,16 @@ pub static SCHEMA_ATTR_OAUTH2_CLIENT_LOGO_URI_DL20: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_LOGO_URI,
         name: Attribute::OAuth2ClientLogoUri,
-        description: "Optional logo image URL for the OAuth2 client provider, shown on the SSO login button."
-            .to_string(),
+        description:
+            "Optional logo image URL for the OAuth2 client provider, shown on the SSO login button."
+                .to_string(),
         multivalue: false,
         syntax: SyntaxType::Url,
         ..Default::default()
     });
 
-pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL20: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL20: LazyLock<SchemaClass> = LazyLock::new(|| {
+    SchemaClass {
     uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
     name: EntryClass::OAuth2Client.into(),
     description:
@@ -38,4 +40,5 @@ pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL20: LazyLock<SchemaClass> = LazyLock::ne
         Attribute::OAuth2ClientLogoUri,
     ],
     ..Default::default()
+}
 });

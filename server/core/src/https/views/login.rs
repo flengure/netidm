@@ -16,6 +16,10 @@ use axum::{
     Extension, Form, Json,
 };
 use axum_extra::extract::cookie::{CookieJar, SameSite};
+use compact_jwt::compact::{JwaAlg, Jwk, JwkKeySet};
+use compact_jwt::crypto::{JwsEs256Verifier, JwsRs256Verifier};
+use compact_jwt::traits::{JwsVerifiable, JwsVerifier};
+use compact_jwt::OidcUnverified;
 use hyper::Uri;
 use netidm_proto::internal::{
     UserAuthToken, COOKIE_AUTH_METHOD_PREF, COOKIE_AUTH_SESSION_ID, COOKIE_BEARER_TOKEN,
@@ -29,10 +33,6 @@ use netidm_proto::{
 use netidmd_lib::idm::authentication::{AuthCredential, AuthExternal, AuthState, AuthStep};
 use netidmd_lib::idm::event::AuthResult;
 use netidmd_lib::idm::server::SsoProviderInfo;
-use compact_jwt::compact::{Jwk, JwkKeySet, JwaAlg};
-use compact_jwt::crypto::{JwsEs256Verifier, JwsRs256Verifier};
-use compact_jwt::traits::{JwsVerifiable, JwsVerifier};
-use compact_jwt::OidcUnverified;
 use netidmd_lib::prelude::OperationError;
 use netidmd_lib::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -388,7 +388,7 @@ pub fn view_oauth2_get(
             display_ctx,
             username,
             remember_me,
-                    show_internal_first: false,
+            show_internal_first: false,
         },
     )
         .into_response()
@@ -444,10 +444,11 @@ pub async fn view_sso_initiate_get(
         Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
         Ok(AuthResult {
             sessionid,
-            state: AuthState::External(AuthExternal::OAuth2AuthorisationRequest {
-                mut authorisation_url,
-                request,
-            }),
+            state:
+                AuthState::External(AuthExternal::OAuth2AuthorisationRequest {
+                    mut authorisation_url,
+                    request,
+                }),
         }) => {
             let session_context = SessionContext {
                 id: Some(sessionid),
@@ -456,7 +457,11 @@ pub async fn view_sso_initiate_get(
 
             let jar = if let Some(next) = query.next.as_deref() {
                 if next.starts_with('/') {
-                    jar.add(cookies::make_unsigned(&state, COOKIE_NEXT_REDIRECT, next.to_string()))
+                    jar.add(cookies::make_unsigned(
+                        &state,
+                        COOKIE_NEXT_REDIRECT,
+                        next.to_string(),
+                    ))
                 } else {
                     jar
                 }
@@ -606,8 +611,7 @@ pub async fn view_saml_acs_post(
         }
         Ok(token) => {
             let token_str = token.to_string();
-            let mut bearer_cookie =
-                cookies::make_unsigned(&state, COOKIE_BEARER_TOKEN, token_str);
+            let mut bearer_cookie = cookies::make_unsigned(&state, COOKIE_BEARER_TOKEN, token_str);
             bearer_cookie.make_permanent();
             let jar = jar.add(bearer_cookie);
             (jar, Redirect::to("/ui/")).into_response()
@@ -657,7 +661,11 @@ pub async fn view_index_get(
             // Only relative paths are accepted to prevent open-redirect attacks.
             let jar = if let Some(next) = query.next.as_deref() {
                 if next.starts_with('/') {
-                    jar.add(cookies::make_unsigned(&state, COOKIE_NEXT_REDIRECT, next.to_string()))
+                    jar.add(cookies::make_unsigned(
+                        &state,
+                        COOKIE_NEXT_REDIRECT,
+                        next.to_string(),
+                    ))
                 } else {
                     jar
                 }
@@ -751,8 +759,7 @@ pub async fn view_login_begin_post(
 
     // Consume the next-redirect cookie set by the forward auth endpoint so
     // the success handler can redirect there instead of the default landing.
-    let after_auth_loc = cookies::get_unsigned(&jar, COOKIE_NEXT_REDIRECT)
-        .map(|s| s.to_string());
+    let after_auth_loc = cookies::get_unsigned(&jar, COOKIE_NEXT_REDIRECT).map(|s| s.to_string());
     let jar = cookies::destroy(jar, COOKIE_NEXT_REDIRECT, &state);
 
     let session_context = SessionContext {
@@ -1360,8 +1367,7 @@ async fn view_login_step(
                             .unwrap_or(0);
                         let claims_body =
                             verify_oidc_id_token(&jwks_url, &id_token, now_secs).await?;
-                        let auth_cred =
-                            AuthCredential::OAuth2JwksTokenResponse { claims_body };
+                        let auth_cred = AuthCredential::OAuth2JwksTokenResponse { claims_body };
                         let inter = state
                             .qe_r_ref
                             .handle_auth(
@@ -1664,11 +1670,14 @@ fn jwk_kid(jwk: &Jwk) -> Option<&str> {
 }
 
 fn find_key_in_set<'a>(keyset: &'a JwkKeySet, token_kid: Option<&str>) -> Option<&'a Jwk> {
-    keyset.keys.iter().find(|jwk| match (token_kid, jwk_kid(jwk)) {
-        (Some(tk), Some(jk)) => tk == jk,
-        (None, _) => true,
-        _ => false,
-    })
+    keyset
+        .keys
+        .iter()
+        .find(|jwk| match (token_kid, jwk_kid(jwk)) {
+            (Some(tk), Some(jk)) => tk == jk,
+            (None, _) => true,
+            _ => false,
+        })
 }
 
 async fn verify_oidc_id_token(

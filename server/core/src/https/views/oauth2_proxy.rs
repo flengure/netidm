@@ -21,10 +21,7 @@
 //! `/oauth2/openid/:client_id/userinfo`.
 
 use crate::https::{
-    extractors::VerifiedClientInformation,
-    middleware::KOpId,
-    views::cookies,
-    ServerState,
+    extractors::VerifiedClientInformation, middleware::KOpId, views::cookies, ServerState,
 };
 use axum::{
     extract::{Query, State},
@@ -85,7 +82,10 @@ impl SkipAuthRule {
         match Regex::new(pattern) {
             Ok(re) => Some(SkipAuthRule { method, path: re }),
             Err(e) => {
-                warn!(?e, "skip_auth_rule: invalid regex {pattern:?} in rule {rule:?}, skipping");
+                warn!(
+                    ?e,
+                    "skip_auth_rule: invalid regex {pattern:?} in rule {rule:?}, skipping"
+                );
                 None
             }
         }
@@ -173,12 +173,7 @@ fn unauthenticated_response(headers: &HeaderMap, next_url: Option<String>) -> Re
             .into_response()
     } else {
         let location = next_url
-            .map(|url| {
-                format!(
-                    "/ui/login?next={}",
-                    percent_encode(url.as_bytes())
-                )
-            })
+            .map(|url| format!("/ui/login?next={}", percent_encode(url.as_bytes())))
             .unwrap_or_else(|| "/ui/login".to_string());
 
         (
@@ -186,9 +181,8 @@ fn unauthenticated_response(headers: &HeaderMap, next_url: Option<String>) -> Re
             [
                 (
                     header::LOCATION,
-                    HeaderValue::from_str(&location).unwrap_or_else(|_| {
-                        HeaderValue::from_static("/ui/login")
-                    }),
+                    HeaderValue::from_str(&location)
+                        .unwrap_or_else(|_| HeaderValue::from_static("/ui/login")),
                 ),
                 (
                     header::WWW_AUTHENTICATE,
@@ -210,8 +204,16 @@ fn percent_encode(input: &[u8]) -> String {
             }
             _ => {
                 output.push('%');
-                output.push(char::from_digit((byte >> 4) as u32, 16).unwrap_or('0').to_ascii_uppercase());
-                output.push(char::from_digit((byte & 0xf) as u32, 16).unwrap_or('0').to_ascii_uppercase());
+                output.push(
+                    char::from_digit((byte >> 4) as u32, 16)
+                        .unwrap_or('0')
+                        .to_ascii_uppercase(),
+                );
+                output.push(
+                    char::from_digit((byte & 0xf) as u32, 16)
+                        .unwrap_or('0')
+                        .to_ascii_uppercase(),
+                );
             }
         }
     }
@@ -279,7 +281,11 @@ pub async fn view_oauth2_auth_get(
         .and_then(|v| v.to_str().ok())
         .and_then(|s| s.parse::<Method>().ok())
         .unwrap_or(Method::GET);
-    if state.skip_auth_rules.iter().any(|rule| rule.matches(&forwarded_method, forwarded_path)) {
+    if state
+        .skip_auth_rules
+        .iter()
+        .any(|rule| rule.matches(&forwarded_method, forwarded_path))
+    {
         return StatusCode::OK.into_response();
     }
 
@@ -330,11 +336,7 @@ pub async fn view_oauth2_auth_get(
                 .cloned()
                 .unwrap_or_default();
 
-            let email = entry
-                .attrs
-                .get("mail")
-                .and_then(|v| v.first())
-                .cloned();
+            let email = entry.attrs.get("mail").and_then(|v| v.first()).cloned();
 
             let groups = group_names_from_entry(entry);
             let groups_csv = if groups.is_empty() {
@@ -345,18 +347,12 @@ pub async fn view_oauth2_auth_get(
 
             // Build 202 response with X-Auth-Request-* and X-Forwarded-* headers.
             let mut response_headers = vec![
-                (
-                    "x-auth-request-user".to_string(),
-                    username.clone(),
-                ),
+                ("x-auth-request-user".to_string(), username.clone()),
                 (
                     "x-auth-request-preferred-username".to_string(),
                     displayname.clone(),
                 ),
-                (
-                    "x-forwarded-user".to_string(),
-                    username,
-                ),
+                ("x-forwarded-user".to_string(), username),
             ];
 
             if let Some(ref em) = email {
@@ -470,11 +466,7 @@ pub async fn view_oauth2_proxy_userinfo_get(
                 .cloned()
                 .unwrap_or_default();
 
-            let email = entry
-                .attrs
-                .get("mail")
-                .and_then(|v| v.first())
-                .cloned();
+            let email = entry.attrs.get("mail").and_then(|v| v.first()).cloned();
 
             let groups = group_names_from_entry(entry);
 
@@ -622,10 +614,7 @@ mod tests {
 
     #[test]
     fn test_reconstruct_url_missing_host() {
-        let h = headers_with(&[
-            ("x-forwarded-proto", "https"),
-            ("x-forwarded-uri", "/path"),
-        ]);
+        let h = headers_with(&[("x-forwarded-proto", "https"), ("x-forwarded-uri", "/path")]);
         assert_eq!(reconstruct_original_url(&h), None);
     }
 

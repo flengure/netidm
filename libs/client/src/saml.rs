@@ -30,9 +30,10 @@ impl NetidmClient {
         new_entry
             .attrs
             .insert(ATTR_NAME.to_string(), vec![cfg.name.to_string()]);
-        new_entry
-            .attrs
-            .insert(ATTR_DISPLAYNAME.to_string(), vec![cfg.display_name.to_string()]);
+        new_entry.attrs.insert(
+            ATTR_DISPLAYNAME.to_string(),
+            vec![cfg.display_name.to_string()],
+        );
         new_entry.attrs.insert(
             "saml_idp_sso_url".to_string(),
             vec![cfg.idp_sso_url.to_string()],
@@ -75,13 +76,11 @@ impl NetidmClient {
                 vec!["true".to_string()],
             );
         }
-        self.perform_post_request("/v1/saml_client", new_entry).await
+        self.perform_post_request("/v1/saml_client", new_entry)
+            .await
     }
 
-    pub async fn idm_saml_client_get(
-        &self,
-        name: &str,
-    ) -> Result<Option<Entry>, ClientError> {
+    pub async fn idm_saml_client_get(&self, name: &str) -> Result<Option<Entry>, ClientError> {
         self.perform_get_request(format!("/v1/saml_client/{name}").as_str())
             .await
     }

@@ -46,7 +46,8 @@ pub static SCHEMA_ATTR_SAML_ACS_URL_DL22: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_SAML_ACS_URL,
         name: Attribute::SamlAcsUrl,
-        description: "Assertion Consumer Service URL where the IdP POSTs SAML Responses.".to_string(),
+        description: "Assertion Consumer Service URL where the IdP POSTs SAML Responses."
+            .to_string(),
         multivalue: false,
         syntax: SyntaxType::Url,
         ..Default::default()
@@ -66,7 +67,8 @@ pub static SCHEMA_ATTR_SAML_ATTR_MAP_EMAIL_DL22: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_SAML_ATTR_MAP_EMAIL,
         name: Attribute::SamlAttrMapEmail,
-        description: "Assertion attribute name whose value is the user's email address.".to_string(),
+        description: "Assertion attribute name whose value is the user's email address."
+            .to_string(),
         multivalue: false,
         syntax: SyntaxType::Utf8String,
         ..Default::default()
@@ -86,7 +88,8 @@ pub static SCHEMA_ATTR_SAML_ATTR_MAP_GROUPS_DL22: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_SAML_ATTR_MAP_GROUPS,
         name: Attribute::SamlAttrMapGroups,
-        description: "Assertion attribute name whose values are the user's group names.".to_string(),
+        description: "Assertion attribute name whose values are the user's group names."
+            .to_string(),
         multivalue: false,
         syntax: SyntaxType::Utf8String,
         ..Default::default()

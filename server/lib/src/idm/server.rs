@@ -24,8 +24,8 @@ use crate::idm::oauth2::{
     Oauth2ResourceServersWriteTransaction,
 };
 use crate::idm::oauth2_client::OAuth2ClientProvider;
-use crate::idm::saml_client::SamlClientProvider;
 use crate::idm::radius::RadiusAccount;
+use crate::idm::saml_client::SamlClientProvider;
 use crate::idm::scim::SyncAccount;
 use crate::idm::serviceaccount::ServiceAccount;
 use crate::prelude::*;
@@ -1380,16 +1380,12 @@ impl IdmServerAuthTransaction<'_> {
                         OperationError::NoMatchingEntries
                     })?;
 
-                let session =
-                    ProviderInitiatedSession::new(provider, init_provider.issue);
+                let session = ProviderInitiatedSession::new(provider, init_provider.issue);
                 let (authorisation_url, request) = session.start_auth_request();
 
                 let _session_ticket = self.session_ticket.acquire().await;
                 let mut provider_session_write = self.provider_sessions.write();
-                provider_session_write.insert(
-                    sessionid,
-                    Arc::new(Mutex::new(session)),
-                );
+                provider_session_write.insert(sessionid, Arc::new(Mutex::new(session)));
                 provider_session_write.commit();
 
                 Ok(AuthResult {
@@ -1404,7 +1400,8 @@ impl IdmServerAuthTransaction<'_> {
             }
             AuthEventStep::Cred(creds) => {
                 // Check provider_sessions first (SSO-first flow — no pre-bound user).
-                let provider_session_ref = self.provider_sessions.read().get(&creds.sessionid).cloned();
+                let provider_session_ref =
+                    self.provider_sessions.read().get(&creds.sessionid).cloned();
                 if let Some(provider_session_mutex) = provider_session_ref {
                     let mut provider_session = provider_session_mutex.lock().await;
                     let aus = provider_session.validate(&creds.cred, ct);
@@ -1770,13 +1767,17 @@ impl IdmServerProxyReadTransaction<'_> {
                 issuer: p.issuer.clone(),
                 sso_url_prefix: "/ui/sso".to_string(),
             })
-            .chain(self.saml_client_providers.values().map(|p| SsoProviderInfo {
-                name: p.name.clone(),
-                display_name: p.display_name.clone(),
-                logo_uri: None,
-                issuer: None,
-                sso_url_prefix: "/ui/saml/sso".to_string(),
-            }))
+            .chain(
+                self.saml_client_providers
+                    .values()
+                    .map(|p| SsoProviderInfo {
+                        name: p.name.clone(),
+                        display_name: p.display_name.clone(),
+                        logo_uri: None,
+                        issuer: None,
+                        sso_url_prefix: "/ui/saml/sso".to_string(),
+                    }),
+            )
             .collect();
         providers.sort_by(|a, b| a.display_name.cmp(&b.display_name));
         providers
@@ -2646,7 +2647,10 @@ impl IdmServerProxyWriteTransaction<'_> {
         ]));
 
         let mut entries = self.qs_write.internal_search(filter).map_err(|e| {
-            admin_error!(?e, "find_account_by_saml_provider_and_name_id search failed");
+            admin_error!(
+                ?e,
+                "find_account_by_saml_provider_and_name_id search failed"
+            );
             e
         })?;
 
@@ -2674,12 +2678,22 @@ impl IdmServerProxyWriteTransaction<'_> {
             .unwrap_or(name_id)
             .to_lowercase()
             .chars()
-            .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+            .map(|c| {
+                if c.is_alphanumeric() || c == '-' || c == '_' {
+                    c
+                } else {
+                    '_'
+                }
+            })
             .collect::<String>()
             .trim_matches('_')
             .to_string();
 
-        let base = if base.is_empty() { "saml_user".to_string() } else { base };
+        let base = if base.is_empty() {
+            "saml_user".to_string()
+        } else {
+            base
+        };
 
         let mut name_is_free = |name: &str| {
             let filter = filter_all!(f_eq(Attribute::Name, PartialValue::new_iname(name)));
@@ -2754,10 +2768,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             let group_entries = self.qs_write.internal_search(group_filter)?;
             if let Some(group_entry) = group_entries.into_iter().next() {
                 let group_uuid = group_entry.get_uuid();
-                let ml = ModifyList::new_append(
-                    Attribute::Member,
-                    Value::Refer(new_account_uuid),
-                );
+                let ml = ModifyList::new_append(Attribute::Member, Value::Refer(new_account_uuid));
                 self.qs_write
                     .internal_modify(
                         &filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(group_uuid))),
@@ -2788,28 +2799,28 @@ impl IdmServerProxyWriteTransaction<'_> {
         use crate::value::AuthType;
         use compact_jwt::Jws;
 
-        let claims = handler_saml_client::validate_saml_response(provider, encoded_response, request_id)?;
+        let claims =
+            handler_saml_client::validate_saml_response(provider, encoded_response, request_id)?;
 
         // Find or provision the account.
-        let account_uuid = match self.find_account_by_saml_provider_and_name_id(provider.uuid, &claims.name_id)? {
-            Some(account) => account.uuid,
-            None if provider.jit_provisioning => {
-                self.jit_provision_saml_account(
+        let account_uuid =
+            match self.find_account_by_saml_provider_and_name_id(provider.uuid, &claims.name_id)? {
+                Some(account) => account.uuid,
+                None if provider.jit_provisioning => self.jit_provision_saml_account(
                     provider.uuid,
                     &claims.name_id,
                     &claims,
                     &claims.groups.clone(),
-                )?
-            }
-            None => {
-                security_info!(
-                    name_id = %claims.name_id,
-                    provider = %provider.name,
-                    "SAML: no account found and JIT provisioning is disabled"
-                );
-                return Err(OperationError::NotAuthenticated);
-            }
-        };
+                )?,
+                None => {
+                    security_info!(
+                        name_id = %claims.name_id,
+                        provider = %provider.name,
+                        "SAML: no account found and JIT provisioning is disabled"
+                    );
+                    return Err(OperationError::NotAuthenticated);
+                }
+            };
 
         // Load the account with its policy.
         let entry = self.qs_write.internal_search_uuid(account_uuid)?;

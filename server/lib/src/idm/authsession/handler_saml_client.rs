@@ -28,7 +28,9 @@ fn pem_to_base64(pem: &str) -> String {
         .join("")
 }
 
-fn build_service_provider(provider: &SamlClientProvider) -> Result<ServiceProvider, OperationError> {
+fn build_service_provider(
+    provider: &SamlClientProvider,
+) -> Result<ServiceProvider, OperationError> {
     let cert_b64 = pem_to_base64(&provider.idp_certificate);
 
     let key_descriptor = KeyDescriptor {
@@ -148,11 +150,7 @@ pub fn validate_saml_response(
         .flat_map(|stmt| stmt.attributes.iter())
         .filter_map(|attr| {
             let name = attr.name.clone()?;
-            let values: Vec<String> = attr
-                .values
-                .iter()
-                .filter_map(|v| v.value.clone())
-                .collect();
+            let values: Vec<String> = attr.values.iter().filter_map(|v| v.value.clone()).collect();
             Some((name, values))
         })
         .collect();

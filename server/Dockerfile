@@ -35,6 +35,7 @@ RUN \
         xmlsec1-devel \
         xmlsec1-openssl-devel \
         libxml2-devel \
+        libtool \
         pkgconf-pkg-config \
         rsync \
         findutils \

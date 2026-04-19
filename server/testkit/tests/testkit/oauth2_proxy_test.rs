@@ -69,9 +69,7 @@ async fn test_oauth2_auth_unauthenticated_json_accept(rsclient: &NetidmClient) {
 /// Valid bearer token → 202 with X-Auth-Request-User + X-Auth-Request-Preferred-Username +
 /// X-Forwarded-User headers present; username must be the short name (no @domain).
 #[netidmd_testkit::test]
-async fn test_oauth2_auth_authenticated_returns_202_with_identity_headers(
-    rsclient: &NetidmClient,
-) {
+async fn test_oauth2_auth_authenticated_returns_202_with_identity_headers(rsclient: &NetidmClient) {
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await
@@ -93,12 +91,18 @@ async fn test_oauth2_auth_authenticated_returns_202_with_identity_headers(
     assert_eq!(resp.status(), 202);
 
     let h = resp.headers();
-    assert!(h.get("x-auth-request-user").is_some(), "Missing X-Auth-Request-User");
+    assert!(
+        h.get("x-auth-request-user").is_some(),
+        "Missing X-Auth-Request-User"
+    );
     assert!(
         h.get("x-auth-request-preferred-username").is_some(),
         "Missing X-Auth-Request-Preferred-Username"
     );
-    assert!(h.get("x-forwarded-user").is_some(), "Missing X-Forwarded-User");
+    assert!(
+        h.get("x-forwarded-user").is_some(),
+        "Missing X-Forwarded-User"
+    );
 
     let user = h["x-auth-request-user"].to_str().unwrap();
     assert!(
@@ -127,7 +131,9 @@ async fn test_oauth2_auth_no_email_header_absent(rsclient: &NetidmClient) {
         .await
         .expect("Failed to set password");
 
-    let user_client = rsclient.new_session().expect("Failed to create new session");
+    let user_client = rsclient
+        .new_session()
+        .expect("Failed to create new session");
     user_client
         .auth_simple_password(username, password)
         .await
@@ -178,7 +184,9 @@ async fn test_oauth2_auth_groups_header_present_when_member(rsclient: &NetidmCli
         .await
         .expect("Failed to add user to group");
 
-    let user_client = rsclient.new_session().expect("Failed to create new session");
+    let user_client = rsclient
+        .new_session()
+        .expect("Failed to create new session");
     user_client
         .auth_simple_password(username, password)
         .await
@@ -252,7 +260,9 @@ async fn test_oauth2_userinfo_authenticated_full_body(rsclient: &NetidmClient) {
         .await
         .expect("Failed to set password");
 
-    let user_client = rsclient.new_session().expect("Failed to create new session");
+    let user_client = rsclient
+        .new_session()
+        .expect("Failed to create new session");
     user_client
         .auth_simple_password(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_PASSWORD)
         .await
@@ -303,7 +313,9 @@ async fn test_oauth2_userinfo_no_email_field_absent(rsclient: &NetidmClient) {
         .await
         .expect("Failed to set password");
 
-    let user_client = rsclient.new_session().expect("Failed to create new session");
+    let user_client = rsclient
+        .new_session()
+        .expect("Failed to create new session");
     user_client
         .auth_simple_password(username, password)
         .await
@@ -408,7 +420,10 @@ async fn test_oauth2_sign_out_protocol_relative_rd_rejected(rsclient: &NetidmCli
         .get("location")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
-    assert_eq!(location, "/ui/login", "Protocol-relative rd must be rejected");
+    assert_eq!(
+        location, "/ui/login",
+        "Protocol-relative rd must be rejected"
+    );
 }
 
 /// Valid session + sign-out → bearer cookie cleared (`Max-Age=0`).

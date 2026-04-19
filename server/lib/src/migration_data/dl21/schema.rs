@@ -37,7 +37,8 @@ pub static SCHEMA_ATTR_OAUTH2_JWKS_URI_DL21: LazyLock<SchemaAttribute> =
     });
 
 /// OAuth2 client class updated for DL21: adds `OAuth2Issuer` and `OAuth2JwksUri` to `systemmay`.
-pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL21: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL21: LazyLock<SchemaClass> = LazyLock::new(|| {
+    SchemaClass {
     uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
     name: EntryClass::OAuth2Client.into(),
     description:
@@ -64,4 +65,5 @@ pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL21: LazyLock<SchemaClass> = LazyLock::ne
         Attribute::OAuth2JwksUri,
     ],
     ..Default::default()
+}
 });

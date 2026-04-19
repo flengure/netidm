@@ -47,7 +47,11 @@ pub fn phase_5_builtin_admin_entries(
 pub fn phase_6_builtin_non_admin_entries(
 ) -> Result<Vec<EntryInitNew>, netidm_proto::internal::OperationError> {
     let mut entries = super::dl21::phase_6_builtin_non_admin_entries()?;
-    entries.push(access::IDM_GROUP_SAML_CLIENT_ADMINS_DL22.clone().try_into()?);
+    entries.push(
+        access::IDM_GROUP_SAML_CLIENT_ADMINS_DL22
+            .clone()
+            .try_into()?,
+    );
     Ok(entries)
 }
 

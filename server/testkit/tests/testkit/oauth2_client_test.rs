@@ -4,7 +4,7 @@
 //! These tests spin up a tiny in-process axum HTTP server to serve mock discovery documents,
 //! then exercise `idm_oauth2_client_create_oidc` against a real netidmd instance.
 
-use axum::{Json, Router, http::StatusCode, response::IntoResponse, routing::get};
+use axum::{http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 
 use serde_json::json;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
@@ -14,18 +14,20 @@ use netidmd_testkit::{test, ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 
 /// Bind a listener on a random port and return it together with its base URL.
 async fn bind_random() -> (tokio::net::TcpListener, Url) {
-    let listener = tokio::net::TcpListener::bind(
-        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0),
-    )
-    .await
-    .expect("Failed to bind mock server");
+    let listener =
+        tokio::net::TcpListener::bind(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0))
+            .await
+            .expect("Failed to bind mock server");
     let port = listener.local_addr().expect("no local addr").port();
     let url = Url::parse(&format!("http://127.0.0.1:{port}")).expect("invalid URL");
     (listener, url)
 }
 
 /// Serve `doc` forever from `listener` as the OIDC discovery endpoint.
-fn serve_discovery(listener: tokio::net::TcpListener, doc: serde_json::Value) -> tokio::task::JoinHandle<()> {
+fn serve_discovery(
+    listener: tokio::net::TcpListener,
+    doc: serde_json::Value,
+) -> tokio::task::JoinHandle<()> {
     let app = Router::new().route(
         "/.well-known/openid-configuration",
         get(move || {
@@ -102,7 +104,9 @@ async fn tk_test_idm_oauth2_client_create_oidc_success(rsclient: &netidm_client:
 
 /// (b) Discovery URL returns 404 → error returned, no entry created.
 #[test]
-async fn tk_test_idm_oauth2_client_create_oidc_discovery_404(rsclient: &netidm_client::NetidmClient) {
+async fn tk_test_idm_oauth2_client_create_oidc_discovery_404(
+    rsclient: &netidm_client::NetidmClient,
+) {
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await

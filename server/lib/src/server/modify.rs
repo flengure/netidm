@@ -264,8 +264,7 @@ impl QueryServerWriteTransaction<'_> {
                 .zip(pre_candidates.iter().map(|e| e.as_ref()))
                 .any(|(post, pre)| {
                     post.attribute_equality(Attribute::Class, &EntryClass::SamlClient.into())
-                        || pre
-                            .attribute_equality(Attribute::Class, &EntryClass::SamlClient.into())
+                        || pre.attribute_equality(Attribute::Class, &EntryClass::SamlClient.into())
                 })
         {
             self.changed_flags.insert(ChangeFlag::SAML_CLIENT)

@@ -41,7 +41,11 @@ pub fn phase_6_builtin_non_admin_entries(
 
 pub fn phase_7_builtin_access_control_profiles() -> Vec<EntryInitNew> {
     let mut acps = super::dl18::phase_7_builtin_access_control_profiles();
-    acps.push(IDM_ACP_SYSTEM_CONFIG_SKIP_AUTH_ROUTE_MANAGE_DL19.clone().into());
+    acps.push(
+        IDM_ACP_SYSTEM_CONFIG_SKIP_AUTH_ROUTE_MANAGE_DL19
+            .clone()
+            .into(),
+    );
     acps
 }
 

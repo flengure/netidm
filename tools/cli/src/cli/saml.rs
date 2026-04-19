@@ -1,6 +1,6 @@
+use crate::NetidmClientParser;
 use crate::OpType;
 use crate::{handle_client_error, SamlClientOpt};
-use crate::NetidmClientParser;
 use netidm_client::saml::SamlClientConfig;
 use std::fs;
 

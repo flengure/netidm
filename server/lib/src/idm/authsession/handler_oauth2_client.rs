@@ -183,9 +183,7 @@ impl CredHandlerOAuth2Client {
 
         if self.jit_provisioning {
             // OIDC path: verify id_token via JWKS when jwks_uri is configured.
-            if let (Some(id_token), Some(ref jwks_url)) =
-                (&response.id_token, &self.jwks_uri)
-            {
+            if let (Some(id_token), Some(ref jwks_url)) = (&response.id_token, &self.jwks_uri) {
                 return CredState::External(AuthExternal::OAuth2JwksRequest {
                     jwks_url: jwks_url.clone(),
                     id_token: id_token.clone(),

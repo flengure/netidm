@@ -104,11 +104,7 @@ impl ProviderInitiatedSession {
     /// Process an incoming OAuth2 credential step for this provider-initiated session.
     ///
     /// Returns the next `AuthState` to drive the view layer's exchange loop.
-    pub(crate) fn validate(
-        &mut self,
-        cred: &AuthCredential,
-        _current_time: Duration,
-    ) -> AuthState {
+    pub(crate) fn validate(&mut self, cred: &AuthCredential, _current_time: Duration) -> AuthState {
         match &self.state {
             ProviderSessionState::AwaitingCode => match cred {
                 AuthCredential::OAuth2AuthorisationResponse { code, state } => {
@@ -127,26 +123,34 @@ impl ProviderInitiatedSession {
                     };
                     let request = AccessTokenRequest::from(grant);
                     self.state = ProviderSessionState::AwaitingToken;
-                    AuthState::External(crate::idm::authentication::AuthExternal::OAuth2AccessTokenRequest {
-                        token_url: self.token_endpoint.clone(),
-                        client_id: self.client_id.clone(),
-                        client_secret: self.client_basic_secret.clone(),
-                        request,
-                    })
+                    AuthState::External(
+                        crate::idm::authentication::AuthExternal::OAuth2AccessTokenRequest {
+                            token_url: self.token_endpoint.clone(),
+                            client_id: self.client_id.clone(),
+                            client_secret: self.client_basic_secret.clone(),
+                            request,
+                        },
+                    )
                 }
-                _ => AuthState::Denied("unexpected credential type in provider session".to_string()),
+                _ => {
+                    AuthState::Denied("unexpected credential type in provider session".to_string())
+                }
             },
             ProviderSessionState::AwaitingToken => match cred {
                 AuthCredential::OAuth2AccessTokenResponse { response } => {
                     self.process_token_response(response, _current_time)
                 }
-                _ => AuthState::Denied("unexpected credential type in provider session".to_string()),
+                _ => {
+                    AuthState::Denied("unexpected credential type in provider session".to_string())
+                }
             },
             ProviderSessionState::AwaitingUserinfo => match cred {
                 AuthCredential::OAuth2UserinfoResponse { body } => {
                     self.process_userinfo_response(body)
                 }
-                _ => AuthState::Denied("unexpected credential type in provider session".to_string()),
+                _ => {
+                    AuthState::Denied("unexpected credential type in provider session".to_string())
+                }
             },
         }
     }
@@ -194,7 +198,10 @@ impl ProviderInitiatedSession {
         }
     }
 
-    fn extract_claims_from_response(&self, response: &AccessTokenResponse) -> Option<ExternalUserClaims> {
+    fn extract_claims_from_response(
+        &self,
+        response: &AccessTokenResponse,
+    ) -> Option<ExternalUserClaims> {
         use base64::{engine::general_purpose, Engine as _};
 
         // Try id_token first (OIDC providers)
@@ -222,10 +229,7 @@ impl ProviderInitiatedSession {
             sub,
             email: v.get("email").and_then(|s| s.as_str()).map(str::to_string),
             email_verified: v.get("email_verified").and_then(|b| b.as_bool()),
-            display_name: v
-                .get("name")
-                .and_then(|s| s.as_str())
-                .map(str::to_string),
+            display_name: v.get("name").and_then(|s| s.as_str()).map(str::to_string),
             username_hint: v
                 .get("login")
                 .or_else(|| v.get("preferred_username"))

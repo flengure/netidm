@@ -160,7 +160,8 @@ pub static IDM_ACP_SYSTEM_CONFIG_SKIP_AUTH_ROUTE_MANAGE_DL19: LazyLock<BuiltinAc
         ],
         name: "idm_acp_system_config_skip_auth_route_manage",
         uuid: UUID_IDM_ACP_SYSTEM_CONFIG_SKIP_AUTH_ROUTE_MANAGE_DL19,
-        description: "Builtin IDM Control for managing skip-auth route rules in the forward auth gate",
+        description:
+            "Builtin IDM Control for managing skip-auth route rules in the forward auth gate",
         receiver: BuiltinAcpReceiver::Group(vec![UUID_DOMAIN_ADMINS]),
         target: BuiltinAcpTarget::Filter(ProtoFilter::And(vec![
             ProtoFilter::Eq(

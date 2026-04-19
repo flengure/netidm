@@ -1646,7 +1646,9 @@ impl AuthSession {
                 // We need to actually work this out better, and then
                 // pass it to to_userauthtoken
                 let scope = match auth_type {
-                    AuthType::Anonymous | AuthType::OAuth2Trust | AuthType::SamlFederated => SessionScope::ReadOnly,
+                    AuthType::Anonymous | AuthType::OAuth2Trust | AuthType::SamlFederated => {
+                        SessionScope::ReadOnly
+                    }
                     AuthType::GeneratedPassword => SessionScope::ReadWrite,
                     AuthType::Password
                     | AuthType::PasswordTotp
@@ -3669,8 +3671,11 @@ mod tests {
     fn test_idm_authsession_oauth2_client_jwks_request_emitted() {
         sketching::test_init();
         // Provider with jwks_uri + id_token in response → session emits OAuth2JwksRequest.
-        let mut provider =
-            OAuth2ClientProvider::new_test("oidc_provider", "https://issuer.example.com", ["openid"]);
+        let mut provider = OAuth2ClientProvider::new_test(
+            "oidc_provider",
+            "https://issuer.example.com",
+            ["openid"],
+        );
         provider.jit_provisioning = true;
         provider.jwks_uri = Some(
             Url::parse("https://issuer.example.com/.well-known/jwks.json")
@@ -3723,9 +3728,8 @@ mod tests {
         let mut provider =
             OAuth2ClientProvider::new_test("github_provider", "https://github.com", ["read:user"]);
         provider.jit_provisioning = true;
-        provider.userinfo_endpoint = Some(
-            Url::parse("https://api.github.com/user").expect("invalid test URL"),
-        );
+        provider.userinfo_endpoint =
+            Some(Url::parse("https://api.github.com/user").expect("invalid test URL"));
 
         let current_time = duration_from_epoch_now();
         let webauthn = create_webauthn();
@@ -3769,8 +3773,11 @@ mod tests {
     fn test_idm_authsession_oauth2_client_jwks_token_valid_claims() {
         sketching::test_init();
         // Inject OAuth2JwksTokenResponse with valid claims → ProvisioningRequired.
-        let mut provider =
-            OAuth2ClientProvider::new_test("oidc_provider", "https://issuer.example.com", ["openid"]);
+        let mut provider = OAuth2ClientProvider::new_test(
+            "oidc_provider",
+            "https://issuer.example.com",
+            ["openid"],
+        );
         provider.jit_provisioning = true;
         provider.jwks_uri = Some(
             Url::parse("https://issuer.example.com/.well-known/jwks.json")
@@ -3822,8 +3829,11 @@ mod tests {
     fn test_idm_authsession_oauth2_client_jwks_token_missing_sub_denied() {
         sketching::test_init();
         // Inject OAuth2JwksTokenResponse with claims missing `sub` → Denied.
-        let mut provider =
-            OAuth2ClientProvider::new_test("oidc_provider", "https://issuer.example.com", ["openid"]);
+        let mut provider = OAuth2ClientProvider::new_test(
+            "oidc_provider",
+            "https://issuer.example.com",
+            ["openid"],
+        );
         provider.jit_provisioning = true;
         provider.jwks_uri = Some(
             Url::parse("https://issuer.example.com/.well-known/jwks.json")
@@ -3875,8 +3885,11 @@ mod tests {
     fn test_idm_authsession_oauth2_client_jwks_token_invalid_json_denied() {
         sketching::test_init();
         // Inject OAuth2JwksTokenResponse with invalid JSON → Denied.
-        let mut provider =
-            OAuth2ClientProvider::new_test("oidc_provider", "https://issuer.example.com", ["openid"]);
+        let mut provider = OAuth2ClientProvider::new_test(
+            "oidc_provider",
+            "https://issuer.example.com",
+            ["openid"],
+        );
         provider.jit_provisioning = true;
         provider.jwks_uri = Some(
             Url::parse("https://issuer.example.com/.well-known/jwks.json")

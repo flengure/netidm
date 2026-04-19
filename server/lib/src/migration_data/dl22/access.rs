@@ -5,10 +5,10 @@ use crate::constants::{
 };
 use crate::prelude::*;
 
+pub(crate) use crate::migration_data::dl13::groups::BuiltinGroup;
 pub(crate) use crate::migration_data::dl21::access::{
     BuiltinAcp, BuiltinAcpReceiver, BuiltinAcpTarget,
 };
-pub(crate) use crate::migration_data::dl13::groups::BuiltinGroup;
 
 static FILTER_RECYCLED_OR_TOMBSTONE_DL22: LazyLock<ProtoFilter> = LazyLock::new(|| {
     ProtoFilter::Or(vec![
@@ -44,7 +44,8 @@ pub(crate) static IDM_ACP_SAML_CLIENT_ADMIN_DL22: LazyLock<BuiltinAcp> =
         ],
         name: "idm_acp_saml_client_admin",
         uuid: UUID_IDM_ACP_SAML_CLIENT_ADMIN,
-        description: "Builtin IDM Control for granting SAML identity provider administration rights.",
+        description:
+            "Builtin IDM Control for granting SAML identity provider administration rights.",
         receiver: BuiltinAcpReceiver::Group(vec![UUID_IDM_SAML_CLIENT_ADMINS, UUID_SYSTEM_ADMINS]),
         target: BuiltinAcpTarget::Filter(ProtoFilter::And(vec![
             match_class_filter!(EntryClass::SamlClient),
