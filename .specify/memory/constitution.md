@@ -146,5 +146,8 @@ a principle MUST be justified in the implementation plan's Complexity Tracking t
    Do not rely on CI to catch formatting or lint errors.
 5. **Every release MUST have release notes.** Summarise new features, bug fixes, and breaking
    changes since the previous tag. A release with no notes MUST NOT be published.
+6. **Always use `scripts/bump-version.sh <version>` to change the version.** Never edit version
+   strings manually — the script updates every location atomically (workspace package, internal
+   dep pins, sub-crate pins, Cargo.lock). Manual edits will miss locations and break CI.
 
 **Version**: 1.3.0 | **Ratified**: 2026-04-16 | **Last Amended**: 2026-04-19

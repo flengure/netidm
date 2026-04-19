@@ -62,11 +62,11 @@ Rust (stable, current toolchain — check `rust-toolchain.toml`): Follow standar
   to find the current highest tag before deciding the next version. A tag without a GitHub release
   is still a tag — do not reuse it, do not ignore it.
 
-- **Synchronize `Cargo.toml` version with the release tag before tagging.**
-  Also update all internal workspace dep version pins (e.g. `version = "=X.Y.Z-dev"` in
-  `[workspace.dependencies]` and any per-crate `Cargo.toml` files that pin internal crates).
-  Before creating tag `v0.1.X`: set `version = "0.1.X"` everywhere, commit, tag, push.
-  After release: bump to `0.1.(X+1)-dev` and commit.
+- **Always use `scripts/bump-version.sh <version>` to change the version.**
+  It updates every location atomically (workspace package, internal dep pins, sub-crate pins,
+  Cargo.lock). Never edit version strings manually — you will miss a location.
+  Before tagging `v0.1.X`: run `./scripts/bump-version.sh 0.1.X`, commit, tag, push.
+  After release: run `./scripts/bump-version.sh 0.1.(X+1)-dev`, commit, push.
 
 - **Always write release notes before tagging.** The `release.yml` workflow uses
   `generate_release_notes: true` (auto-generated from commits). Before tagging, ensure every
