@@ -30,6 +30,8 @@ jobs:
             libsystemd-dev \
             libtss2-dev \
             libudev-dev \
+            libxmlsec1-dev \
+            libxml2-dev \
             pkg-config \
             tpm-udev
       - name: "Run clippy"

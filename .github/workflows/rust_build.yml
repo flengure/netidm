@@ -35,7 +35,10 @@ jobs:
             libpam0g-dev \
             libudev-dev \
             libssl-dev \
-            libsystemd-dev
+            libsystemd-dev \
+            libxmlsec1-dev \
+            libxml2-dev \
+            pkg-config
 
       - name: "Build the workspace"
         run: cargo build --locked --workspace
@@ -79,7 +82,10 @@ jobs:
             libpam0g-dev \
             libudev-dev \
             libssl-dev \
-            libsystemd-dev
+            libsystemd-dev \
+            libxmlsec1-dev \
+            libxml2-dev \
+            pkg-config
 
       - name: "Build the workspace"
         run: cargo build --locked --workspace
@@ -119,6 +125,9 @@ jobs:
             libudev-dev \
             libssl-dev \
             libsystemd-dev \
+            libxmlsec1-dev \
+            libxml2-dev \
+            pkg-config \
             ripgrep
       - name: "Run the release build test script"
         env:
