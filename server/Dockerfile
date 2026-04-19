@@ -32,6 +32,9 @@ RUN \
         pam-devel \
         sqlite3-devel \
         systemd-devel \
+        libxmlsec1-devel \
+        libxml2-devel \
+        pkg-config \
         rsync \
         findutils \
         which
