@@ -85,7 +85,7 @@ jobs:
       - docs_main
     runs-on: ubuntu-latest
     # yamllint disable-line rule:line-length
-    if: ${{ github.ref == 'refs/heads/main' && github.repository == 'netidm/netidm' }}
+    if: ${{ github.ref == 'refs/heads/main' && github.repository == 'flengure/netidm' }}
     steps:
       - uses: actions/checkout@v6
         with:
