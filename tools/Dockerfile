@@ -29,6 +29,10 @@ RUN \
         pam-devel \
         libudev-devel \
         sqlite3-devel \
+        xmlsec1-devel \
+        xmlsec1-openssl-devel \
+        libxml2-devel \
+        pkgconf-pkg-config \
         rsync
 
 COPY . /usr/src/netidm
