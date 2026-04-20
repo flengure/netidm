@@ -8,6 +8,57 @@ use std::fmt;
 // I'm pretty sure this can preserve query strings if we wanted to stash info or flag things?
 pub const OAUTH2_CLIENT_AUTHORISATION_RESPONSE_PATH: &str = "/ui/login/oauth2_landing";
 
+/// Per-connector account-linking key selector (DL24+).
+///
+/// Controls which claim from the upstream identity is matched against existing local
+/// Person entries when deciding whether to link an inbound login or JIT-create a new
+/// account.
+///
+/// - `Email` — match `claims.email` against `Attribute::Mail` (pre-DL24 default).
+/// - `Username` — match `claims.username_hint` against `Attribute::Name`.
+/// - `Id` — match `claims.sub` against `Attribute::OAuth2AccountUniqueUserId` restricted
+///   to this provider (immutable; matches only users already provisioned against this
+///   connector, so first-time logins fall through to JIT).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LinkBy {
+    Email,
+    Username,
+    Id,
+}
+
+impl Default for LinkBy {
+    fn default() -> Self {
+        LinkBy::Email
+    }
+}
+
+impl LinkBy {
+    /// Canonical string form for storage in the `oauth2_link_by` attribute.
+    ///
+    /// Also consumed by the admin CLI when echoing back a `set-link-by` operation
+    /// (see `netidm system oauth2-client set-link-by`). The `allow(dead_code)` is a
+    /// placeholder until that CLI path lands in this PR.
+    #[allow(dead_code)]
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            LinkBy::Email => "email",
+            LinkBy::Username => "username",
+            LinkBy::Id => "id",
+        }
+    }
+
+    /// Parse strictly; returns `None` on an unknown value. Used by CLI / API input
+    /// validation where we want to reject garbage rather than silently default.
+    pub fn from_str_strict(s: &str) -> Option<Self> {
+        match s {
+            "email" => Some(LinkBy::Email),
+            "username" => Some(LinkBy::Username),
+            "id" => Some(LinkBy::Id),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct OAuth2ClientProvider {
     pub(crate) name: String,
@@ -25,6 +76,9 @@ pub struct OAuth2ClientProvider {
     pub(crate) jit_provisioning: bool,
     /// Effective email-link-accounts setting: per-provider if set, otherwise global domain default.
     pub(crate) email_link_accounts: bool,
+    /// Per-connector account-linking key selector (DL24+). Defaults to `LinkBy::Email` when
+    /// the `oauth2_link_by` attribute is absent, preserving pre-DL24 behaviour.
+    pub(crate) link_by: LinkBy,
     /// Optional logo image URL shown on the SSO login button (DL20+).
     pub(crate) logo_uri: Option<Url>,
     /// OIDC issuer URL, set when this provider was configured via OIDC discovery (DL21+).
@@ -84,6 +138,7 @@ impl OAuth2ClientProvider {
             userinfo_endpoint: None,
             jit_provisioning: false,
             email_link_accounts: false,
+            link_by: LinkBy::default(),
             logo_uri: None,
             issuer: None,
             jwks_uri: None,
@@ -166,6 +221,21 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .get_ava_single_bool(Attribute::OAuth2EmailLinkAccounts)
                 .unwrap_or(global_email_link_accounts);
 
+            let link_by = provider_entry
+                .get_ava_single_utf8(Attribute::OAuth2LinkBy)
+                .map(|s| {
+                    LinkBy::from_str_strict(s).unwrap_or_else(|| {
+                        warn!(
+                            ?uuid,
+                            value = %s,
+                            "OAuth2 provider has an unrecognised oauth2_link_by value; \
+                             falling back to LinkBy::Email"
+                        );
+                        LinkBy::Email
+                    })
+                })
+                .unwrap_or_default();
+
             let logo_uri = provider_entry
                 .get_ava_single_url(Attribute::OAuth2ClientLogoUri)
                 .cloned();
@@ -211,6 +281,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 userinfo_endpoint,
                 jit_provisioning,
                 email_link_accounts,
+                link_by,
                 logo_uri,
                 issuer,
                 jwks_uri,

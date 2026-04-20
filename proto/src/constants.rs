@@ -200,6 +200,8 @@ pub const ATTR_OAUTH2_CLAIM_MAP_EMAIL: &str = "oauth2_claim_map_email";
 // DL18 — OAuth2 email-based account linking
 pub const ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS: &str = "oauth2_email_link_accounts";
 pub const ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS: &str = "oauth2_domain_email_link_accounts";
+// DL24 — OAuth2 per-connector link_by selector (email | username | id)
+pub const ATTR_OAUTH2_LINK_BY: &str = "oauth2_link_by";
 // DL20 — OAuth2 client logo URI
 pub const ATTR_OAUTH2_CLIENT_LOGO_URI: &str = "oauth2_client_logo_uri";
 // DL21 — Generic OIDC upstream connector

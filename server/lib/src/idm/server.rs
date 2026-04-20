@@ -2502,32 +2502,107 @@ impl IdmServerProxyWriteTransaction<'_> {
         Ok(new_account_uuid)
     }
 
-    /// Link an existing local Person account to an OAuth2 provider by verified email.
+    /// Link an existing local Person account to an OAuth2 provider using the provider's
+    /// configured `link_by` strategy.
     ///
-    /// Searches for a Person entry whose `mail` attribute matches the verified email from the
-    /// provider, then writes the three OAuth2Account linking attributes onto that entry.
-    /// Returns `Ok(Some(uuid))` on success, `Ok(None)` if no matching account is found,
+    /// Dispatches on the connector's `LinkBy` setting (DL24+):
+    /// - `Email`: match `claims.email` against `Attribute::Mail` (pre-DL24 default).
+    /// - `Username`: match `claims.username_hint` against `Attribute::Name` (iname).
+    /// - `Id`: match `claims.sub` against `Attribute::OAuth2AccountUniqueUserId` scoped
+    ///   to this provider — used by sync-enabled connectors where the numeric upstream
+    ///   id is the stable identity and first-time logins intentionally fall through to
+    ///   JIT (after which subsequent logins match via this branch).
+    ///
+    /// When a match is found, writes the three `OAuth2Account` linking attributes onto
+    /// the target entry. Returns `Ok(Some(uuid))` on success, `Ok(None)` if no match,
     /// or an error if the write fails.
+    ///
+    /// Pre-DL24 callers (before the `link_by` attribute existed on the provider entry)
+    /// get the default `LinkBy::Email` behaviour via the `OAuth2ClientProvider` reload
+    /// path.
     pub fn find_and_link_account_by_email(
         &mut self,
         provider_uuid: Uuid,
         claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
     ) -> Result<Option<Uuid>, OperationError> {
-        let Some(ref email) = claims.email else {
-            return Ok(None);
+        self.find_and_link_account(provider_uuid, claims)
+    }
+
+    /// Link an inbound upstream login to a local Person, dispatching on the provider's
+    /// configured `link_by`. See [`Self::find_and_link_account_by_email`] for the
+    /// per-strategy match semantics.
+    pub fn find_and_link_account(
+        &mut self,
+        provider_uuid: Uuid,
+        claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+    ) -> Result<Option<Uuid>, OperationError> {
+        use crate::idm::oauth2_client::LinkBy;
+
+        // Read the connector's cached `link_by`. If the provider isn't loaded (which should
+        // not happen in normal flows — this function is called from an authenticated
+        // provider-initiated session), fall back to the pre-DL24 email behaviour.
+        let link_by = self
+            .oauth2_client_providers
+            .get(&provider_uuid)
+            .map(|p| p.link_by)
+            .unwrap_or(LinkBy::Email);
+
+        let target_uuid = match link_by {
+            LinkBy::Email => {
+                // Security guard (pre-DL24 semantics preserved): an auto-link by email
+                // only proceeds when the upstream asserts `email_verified = true`. An
+                // unverified email is the classic account-takeover vector — the user must
+                // log in locally and attach the upstream identity from their profile
+                // instead.
+                if claims.email_verified != Some(true) {
+                    return Ok(None);
+                }
+                let Some(ref email) = claims.email else {
+                    return Ok(None);
+                };
+                let mut matches = self.qs_write.internal_search(filter!(f_and!([
+                    f_eq(Attribute::Mail, PartialValue::EmailAddress(email.clone())),
+                    f_eq(Attribute::Class, EntryClass::Person.into()),
+                ])))?;
+                if matches.is_empty() {
+                    return Ok(None);
+                }
+                // First match — mail is effectively unique per Person in normal deployments.
+                matches.remove(0).get_uuid()
+            }
+            LinkBy::Username => {
+                let Some(ref username) = claims.username_hint else {
+                    return Ok(None);
+                };
+                let mut matches = self.qs_write.internal_search(filter!(f_and!([
+                    f_eq(Attribute::Name, PartialValue::new_iname(username)),
+                    f_eq(Attribute::Class, EntryClass::Person.into()),
+                ])))?;
+                if matches.is_empty() {
+                    return Ok(None);
+                }
+                matches.remove(0).get_uuid()
+            }
+            LinkBy::Id => {
+                // Scope strictly to this provider — a given `sub` is only meaningful
+                // within the issuing provider's namespace.
+                let mut matches = self.qs_write.internal_search(filter!(f_and!([
+                    f_eq(
+                        Attribute::OAuth2AccountProvider,
+                        PartialValue::Refer(provider_uuid)
+                    ),
+                    f_eq(
+                        Attribute::OAuth2AccountUniqueUserId,
+                        PartialValue::new_utf8s(&claims.sub)
+                    ),
+                    f_eq(Attribute::Class, EntryClass::Person.into()),
+                ])))?;
+                if matches.is_empty() {
+                    return Ok(None);
+                }
+                matches.remove(0).get_uuid()
+            }
         };
-
-        let mut matches = self.qs_write.internal_search(filter!(f_and!([
-            f_eq(Attribute::Mail, PartialValue::EmailAddress(email.clone())),
-            f_eq(Attribute::Class, EntryClass::Person.into()),
-        ])))?;
-
-        if matches.is_empty() {
-            return Ok(None);
-        }
-
-        // Use the first match (mail is unique-per-person in normal deployments).
-        let target_uuid = matches.remove(0).get_uuid();
 
         let cred_id = Uuid::new_v4();
 
@@ -2550,7 +2625,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 &modlist,
             )
             .map_err(|e| {
-                admin_error!(?e, "find_and_link_account_by_email modify failed");
+                admin_error!(?e, "find_and_link_account modify failed");
                 e
             })?;
 

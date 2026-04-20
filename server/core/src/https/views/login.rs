@@ -1470,12 +1470,12 @@ async fn view_login_step(
                 debug!("🧩 -> AuthState::ProvisioningRequired");
                 jar = cookies::destroy(jar, COOKIE_AUTH_SESSION_ID, &state);
 
-                // Attempt email-based account linking when the provider and domain both permit
-                // it and the provider has asserted the email is verified.
-                if email_link_accounts
-                    && claims.email_verified == Some(true)
-                    && claims.email.is_some()
-                {
+                // Attempt account linking when the provider (or domain default) permits it.
+                // The connector's `link_by` setting (DL24+) inside `find_and_link_account`
+                // decides which claim is matched (email / username / id) and enforces the
+                // security precondition appropriate to that strategy (e.g. `email_verified`
+                // for the Email branch).
+                if email_link_accounts {
                     match state
                         .qe_w_ref
                         .handle_link_account_by_email(
@@ -1489,18 +1489,19 @@ async fn view_login_step(
                         Ok(Some(_linked_uuid)) => {
                             security_info!(
                                 %provider_uuid,
-                                "OAuth2 email-link: linked existing account — redirecting to login"
+                                "OAuth2 account-link: linked existing account — redirecting to login"
                             );
                             break Redirect::to("/ui/login").into_response();
                         }
                         Ok(None) => {
-                            // No existing account with that email; fall through to provision.
-                            debug!("OAuth2 email-link: no matching account found, proceeding to provision");
+                            // No existing account matched under the connector's link_by;
+                            // fall through to provision.
+                            debug!("OAuth2 account-link: no matching account found, proceeding to provision");
                         }
                         Err(e) => {
                             warn!(
                                 ?e,
-                                "OAuth2 email-link: link attempt failed, proceeding to provision"
+                                "OAuth2 account-link: link attempt failed, proceeding to provision"
                             );
                         }
                     }

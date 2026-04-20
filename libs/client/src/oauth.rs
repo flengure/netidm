@@ -8,6 +8,7 @@ use netidm_proto::constants::{
     ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
     ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_ISSUER,
     ATTR_OAUTH2_JIT_PROVISIONING, ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE,
+    ATTR_OAUTH2_LINK_BY,
     ATTR_OAUTH2_PREFER_SHORT_USERNAME, ATTR_OAUTH2_REQUEST_SCOPES, ATTR_OAUTH2_RS_BASIC_SECRET,
     ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING, ATTR_OAUTH2_STRICT_REDIRECT_URI,
     ATTR_OAUTH2_TOKEN_ENDPOINT, ATTR_OAUTH2_USERINFO_ENDPOINT,
@@ -764,6 +765,25 @@ impl NetidmClient {
             ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS.to_string(),
             vec!["false".to_string()],
         );
+        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry)
+            .await
+    }
+
+    /// Set the per-connector `link_by` selector (DL24+) on an upstream OAuth2
+    /// client. `link_by` must be one of `"email"`, `"username"`, `"id"`; the
+    /// server rejects any other value. See `LinkBy` in `netidmd_lib` for the
+    /// per-strategy match semantics.
+    pub async fn idm_oauth2_client_set_link_by(
+        &self,
+        id: &str,
+        link_by: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry
+            .attrs
+            .insert(ATTR_OAUTH2_LINK_BY.to_string(), vec![link_by.to_string()]);
         self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry)
             .await
     }

@@ -465,6 +465,8 @@ pub const UUID_SCHEMA_ATTR_SAML_JIT_PROVISIONING: Uuid =
     uuid!("00000000-0000-0000-0000-ffff00000253");
 // DL22 — SAML 2.0 client entry class
 pub const UUID_SCHEMA_CLASS_SAML_CLIENT: Uuid = uuid!("00000000-0000-0000-0000-ffff00000254");
+// DL24 — OAuth2 per-connector link_by selector (email | username | id)
+pub const UUID_SCHEMA_ATTR_OAUTH2_LINK_BY: Uuid = uuid!("00000000-0000-0000-0000-ffff00000255");
 
 // =====
 // Incorrectly name spaced.

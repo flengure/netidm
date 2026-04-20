@@ -1146,6 +1146,18 @@ pub enum Oauth2Opt {
         #[clap(name = "provider-claim")]
         provider_claim: String,
     },
+    /// Set the per-connector account-linking key selector. Valid values are
+    /// `email` (default; matches against local mail), `username` (matches the
+    /// upstream `preferred_username` / `login` against the local account name),
+    /// or `id` (matches the upstream subject identifier; recommended for
+    /// sync-enabled connectors such as GitHub with team-to-group sync).
+    #[clap(name = "set-link-by")]
+    SetLinkBy {
+        name: String,
+        /// One of: email, username, id
+        #[clap(name = "link-by")]
+        link_by: String,
+    },
 }
 
 #[derive(Args, Debug, Clone)]
