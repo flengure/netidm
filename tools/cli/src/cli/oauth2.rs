@@ -652,6 +652,62 @@ impl Oauth2Opt {
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
+            Oauth2Opt::AddGroupMapping {
+                name,
+                upstream,
+                netidm_group,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                let uuid =
+                    match crate::common::resolve_netidm_group_uuid(&client, netidm_group.as_str())
+                        .await
+                    {
+                        Ok(u) => u,
+                        Err(msg) => {
+                            opt.output_mode.print_message(format!("Error: {msg}"));
+                            return;
+                        }
+                    };
+                match client
+                    .idm_oauth2_client_add_group_mapping(name.as_str(), upstream.as_str(), uuid)
+                    .await
+                {
+                    Ok(_) => opt
+                        .output_mode
+                        .print_message(format!("added mapping: {upstream} -> {uuid}")),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::RemoveGroupMapping { name, upstream } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_oauth2_client_remove_group_mapping(name.as_str(), upstream.as_str())
+                    .await
+                {
+                    Ok(_) => opt
+                        .output_mode
+                        .print_message(format!("removed mapping: {upstream}")),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::ListGroupMappings { name } => {
+                let client = opt.to_client(OpType::Read).await;
+                match client
+                    .idm_oauth2_client_list_group_mappings(name.as_str())
+                    .await
+                {
+                    Ok(mappings) => {
+                        if mappings.is_empty() {
+                            opt.output_mode.print_message("(no mappings)");
+                        } else {
+                            for (upstream, uuid) in mappings {
+                                opt.output_mode.print_message(format!("{upstream}\t{uuid}"));
+                            }
+                        }
+                    }
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
         }
     }
 }

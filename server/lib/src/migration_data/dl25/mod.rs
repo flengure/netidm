@@ -2,10 +2,12 @@
 //!
 //! DL25 extends three schema attributes (all `Utf8String`, multi-value) and
 //! updates three classes' `systemmay` lists (`OAuth2Client`, `SamlClient`,
-//! `Person`). Every non-schema phase delegates to DL24 — no key providers,
-//! no system entries, no builtin admin/non-admin entries, no ACPs, no
-//! deletions.
+//! `Person`). It also updates the OAuth2 / SAML client admin ACPs to allow
+//! writing the new attributes (and `OAuth2LinkBy`, which was added in DL24
+//! but whose ACP entry was missed at the time). Every non-schema /
+//! non-access phase delegates to DL24.
 
+pub(crate) mod access;
 pub(crate) mod schema;
 
 #[cfg(test)]
@@ -53,7 +55,10 @@ pub fn phase_6_builtin_non_admin_entries(
 }
 
 pub fn phase_7_builtin_access_control_profiles() -> Vec<EntryInitNew> {
-    super::dl24::phase_7_builtin_access_control_profiles()
+    let mut acps = super::dl24::phase_7_builtin_access_control_profiles();
+    acps.push(access::IDM_ACP_OAUTH2_CLIENT_ADMIN_DL25.clone().into());
+    acps.push(access::IDM_ACP_SAML_CLIENT_ADMIN_DL25.clone().into());
+    acps
 }
 
 pub fn phase_8_delete_uuids() -> Vec<uuid::Uuid> {

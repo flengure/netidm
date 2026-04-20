@@ -1,6 +1,7 @@
 mod apidocs;
 mod domain;
 mod group;
+mod group_mapping_test;
 mod http_manifest;
 mod https_middleware;
 mod identity_verification_tests;

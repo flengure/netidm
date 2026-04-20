@@ -1,3 +1,4 @@
+use super::apidocs::response_schema::DefaultApiResponse;
 use super::errors::WebError;
 use super::middleware::KOpId;
 use super::v1::{json_rest_event_get, json_rest_event_post};
@@ -87,6 +88,73 @@ pub(crate) async fn saml_client_id_patch(
     state
         .qe_w_ref
         .handle_internalpatch(client_auth_info, filter, obj, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    post,
+    path = "/v1/saml_client/{name}/_group_mapping/{upstream}",
+    request_body=String,
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "saml",
+    operation_id = "saml_client_id_group_mapping_post"
+)]
+/// Add a group mapping to a SAML upstream client.
+///
+/// The request body is the netidm group UUID (as a JSON string). The server
+/// rejects the request with `OperationError::InvalidAttribute` if an existing
+/// mapping for the same `upstream` name already exists on the connector
+/// (FR-007a). The `upstream` name is taken verbatim from the URL path and may
+/// contain colons.
+pub(crate) async fn saml_client_id_group_mapping_post(
+    State(state): State<ServerState>,
+    Path((name, upstream)): Path<(String, String)>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(netidm_group_uuid): Json<String>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_group_mapping_add(
+            client_auth_info,
+            name,
+            upstream,
+            netidm_group_uuid,
+            kopid.eventid,
+        )
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/v1/saml_client/{name}/_group_mapping/{upstream}",
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "saml",
+    operation_id = "saml_client_id_group_mapping_delete"
+)]
+/// Remove a group mapping from a SAML upstream client.
+///
+/// If no mapping for `upstream` exists on the connector the request succeeds
+/// with no side effect (idempotent).
+pub(crate) async fn saml_client_id_group_mapping_delete(
+    State(state): State<ServerState>,
+    Path((name, upstream)): Path<(String, String)>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_group_mapping_remove(client_auth_info, name, upstream, kopid.eventid)
         .await
         .map(Json::from)
         .map_err(WebError::from)

@@ -489,3 +489,31 @@ pub(crate) fn try_expire_at_from_string(input: &str) -> Result<Option<String>, (
         }
     }
 }
+
+/// Resolve a netidm group identifier that may have been supplied as either a
+/// UUID or a group name. If `input` parses as a UUID, it is returned as-is.
+/// Otherwise, the server is queried for a group with that name, and its UUID
+/// is extracted from the returned entry.
+///
+/// Returns a human-readable error message suitable for printing to the
+/// operator on resolution failure.
+pub async fn resolve_netidm_group_uuid(
+    client: &NetidmClient,
+    input: &str,
+) -> Result<uuid::Uuid, String> {
+    if let Ok(uuid) = uuid::Uuid::parse_str(input) {
+        return Ok(uuid);
+    }
+    let entry = client
+        .idm_group_get(input)
+        .await
+        .map_err(|e| format!("failed to look up netidm group '{input}': {e:?}"))?
+        .ok_or_else(|| format!("no such netidm group: {input}"))?;
+    let uuid_str = entry
+        .attrs
+        .get(netidm_proto::constants::ATTR_UUID)
+        .and_then(|v| v.first())
+        .ok_or_else(|| format!("netidm group '{input}' has no uuid attribute"))?;
+    uuid::Uuid::parse_str(uuid_str)
+        .map_err(|e| format!("netidm group '{input}' has unparseable uuid '{uuid_str}': {e}"))
+}

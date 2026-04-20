@@ -1158,6 +1158,41 @@ pub enum Oauth2Opt {
         #[clap(name = "link-by")]
         link_by: String,
     },
+    /// Add a mapping from an upstream group name (as the IdP emits it) to a
+    /// netidm group. The netidm group may be supplied by name or by UUID; the
+    /// CLI resolves names to UUIDs before sending the mapping to the server.
+    /// Rejects duplicates for the same upstream name on the same connector.
+    #[clap(name = "add-group-mapping")]
+    AddGroupMapping {
+        /// OAuth2 upstream client name.
+        name: String,
+        /// Exact upstream group name (case-sensitive; may contain colons).
+        upstream: String,
+        /// Netidm group, either a group name or UUID.
+        #[clap(name = "netidm-group")]
+        netidm_group: String,
+    },
+    /// Remove a group mapping by its upstream name from an OAuth2 upstream
+    /// client. Idempotent: removing a mapping that is not present succeeds
+    /// with no side effect. Users who had memberships granted through the
+    /// removed mapping keep them until their next authentication through
+    /// this connector.
+    #[clap(name = "remove-group-mapping")]
+    RemoveGroupMapping {
+        /// OAuth2 upstream client name.
+        name: String,
+        /// Upstream group name of the mapping to remove.
+        upstream: String,
+    },
+    /// List all group mappings on an OAuth2 upstream client. Each line is
+    /// `<upstream>\t<netidm-group-uuid>`. Mappings whose target group has
+    /// been deleted are shown with the stored UUID; resolve them via
+    /// `group get <uuid>` to confirm.
+    #[clap(name = "list-group-mappings")]
+    ListGroupMappings {
+        /// OAuth2 upstream client name.
+        name: String,
+    },
 }
 
 #[derive(Args, Debug, Clone)]
@@ -1579,6 +1614,32 @@ pub enum SamlClientOpt {
         /// Path to the new IdP X.509 signing certificate (PEM)
         #[clap(long)]
         idp_cert: PathBuf,
+    },
+    /// Add a mapping from an upstream SAML group name to a netidm group.
+    /// The netidm group may be supplied by name or by UUID.
+    #[clap(name = "add-group-mapping")]
+    AddGroupMapping {
+        /// SAML upstream client name.
+        name: String,
+        /// Exact upstream group name (case-sensitive; may contain colons).
+        upstream: String,
+        /// Netidm group, either a group name or UUID.
+        #[clap(name = "netidm-group")]
+        netidm_group: String,
+    },
+    /// Remove a group mapping by its upstream name. Idempotent.
+    #[clap(name = "remove-group-mapping")]
+    RemoveGroupMapping {
+        /// SAML upstream client name.
+        name: String,
+        /// Upstream group name of the mapping to remove.
+        upstream: String,
+    },
+    /// List all group mappings on a SAML upstream client.
+    #[clap(name = "list-group-mappings")]
+    ListGroupMappings {
+        /// SAML upstream client name.
+        name: String,
     },
 }
 

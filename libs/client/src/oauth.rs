@@ -6,11 +6,12 @@ use netidm_proto::constants::{
     ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
     ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME, ATTR_OAUTH2_CLIENT_ID,
     ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
-    ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_ISSUER,
-    ATTR_OAUTH2_JIT_PROVISIONING, ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE,
-    ATTR_OAUTH2_LINK_BY, ATTR_OAUTH2_PREFER_SHORT_USERNAME, ATTR_OAUTH2_REQUEST_SCOPES,
-    ATTR_OAUTH2_RS_BASIC_SECRET, ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING,
-    ATTR_OAUTH2_STRICT_REDIRECT_URI, ATTR_OAUTH2_TOKEN_ENDPOINT, ATTR_OAUTH2_USERINFO_ENDPOINT,
+    ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS,
+    ATTR_OAUTH2_GROUP_MAPPING, ATTR_OAUTH2_ISSUER, ATTR_OAUTH2_JIT_PROVISIONING,
+    ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE, ATTR_OAUTH2_LINK_BY,
+    ATTR_OAUTH2_PREFER_SHORT_USERNAME, ATTR_OAUTH2_REQUEST_SCOPES, ATTR_OAUTH2_RS_BASIC_SECRET,
+    ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING, ATTR_OAUTH2_STRICT_REDIRECT_URI,
+    ATTR_OAUTH2_TOKEN_ENDPOINT, ATTR_OAUTH2_USERINFO_ENDPOINT,
 };
 use netidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin};
 use netidm_proto::v1::Entry;
@@ -20,6 +21,7 @@ use std::collections::BTreeMap;
 use time::format_description::well_known::Rfc3339;
 use time::OffsetDateTime;
 use url::Url;
+use uuid::Uuid;
 
 impl NetidmClient {
     // ==== Oauth2 resource server configuration
@@ -772,6 +774,9 @@ impl NetidmClient {
     /// client. `link_by` must be one of `"email"`, `"username"`, `"id"`; the
     /// server rejects any other value. See `LinkBy` in `netidmd_lib` for the
     /// per-strategy match semantics.
+    ///
+    /// Targets `/v1/oauth2/_client/{id}` (upstream clients). The RS-scoped
+    /// `/v1/oauth2/{id}` PATCH route does not match `OAuth2Client` entries.
     pub async fn idm_oauth2_client_set_link_by(
         &self,
         id: &str,
@@ -783,8 +788,73 @@ impl NetidmClient {
         entry
             .attrs
             .insert(ATTR_OAUTH2_LINK_BY.to_string(), vec![link_by.to_string()]);
-        self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry)
+        self.perform_patch_request(format!("/v1/oauth2/_client/{id}").as_str(), entry)
             .await
+    }
+
+    /// Add a mapping from an upstream group name to a netidm group UUID on an
+    /// OAuth2 upstream client connector. Stored as a single value in the
+    /// connector's `oauth2_group_mapping` attribute. The server rejects the
+    /// request if a mapping for the same `upstream` name already exists on
+    /// the connector (FR-007a).
+    pub async fn idm_oauth2_client_add_group_mapping(
+        &self,
+        id: &str,
+        upstream: &str,
+        netidm_group_uuid: Uuid,
+    ) -> Result<(), ClientError> {
+        let upstream_enc = urlencoding::encode(upstream);
+        self.perform_post_request(
+            format!("/v1/oauth2/_client/{id}/_group_mapping/{upstream_enc}").as_str(),
+            netidm_group_uuid.to_string(),
+        )
+        .await
+    }
+
+    /// Remove the group mapping for `upstream` from an OAuth2 upstream client.
+    /// Idempotent: removing a mapping that is not present succeeds with no
+    /// side effect. Users who had memberships granted through the removed
+    /// mapping keep them until their next authentication through this
+    /// connector (FR-007b).
+    pub async fn idm_oauth2_client_remove_group_mapping(
+        &self,
+        id: &str,
+        upstream: &str,
+    ) -> Result<(), ClientError> {
+        let upstream_enc = urlencoding::encode(upstream);
+        self.perform_delete_request(
+            format!("/v1/oauth2/_client/{id}/_group_mapping/{upstream_enc}").as_str(),
+        )
+        .await
+    }
+
+    /// List all upstream-to-netidm group mappings on an OAuth2 upstream
+    /// client. Returns pairs of `(upstream_name, netidm_group_uuid)` in the
+    /// order the server returns them (no ordering guarantee).
+    pub async fn idm_oauth2_client_list_group_mappings(
+        &self,
+        id: &str,
+    ) -> Result<Vec<(String, Uuid)>, ClientError> {
+        let entry: Option<Entry> = self
+            .perform_get_request(format!("/v1/oauth2/_client/{id}").as_str())
+            .await?;
+        let entry = entry.ok_or_else(|| {
+            ClientError::InvalidRequest(format!("no such OAuth2 upstream client: {id}"))
+        })?;
+        let raw = entry
+            .attrs
+            .get(ATTR_OAUTH2_GROUP_MAPPING)
+            .cloned()
+            .unwrap_or_default();
+        let mut out = Vec::with_capacity(raw.len());
+        for value in raw {
+            if let Some((upstream, uuid_str)) = value.rsplit_once(':') {
+                if let Ok(uuid) = Uuid::parse_str(uuid_str) {
+                    out.push((upstream.to_string(), uuid));
+                }
+            }
+        }
+        Ok(out)
     }
 
     pub async fn idm_oauth2_domain_enable_email_link_accounts(&self) -> Result<(), ClientError> {

@@ -1,6 +1,7 @@
 use crate::{ClientError, NetidmClient};
-use netidm_proto::constants::{ATTR_DISPLAYNAME, ATTR_NAME};
+use netidm_proto::constants::{ATTR_DISPLAYNAME, ATTR_NAME, ATTR_SAML_GROUP_MAPPING};
 use netidm_proto::v1::Entry;
+use uuid::Uuid;
 
 pub struct SamlClientConfig<'a> {
     pub name: &'a str,
@@ -102,5 +103,64 @@ impl NetidmClient {
         );
         self.perform_patch_request(format!("/v1/saml_client/{name}").as_str(), update)
             .await
+    }
+
+    /// Add a mapping from an upstream SAML group name to a netidm group UUID
+    /// on a SAML upstream client. Server rejects the request if a mapping
+    /// for the same `upstream` name already exists on the connector
+    /// (FR-007a).
+    pub async fn idm_saml_client_add_group_mapping(
+        &self,
+        name: &str,
+        upstream: &str,
+        netidm_group_uuid: Uuid,
+    ) -> Result<(), ClientError> {
+        let upstream_enc = urlencoding::encode(upstream);
+        self.perform_post_request(
+            format!("/v1/saml_client/{name}/_group_mapping/{upstream_enc}").as_str(),
+            netidm_group_uuid.to_string(),
+        )
+        .await
+    }
+
+    /// Remove the group mapping for `upstream` from a SAML upstream client.
+    /// Idempotent.
+    pub async fn idm_saml_client_remove_group_mapping(
+        &self,
+        name: &str,
+        upstream: &str,
+    ) -> Result<(), ClientError> {
+        let upstream_enc = urlencoding::encode(upstream);
+        self.perform_delete_request(
+            format!("/v1/saml_client/{name}/_group_mapping/{upstream_enc}").as_str(),
+        )
+        .await
+    }
+
+    /// List all upstream-to-netidm group mappings on a SAML upstream client.
+    pub async fn idm_saml_client_list_group_mappings(
+        &self,
+        name: &str,
+    ) -> Result<Vec<(String, Uuid)>, ClientError> {
+        let entry: Option<Entry> = self
+            .perform_get_request(format!("/v1/saml_client/{name}").as_str())
+            .await?;
+        let entry = entry.ok_or_else(|| {
+            ClientError::InvalidRequest(format!("no such SAML upstream client: {name}"))
+        })?;
+        let raw = entry
+            .attrs
+            .get(ATTR_SAML_GROUP_MAPPING)
+            .cloned()
+            .unwrap_or_default();
+        let mut out = Vec::with_capacity(raw.len());
+        for value in raw {
+            if let Some((upstream, uuid_str)) = value.rsplit_once(':') {
+                if let Ok(uuid) = Uuid::parse_str(uuid_str) {
+                    out.push((upstream.to_string(), uuid));
+                }
+            }
+        }
+        Ok(out)
     }
 }

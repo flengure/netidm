@@ -1985,4 +1985,259 @@ impl QueryServerWriteV1 {
 
         Ok(token)
     }
+
+    /// Add a group mapping (`<upstream>:<group-uuid>`) to an OAuth2 upstream
+    /// client. Rejects the operation if another mapping for the same
+    /// `upstream` name already exists on the connector (FR-007a).
+    ///
+    /// # Errors
+    /// * `OperationError::InvalidAttribute` — the supplied `netidm_group_uuid`
+    ///   is not a valid UUID, or a mapping for `upstream` already exists on
+    ///   this connector.
+    /// * `OperationError::NoMatchingEntries` — no OAuth2 upstream client with
+    ///   the given `client_name` exists.
+    /// * Other `OperationError` variants from the underlying search/modify.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_oauth2_client_group_mapping_add(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        upstream: String,
+        netidm_group_uuid: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        handle_group_mapping_add(
+            &self.idms,
+            client_auth_info,
+            EntryClass::OAuth2Client,
+            Attribute::OAuth2GroupMapping,
+            client_name,
+            upstream,
+            netidm_group_uuid,
+        )
+        .await
+    }
+
+    /// Remove a group mapping by upstream name from an OAuth2 upstream client.
+    /// If no mapping for `upstream` exists on the connector the call is a
+    /// successful no-op (FR-007b — eagerness deferred to login-time reconcile).
+    ///
+    /// # Errors
+    /// * `OperationError::NoMatchingEntries` — no OAuth2 upstream client with
+    ///   the given `client_name` exists.
+    /// * Other `OperationError` variants from the underlying search/modify.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_oauth2_client_group_mapping_remove(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        upstream: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        handle_group_mapping_remove(
+            &self.idms,
+            client_auth_info,
+            EntryClass::OAuth2Client,
+            Attribute::OAuth2GroupMapping,
+            client_name,
+            upstream,
+        )
+        .await
+    }
+
+    /// Add a group mapping (`<upstream>:<group-uuid>`) to a SAML upstream
+    /// client. Rejects the operation if another mapping for the same
+    /// `upstream` name already exists on the connector (FR-007a).
+    ///
+    /// # Errors
+    /// Mirrors `handle_oauth2_client_group_mapping_add`.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_group_mapping_add(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        upstream: String,
+        netidm_group_uuid: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        handle_group_mapping_add(
+            &self.idms,
+            client_auth_info,
+            EntryClass::SamlClient,
+            Attribute::SamlGroupMapping,
+            client_name,
+            upstream,
+            netidm_group_uuid,
+        )
+        .await
+    }
+
+    /// Remove a group mapping by upstream name from a SAML upstream client.
+    /// If no mapping for `upstream` exists on the connector the call is a
+    /// successful no-op (FR-007b).
+    ///
+    /// # Errors
+    /// Mirrors `handle_oauth2_client_group_mapping_remove`.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_group_mapping_remove(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        upstream: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        handle_group_mapping_remove(
+            &self.idms,
+            client_auth_info,
+            EntryClass::SamlClient,
+            Attribute::SamlGroupMapping,
+            client_name,
+            upstream,
+        )
+        .await
+    }
+}
+
+/// Shared implementation for the OAuth2 / SAML `add-group-mapping` handlers.
+///
+/// Encapsulates the identity validation, uniqueness check against the existing
+/// mapping values, and modify-append into one place. The variant is selected
+/// by `class` (`OAuth2Client` vs. `SamlClient`) and `attr`
+/// (`OAuth2GroupMapping` vs. `SamlGroupMapping`).
+async fn handle_group_mapping_add(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    class: EntryClass,
+    attr: Attribute,
+    client_name: String,
+    upstream: String,
+    netidm_group_uuid: String,
+) -> Result<(), OperationError> {
+    use std::str::FromStr;
+
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    // Validate the supplied UUID before we go any further — rejects early
+    // with a clear error instead of storing garbage.
+    let _parsed = Uuid::from_str(netidm_group_uuid.trim()).map_err(|_| {
+        OperationError::InvalidAttribute(format!(
+            "netidm_group_uuid '{}' is not a valid UUID",
+            netidm_group_uuid
+        ))
+    })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, class.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    // Load the existing entry and check for a prefix collision on `upstream`.
+    let entries = idms_prox_write.qs_write.internal_search(filter.clone())?;
+    let entry = entries.first().ok_or(OperationError::NoMatchingEntries)?;
+
+    if let Some(existing) = entry.get_ava_set(&attr).and_then(|vs| vs.as_utf8_iter()) {
+        for value in existing {
+            if let Some((existing_upstream, _)) = value.rsplit_once(':') {
+                if existing_upstream == upstream {
+                    return Err(OperationError::InvalidAttribute(format!(
+                        "mapping for upstream '{}' already exists on connector '{}'; \
+                         remove it first to change it",
+                        upstream, client_name
+                    )));
+                }
+            }
+        }
+    }
+
+    // Construct the stored value and append via a modify-event.
+    let new_value = format!("{}:{}", upstream, netidm_group_uuid.trim());
+    let ml = ModifyList::new_append(attr, Value::new_utf8s(&new_value));
+
+    let mdf = match ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+    {
+        Ok(m) => m,
+        Err(e) => {
+            error!(err = ?e, "Failed to begin modify for group-mapping add");
+            return Err(e);
+        }
+    };
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Shared implementation for the OAuth2 / SAML `remove-group-mapping`
+/// handlers. Idempotent: removing a non-existent mapping returns `Ok(())`
+/// with no side effect.
+async fn handle_group_mapping_remove(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    class: EntryClass,
+    attr: Attribute,
+    client_name: String,
+    upstream: String,
+) -> Result<(), OperationError> {
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, class.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    // Load the entry and find the full value whose upstream prefix matches.
+    let entries = idms_prox_write.qs_write.internal_search(filter.clone())?;
+    let entry = entries.first().ok_or(OperationError::NoMatchingEntries)?;
+
+    let matching_value = entry
+        .get_ava_set(&attr)
+        .and_then(|vs| vs.as_utf8_iter())
+        .and_then(|mut iter| {
+            iter.find(|value| {
+                value
+                    .rsplit_once(':')
+                    .map(|(name, _)| name == upstream)
+                    .unwrap_or(false)
+            })
+            .map(str::to_string)
+        });
+
+    let Some(full_value) = matching_value else {
+        // Idempotent no-op: nothing to remove.
+        idms_prox_write.commit().map(|_| ())?;
+        return Ok(());
+    };
+
+    let ml = ModifyList::new_remove(attr, PartialValue::new_utf8s(&full_value));
+
+    let mdf = match ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+    {
+        Ok(m) => m,
+        Err(e) => {
+            error!(err = ?e, "Failed to begin modify for group-mapping remove");
+            return Err(e);
+        }
+    };
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
 }

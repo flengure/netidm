@@ -3146,7 +3146,13 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
         )
         .route(
             "/v1/oauth2/_client/{name}",
-            get(super::v1_oauth2::oauth2_client_id_get),
+            get(super::v1_oauth2::oauth2_client_id_get)
+                .patch(super::v1_oauth2::oauth2_client_id_patch),
+        )
+        .route(
+            "/v1/oauth2/_client/{name}/_group_mapping/{upstream}",
+            post(super::v1_oauth2::oauth2_client_id_group_mapping_post)
+                .delete(super::v1_oauth2::oauth2_client_id_group_mapping_delete),
         )
         .route(
             "/v1/oauth2/{rs_name}",
@@ -3197,6 +3203,11 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             get(super::v1_saml::saml_client_id_get)
                 .patch(super::v1_saml::saml_client_id_patch)
                 .delete(super::v1_saml::saml_client_id_delete),
+        )
+        .route(
+            "/v1/saml_client/{name}/_group_mapping/{upstream}",
+            post(super::v1_saml::saml_client_id_group_mapping_post)
+                .delete(super::v1_saml::saml_client_id_group_mapping_delete),
         )
         .route("/v1/raw/create", post(raw_create))
         .route("/v1/raw/modify", post(raw_modify))
