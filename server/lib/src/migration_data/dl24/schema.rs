@@ -17,44 +17,41 @@ pub static SCHEMA_ATTR_OAUTH2_LINK_BY_DL24: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_OAUTH2_LINK_BY,
         name: Attribute::OAuth2LinkBy,
-        description:
-            "Per-connector account-linking key selector: one of \"email\", \"username\", \
+        description: "Per-connector account-linking key selector: one of \"email\", \"username\", \
              \"id\". When absent, linking defaults to matching by email."
-                .to_string(),
+            .to_string(),
         multivalue: false,
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });
 
 /// OAuth2 client class updated for DL24: adds `OAuth2LinkBy` to `systemmay`.
-pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL24: LazyLock<SchemaClass> = LazyLock::new(|| {
-    SchemaClass {
-        uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
-        name: EntryClass::OAuth2Client.into(),
-        description: "The class representing a configured OAuth2 Confidential Client acting as \
+pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL24: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
+    name: EntryClass::OAuth2Client.into(),
+    description: "The class representing a configured OAuth2 Confidential Client acting as \
                       an authentication source."
-            .to_string(),
-        systemmust: vec![
-            Attribute::Name,
-            Attribute::OAuth2ClientId,
-            Attribute::OAuth2ClientSecret,
-            Attribute::OAuth2AuthorisationEndpoint,
-            Attribute::OAuth2TokenEndpoint,
-            Attribute::OAuth2RequestScopes,
-        ],
-        systemmay: vec![
-            Attribute::DisplayName,
-            Attribute::OAuth2UserinfoEndpoint,
-            Attribute::OAuth2JitProvisioning,
-            Attribute::OAuth2ClaimMapName,
-            Attribute::OAuth2ClaimMapDisplayname,
-            Attribute::OAuth2ClaimMapEmail,
-            Attribute::OAuth2EmailLinkAccounts,
-            Attribute::OAuth2ClientLogoUri,
-            Attribute::OAuth2Issuer,
-            Attribute::OAuth2JwksUri,
-            Attribute::OAuth2LinkBy,
-        ],
-        ..Default::default()
-    }
+        .to_string(),
+    systemmust: vec![
+        Attribute::Name,
+        Attribute::OAuth2ClientId,
+        Attribute::OAuth2ClientSecret,
+        Attribute::OAuth2AuthorisationEndpoint,
+        Attribute::OAuth2TokenEndpoint,
+        Attribute::OAuth2RequestScopes,
+    ],
+    systemmay: vec![
+        Attribute::DisplayName,
+        Attribute::OAuth2UserinfoEndpoint,
+        Attribute::OAuth2JitProvisioning,
+        Attribute::OAuth2ClaimMapName,
+        Attribute::OAuth2ClaimMapDisplayname,
+        Attribute::OAuth2ClaimMapEmail,
+        Attribute::OAuth2EmailLinkAccounts,
+        Attribute::OAuth2ClientLogoUri,
+        Attribute::OAuth2Issuer,
+        Attribute::OAuth2JwksUri,
+        Attribute::OAuth2LinkBy,
+    ],
+    ..Default::default()
 });
