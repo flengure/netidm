@@ -19,27 +19,22 @@ pub const OAUTH2_CLIENT_AUTHORISATION_RESPONSE_PATH: &str = "/ui/login/oauth2_la
 /// - `Id` — match `claims.sub` against `Attribute::OAuth2AccountUniqueUserId` restricted
 ///   to this provider (immutable; matches only users already provisioned against this
 ///   connector, so first-time logins fall through to JIT).
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum LinkBy {
+    #[default]
     Email,
     Username,
     Id,
 }
 
-impl Default for LinkBy {
-    fn default() -> Self {
-        LinkBy::Email
-    }
-}
-
 impl LinkBy {
     /// Canonical string form for storage in the `oauth2_link_by` attribute.
     ///
-    /// Also consumed by the admin CLI when echoing back a `set-link-by` operation
-    /// (see `netidm system oauth2-client set-link-by`). The `allow(dead_code)` is a
-    /// placeholder until that CLI path lands in this PR.
+    /// Used by the admin CLI when echoing back a `set-link-by` operation
+    /// (see `netidm system oauth2-client set-link-by`). Takes `self` by value
+    /// because `LinkBy` is a 1-byte `Copy` enum.
     #[allow(dead_code)]
-    pub fn as_str(&self) -> &'static str {
+    pub fn as_str(self) -> &'static str {
         match self {
             LinkBy::Email => "email",
             LinkBy::Username => "username",
