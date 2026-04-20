@@ -467,6 +467,13 @@ pub const UUID_SCHEMA_ATTR_SAML_JIT_PROVISIONING: Uuid =
 pub const UUID_SCHEMA_CLASS_SAML_CLIENT: Uuid = uuid!("00000000-0000-0000-0000-ffff00000254");
 // DL24 — OAuth2 per-connector link_by selector (email | username | id)
 pub const UUID_SCHEMA_ATTR_OAUTH2_LINK_BY: Uuid = uuid!("00000000-0000-0000-0000-ffff00000255");
+// DL25 — Upstream-to-netidm group mapping and per-person marker tracking
+// connector-applied memberships.
+pub const UUID_SCHEMA_ATTR_OAUTH2_GROUP_MAPPING: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000256");
+pub const UUID_SCHEMA_ATTR_SAML_GROUP_MAPPING: Uuid = uuid!("00000000-0000-0000-0000-ffff00000257");
+pub const UUID_SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000258");
 
 // =====
 // Incorrectly name spaced.

@@ -110,18 +110,25 @@ pub const DOMAIN_LEVEL_23: DomainVersion = 23;
 /// account-linking key selection ("email" | "username" | "id") can be stored.
 pub const DOMAIN_LEVEL_24: DomainVersion = 24;
 
+/// Domain Level 25: upstream-to-netidm group mapping on OAuth2 / SAML connectors
+/// (`OAuth2GroupMapping`, `SamlGroupMapping`) and the per-person marker
+/// (`OAuth2UpstreamSyncedGroup`) tracking which connector-applied memberships
+/// are currently in effect. Pure plumbing — no connector populates upstream
+/// groups in this DL; later per-connector PRs do.
+pub const DOMAIN_LEVEL_25: DomainVersion = 25;
+
 // The target supported domain functional level. During development this is
 // the NEXT level that users will upgrade too. In other words if we are
 // developing 1.6.0-dev, then we need to set TGT_LEVEL to 10 which is
 // the corresponding level.
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_24;
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_25;
 // The current patch level if any out of band fixes are required.
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
 
 // The maximum supported domain functional level. This generally
 // represents a *future* version of the server which doesn't exist
 // yet.
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_24;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_25;
 
 // This is the LOWEST level of database we can recreate. This is important for testing,
 // but we don't actually expect it to be used.

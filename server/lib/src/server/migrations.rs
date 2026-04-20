@@ -76,6 +76,7 @@ impl QueryServer {
                 DOMAIN_LEVEL_22 => write_txn.migrate_domain_21_to_22()?,
                 DOMAIN_LEVEL_23 => write_txn.migrate_domain_22_to_23()?,
                 DOMAIN_LEVEL_24 => write_txn.migrate_domain_23_to_24()?,
+                DOMAIN_LEVEL_25 => write_txn.migrate_domain_24_to_25()?,
                 _ => {
                     error!("Invalid requested domain target level for server bootstrap");
                     debug_assert!(false);
@@ -1528,6 +1529,83 @@ impl QueryServerWriteTransaction<'_> {
         Ok(())
     }
 
+    /// Raise the domain level from 24 to 25.
+    ///
+    /// DL25 adds three multi-value `Utf8String` attributes:
+    ///   * `OAuth2GroupMapping` on `OAuth2Client`
+    ///   * `SamlGroupMapping` on `SamlClient`
+    ///   * `OAuth2UpstreamSyncedGroup` on `Person`
+    ///
+    /// Together they enable per-connector group mapping (upstream group name →
+    /// netidm group UUID) and per-person tracking of which memberships were
+    /// applied by which connector. No runtime behaviour changes in this DL —
+    /// connectors do not yet populate upstream groups; each subsequent
+    /// per-connector PR in the dex-parity roadmap populates `claims.groups`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OperationError`] if any migration phase fails or if this level
+    /// is not yet enabled in the current build.
+    pub(crate) fn migrate_domain_24_to_25(&mut self) -> Result<(), OperationError> {
+        if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_25 {
+            error!("Unable to raise domain level from 24 to 25.");
+            return Err(OperationError::MG0004DomainLevelInDevelopment);
+        }
+
+        self.internal_migrate_or_create_batch(
+            &format!("phase 1 - schema attrs target {}", DOMAIN_TGT_LEVEL),
+            migration_data::dl25::phase_1_schema_attrs(),
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 2 - schema classes",
+            migration_data::dl25::phase_2_schema_classes(),
+        )?;
+
+        self.reload()?;
+        self.reindex(false)?;
+        self.set_phase(ServerPhase::SchemaReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 3 - key provider",
+            migration_data::dl25::phase_3_key_provider(),
+        )?;
+
+        self.reload()?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 4 - dl25 system entries",
+            migration_data::dl25::phase_4_system_entries(),
+        )?;
+
+        self.reload()?;
+        self.set_phase(ServerPhase::DomainInfoReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 5 - builtin admin entries",
+            migration_data::dl25::phase_5_builtin_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 6 - builtin not admin entries",
+            migration_data::dl25::phase_6_builtin_non_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 7 - builtin access control profiles",
+            migration_data::dl25::phase_7_builtin_access_control_profiles(),
+        )?;
+
+        self.internal_delete_batch(
+            "phase 8 - delete UUIDs",
+            migration_data::dl25::phase_8_delete_uuids(),
+        )?;
+
+        self.reload()?;
+
+        Ok(())
+    }
+
     #[instrument(level = "info", skip_all)]
     pub(crate) fn initialise_schema_core(&mut self) -> Result<(), OperationError> {
         admin_debug!("initialise_schema_core -> start ...");
@@ -2086,6 +2164,42 @@ mod tests {
             .expect("PasswordChangedTime should be set after DL13->DL14 migration");
 
         assert_eq!(pwd_changed, time::OffsetDateTime::UNIX_EPOCH);
+
+        write_txn.commit().expect("Unable to commit");
+    }
+
+    /// DL24 → DL25: asserts that the three new schema attributes introduced
+    /// for upstream group plumbing (`OAuth2GroupMapping`, `SamlGroupMapping`,
+    /// `OAuth2UpstreamSyncedGroup`) exist in the schema after migration.
+    #[qs_test(domain_level=DOMAIN_LEVEL_24)]
+    async fn test_migrations_dl24_dl25(server: &QueryServer) {
+        let mut write_txn = server.write(duration_from_epoch_now()).await.unwrap();
+
+        let db_domain_version = write_txn
+            .internal_search_uuid(UUID_DOMAIN_INFO)
+            .expect("unable to access domain entry")
+            .get_ava_single_uint32(Attribute::Version)
+            .expect("Attribute Version not present");
+
+        assert_eq!(db_domain_version, DOMAIN_LEVEL_24);
+
+        write_txn
+            .internal_apply_domain_migration(DOMAIN_LEVEL_25)
+            .expect("Unable to set domain level to version 25");
+
+        // Schema attributes are stored as entries keyed by their schema UUID.
+        // Each of the three new attributes must resolve after the migration.
+        write_txn
+            .internal_search_uuid(UUID_SCHEMA_ATTR_OAUTH2_GROUP_MAPPING)
+            .expect("UUID_SCHEMA_ATTR_OAUTH2_GROUP_MAPPING missing after DL25 migration");
+
+        write_txn
+            .internal_search_uuid(UUID_SCHEMA_ATTR_SAML_GROUP_MAPPING)
+            .expect("UUID_SCHEMA_ATTR_SAML_GROUP_MAPPING missing after DL25 migration");
+
+        write_txn
+            .internal_search_uuid(UUID_SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP)
+            .expect("UUID_SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP missing after DL25 migration");
 
         write_txn.commit().expect("Unable to commit");
     }

@@ -202,6 +202,12 @@ pub const ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS: &str = "oauth2_email_link_accounts";
 pub const ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS: &str = "oauth2_domain_email_link_accounts";
 // DL24 — OAuth2 per-connector link_by selector (email | username | id)
 pub const ATTR_OAUTH2_LINK_BY: &str = "oauth2_link_by";
+// DL25 — Upstream-to-netidm group mapping (OAuth2 and SAML connectors) and the
+// per-person marker that records which connector-driven memberships are currently
+// applied.
+pub const ATTR_OAUTH2_GROUP_MAPPING: &str = "oauth2_group_mapping";
+pub const ATTR_SAML_GROUP_MAPPING: &str = "saml_group_mapping";
+pub const ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP: &str = "oauth2_upstream_synced_group";
 // DL20 — OAuth2 client logo URI
 pub const ATTR_OAUTH2_CLIENT_LOGO_URI: &str = "oauth2_client_logo_uri";
 // DL21 — Generic OIDC upstream connector
