@@ -83,6 +83,11 @@ pub struct OAuth2ClientProvider {
     pub(crate) jwks_uri: Option<Url>,
     /// Maps a Netidm attribute to the provider claim name used at JIT provisioning time.
     pub(crate) claim_map: BTreeMap<Attribute, String>,
+    /// Upstream-to-netidm group mappings (DL25+). Each entry maps an
+    /// upstream group name to the target netidm group's UUID. Used at
+    /// login time by
+    /// [`crate::idm::group_mapping::reconcile_upstream_memberships`].
+    pub(crate) group_mapping: Vec<crate::idm::group_mapping::GroupMapping>,
 }
 
 impl fmt::Debug for OAuth2ClientProvider {
@@ -138,6 +143,7 @@ impl OAuth2ClientProvider {
             issuer: None,
             jwks_uri: None,
             claim_map: BTreeMap::new(),
+            group_mapping: Vec::new(),
         }
     }
 }
@@ -263,6 +269,23 @@ impl IdmServerProxyWriteTransaction<'_> {
                 claim_map.insert(Attribute::Mail, v);
             }
 
+            let mut group_mapping = Vec::new();
+            if let Some(raw_values) = provider_entry
+                .get_ava_set(Attribute::OAuth2GroupMapping)
+                .and_then(|vs| vs.as_utf8_iter())
+            {
+                for raw in raw_values {
+                    match crate::idm::group_mapping::GroupMapping::parse(raw) {
+                        Ok(gm) => group_mapping.push(gm),
+                        Err(_) => warn!(
+                            ?uuid,
+                            value = %raw,
+                            "OAuth2GroupMapping entry is unparseable; skipping"
+                        ),
+                    }
+                }
+            }
+
             let provider = OAuth2ClientProvider {
                 name,
                 display_name,
@@ -281,6 +304,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 issuer,
                 jwks_uri,
                 claim_map,
+                group_mapping,
             };
 
             oauth2_client_provider_structs.push((uuid, provider));

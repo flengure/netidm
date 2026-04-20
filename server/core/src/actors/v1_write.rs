@@ -1812,12 +1812,31 @@ impl QueryServerWriteV1 {
         eventid: Uuid,
         _client_auth_info: ClientAuthInfo,
     ) -> Result<Uuid, OperationError> {
+        let _ = eventid;
         let ct = duration_from_epoch_now();
         let mut idms_prox_write = self.idms.proxy_write(ct).await?;
 
-        idms_prox_write
-            .jit_provision_oauth2_account(provider_uuid, &claims, &desired_name)
-            .and_then(|uuid| idms_prox_write.commit().map(|_| uuid))
+        let person_uuid =
+            idms_prox_write.jit_provision_oauth2_account(provider_uuid, &claims, &desired_name)?;
+
+        // Reconcile upstream group memberships against the connector's
+        // mapping (DL25+). In this PR `claims.groups` is always empty; once
+        // per-connector PRs populate it, this runs for real.
+        if let Err(e) = idms_prox_write.reconcile_upstream_memberships_for_provider(
+            person_uuid,
+            provider_uuid,
+            &claims.groups,
+        ) {
+            // Never block auth on a reconciliation error (FR-018).
+            warn!(
+                ?e,
+                ?provider_uuid,
+                ?person_uuid,
+                "reconcile_upstream_memberships failed during JIT provision; proceeding"
+            );
+        }
+
+        idms_prox_write.commit().map(|_| person_uuid)
     }
 
     /// Attempt to link an existing Person account to an OAuth2 provider by verified email.
@@ -1832,9 +1851,24 @@ impl QueryServerWriteV1 {
         let _ = eventid;
         let ct = duration_from_epoch_now();
         let mut idms_prox_write = self.idms.proxy_write(ct).await?;
-        idms_prox_write
-            .find_and_link_account_by_email(provider_uuid, &claims)
-            .and_then(|maybe_uuid| idms_prox_write.commit().map(|_| maybe_uuid))
+        let maybe_uuid = idms_prox_write.find_and_link_account_by_email(provider_uuid, &claims)?;
+
+        if let Some(person_uuid) = maybe_uuid {
+            if let Err(e) = idms_prox_write.reconcile_upstream_memberships_for_provider(
+                person_uuid,
+                provider_uuid,
+                &claims.groups,
+            ) {
+                warn!(
+                    ?e,
+                    ?provider_uuid,
+                    ?person_uuid,
+                    "reconcile_upstream_memberships failed during link-by-email; proceeding"
+                );
+            }
+        }
+
+        idms_prox_write.commit().map(|_| maybe_uuid)
     }
 
     /// Derive a unique Netidm username from external identity claims, performing

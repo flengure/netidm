@@ -28,6 +28,11 @@ pub struct ExternalUserClaims {
     pub display_name: Option<String>,
     /// Username hint for account creation (e.g. GitHub `login`, Google email local-part).
     pub username_hint: Option<String>,
+    /// Upstream group names asserted by the provider for this user (DL25+).
+    /// Always empty in PR-GROUPS-PIPELINE; subsequent per-connector PRs
+    /// populate it from the provider-specific source (GitHub team API,
+    /// OIDC `groups` claim, SAML assertion attribute, etc.).
+    pub groups: Vec<String>,
 }
 
 pub struct CredHandlerOAuth2Client {
@@ -53,6 +58,12 @@ pub struct CredHandlerOAuth2Client {
     jit_provisioning: bool,
     email_link_accounts: bool,
     claim_map: BTreeMap<Attribute, String>,
+    /// Upstream-to-netidm group mappings snapshot at the time this handler
+    /// was constructed (DL25+). Surfaced in Debug output so connector
+    /// wiring can confirm the mappings a handler observes; consumed by the
+    /// reconciliation hook that per-connector PRs will add on the
+    /// already-linked login path.
+    group_mapping: Vec<crate::idm::group_mapping::GroupMapping>,
 }
 
 impl fmt::Debug for CredHandlerOAuth2Client {
@@ -64,6 +75,7 @@ impl fmt::Debug for CredHandlerOAuth2Client {
             .field("client_id", &self.client_id)
             .field("authorisation_endpoint", &self.authorisation_endpoint)
             .field("token_endpoint", &self.token_endpoint)
+            .field("group_mapping_count", &self.group_mapping.len())
             .finish()
     }
 }
@@ -94,6 +106,7 @@ impl CredHandlerOAuth2Client {
             jit_provisioning: client_provider.jit_provisioning,
             email_link_accounts: client_provider.email_link_accounts,
             claim_map: client_provider.claim_map.clone(),
+            group_mapping: client_provider.group_mapping.clone(),
         }
     }
 
@@ -290,6 +303,7 @@ impl CredHandlerOAuth2Client {
             email_verified: None,
             display_name,
             username_hint,
+            groups: Vec::new(),
         })
     }
 
@@ -382,6 +396,7 @@ impl CredHandlerOAuth2Client {
             email_verified,
             display_name,
             username_hint,
+            groups: Vec::new(),
         })
     }
 
@@ -470,6 +485,7 @@ impl CredHandlerOAuth2Client {
             email_verified,
             display_name,
             username_hint,
+            groups: Vec::new(),
         })
     }
 }

@@ -235,6 +235,7 @@ impl ProviderInitiatedSession {
                 .or_else(|| v.get("preferred_username"))
                 .and_then(|s| s.as_str())
                 .map(str::to_string),
+            groups: Vec::new(),
         })
     }
 }

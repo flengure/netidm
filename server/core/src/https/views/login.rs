@@ -1781,6 +1781,11 @@ pub async fn view_login_provision_get(
         email_verified: cookie_data.email_verified,
         display_name: cookie_data.display_name.clone(),
         username_hint: cookie_data.username_hint.clone(),
+        // ProvisionCookieData does not carry upstream groups; the claims
+        // re-built from the cookie are used for JIT username derivation and
+        // account linking. Reconciliation runs from the original claims
+        // still in scope via the credential handler, not from the cookie.
+        groups: Vec::new(),
     };
 
     let (proposed_username, username_notice) = match state
@@ -1885,6 +1890,11 @@ pub async fn view_login_provision_post(
         email_verified: cookie_data.email_verified,
         display_name: cookie_data.display_name.clone(),
         username_hint: cookie_data.username_hint.clone(),
+        // ProvisionCookieData does not carry upstream groups; the claims
+        // re-built from the cookie are used for JIT username derivation and
+        // account linking. Reconciliation runs from the original claims
+        // still in scope via the credential handler, not from the cookie.
+        groups: Vec::new(),
     };
 
     let result = app_state

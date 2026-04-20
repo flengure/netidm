@@ -26,6 +26,11 @@ pub struct SamlClientProvider {
     pub(crate) attr_map_groups: Option<String>,
     /// Create a new local account on first successful SAML assertion.
     pub(crate) jit_provisioning: bool,
+    /// Upstream-to-netidm group mappings (DL25+). Each entry maps an
+    /// upstream group name to the target netidm group's UUID. Used at
+    /// login time by
+    /// [`crate::idm::group_mapping::reconcile_upstream_memberships`].
+    pub(crate) group_mapping: Vec<crate::idm::group_mapping::GroupMapping>,
 }
 
 impl fmt::Debug for SamlClientProvider {
@@ -104,6 +109,23 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .get_ava_single_bool(Attribute::SamlJitProvisioning)
                 .unwrap_or(false);
 
+            let mut group_mapping = Vec::new();
+            if let Some(raw_values) = entry
+                .get_ava_set(Attribute::SamlGroupMapping)
+                .and_then(|vs| vs.as_utf8_iter())
+            {
+                for raw in raw_values {
+                    match crate::idm::group_mapping::GroupMapping::parse(raw) {
+                        Ok(gm) => group_mapping.push(gm),
+                        Err(_) => warn!(
+                            ?uuid,
+                            value = %raw,
+                            "SamlGroupMapping entry is unparseable; skipping"
+                        ),
+                    }
+                }
+            }
+
             providers.push((
                 uuid,
                 SamlClientProvider {
@@ -119,6 +141,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                     attr_map_displayname,
                     attr_map_groups,
                     jit_provisioning,
+                    group_mapping,
                 },
             ));
         }

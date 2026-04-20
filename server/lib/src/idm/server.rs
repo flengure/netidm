@@ -2528,6 +2528,39 @@ impl IdmServerProxyWriteTransaction<'_> {
         self.find_and_link_account(provider_uuid, claims)
     }
 
+    /// Reconcile upstream-asserted group memberships for a person against
+    /// the named OAuth2 upstream connector's mapping (DL25+).
+    ///
+    /// Loads the connector's `group_mapping` snapshot and dispatches to
+    /// [`crate::idm::group_mapping::reconcile_upstream_memberships`]. In
+    /// PR-GROUPS-PIPELINE `upstream_group_names` is always empty, so the
+    /// call is a read-and-noop; later per-connector PRs populate it.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OperationError`] variants from the underlying
+    /// reconciliation modifies. Does not error if the provider is not
+    /// found — treats that case as "no mappings, no reconciliation".
+    pub fn reconcile_upstream_memberships_for_provider(
+        &mut self,
+        person_uuid: Uuid,
+        provider_uuid: Uuid,
+        upstream_group_names: &[String],
+    ) -> Result<(), OperationError> {
+        let mapping = self
+            .oauth2_client_providers
+            .get(&provider_uuid)
+            .map(|p| p.group_mapping.clone())
+            .unwrap_or_default();
+        crate::idm::group_mapping::reconcile_upstream_memberships(
+            &mut self.qs_write,
+            person_uuid,
+            provider_uuid,
+            &mapping,
+            upstream_group_names,
+        )
+    }
+
     /// Link an inbound upstream login to a local Person, dispatching on the provider's
     /// configured `link_by`. See [`Self::find_and_link_account_by_email`] for the
     /// per-strategy match semantics.
