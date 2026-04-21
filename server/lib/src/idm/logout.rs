@@ -16,6 +16,7 @@ use uuid::Uuid;
 use crate::idm::account::DestroySessionTokenEvent;
 use crate::idm::server::IdmServerProxyWriteTransaction;
 use crate::prelude::Identity;
+use crate::server::QueryServerTransaction;
 use netidm_proto::internal::OperationError;
 
 /// Outcome of an OIDC RP-Initiated Logout 1.0 request.
@@ -84,6 +85,15 @@ pub fn terminate_session(
     user_uuid: Uuid,
     session_uuid: Uuid,
 ) -> Result<(), OperationError> {
+    // Enumerate the relying parties that minted OAuth2 tokens against
+    // the ending session BEFORE we destroy the session — once the UAT
+    // is gone, the plugin layer will start reaping the linked
+    // OAuth2Sessions and our lookup would come up empty.
+    let rp_uuids = collect_rps_for_session(idms, user_uuid, session_uuid)?;
+
+    // Destroy the netidm session (UAT). Idempotent on
+    // NoMatchingEntries — matches the OIDC expectation that logout is
+    // repeatable without surfacing an error.
     let dte = DestroySessionTokenEvent {
         ident: Identity::from_internal(),
         target: user_uuid,
@@ -94,9 +104,9 @@ pub fn terminate_session(
             tracing::info!(
                 target_uuid = %user_uuid,
                 session_uuid = %session_uuid,
+                rps_notified = rp_uuids.len(),
                 "netidm session terminated"
             );
-            Ok(())
         }
         Err(OperationError::NoMatchingEntries) => {
             tracing::trace!(
@@ -104,7 +114,7 @@ pub fn terminate_session(
                 session_uuid = %session_uuid,
                 "session already terminated — treated as idempotent success"
             );
-            Ok(())
+            return Ok(());
         }
         Err(err) => {
             tracing::error!(
@@ -113,7 +123,78 @@ pub fn terminate_session(
                 session_uuid = %session_uuid,
                 "failed to terminate netidm session"
             );
-            Err(err)
+            return Err(err);
         }
     }
+
+    // Enqueue OIDC Back-Channel Logout deliveries for every RP with a
+    // registered `OAuth2RsBackchannelLogoutUri` that minted tokens
+    // against this session. Individual enqueue failures are logged but
+    // do not unwind the termination — a missed back-channel
+    // notification is preferable to a re-logged-in session.
+    let ct = crate::prelude::duration_from_epoch_now();
+    for rp_uuid in rp_uuids {
+        match idms.enqueue_backchannel_logout_for_rp(rp_uuid, user_uuid, session_uuid, ct) {
+            Ok(Some(delivery_uuid)) => {
+                tracing::info!(
+                    %rp_uuid,
+                    %delivery_uuid,
+                    target_uuid = %user_uuid,
+                    session_uuid = %session_uuid,
+                    "enqueued back-channel logout delivery"
+                );
+            }
+            Ok(None) => {
+                // RP opted out (no backchannel_logout_uri) — nothing to do.
+            }
+            Err(err) => {
+                tracing::error!(
+                    ?err,
+                    %rp_uuid,
+                    target_uuid = %user_uuid,
+                    session_uuid = %session_uuid,
+                    "failed to enqueue back-channel logout delivery"
+                );
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// Read the target user's `OAuth2Session` attribute and collect the
+/// unique relying-party UUIDs that minted tokens against the given
+/// parent UAT session. Used by [`terminate_session`] to decide which
+/// relying parties deserve a back-channel logout notification.
+///
+/// Non-revoked sessions only — a revoked session's RP was already told
+/// (either by the original revoke path or because the session had been
+/// terminated before).
+fn collect_rps_for_session(
+    idms: &mut IdmServerProxyWriteTransaction<'_>,
+    user_uuid: Uuid,
+    session_uuid: Uuid,
+) -> Result<hashbrown::HashSet<Uuid>, OperationError> {
+    use crate::value::SessionState;
+
+    let entry = match idms.qs_write.internal_search_uuid(user_uuid) {
+        Ok(e) => e,
+        Err(OperationError::NoMatchingEntries) => {
+            return Ok(hashbrown::HashSet::new());
+        }
+        Err(err) => return Err(err),
+    };
+    let Some(map) = entry.get_ava_as_oauth2session_map(netidm_proto::attribute::Attribute::OAuth2Session)
+    else {
+        return Ok(hashbrown::HashSet::new());
+    };
+    let mut rp_uuids: hashbrown::HashSet<Uuid> = hashbrown::HashSet::new();
+    for session in map.values() {
+        if session.parent == Some(session_uuid)
+            && !matches!(session.state, SessionState::RevokedAt(_))
+        {
+            rp_uuids.insert(session.rs_uuid);
+        }
+    }
+    Ok(rp_uuids)
 }

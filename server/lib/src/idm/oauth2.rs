@@ -503,6 +503,11 @@ pub struct Oauth2RS {
     /// no URI will be honoured — the end-session request falls through to the
     /// confirmation page.
     post_logout_redirect_uris: Vec<Url>,
+    /// Registered OIDC Back-Channel Logout endpoint. When a netidm session
+    /// bound to this relying party terminates, netidm POSTs a signed logout
+    /// token to this URL. `None` means the RP opted out of back-channel
+    /// logout.
+    backchannel_logout_uri: Option<Url>,
     jwks_uri: Url,
     scopes_supported: BTreeSet<String>,
     prefer_short_username: bool,
@@ -581,6 +586,15 @@ struct Oauth2RSInner {
 impl Oauth2RSInner {
     fn rs_set_get(&self, client_id: &str) -> Option<&Oauth2RS> {
         self.private_rs_set.get(client_id.to_lowercase().as_str())
+    }
+
+    /// Look up a registered OAuth2 resource server by its entry UUID.
+    /// `rs_set_get` is the name-keyed fast path; this is the UUID-keyed
+    /// fallback used when iterating by UUID (e.g. enqueueing back-channel
+    /// logout deliveries for RPs that minted tokens against an ending
+    /// session).
+    fn rs_set_get_by_uuid(&self, uuid: Uuid) -> Option<&Oauth2RS> {
+        self.private_rs_set.values().find(|rs| rs.uuid == uuid)
     }
 }
 
@@ -902,6 +916,10 @@ impl Oauth2ResourceServersWriteTransaction<'_> {
                     .map(|set| set.iter().cloned().collect())
                     .unwrap_or_default();
 
+                let backchannel_logout_uri: Option<Url> = ent
+                    .get_ava_single_url(Attribute::OAuth2RsBackchannelLogoutUri)
+                    .cloned();
+
                 let mut jwks_uri = self.inner.origin.clone();
                 jwks_uri.set_path(&format!("/oauth2/openid/{name}/public_key.jwk"));
 
@@ -960,6 +978,7 @@ impl Oauth2ResourceServersWriteTransaction<'_> {
                     userinfo_endpoint,
                     end_session_endpoint,
                     post_logout_redirect_uris,
+                    backchannel_logout_uri,
                     jwks_uri,
                     scopes_supported,
                     prefer_short_username,
@@ -2186,6 +2205,98 @@ impl IdmServerProxyWriteTransaction<'_> {
     /// [`crate::idm::account::IdmServerProxyWriteTransaction::account_destroy_session_token`]
     /// call when it fails for reasons other than "session already gone"
     /// (which is swallowed as success per the idempotent logout model).
+    /// Mint one signed OIDC Back-Channel Logout token and insert a
+    /// [`crate::idm::logout_delivery::LogoutDelivery`] entry for the
+    /// given relying party + session pair. Called by
+    /// [`crate::idm::logout::terminate_session`] once per RP that both
+    /// (a) minted tokens against the ending session, and (b) has a
+    /// registered `OAuth2RsBackchannelLogoutUri`.
+    ///
+    /// # Errors
+    ///
+    /// Returns any [`OperationError`] propagated from JWS signing or
+    /// the underlying `internal_create` used to insert the record.
+    pub(crate) fn enqueue_backchannel_logout_for_rp(
+        &mut self,
+        rs_uuid: Uuid,
+        user_uuid: Uuid,
+        session_uuid: Uuid,
+        ct: Duration,
+    ) -> Result<Option<Uuid>, OperationError> {
+        use crate::idm::logout_delivery::enqueue_logout_delivery;
+        use compact_jwt::jws::JwsBuilder;
+        use serde::Serialize;
+        use std::collections::BTreeMap;
+
+        let Some(o2rs) = self.oauth2rs.inner.rs_set_get_by_uuid(rs_uuid) else {
+            trace!(
+                %rs_uuid,
+                "enqueue_backchannel_logout_for_rp: no resource server for UUID — skipping"
+            );
+            return Ok(None);
+        };
+        let Some(endpoint) = o2rs.backchannel_logout_uri.as_ref().cloned() else {
+            trace!(
+                %rs_uuid,
+                rs_name = %o2rs.name,
+                "RP has no back-channel logout URI — skipping"
+            );
+            return Ok(None);
+        };
+        let iss = o2rs.iss.clone();
+        let rs_name = o2rs.name.clone();
+        let sign_alg = o2rs.sign_alg;
+        let key_object = o2rs.key_object.clone();
+
+        #[derive(Serialize)]
+        struct LogoutTokenClaims {
+            iss: String,
+            aud: String,
+            iat: i64,
+            jti: String,
+            sub: String,
+            sid: String,
+            events: BTreeMap<String, BTreeMap<String, serde_json::Value>>,
+        }
+
+        let mut events = BTreeMap::new();
+        events.insert(
+            "http://schemas.openid.net/event/backchannel-logout".to_string(),
+            BTreeMap::new(),
+        );
+        let claims = LogoutTokenClaims {
+            iss: iss.to_string(),
+            aud: rs_name,
+            iat: ct.as_secs() as i64,
+            jti: Uuid::new_v4().to_string(),
+            sub: user_uuid.to_string(),
+            sid: session_uuid.to_string(),
+            events,
+        };
+
+        let data = JwsBuilder::into_json(&claims)
+            .map(|b| b.set_typ(Some("logout+jwt")).build())
+            .map_err(|err| {
+                error!(?err, "Failed to encode logout token claims");
+                OperationError::InvalidState
+            })?;
+
+        let signed = match sign_alg {
+            SignatureAlgo::Es256 => key_object.jws_es256_sign(&data, ct),
+            SignatureAlgo::Rs256 => key_object.jws_rs256_sign(&data, ct),
+        }
+        .map_err(|err| {
+            error!(?err, "Failed to sign logout token");
+            OperationError::InvalidState
+        })?;
+
+        let token_str = signed.to_string();
+        let now = OffsetDateTime::UNIX_EPOCH + ct;
+        let delivery_uuid =
+            enqueue_logout_delivery(&mut self.qs_write, rs_uuid, &endpoint, &token_str, now)?;
+        Ok(Some(delivery_uuid))
+    }
+
     pub fn handle_oauth2_rp_initiated_logout(
         &mut self,
         client_id: &str,
