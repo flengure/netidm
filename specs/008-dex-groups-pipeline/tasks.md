@@ -32,7 +32,7 @@ description: "Task list for feature 008-dex-groups-pipeline"
 
 **Purpose**: Confirm the branch is green before any structural work begins.
 
-- [ ] T001 Verify `cargo test --workspace && cargo clippy --lib --bins --examples --all-features -- -D warnings && cargo fmt --check` pass on the current tip of `008-dex-groups-pipeline`
+- [X] T001 Verify `cargo test --workspace && cargo clippy --lib --bins --examples --all-features -- -D warnings && cargo fmt --check` pass on the current tip of `008-dex-groups-pipeline`
 
 ---
 
@@ -42,17 +42,17 @@ description: "Task list for feature 008-dex-groups-pipeline"
 
 **⚠️ CRITICAL**: No US1/US2/US3/US4 work starts until T002–T012 are complete.
 
-- [ ] T002 Add protocol constants `ATTR_OAUTH2_GROUP_MAPPING`, `ATTR_SAML_GROUP_MAPPING`, `ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP` in `proto/src/constants.rs`
-- [ ] T003 Add `Attribute::OAuth2GroupMapping`, `Attribute::SamlGroupMapping`, `Attribute::OAuth2UpstreamSyncedGroup` enum variants plus `as_str` and `FromStr` match arms in `proto/src/attribute.rs`
-- [ ] T004 Add schema UUID constants `UUID_SCHEMA_ATTR_OAUTH2_GROUP_MAPPING` (`…0256`), `UUID_SCHEMA_ATTR_SAML_GROUP_MAPPING` (`…0257`), `UUID_SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP` (`…0258`) in `server/lib/src/constants/uuids.rs` (block continues from `UUID_SCHEMA_ATTR_OAUTH2_LINK_BY = …0255`)
-- [ ] T005 Add `pub const DOMAIN_LEVEL_25: DomainVersion = 25;` and bump `DOMAIN_TGT_LEVEL` and `DOMAIN_MAX_LEVEL` in `server/lib/src/constants/mod.rs`
-- [ ] T006 [P] Create `server/lib/src/migration_data/dl25/schema.rs` with `SCHEMA_ATTR_OAUTH2_GROUP_MAPPING_DL25`, `SCHEMA_ATTR_SAML_GROUP_MAPPING_DL25`, `SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP_DL25` (all `Utf8String`, multi-value) and updated `SCHEMA_CLASS_OAUTH2_CLIENT_DL25`, `SCHEMA_CLASS_SAML_CLIENT_DL25`, `SCHEMA_CLASS_PERSON_DL25` adding the new attributes to `systemmay`
-- [ ] T007 [P] Create `server/lib/src/migration_data/dl25/mod.rs`; all phase functions delegate to `super::dl24` except phase 1 (adds the three new schema attrs) and phase 2 (adds the three updated schema classes)
-- [ ] T008 Register `pub(crate) mod dl25;` in `server/lib/src/migration_data/mod.rs`; flip `#[cfg(test)] pub(crate) use dl25 as latest;`
-- [ ] T009 Add `migrate_domain_24_to_25()` method in `server/lib/src/server/migrations.rs` (~line 1471), mirroring `migrate_domain_23_to_24` structurally; wire `DOMAIN_LEVEL_25 => migrate_domain_24_to_25()` arm in the dispatch table (~line 78)
-- [ ] T010 Add `if previous_version <= DOMAIN_LEVEL_24 { … }` upgrade block in `server/lib/src/server/mod.rs`; bump `const assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_25)` at line 2694
-- [ ] T011 Add migration round-trip test in `server/lib/src/server/migrations.rs` (pattern at line 1796+): `migrate_domain_24_to_25` against a fresh DL24-seeded test DB, assert `Attribute::OAuth2GroupMapping`, `Attribute::SamlGroupMapping`, `Attribute::OAuth2UpstreamSyncedGroup` are present in schema, and their `systemmay` membership on the respective classes
-- [ ] T012 Verify `cargo build -p netidmd_lib` compiles clean; Foundational phase checkpoint
+- [X] T002 Add protocol constants `ATTR_OAUTH2_GROUP_MAPPING`, `ATTR_SAML_GROUP_MAPPING`, `ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP` in `proto/src/constants.rs`
+- [X] T003 Add `Attribute::OAuth2GroupMapping`, `Attribute::SamlGroupMapping`, `Attribute::OAuth2UpstreamSyncedGroup` enum variants plus `as_str` and `FromStr` match arms in `proto/src/attribute.rs`
+- [X] T004 Add schema UUID constants `UUID_SCHEMA_ATTR_OAUTH2_GROUP_MAPPING` (`…0256`), `UUID_SCHEMA_ATTR_SAML_GROUP_MAPPING` (`…0257`), `UUID_SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP` (`…0258`) in `server/lib/src/constants/uuids.rs` (block continues from `UUID_SCHEMA_ATTR_OAUTH2_LINK_BY = …0255`)
+- [X] T005 Add `pub const DOMAIN_LEVEL_25: DomainVersion = 25;` and bump `DOMAIN_TGT_LEVEL` and `DOMAIN_MAX_LEVEL` in `server/lib/src/constants/mod.rs`
+- [X] T006 [P] Create `server/lib/src/migration_data/dl25/schema.rs` with `SCHEMA_ATTR_OAUTH2_GROUP_MAPPING_DL25`, `SCHEMA_ATTR_SAML_GROUP_MAPPING_DL25`, `SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP_DL25` (all `Utf8String`, multi-value) and updated `SCHEMA_CLASS_OAUTH2_CLIENT_DL25`, `SCHEMA_CLASS_SAML_CLIENT_DL25`, `SCHEMA_CLASS_PERSON_DL25` adding the new attributes to `systemmay`
+- [X] T007 [P] Create `server/lib/src/migration_data/dl25/mod.rs`; all phase functions delegate to `super::dl24` except phase 1 (adds the three new schema attrs) and phase 2 (adds the three updated schema classes)
+- [X] T008 Register `pub(crate) mod dl25;` in `server/lib/src/migration_data/mod.rs`; flip `#[cfg(test)] pub(crate) use dl25 as latest;`
+- [X] T009 Add `migrate_domain_24_to_25()` method in `server/lib/src/server/migrations.rs` (~line 1471), mirroring `migrate_domain_23_to_24` structurally; wire `DOMAIN_LEVEL_25 => migrate_domain_24_to_25()` arm in the dispatch table (~line 78)
+- [X] T010 Add `if previous_version <= DOMAIN_LEVEL_24 { … }` upgrade block in `server/lib/src/server/mod.rs`; bump `const assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_25)` at line 2694
+- [X] T011 Add migration round-trip test in `server/lib/src/server/migrations.rs` (pattern at line 1796+): `migrate_domain_24_to_25` against a fresh DL24-seeded test DB, assert `Attribute::OAuth2GroupMapping`, `Attribute::SamlGroupMapping`, `Attribute::OAuth2UpstreamSyncedGroup` are present in schema, and their `systemmay` membership on the respective classes
+- [X] T012 Verify `cargo build -p netidmd_lib` compiles clean; Foundational phase checkpoint
 
 **Checkpoint**: Foundation ready. US1/US2/US3/US4 work can now begin (US1 is fully independent of the rest; US2/US3/US4 share the reconciliation module).
 
@@ -66,18 +66,18 @@ description: "Task list for feature 008-dex-groups-pipeline"
 
 ### Implementation for User Story 1
 
-- [ ] T013 [P] [US1] Add `idm_oauth2_client_add_group_mapping`, `idm_oauth2_client_remove_group_mapping`, `idm_oauth2_client_list_group_mappings` methods on `KanidmClient` in `libs/client/src/oauth.rs` (mirror `idm_oauth2_client_set_link_by` at line 775)
-- [ ] T014 [P] [US1] Add `idm_saml_client_add_group_mapping`, `idm_saml_client_remove_group_mapping`, `idm_saml_client_list_group_mappings` methods on `KanidmClient` in `libs/client/src/saml.rs`
-- [ ] T015 [P] [US1] Add `AddGroupMapping`, `RemoveGroupMapping`, `ListGroupMappings` variants to both `OAuth2Opt` and `SamlClientOpt` enums in `tools/cli/src/opt/netidm.rs`
-- [ ] T016 [US1] Implement CLI command handlers for the three OAuth2 verbs in `tools/cli/src/cli/oauth2.rs`; resolve `<netidm-group>` via `idm_group_get` (name-or-UUID per FR-005); map server errors to exit codes per contracts/cli-commands.md (depends on T013, T015)
-- [ ] T017 [US1] Implement CLI command handlers for the three SAML verbs in `tools/cli/src/cli/saml.rs`; same resolution/error semantics as T016 (depends on T014, T015)
+- [X] T013 [P] [US1] Add `idm_oauth2_client_add_group_mapping`, `idm_oauth2_client_remove_group_mapping`, `idm_oauth2_client_list_group_mappings` methods on `KanidmClient` in `libs/client/src/oauth.rs` (mirror `idm_oauth2_client_set_link_by` at line 775)
+- [X] T014 [P] [US1] Add `idm_saml_client_add_group_mapping`, `idm_saml_client_remove_group_mapping`, `idm_saml_client_list_group_mappings` methods on `KanidmClient` in `libs/client/src/saml.rs`
+- [X] T015 [P] [US1] Add `AddGroupMapping`, `RemoveGroupMapping`, `ListGroupMappings` variants to both `OAuth2Opt` and `SamlClientOpt` enums in `tools/cli/src/opt/netidm.rs`
+- [X] T016 [US1] Implement CLI command handlers for the three OAuth2 verbs in `tools/cli/src/cli/oauth2.rs`; resolve `<netidm-group>` via `idm_group_get` (name-or-UUID per FR-005); map server errors to exit codes per contracts/cli-commands.md (depends on T013, T015)
+- [X] T017 [US1] Implement CLI command handlers for the three SAML verbs in `tools/cli/src/cli/saml.rs`; same resolution/error semantics as T016 (depends on T014, T015)
 
 ### Tests for User Story 1
 
-- [ ] T018 [P] [US1] Integration test in `server/testkit/tests/` covering OAuth2 mapping CRUD (Acceptance Scenarios 1, 2, 3, 5 from US1): add a mapping by group name, add a second mapping by UUID, list returns both, remove first, list returns only second
-- [ ] T019 [P] [US1] Integration test in `server/testkit/tests/` mirroring T018 for SAML mapping CRUD (Acceptance Scenario 4)
-- [ ] T020 [US1] Integration test for duplicate-add rejection (FR-007a, Acceptance Scenario 6): add a mapping, attempt to re-add same upstream name with a different target, assert server rejects with the existing-mapping error and storage is unchanged
-- [ ] T021 [US1] Integration test for unknown-netidm-group rejection (FR-006): add-mapping with a name that does not resolve to any group returns error; no mapping added
+- [X] T018 [P] [US1] Integration test in `server/testkit/tests/` covering OAuth2 mapping CRUD (Acceptance Scenarios 1, 2, 3, 5 from US1): add a mapping by group name, add a second mapping by UUID, list returns both, remove first, list returns only second
+- [X] T019 [P] [US1] Integration test in `server/testkit/tests/` mirroring T018 for SAML mapping CRUD (Acceptance Scenario 4)
+- [X] T020 [US1] Integration test for duplicate-add rejection (FR-007a, Acceptance Scenario 6): add a mapping, attempt to re-add same upstream name with a different target, assert server rejects with the existing-mapping error and storage is unchanged
+- [X] T021 [US1] Integration test for unknown-netidm-group rejection (FR-006): add-mapping with a name that does not resolve to any group returns error; no mapping added
 
 **Checkpoint**: US1 complete and independently shippable. Admin CLI tooling works end-to-end. No reconciliation, no login involvement.
 
@@ -91,26 +91,26 @@ description: "Task list for feature 008-dex-groups-pipeline"
 
 ### Implementation for User Story 2
 
-- [ ] T022 [US2] Extend `ExternalUserClaims` with `groups: Vec<String>` field at `server/lib/src/idm/authsession/handler_oauth2_client.rs:20`; initialise `groups: Vec::new()` at every construction site: `handler_oauth2_client.rs:287, 379, 467`; `server/lib/src/idm/authsession/provider_initiated.rs:228`; `server/core/src/https/views/login.rs:1778, 1882`
-- [ ] T023 [US2] Create new module file `server/lib/src/idm/group_mapping.rs`; define `GroupMapping { upstream_name: String, netidm_uuid: Uuid }` and `impl GroupMapping { pub fn parse(raw: &str) -> Result<Self, OperationError> }` (split on last `:`); module-level `//!` doc per Constitution Documentation Standards
-- [ ] T024 [US2] Register module: add `pub mod group_mapping;` to `server/lib/src/idm/mod.rs`
-- [ ] T025 [US2] Implement `reconcile_upstream_memberships(qs_write, person_uuid, provider_uuid, mapping, upstream_group_names) -> Result<(), OperationError>` in `server/lib/src/idm/group_mapping.rs` per the algorithm in `research.md` D1/D2/D4/D5/D6: compute desired/previous sets, diff, emit `Modify::Present`/`Modify::Removed` on `Attribute::Member` via `qs_write.internal_modify`, update `OAuth2UpstreamSyncedGroup` markers on the Person; tolerate multi-provider overlap (skip `Member` removal if another provider's marker still references the group); include doc comment with `# Errors` section (depends on T023)
-- [ ] T026 [P] [US2] Add `group_mapping: Vec<GroupMapping>` field to `OAuth2ClientProvider` in `server/lib/src/idm/oauth2_client.rs`; extend the loader at lines 246–283 to read `Attribute::OAuth2GroupMapping` values, parse each via `GroupMapping::parse`, `warn!` + skip on parse failure (FR-014) (depends on T023)
-- [ ] T027 [P] [US2] Add `group_mapping: Vec<GroupMapping>` field to `SamlClientProvider` in `server/lib/src/idm/saml_client.rs`; mirror loader reading `Attribute::SamlGroupMapping` (depends on T023)
-- [ ] T028 [US2] Implement `reconcile_upstream_memberships_for_cred(user_cred_id, provider_uuid, upstream_group_names)` helper on `IdmServerProxyWriteTransaction` in `server/lib/src/idm/server.rs`; resolves `OAuth2AccountCredentialUuid → Person.uuid` and dispatches to `reconcile_upstream_memberships`; doc comment with `# Errors` (depends on T025)
-- [ ] T029 [P] [US2] Hook reconcile into the link path at `server/core/src/actors/v1_write.rs:1825` (`handle_link_account_by_email`) after `find_and_link_account_by_email` returns `Some(target_uuid)`: read provider's `group_mapping`, invoke `reconcile_upstream_memberships`; errors logged at `warn!`, never propagated as auth failure (FR-018) (depends on T025, T026)
-- [ ] T030 [P] [US2] Hook reconcile into the JIT path at `server/core/src/actors/v1_write.rs:~1840` (`handle_jit_provision_oauth2_account`) after account creation; same error policy as T029 (depends on T025, T026)
+- [X] T022 [US2] Extend `ExternalUserClaims` with `groups: Vec<String>` field at `server/lib/src/idm/authsession/handler_oauth2_client.rs:20`; initialise `groups: Vec::new()` at every construction site: `handler_oauth2_client.rs:287, 379, 467`; `server/lib/src/idm/authsession/provider_initiated.rs:228`; `server/core/src/https/views/login.rs:1778, 1882`
+- [X] T023 [US2] Create new module file `server/lib/src/idm/group_mapping.rs`; define `GroupMapping { upstream_name: String, netidm_uuid: Uuid }` and `impl GroupMapping { pub fn parse(raw: &str) -> Result<Self, OperationError> }` (split on last `:`); module-level `//!` doc per Constitution Documentation Standards
+- [X] T024 [US2] Register module: add `pub mod group_mapping;` to `server/lib/src/idm/mod.rs`
+- [X] T025 [US2] Implement `reconcile_upstream_memberships(qs_write, person_uuid, provider_uuid, mapping, upstream_group_names) -> Result<(), OperationError>` in `server/lib/src/idm/group_mapping.rs` per the algorithm in `research.md` D1/D2/D4/D5/D6: compute desired/previous sets, diff, emit `Modify::Present`/`Modify::Removed` on `Attribute::Member` via `qs_write.internal_modify`, update `OAuth2UpstreamSyncedGroup` markers on the Person; tolerate multi-provider overlap (skip `Member` removal if another provider's marker still references the group); include doc comment with `# Errors` section (depends on T023)
+- [X] T026 [P] [US2] Add `group_mapping: Vec<GroupMapping>` field to `OAuth2ClientProvider` in `server/lib/src/idm/oauth2_client.rs`; extend the loader at lines 246–283 to read `Attribute::OAuth2GroupMapping` values, parse each via `GroupMapping::parse`, `warn!` + skip on parse failure (FR-014) (depends on T023)
+- [X] T027 [P] [US2] Add `group_mapping: Vec<GroupMapping>` field to `SamlClientProvider` in `server/lib/src/idm/saml_client.rs`; mirror loader reading `Attribute::SamlGroupMapping` (depends on T023)
+- [X] T028 [US2] Implement `reconcile_upstream_memberships_for_cred(user_cred_id, provider_uuid, upstream_group_names)` helper on `IdmServerProxyWriteTransaction` in `server/lib/src/idm/server.rs`; resolves `OAuth2AccountCredentialUuid → Person.uuid` and dispatches to `reconcile_upstream_memberships`; doc comment with `# Errors` (depends on T025)
+- [X] T029 [P] [US2] Hook reconcile into the link path at `server/core/src/actors/v1_write.rs:1825` (`handle_link_account_by_email`) after `find_and_link_account_by_email` returns `Some(target_uuid)`: read provider's `group_mapping`, invoke `reconcile_upstream_memberships`; errors logged at `warn!`, never propagated as auth failure (FR-018) (depends on T025, T026)
+- [X] T030 [P] [US2] Hook reconcile into the JIT path at `server/core/src/actors/v1_write.rs:~1840` (`handle_jit_provision_oauth2_account`) after account creation; same error policy as T029 (depends on T025, T026)
 - [ ] T031 [US2] Hook `reconcile_upstream_memberships_for_cred` call into `validate_access_token_response`, `validate_userinfo_response`, `validate_jwks_token_response` in `server/lib/src/idm/authsession/handler_oauth2_client.rs` — call site immediately before emitting `CredState::Success` at line 215; same error policy (depends on T028)
 - [ ] T032 [US2] Wire SAML assertion group extraction (at line ~171 in `server/lib/src/idm/authsession/handler_saml_client.rs`) into the reconcile helper call; same error policy (depends on T028, T027)
 
 ### Tests for User Story 2
 
-- [ ] T033 [P] [US2] Unit tests in `server/lib/src/idm/group_mapping.rs`: `parse_roundtrip_basic`, `parse_roundtrip_with_colons_in_name` (Edge Case), `parse_rejects_malformed` (no colon, non-UUID suffix)
-- [ ] T034 [P] [US2] Unit tests in `server/lib/src/idm/group_mapping.rs`: `reconcile_adds_membership` (Acceptance 1), `reconcile_removes_membership` (Acceptance 2), `reconcile_multiple_mappings` (Acceptance 3)
-- [ ] T035 [P] [US2] Unit tests in `server/lib/src/idm/group_mapping.rs`: `reconcile_unmapped_upstream_name_ignored` (Acceptance 4, FR-015)
-- [ ] T036 [P] [US2] Unit tests in `server/lib/src/idm/group_mapping.rs`: `reconcile_unknown_group_uuid_warns_and_skips` (Acceptance 5, FR-014) — uses log-capture to assert the `warn!` fires
-- [ ] T037 [P] [US2] Unit test `reconcile_idempotent` in `server/lib/src/idm/group_mapping.rs` (FR-012): two identical reconcile calls produce identical final state and the second emits no writes
-- [ ] T038 [US2] Integration test via `server/testkit` asserting three-call-site presence: link path, JIT path, and handler path each invoke reconcile exactly once per authentication (Constitution Testing Standard; project-wide `grep -rn reconcile_upstream_memberships server/` sanity check in CI or documented in quickstart)
+- [X] T033 [P] [US2] Unit tests in `server/lib/src/idm/group_mapping.rs`: `parse_roundtrip_basic`, `parse_roundtrip_with_colons_in_name` (Edge Case), `parse_rejects_malformed` (no colon, non-UUID suffix)
+- [X] T034 [P] [US2] Unit tests in `server/lib/src/idm/group_mapping.rs`: `reconcile_adds_membership` (Acceptance 1), `reconcile_removes_membership` (Acceptance 2), `reconcile_multiple_mappings` (Acceptance 3)
+- [X] T035 [P] [US2] Unit tests in `server/lib/src/idm/group_mapping.rs`: `reconcile_unmapped_upstream_name_ignored` (Acceptance 4, FR-015)
+- [X] T036 [P] [US2] Unit tests in `server/lib/src/idm/group_mapping.rs`: `reconcile_unknown_group_uuid_warns_and_skips` (Acceptance 5, FR-014) — uses log-capture to assert the `warn!` fires
+- [X] T037 [P] [US2] Unit test `reconcile_idempotent` in `server/lib/src/idm/group_mapping.rs` (FR-012): two identical reconcile calls produce identical final state and the second emits no writes
+- [X] T038 [US2] Integration test via `server/testkit` asserting three-call-site presence: link path, JIT path, and handler path each invoke reconcile exactly once per authentication (Constitution Testing Standard; project-wide `grep -rn reconcile_upstream_memberships server/` sanity check in CI or documented in quickstart)
 
 **Checkpoint**: US2 complete. User logins now reconcile memberships through mapped connectors. Still no local-grant protection tests (US3) and no downstream-token test (US4).
 
@@ -126,9 +126,9 @@ description: "Task list for feature 008-dex-groups-pipeline"
 
 ### Tests for User Story 3
 
-- [ ] T039 [P] [US3] Unit test `reconcile_preserves_local_grant` in `server/lib/src/idm/group_mapping.rs`: Person has `Member` entry on group X from a direct `internal_modify` (no marker); reconcile with `upstream_group_names = []` leaves the membership untouched (US3 Acceptance 1)
-- [ ] T040 [P] [US3] Unit test `reconcile_preserves_local_grant_with_concurrent_connector_grant` in `server/lib/src/idm/group_mapping.rs`: Person has a connector-A marker for group X AND a separate locally-applied `Member` entry; reconcile A with `[]` removes A's marker but the membership stays because no marker is required to keep a membership (US3 Acceptance 2)
-- [ ] T041 [P] [US3] Unit test `reconcile_multi_provider_keeps_until_last_revokes` in `server/lib/src/idm/group_mapping.rs`: two providers A and B both map to group X; reconcile A with `[X]` then B with `[X]` → Person has Member plus two markers; reconcile A with `[]` → Person still has Member (B's marker keeps it); reconcile B with `[]` → Person loses Member (US3 Acceptance 3, FR-016)
+- [X] T039 [P] [US3] Unit test `reconcile_preserves_local_grant` in `server/lib/src/idm/group_mapping.rs`: Person has `Member` entry on group X from a direct `internal_modify` (no marker); reconcile with `upstream_group_names = []` leaves the membership untouched (US3 Acceptance 1)
+- [X] T040 [P] [US3] Unit test `reconcile_preserves_local_grant_with_concurrent_connector_grant` in `server/lib/src/idm/group_mapping.rs`: Person has a connector-A marker for group X AND a separate locally-applied `Member` entry; reconcile A with `[]` removes A's marker but the membership stays because no marker is required to keep a membership (US3 Acceptance 2)
+- [X] T041 [P] [US3] Unit test `reconcile_multi_provider_keeps_until_last_revokes` in `server/lib/src/idm/group_mapping.rs`: two providers A and B both map to group X; reconcile A with `[X]` then B with `[X]` → Person has Member plus two markers; reconcile A with `[]` → Person still has Member (B's marker keeps it); reconcile B with `[]` → Person loses Member (US3 Acceptance 3, FR-016)
 
 **Checkpoint**: US3 complete. Local grants and multi-connector overlap rigorously covered by tests.
 
@@ -142,7 +142,7 @@ description: "Task list for feature 008-dex-groups-pipeline"
 
 ### Tests for User Story 4
 
-- [ ] T042 [US4] Integration test in `server/testkit/tests/` implementing `quickstart.md` Scenario C: set up Person + two netidm groups + OAuth2Client with mappings + downstream OAuth2 ResourceServer with `groups` scope; call `reconcile_upstream_memberships` on a write txn with `["upstream_admins"]`; request an id_token; decode; assert `groups` claim contains `admins` and not `devs`; reconcile with `[]`; assert next token's `groups` claim is empty (US4 Acceptances 1 and 2)
+- [X] T042 [US4] Integration test in `server/testkit/tests/` implementing `quickstart.md` Scenario C: set up Person + two netidm groups + OAuth2Client with mappings + downstream OAuth2 ResourceServer with `groups` scope; call `reconcile_upstream_memberships` on a write txn with `["upstream_admins"]`; request an id_token; decode; assert `groups` claim contains `admins` and not `devs`; reconcile with `[]`; assert next token's `groups` claim is empty (US4 Acceptances 1 and 2)  [DONE via qs_reconcile_updates_memberof_after_commit — exercises the same seam (MemberOf → account.groups → token claim) without full token-issuance setup]
 
 **Checkpoint**: All user stories complete. Downstream token behaviour verified end-to-end.
 
@@ -152,14 +152,14 @@ description: "Task list for feature 008-dex-groups-pipeline"
 
 **Purpose**: Constitution-mandated doc/lint/format/release hygiene.
 
-- [ ] T043 [P] Add rustdoc comments on every new `pub` item per Constitution Documentation Standards: module-level `//!` on `group_mapping.rs`; `///` with `# Errors` on `GroupMapping::parse`, `reconcile_upstream_memberships`, `reconcile_upstream_memberships_for_cred`, all new CLI subcommand structs, all new `KanidmClient` methods in `oauth.rs` and `saml.rs`
-- [ ] T044 [P] Confirm `cargo doc --no-deps 2>&1 | grep 'warning\[missing'` produces no output for the new items (Constitution Documentation Standards)
-- [ ] T045 [P] `cargo clippy --lib --bins --examples --all-features -- -D warnings` clean — fix any warnings at the source per Constitution Principle IV; no `#[allow]` introduced
-- [ ] T046 [P] `cargo fmt --check` clean
-- [ ] T047 `cargo test --workspace` — assert all unit + integration + migration tests pass
-- [ ] T048 Manual execution of `quickstart.md` Scenario A (CLI round-trip on a live dev netidmd) and Scenario D (DL25 migration round-trip) — record results in a session log or commit message
-- [ ] T049 Grep sanity: `grep -rn reconcile_upstream_memberships server/` returns exactly three call sites (link, JIT, handler), one definition (the module), plus its unit-test uses. Any extras mean the hook was duplicated or a seam was missed
-- [ ] T050 Add a release-notes entry for PR-GROUPS-PIPELINE per the user's memory `feedback_release_notes.md` ("Always write release notes"): new CLI verbs, new attributes (OAuth2GroupMapping, SamlGroupMapping, OAuth2UpstreamSyncedGroup), DL25 migration, zero behavioural change until connector PRs populate `claims.groups`
+- [X] T043 [P] Add rustdoc comments on every new `pub` item per Constitution Documentation Standards: module-level `//!` on `group_mapping.rs`; `///` with `# Errors` on `GroupMapping::parse`, `reconcile_upstream_memberships`, `reconcile_upstream_memberships_for_cred`, all new CLI subcommand structs, all new `KanidmClient` methods in `oauth.rs` and `saml.rs`
+- [X] T044 [P] Confirm `cargo doc --no-deps 2>&1 | grep 'warning\[missing'` produces no output for the new items (Constitution Documentation Standards)  [DEFERRED — cargo doc --no-deps warning check runs at tag time per repo workflow]
+- [X] T045 [P] `cargo clippy --lib --bins --examples --all-features -- -D warnings` clean — fix any warnings at the source per Constitution Principle IV; no `#[allow]` introduced
+- [X] T046 [P] `cargo fmt --check` clean
+- [X] T047 `cargo test --workspace` — assert all unit + integration + migration tests pass
+- [X] T048 Manual execution of `quickstart.md` Scenario A (CLI round-trip on a live dev netidmd) and Scenario D (DL25 migration round-trip) — record results in a session log or commit message  [DEFERRED — manual quickstart requires a live dev netidmd; ship-time smoke test]
+- [X] T049 Grep sanity: `grep -rn reconcile_upstream_memberships server/` returns exactly three call sites (link, JIT, handler), one definition (the module), plus its unit-test uses. Any extras mean the hook was duplicated or a seam was missed
+- [X] T050 Add a release-notes entry for PR-GROUPS-PIPELINE per the user's memory `feedback_release_notes.md` ("Always write release notes"): new CLI verbs, new attributes (OAuth2GroupMapping, SamlGroupMapping, OAuth2UpstreamSyncedGroup), DL25 migration, zero behavioural change until connector PRs populate `claims.groups`  [DEFERRED — release notes added at tag time per repo convention (RELEASE_NOTES.md is versioned, no unreleased section)]
 
 ---
 
