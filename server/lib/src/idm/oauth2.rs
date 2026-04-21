@@ -2328,20 +2328,43 @@ impl IdmServerProxyWriteTransaction<'_> {
             jws.from_json::<OidcToken>().ok()
         });
 
-        // Stage 2 — if verified and `aud` matches the client, terminate the
-        // single session named by (sub, jti) via the central convergence
-        // routine. Idempotent; see `terminate_session` docs.
+        // Stage 2 — if verified and `aud` matches the client, terminate
+        // the parent UAT session. The ID token's `jti` is the OAuth2
+        // session UUID (see `generate_access_token_response` where
+        // `jti: Some(session_id.to_string())` is the child session);
+        // the netidm session is the UAT whose UUID lives on that
+        // OAuth2 session's `parent` field. Resolve it by loading the
+        // Person's OAuth2Session map, then funnel through the central
+        // `terminate_session` routine.
         if let Some(token) = verified.as_ref() {
             let aud_matches = token.aud == client_id;
             let user_uuid = match &token.sub {
                 OidcSubject::U(u) => Some(*u),
                 OidcSubject::S(_) => None,
             };
-            let session_uuid = token.jti.as_deref().and_then(|s| Uuid::parse_str(s).ok());
+            let oauth2_session_uuid = token.jti.as_deref().and_then(|s| Uuid::parse_str(s).ok());
 
             if aud_matches {
-                if let (Some(target), Some(token_id)) = (user_uuid, session_uuid) {
-                    terminate_session(self, target, token_id)?;
+                if let (Some(target), Some(o2_sid)) = (user_uuid, oauth2_session_uuid) {
+                    let uat_uuid =
+                        self.qs_write
+                            .internal_search_uuid(target)
+                            .ok()
+                            .and_then(|entry| {
+                                entry
+                                    .get_ava_as_oauth2session_map(Attribute::OAuth2Session)
+                                    .and_then(|m| m.get(&o2_sid).and_then(|s| s.parent))
+                            });
+                    if let Some(uat_uuid) = uat_uuid {
+                        terminate_session(self, target, uat_uuid)?;
+                    } else {
+                        trace!(
+                            client_id,
+                            target_uuid = %target,
+                            oauth2_session_uuid = %o2_sid,
+                            "OIDC RP-initiated logout: verified id_token_hint's OAuth2 session has no parent UAT — already revoked or never had one"
+                        );
+                    }
                 } else {
                     trace!(
                         client_id,

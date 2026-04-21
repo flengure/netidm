@@ -89,7 +89,8 @@ pub fn terminate_session(
     // the ending session BEFORE we destroy the session — once the UAT
     // is gone, the plugin layer will start reaping the linked
     // OAuth2Sessions and our lookup would come up empty.
-    let rp_uuids = collect_rps_for_session(idms, user_uuid, session_uuid)?;
+    let (rp_uuids, oauth2_session_ids) =
+        collect_rps_and_oauth2_sessions_for_session(idms, user_uuid, session_uuid)?;
 
     // Destroy the netidm session (UAT). Idempotent on
     // NoMatchingEntries — matches the OIDC expectation that logout is
@@ -124,6 +125,48 @@ pub fn terminate_session(
                 "failed to terminate netidm session"
             );
             return Err(err);
+        }
+    }
+
+    // Revoke every OAuth2 session (refresh-token holder) bound to the
+    // ending UAT per spec §FR-002: "revoke the refresh tokens held by
+    // the identified app for that user that were issued against the
+    // ended session". The plugin layer WOULD reap orphaned
+    // OAuth2Sessions after `AUTH_TOKEN_GRACE_WINDOW` — but that grace
+    // is for transient session churn, not intentional logout. Logout
+    // MUST invalidate refresh tokens immediately.
+    if !oauth2_session_ids.is_empty() {
+        use crate::prelude::{f_eq, Filter, Modify, ModifyList, PartialValue};
+        let mut modify_list = Vec::with_capacity(oauth2_session_ids.len());
+        for o2_session_id in &oauth2_session_ids {
+            modify_list.push(Modify::Removed(
+                netidm_proto::attribute::Attribute::OAuth2Session,
+                PartialValue::Refer(*o2_session_id),
+            ));
+        }
+        let ml = ModifyList::new_list(modify_list);
+        let filter = Filter::new(f_eq(
+            netidm_proto::attribute::Attribute::Uuid,
+            PartialValue::Uuid(user_uuid),
+        ));
+        if let Err(err) = idms.qs_write.internal_modify(&filter, &ml) {
+            // Log + continue — a failed OAuth2 session revoke is
+            // preferable to leaving the UAT alive. Plugin layer will
+            // eventually reap the orphans.
+            tracing::error!(
+                ?err,
+                target_uuid = %user_uuid,
+                session_uuid = %session_uuid,
+                oauth2_sessions = oauth2_session_ids.len(),
+                "failed to explicitly revoke OAuth2 sessions; relying on plugin cleanup"
+            );
+        } else {
+            tracing::info!(
+                target_uuid = %user_uuid,
+                session_uuid = %session_uuid,
+                oauth2_sessions_revoked = oauth2_session_ids.len(),
+                "revoked OAuth2 sessions bound to terminated UAT"
+            );
         }
     }
 
@@ -173,40 +216,42 @@ pub fn terminate_session(
     Ok(())
 }
 
-/// Read the target user's `OAuth2Session` attribute and collect the
-/// unique relying-party UUIDs that minted tokens against the given
-/// parent UAT session. Used by [`terminate_session`] to decide which
-/// relying parties deserve a back-channel logout notification.
+/// Read the target user's `OAuth2Session` attribute and collect (a)
+/// the unique relying-party UUIDs that minted tokens against the
+/// given parent UAT session, and (b) the individual OAuth2Session IDs
+/// themselves, so `terminate_session` can both notify and revoke.
 ///
 /// Non-revoked sessions only — a revoked session's RP was already told
 /// (either by the original revoke path or because the session had been
 /// terminated before).
-fn collect_rps_for_session(
+fn collect_rps_and_oauth2_sessions_for_session(
     idms: &mut IdmServerProxyWriteTransaction<'_>,
     user_uuid: Uuid,
     session_uuid: Uuid,
-) -> Result<hashbrown::HashSet<Uuid>, OperationError> {
+) -> Result<(hashbrown::HashSet<Uuid>, Vec<Uuid>), OperationError> {
     use crate::value::SessionState;
 
     let entry = match idms.qs_write.internal_search_uuid(user_uuid) {
         Ok(e) => e,
         Err(OperationError::NoMatchingEntries) => {
-            return Ok(hashbrown::HashSet::new());
+            return Ok((hashbrown::HashSet::new(), Vec::new()));
         }
         Err(err) => return Err(err),
     };
     let Some(map) =
         entry.get_ava_as_oauth2session_map(netidm_proto::attribute::Attribute::OAuth2Session)
     else {
-        return Ok(hashbrown::HashSet::new());
+        return Ok((hashbrown::HashSet::new(), Vec::new()));
     };
     let mut rp_uuids: hashbrown::HashSet<Uuid> = hashbrown::HashSet::new();
-    for session in map.values() {
+    let mut oauth2_session_ids: Vec<Uuid> = Vec::new();
+    for (o2_session_id, session) in map.iter() {
         if session.parent == Some(session_uuid)
             && !matches!(session.state, SessionState::RevokedAt(_))
         {
             rp_uuids.insert(session.rs_uuid);
+            oauth2_session_ids.push(*o2_session_id);
         }
     }
-    Ok(rp_uuids)
+    Ok((rp_uuids, oauth2_session_ids))
 }

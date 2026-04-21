@@ -18,18 +18,34 @@
 //!   * T052 — admin queue-list API returns an empty list with 200.
 //!   * T081 — admin logout-all on a user with no active sessions
 //!     returns zero terminated (the surface itself works).
-//!
-//! Full code-flow + session-termination + back-channel delivery
-//! round-trips are covered by `oauth2_test.rs` patterns that need
-//! a full PKCE consent cycle; those tests land with the follow-up
-//! testkit work (T027-T028 remain).
+//!   * T027 — full OAuth2 code flow → `end_session_endpoint` with a
+//!     valid `id_token_hint` and a registered `post_logout_redirect_uri`
+//!     → 302 to the registered URI with `state` echoed. Asserts the
+//!     session's refresh token is invalidated (the RP's access token is
+//!     too, since both are bound to the terminated session).
+//!   * T029b — `end_session_endpoint` with an unregistered
+//!     `post_logout_redirect_uri` → falls through to the confirmation
+//!     page; the unregistered URI is never visited.
 
+use compact_jwt::{JwkKeySet, JwsEs256Verifier, JwsVerifier, OidcSubject, OidcUnverified};
 use netidm_client::{http::header, NetidmClient, StatusCode};
-use netidm_proto::oauth2::OidcDiscoveryResponse;
-use netidmd_testkit::{
-    ADMIN_TEST_PASSWORD, ADMIN_TEST_USER, NOT_ADMIN_TEST_USERNAME, TEST_INTEGRATION_RS_DISPLAY,
-    TEST_INTEGRATION_RS_ID, TEST_INTEGRATION_RS_URL,
+use netidm_proto::constants::uri::OAUTH2_TOKEN_ENDPOINT;
+use netidm_proto::constants::{OAUTH2_SCOPE_EMAIL, OAUTH2_SCOPE_OPENID, OAUTH2_SCOPE_READ};
+use netidm_proto::oauth2::{
+    AccessTokenRequest, AccessTokenResponse, AuthorisationResponse, GrantTypeReq,
+    OidcDiscoveryResponse,
 };
+use netidmd_lib::constants::NAME_IDM_ALL_ACCOUNTS;
+use netidmd_testkit::{
+    ADMIN_TEST_PASSWORD, ADMIN_TEST_USER, NOT_ADMIN_TEST_PASSWORD, NOT_ADMIN_TEST_USERNAME,
+    TEST_INTEGRATION_RS_DISPLAY, TEST_INTEGRATION_RS_ID, TEST_INTEGRATION_RS_REDIRECT_URL,
+    TEST_INTEGRATION_RS_URL,
+};
+use oauth2_ext::PkceCodeChallenge;
+use reqwest::header::{HeaderValue, CONTENT_TYPE};
+use std::collections::BTreeMap;
+use std::str::FromStr;
+use url::Url;
 
 fn get_reqwest_client() -> reqwest::Client {
     reqwest::Client::builder()
@@ -302,4 +318,327 @@ async fn test_logout_admin_logout_all_no_sessions(rsclient: &NetidmClient) {
         .expect("admin logout-all");
     assert_eq!(count, 0, "no sessions should have been terminated");
     assert_ne!(user_uuid, uuid::Uuid::nil());
+}
+
+/// Set up a standard OAuth2 basic-client RS with an openid scope map
+/// and return the test user's ID token after a full PKCE code-flow
+/// cycle.
+///
+/// Returns the access + ID token pair plus the session UUID extracted
+/// from the ID token's `jti` claim.
+async fn setup_oauth2_flow_and_get_id_token(
+    rsclient: &NetidmClient,
+    client: &reqwest::Client,
+) -> (AccessTokenResponse, String, uuid::Uuid) {
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+
+    rsclient
+        .idm_oauth2_rs_basic_create(
+            TEST_INTEGRATION_RS_ID,
+            TEST_INTEGRATION_RS_DISPLAY,
+            TEST_INTEGRATION_RS_URL,
+        )
+        .await
+        .expect("create RS");
+
+    rsclient
+        .idm_oauth2_client_add_origin(
+            TEST_INTEGRATION_RS_ID,
+            &Url::parse(TEST_INTEGRATION_RS_REDIRECT_URL).expect("redirect URL"),
+        )
+        .await
+        .expect("add origin");
+
+    rsclient
+        .idm_person_account_create(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_USERNAME)
+        .await
+        .expect("create person");
+    rsclient
+        .idm_person_account_primary_credential_set_password(
+            NOT_ADMIN_TEST_USERNAME,
+            NOT_ADMIN_TEST_PASSWORD,
+        )
+        .await
+        .expect("set password");
+
+    rsclient
+        .idm_oauth2_rs_update_scope_map(
+            TEST_INTEGRATION_RS_ID,
+            NAME_IDM_ALL_ACCOUNTS,
+            vec![OAUTH2_SCOPE_READ, OAUTH2_SCOPE_EMAIL, OAUTH2_SCOPE_OPENID],
+        )
+        .await
+        .expect("update scope map");
+
+    let client_secret = rsclient
+        .idm_oauth2_rs_get_basic_secret(TEST_INTEGRATION_RS_ID)
+        .await
+        .ok()
+        .flatten()
+        .expect("basic secret");
+
+    // Reauthenticate as the test user.
+    rsclient
+        .auth_simple_password(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_PASSWORD)
+        .await
+        .expect("user auth");
+    let user_uat = rsclient.get_token().await.expect("user token");
+
+    // PKCE + authorise flow.
+    let (pkce_code_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
+    let query = [
+        ("response_type", "code"),
+        ("client_id", TEST_INTEGRATION_RS_ID),
+        ("code_challenge", pkce_code_challenge.as_str()),
+        ("code_challenge_method", "S256"),
+        ("redirect_uri", TEST_INTEGRATION_RS_REDIRECT_URL),
+        ("scope", "email read openid"),
+        ("state", "logout-test-state"),
+    ];
+
+    let response = client
+        .get(rsclient.make_url("/oauth2/authorise"))
+        .bearer_auth(user_uat.clone())
+        .query(&query)
+        .send()
+        .await
+        .expect("authorise GET");
+    assert_eq!(response.status(), StatusCode::OK);
+    let consent_req: AuthorisationResponse =
+        response.json().await.expect("parse authorise response");
+    let consent_token = match consent_req {
+        AuthorisationResponse::ConsentRequested { consent_token, .. } => consent_token,
+        AuthorisationResponse::Permitted => panic!("expected consent-requested; got permitted"),
+    };
+
+    let response = client
+        .get(rsclient.make_url("/oauth2/authorise/permit"))
+        .bearer_auth(user_uat)
+        .query(&[("token", consent_token.as_str())])
+        .send()
+        .await
+        .expect("consent permit");
+    assert_eq!(response.status(), StatusCode::FOUND);
+
+    let redir_str = response
+        .headers()
+        .get("Location")
+        .and_then(|hv| hv.to_str().ok().map(str::to_string))
+        .expect("redirect location");
+    let redir_url = Url::parse(&redir_str).expect("parse redirect");
+    let pairs: BTreeMap<_, _> = redir_url.query_pairs().collect();
+    let code = pairs.get("code").expect("authorisation code in redirect");
+
+    // Exchange the code for an access + ID token.
+    let form_req: AccessTokenRequest = GrantTypeReq::AuthorizationCode {
+        code: code.to_string(),
+        redirect_uri: Url::parse(TEST_INTEGRATION_RS_REDIRECT_URL).expect("redirect URL"),
+        code_verifier: Some(pkce_code_verifier.secret().clone()),
+    }
+    .into();
+
+    let response = client
+        .post(rsclient.make_url(OAUTH2_TOKEN_ENDPOINT))
+        .basic_auth(TEST_INTEGRATION_RS_ID, Some(client_secret.clone()))
+        .form(&form_req)
+        .send()
+        .await
+        .expect("token exchange");
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        response.headers().get(CONTENT_TYPE),
+        Some(&HeaderValue::from_static("application/json")),
+    );
+
+    let atr = response
+        .json::<AccessTokenResponse>()
+        .await
+        .expect("parse AccessTokenResponse");
+    let id_token = atr.id_token.clone().expect("id_token issued");
+
+    // Parse the ID token to extract the session UUID from the `jti` claim.
+    let unverified = OidcUnverified::from_str(&id_token).expect("parse id_token");
+    let jwks: JwkKeySet = client
+        .get(rsclient.make_url(&format!(
+            "/oauth2/openid/{TEST_INTEGRATION_RS_ID}/public_key.jwk"
+        )))
+        .send()
+        .await
+        .expect("jwks GET")
+        .json()
+        .await
+        .expect("parse jwks");
+    let jwk = jwks.keys.first().expect("jwks key").clone();
+    let verifier = JwsEs256Verifier::try_from(&jwk).expect("build verifier");
+    let verified = verifier
+        .verify(&unverified)
+        .expect("verify id_token")
+        .verify_exp(0)
+        .expect("check exp");
+    let session_uuid = verified
+        .jti
+        .as_ref()
+        .and_then(|s| uuid::Uuid::from_str(s).ok())
+        .expect("id_token jti as session UUID");
+    match verified.sub {
+        OidcSubject::U(_) => {}
+        OidcSubject::S(s) => panic!("unexpected string subject: {s}"),
+    }
+
+    (atr, id_token, session_uuid)
+}
+
+/// T027 / US1 Acceptance Scenario 1 / SC-001 — full OAuth2 code flow
+/// followed by a POST to `end_session_endpoint` with a valid
+/// `id_token_hint` and a **registered** `post_logout_redirect_uri`.
+/// Asserts:
+///
+///   - 302 to the registered URI with `state` echoed onto the query string
+///     and `Cache-Control: no-store`.
+///   - The refresh token the code exchange minted is now invalid (the
+///     session it was bound to has been destroyed by `terminate_session`).
+#[netidmd_testkit::test]
+async fn test_logout_end_session_end_to_end_registered_redirect(rsclient: &NetidmClient) {
+    let http = get_reqwest_client();
+    let (atr, id_token, _session_uuid) = setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
+
+    // Admin registers the post-logout redirect URI.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+    let post_logout_uri = "https://demo.example.com/after-logout";
+    rsclient
+        .idm_oauth2_client_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, post_logout_uri)
+        .await
+        .expect("add post-logout URI");
+
+    // Hit the end_session_endpoint with the valid id_token_hint.
+    let end_session_url = rsclient.make_url(&format!(
+        "/oauth2/openid/{TEST_INTEGRATION_RS_ID}/end_session_endpoint"
+    ));
+    let response = http
+        .get(end_session_url)
+        .query(&[
+            ("id_token_hint", id_token.as_str()),
+            ("post_logout_redirect_uri", post_logout_uri),
+            ("state", "xyz123"),
+        ])
+        .send()
+        .await
+        .expect("end_session_endpoint GET");
+
+    assert_eq!(response.status(), StatusCode::FOUND, "must 302 redirect");
+    let loc = response
+        .headers()
+        .get("Location")
+        .expect("redirect Location")
+        .to_str()
+        .expect("Location utf-8");
+    let loc_url = Url::parse(loc).expect("parse redirect URL");
+    assert_eq!(loc_url.scheme(), "https");
+    assert_eq!(loc_url.host_str(), Some("demo.example.com"));
+    assert_eq!(loc_url.path(), "/after-logout");
+    let echoed_state: BTreeMap<_, _> = loc_url.query_pairs().collect();
+    assert_eq!(
+        echoed_state
+            .get("state")
+            .map(std::borrow::Cow::to_string)
+            .as_deref(),
+        Some("xyz123"),
+        "state must be echoed back verbatim"
+    );
+
+    let cache_control = response
+        .headers()
+        .get(header::CACHE_CONTROL)
+        .expect("cache-control")
+        .to_str()
+        .expect("cc utf-8");
+    assert!(
+        cache_control.contains("no-store"),
+        "cache-control must include no-store, got: {cache_control}"
+    );
+
+    // The refresh token is bound to the session we just destroyed.
+    // Attempting to refresh MUST fail with invalid_grant.
+    if let Some(refresh_token) = atr.refresh_token.as_ref() {
+        let refresh_req: AccessTokenRequest = GrantTypeReq::RefreshToken {
+            refresh_token: refresh_token.clone(),
+            scope: None,
+        }
+        .into();
+        let client_secret = rsclient
+            .idm_oauth2_rs_get_basic_secret(TEST_INTEGRATION_RS_ID)
+            .await
+            .ok()
+            .flatten()
+            .expect("basic secret");
+        let response = http
+            .post(rsclient.make_url(OAUTH2_TOKEN_ENDPOINT))
+            .basic_auth(TEST_INTEGRATION_RS_ID, Some(client_secret))
+            .form(&refresh_req)
+            .send()
+            .await
+            .expect("refresh request");
+        assert_ne!(
+            response.status(),
+            StatusCode::OK,
+            "refresh against a terminated session must fail"
+        );
+    }
+}
+
+/// T029b — `end_session_endpoint` with a `post_logout_redirect_uri` that
+/// is NOT on the client's registered allowlist → falls through to the
+/// confirmation page. The unregistered URI is never sent as a redirect.
+#[netidmd_testkit::test]
+async fn test_logout_end_session_unregistered_redirect_falls_through(rsclient: &NetidmClient) {
+    let http = get_reqwest_client();
+    let (_atr, id_token, _session_uuid) = setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
+
+    // Admin registers ONLY "https://example/a"; the request will try
+    // "https://evil.example.com/" which is NOT on the list.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+    rsclient
+        .idm_oauth2_client_add_post_logout_redirect_uri(
+            TEST_INTEGRATION_RS_ID,
+            "https://demo.example.com/after-logout",
+        )
+        .await
+        .expect("add allow URI");
+
+    let response = http
+        .get(rsclient.make_url(&format!(
+            "/oauth2/openid/{TEST_INTEGRATION_RS_ID}/end_session_endpoint"
+        )))
+        .query(&[
+            ("id_token_hint", id_token.as_str()),
+            ("post_logout_redirect_uri", "https://evil.example.com/"),
+            ("state", "abc"),
+        ])
+        .send()
+        .await
+        .expect("end_session_endpoint GET");
+
+    assert_eq!(
+        response.status(),
+        StatusCode::OK,
+        "unregistered redirect must fall through to the confirmation page (200)"
+    );
+    assert!(
+        response.headers().get("Location").is_none(),
+        "Location header must NOT be set for unregistered redirect"
+    );
+    let body = response.text().await.expect("response body");
+    assert!(
+        body.contains("logged out"),
+        "confirmation page should mention logged-out state"
+    );
 }
