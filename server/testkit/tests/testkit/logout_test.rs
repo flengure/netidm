@@ -26,7 +26,15 @@
 //!   * T029b — `end_session_endpoint` with an unregistered
 //!     `post_logout_redirect_uri` → falls through to the confirmation
 //!     page; the unregistered URI is never visited.
+//!   * T054 — back-channel logout delivery: full OAuth2 code flow →
+//!     register a dummy HTTP receiver's URL as the RP's
+//!     `OAuth2RsBackchannelLogoutUri` → terminate the session via
+//!     end_session_endpoint → assert the receiver receives a POST
+//!     carrying `logout_token=<signed-jws>` whose claims match the
+//!     spec (iss, aud, sub, sid, events, typ=logout+jwt).
 
+use axum::extract::Form;
+use axum::{routing::post, Router};
 use compact_jwt::{JwkKeySet, JwsEs256Verifier, JwsVerifier, OidcSubject, OidcUnverified};
 use netidm_client::{http::header, NetidmClient, StatusCode};
 use netidm_proto::constants::uri::OAUTH2_TOKEN_ENDPOINT;
@@ -44,7 +52,11 @@ use netidmd_testkit::{
 use oauth2_ext::PkceCodeChallenge;
 use reqwest::header::{HeaderValue, CONTENT_TYPE};
 use std::collections::BTreeMap;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
+use std::sync::Arc;
+use std::time::Duration;
+use tokio::sync::Mutex;
 use url::Url;
 
 fn get_reqwest_client() -> reqwest::Client {
@@ -640,5 +652,178 @@ async fn test_logout_end_session_unregistered_redirect_falls_through(rsclient: &
     assert!(
         body.contains("logged out"),
         "confirmation page should mention logged-out state"
+    );
+}
+
+/// Stand up a minimal axum server that records every POST body sent
+/// to `/bcl` into a shared `Vec<String>`. Returns the base URL and
+/// the shared buffer handle.
+async fn spawn_bcl_receiver() -> (Url, Arc<Mutex<Vec<String>>>) {
+    let listener =
+        tokio::net::TcpListener::bind(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 0))
+            .await
+            .expect("bind bcl receiver");
+    let port = listener.local_addr().expect("bcl addr").port();
+    let url = Url::parse(&format!("http://127.0.0.1:{port}")).expect("bcl url");
+    let captured: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+    let captured_for_handler = captured.clone();
+    let app = Router::new().route(
+        "/bcl",
+        post(move |Form(form): Form<BclForm>| {
+            let captured = captured_for_handler.clone();
+            async move {
+                captured.lock().await.push(form.logout_token);
+                (StatusCode::OK, "")
+            }
+        }),
+    );
+    tokio::spawn(async move {
+        let _ = axum::serve(listener, app).await;
+    });
+    (url, captured)
+}
+
+#[derive(serde::Deserialize)]
+struct BclForm {
+    logout_token: String,
+}
+
+/// T054 — full back-channel logout delivery. Drive a full OAuth2
+/// code flow, register a dummy HTTP receiver as the RP's
+/// `OAuth2RsBackchannelLogoutUri`, terminate the session via
+/// end_session_endpoint, assert the receiver receives a POST
+/// carrying `logout_token=<signed-jws>` whose claims match spec
+/// (iss / aud / sub / sid / events / typ header = "logout+jwt").
+#[netidmd_testkit::test]
+async fn test_logout_backchannel_delivery_end_to_end(rsclient: &NetidmClient) {
+    let http = get_reqwest_client();
+
+    // Stand up the dummy BCL receiver first so we have its URL to
+    // configure on the RP.
+    let (receiver_base, captured) = spawn_bcl_receiver().await;
+    let bcl_url = format!("{receiver_base}bcl");
+
+    // Drive the full code flow and get an ID token.
+    let (_atr, id_token, _oauth2_session_uuid) =
+        setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
+
+    // Now re-auth as admin to configure the RP's back-channel URL.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+    rsclient
+        .idm_oauth2_client_set_backchannel_logout_uri(TEST_INTEGRATION_RS_ID, bcl_url.as_str())
+        .await
+        .expect("set backchannel URL");
+
+    // Terminate the session.
+    let end_session_url = rsclient.make_url(&format!(
+        "/oauth2/openid/{TEST_INTEGRATION_RS_ID}/end_session_endpoint"
+    ));
+    let response = http
+        .get(end_session_url)
+        .query(&[("id_token_hint", id_token.as_str())])
+        .send()
+        .await
+        .expect("end_session");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Poll the captured buffer — the worker wakes on notify_one(),
+    // the POST should land within a few seconds. Bounded retry loop
+    // so we don't hang on an assertion failure.
+    let mut tokens: Vec<String> = Vec::new();
+    for _ in 0..40 {
+        {
+            let buf = captured.lock().await;
+            if !buf.is_empty() {
+                tokens = buf.clone();
+                break;
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
+    assert!(
+        !tokens.is_empty(),
+        "back-channel receiver never got a POST after 10 s"
+    );
+    assert_eq!(tokens.len(), 1, "exactly one delivery expected");
+
+    // Decode and verify the logout token's claims.
+    let logout_token = &tokens[0];
+    let jws = compact_jwt::compact::JwsCompact::from_str(logout_token)
+        .expect("logout_token parses as JwsCompact");
+    let header = jws.header();
+    assert_eq!(
+        header.typ.as_deref(),
+        Some("logout+jwt"),
+        "typ header must be logout+jwt per OIDC Back-Channel Logout 1.0 §2.4"
+    );
+
+    // Verify signature using the RP's public JWK set.
+    let jwks: JwkKeySet = http
+        .get(rsclient.make_url(&format!(
+            "/oauth2/openid/{TEST_INTEGRATION_RS_ID}/public_key.jwk"
+        )))
+        .send()
+        .await
+        .expect("jwks GET")
+        .json()
+        .await
+        .expect("parse jwks");
+    let jwk = jwks.keys.first().expect("jwks key").clone();
+    let verifier = JwsEs256Verifier::try_from(&jwk).expect("build verifier");
+    let verified = verifier.verify(&jws).expect("verify logout token");
+    let claims: serde_json::Value =
+        serde_json::from_slice(verified.payload()).expect("parse claims");
+
+    // Required claims per OpenID Back-Channel Logout 1.0 §2.4.
+    assert_eq!(
+        claims.get("aud").and_then(serde_json::Value::as_str),
+        Some(TEST_INTEGRATION_RS_ID),
+        "aud must equal the client_id"
+    );
+    assert!(
+        claims
+            .get("iss")
+            .and_then(serde_json::Value::as_str)
+            .is_some(),
+        "iss must be set"
+    );
+    assert!(
+        claims
+            .get("iat")
+            .and_then(serde_json::Value::as_i64)
+            .is_some(),
+        "iat must be set"
+    );
+    assert!(
+        claims
+            .get("jti")
+            .and_then(serde_json::Value::as_str)
+            .is_some(),
+        "jti must be set (per-token unique ID for replay protection)"
+    );
+    assert!(
+        claims
+            .get("sub")
+            .and_then(serde_json::Value::as_str)
+            .is_some(),
+        "sub must be the user UUID"
+    );
+    assert!(
+        claims
+            .get("sid")
+            .and_then(serde_json::Value::as_str)
+            .is_some(),
+        "sid must be set because backchannel_logout_session_supported=true"
+    );
+    let events = claims.get("events").expect("events claim must be present");
+    let logout_event = events
+        .get("http://schemas.openid.net/event/backchannel-logout")
+        .expect("events claim must contain the back-channel-logout event");
+    assert!(
+        logout_event.is_object(),
+        "back-channel-logout event value must be an (empty) object"
     );
 }

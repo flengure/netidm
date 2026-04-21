@@ -345,10 +345,10 @@ async fn tk_test_saml_client_group_mapping_crud(rsclient: &netidm_client::Netidm
         .expect("SAML get failed")
         .expect("SAML entry missing");
     assert!(
-        !entry
+        entry
             .attrs
             .get(ATTR_SAML_GROUP_MAPPING)
-            .is_some_and(|v| !v.is_empty()),
+            .is_none_or(|v| v.is_empty()),
         "SAML entry should have no saml_group_mapping values after remove"
     );
 }
