@@ -46,6 +46,11 @@
 //!     then logout_all is invoked via one of them; the response
 //!     reports `3` and all three UATs fail subsequent `/v1/self`
 //!     calls.
+//!   * T080 — `/v1/self/logout_all` fans out back-channel logout
+//!     deliveries per session: two OAuth2 code flows by the same
+//!     user → two distinct UATs each bound to an OAuth2Session on
+//!     the same RP → logout_all produces two back-channel POSTs
+//!     with distinct `sid` claims.
 
 use axum::extract::Form;
 use axum::{routing::post, Router};
@@ -406,14 +411,30 @@ async fn setup_oauth2_flow_and_get_id_token(
         .flatten()
         .expect("basic secret");
 
-    // Reauthenticate as the test user.
+    drive_code_flow(rsclient, client, &client_secret).await
+}
+
+/// Authenticate the standard test user, drive a PKCE authorisation
+/// code exchange against the pre-created RS, and return the access
+/// token bundle, ID token string, and the OAuth2 session UUID
+/// extracted from the ID token's `jti` claim.
+///
+/// Callers must have already set up the RS (`TEST_INTEGRATION_RS_ID`)
+/// and the test user with `NOT_ADMIN_TEST_USERNAME`. Each call mints
+/// a fresh UAT for the test user — invoking twice from the same test
+/// is how we get two parallel OAuth2 sessions for back-channel
+/// fan-out assertions.
+async fn drive_code_flow(
+    rsclient: &NetidmClient,
+    client: &reqwest::Client,
+    client_secret: &str,
+) -> (AccessTokenResponse, String, uuid::Uuid) {
     rsclient
         .auth_simple_password(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_PASSWORD)
         .await
         .expect("user auth");
     let user_uat = rsclient.get_token().await.expect("user token");
 
-    // PKCE + authorise flow.
     let (pkce_code_challenge, pkce_code_verifier) = PkceCodeChallenge::new_random_sha256();
     let query = [
         ("response_type", "code"),
@@ -432,33 +453,45 @@ async fn setup_oauth2_flow_and_get_id_token(
         .send()
         .await
         .expect("authorise GET");
-    assert_eq!(response.status(), StatusCode::OK);
-    let consent_req: AuthorisationResponse =
-        response.json().await.expect("parse authorise response");
-    let consent_token = match consent_req {
-        AuthorisationResponse::ConsentRequested { consent_token, .. } => consent_token,
-        AuthorisationResponse::Permitted => panic!("expected consent-requested; got permitted"),
+
+    // Two cases handled: (1) the RS is new to this user → 200 +
+    // ConsentRequested JSON, we follow up with `/permit` to get the
+    // 302; (2) the user has previously consented to this RS → the
+    // server returns 302 directly, with the authorisation code in
+    // the Location header. Both branches converge on `redir_str`.
+    let redir_str = if response.status() == StatusCode::FOUND {
+        response
+            .headers()
+            .get("Location")
+            .and_then(|hv| hv.to_str().ok().map(str::to_string))
+            .expect("redirect location on direct authorise")
+    } else {
+        assert_eq!(response.status(), StatusCode::OK);
+        let consent_req: AuthorisationResponse =
+            response.json().await.expect("parse authorise response");
+        let consent_token = match consent_req {
+            AuthorisationResponse::ConsentRequested { consent_token, .. } => consent_token,
+            AuthorisationResponse::Permitted => panic!("expected consent-requested; got permitted"),
+        };
+        let response = client
+            .get(rsclient.make_url("/oauth2/authorise/permit"))
+            .bearer_auth(user_uat)
+            .query(&[("token", consent_token.as_str())])
+            .send()
+            .await
+            .expect("consent permit");
+        assert_eq!(response.status(), StatusCode::FOUND);
+        response
+            .headers()
+            .get("Location")
+            .and_then(|hv| hv.to_str().ok().map(str::to_string))
+            .expect("redirect location from permit")
     };
 
-    let response = client
-        .get(rsclient.make_url("/oauth2/authorise/permit"))
-        .bearer_auth(user_uat)
-        .query(&[("token", consent_token.as_str())])
-        .send()
-        .await
-        .expect("consent permit");
-    assert_eq!(response.status(), StatusCode::FOUND);
-
-    let redir_str = response
-        .headers()
-        .get("Location")
-        .and_then(|hv| hv.to_str().ok().map(str::to_string))
-        .expect("redirect location");
     let redir_url = Url::parse(&redir_str).expect("parse redirect");
     let pairs: BTreeMap<_, _> = redir_url.query_pairs().collect();
     let code = pairs.get("code").expect("authorisation code in redirect");
 
-    // Exchange the code for an access + ID token.
     let form_req: AccessTokenRequest = GrantTypeReq::AuthorizationCode {
         code: code.to_string(),
         redirect_uri: Url::parse(TEST_INTEGRATION_RS_REDIRECT_URL).expect("redirect URL"),
@@ -468,7 +501,7 @@ async fn setup_oauth2_flow_and_get_id_token(
 
     let response = client
         .post(rsclient.make_url(OAUTH2_TOKEN_ENDPOINT))
-        .basic_auth(TEST_INTEGRATION_RS_ID, Some(client_secret.clone()))
+        .basic_auth(TEST_INTEGRATION_RS_ID, Some(client_secret))
         .form(&form_req)
         .send()
         .await
@@ -485,7 +518,6 @@ async fn setup_oauth2_flow_and_get_id_token(
         .expect("parse AccessTokenResponse");
     let id_token = atr.id_token.clone().expect("id_token issued");
 
-    // Parse the ID token to extract the session UUID from the `jti` claim.
     let unverified = OidcUnverified::from_str(&id_token).expect("parse id_token");
     let jwks: JwkKeySet = client
         .get(rsclient.make_url(&format!(
@@ -1012,6 +1044,118 @@ async fn test_logout_post_logout_redirect_uri_crud_rejects_non_admin(rsclient: &
     assert!(
         listed.is_empty(),
         "denied CRUD must not leave ghost values; got {listed:?}"
+    );
+}
+
+/// T080 / US5 Acceptance Scenario 2 — `/v1/self/logout_all` fans out
+/// back-channel deliveries to every RP whose tokens were minted
+/// against one of the caller's sessions. Two independent OAuth2
+/// code flows (same user, two UATs, two OAuth2Sessions) point at a
+/// single RP with a registered back-channel URL; invoking
+/// logout_all is expected to produce exactly two POSTs at the
+/// receiver, each carrying a distinct `sid`.
+#[netidmd_testkit::test]
+async fn test_logout_self_logout_all_fans_out_backchannel(rsclient: &NetidmClient) {
+    let http = get_reqwest_client();
+
+    // Stand up the dummy BCL receiver first so we can configure the
+    // RP with its URL before any tokens are issued (back-channel
+    // lookup reads the RP entry at termination time).
+    let (receiver_base, captured) = spawn_bcl_receiver().await;
+    let bcl_url = format!("{receiver_base}bcl");
+
+    // First flow also provisions the RS and the user.
+    let (_atr1, _id_token1, _session1) =
+        setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
+
+    // Admin: register the back-channel URL.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+    rsclient
+        .idm_oauth2_client_set_backchannel_logout_uri(TEST_INTEGRATION_RS_ID, bcl_url.as_str())
+        .await
+        .expect("set backchannel URL");
+
+    // Fetch the client secret so we can drive a second code flow
+    // without re-running the whole setup (which would double-create
+    // the RS / person).
+    let client_secret = rsclient
+        .idm_oauth2_rs_get_basic_secret(TEST_INTEGRATION_RS_ID)
+        .await
+        .ok()
+        .flatten()
+        .expect("basic secret");
+
+    // Second flow (same user, fresh UAT, fresh OAuth2Session bound
+    // to the RP that was already configured with a back-channel URL).
+    let (_atr2, _id_token2, _session2) =
+        drive_code_flow(rsclient, &http, &client_secret).await;
+
+    // The client is now authenticated as NOT_ADMIN_TEST_USERNAME
+    // holding the second-flow UAT. Invoke `/v1/self/logout_all` —
+    // this must terminate BOTH of the user's active UATs (the two
+    // the code flows produced).
+    let count = rsclient
+        .idm_logout_all_self()
+        .await
+        .expect("self logout_all");
+    assert!(
+        count >= 2,
+        "at least the two OAuth2-code-flow UATs must be terminated; got {count}"
+    );
+
+    // The worker wakes on notify_one(); wait for both deliveries
+    // to land. Bounded retry loop so a stuck test fails fast.
+    let mut tokens: Vec<String> = Vec::new();
+    for _ in 0..40 {
+        {
+            let buf = captured.lock().await;
+            if buf.len() >= 2 {
+                tokens = buf.clone();
+                break;
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
+    assert_eq!(
+        tokens.len(),
+        2,
+        "back-channel receiver expected exactly two POSTs after logout_all (10 s window); got {}",
+        tokens.len()
+    );
+
+    // Verify both tokens parse and carry distinct `sid` claims.
+    let jwks: JwkKeySet = http
+        .get(rsclient.make_url(&format!(
+            "/oauth2/openid/{TEST_INTEGRATION_RS_ID}/public_key.jwk"
+        )))
+        .send()
+        .await
+        .expect("jwks GET")
+        .json()
+        .await
+        .expect("parse jwks");
+    let jwk = jwks.keys.first().expect("jwks key").clone();
+    let verifier = JwsEs256Verifier::try_from(&jwk).expect("build verifier");
+
+    let mut sids: Vec<String> = Vec::with_capacity(2);
+    for tok in &tokens {
+        let jws = compact_jwt::compact::JwsCompact::from_str(tok).expect("parse jws");
+        let verified = verifier.verify(&jws).expect("verify signature");
+        let claims: serde_json::Value =
+            serde_json::from_slice(verified.payload()).expect("parse claims");
+        let sid = claims
+            .get("sid")
+            .and_then(serde_json::Value::as_str)
+            .expect("sid present")
+            .to_string();
+        sids.push(sid);
+    }
+    assert_ne!(
+        sids[0], sids[1],
+        "each delivery must carry a distinct sid — one per terminated session"
     );
 }
 
