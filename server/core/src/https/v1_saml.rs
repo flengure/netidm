@@ -159,3 +159,59 @@ pub(crate) async fn saml_client_id_group_mapping_delete(
         .map(Json::from)
         .map_err(WebError::from)
 }
+
+#[utoipa::path(
+    post,
+    path = "/v1/saml_client/{name}/_slo_url",
+    request_body=String,
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "saml",
+    operation_id = "saml_client_id_slo_url_post"
+)]
+/// Set (replace) the SAML service provider's Single Logout Service URL.
+/// Single-value: re-invoking replaces the previous URL. Rejects malformed
+/// URLs. Advertised back to the SP in the IdP metadata once SAML SLO
+/// lands in US4.
+pub(crate) async fn saml_client_id_slo_url_post(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(url): Json<String>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_slo_url_set(client_auth_info, name, url, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/v1/saml_client/{name}/_slo_url",
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "saml",
+    operation_id = "saml_client_id_slo_url_delete"
+)]
+/// Clear the SAML service provider's Single Logout Service URL.
+/// Idempotent.
+pub(crate) async fn saml_client_id_slo_url_delete(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_slo_url_clear(client_auth_info, name, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}

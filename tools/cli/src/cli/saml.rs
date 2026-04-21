@@ -154,6 +154,24 @@ impl SamlClientOpt {
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
+            SamlClientOpt::SetSloUrl { name, url } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_saml_client_set_slo_url(name.as_str(), url.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            SamlClientOpt::ClearSloUrl { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_saml_client_clear_slo_url(name.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
         }
     }
 }

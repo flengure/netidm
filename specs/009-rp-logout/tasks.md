@@ -168,9 +168,9 @@ description: "Task list for feature 009-rp-logout"
   - **Absent**: `find_saml_sessions_by_user_sp(sp_uuid, user_uuid)` → for each match, `terminate_session` + `delete_saml_session` → `Status::Success`
 - [ ] T062 [US4] Register SAML SLO routes in `server/core/src/https/v1_saml.rs`: `POST /saml/{sp_name}/slo/soap` → `saml_slo_soap`, `GET /saml/{sp_name}/slo/redirect` → `saml_slo_redirect`; both delegate to `handle_saml_logout_request` via an actor method on `v1_write.rs`; emit signed `<LogoutResponse>` per contracts/http-endpoints.md §5–§6; on HTTP-Redirect binding, render `logged_out.html` (reusing the US1 template) unless a safe `RelayState` is supplied
 - [ ] T063 [US4] Extend IdP metadata handler in `server/core/src/https/v1_saml.rs` (the existing metadata route): add `<md:SingleLogoutService Binding=".../SOAP" Location="…/slo/soap"/>` and `<md:SingleLogoutService Binding=".../HTTP-Redirect" Location="…/slo/redirect"/>` alongside the existing `<md:SingleSignOnService>` entries per contracts/http-endpoints.md §7
-- [ ] T064 [US4] Wire up `handle_saml_client_set_slo_url` + `_clear_` actor handlers on `QueryServerWriteV1` that modify `Attribute::SamlSingleLogoutServiceUrl` on the SamlClient entry; HTTP routes in `server/core/src/https/v1_saml.rs` or wherever SAML client admin routes live today
-- [ ] T065 [P] [US4] Add client SDK methods `idm_saml_client_set_slo_url` + `idm_saml_client_clear_slo_url` in `libs/client/src/saml.rs` (depends on T064)
-- [ ] T066 [P] [US4] Add CLI variants `SetSloUrl`, `ClearSloUrl` on `SamlClientOpt` in `tools/cli/src/opt/netidm.rs` and handlers in `tools/cli/src/cli/saml.rs` (depends on T065)
+- [X] T064 [US4] Wire up `handle_saml_client_set_slo_url` + `_clear_` actor handlers on `QueryServerWriteV1` that modify `Attribute::SamlSingleLogoutServiceUrl` on the SamlClient entry; HTTP routes in `server/core/src/https/v1_saml.rs` or wherever SAML client admin routes live today
+- [X] T065 [P] [US4] Add client SDK methods `idm_saml_client_set_slo_url` + `idm_saml_client_clear_slo_url` in `libs/client/src/saml.rs` (depends on T064)
+- [X] T066 [P] [US4] Add CLI variants `SetSloUrl`, `ClearSloUrl` on `SamlClientOpt` in `tools/cli/src/opt/netidm.rs` and handlers in `tools/cli/src/cli/saml.rs` (depends on T065)
 
 ### Tests for User Story 4
 

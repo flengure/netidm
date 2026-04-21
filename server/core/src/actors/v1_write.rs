@@ -2248,6 +2248,45 @@ impl QueryServerWriteV1 {
         )
         .await
     }
+
+    /// Set (replace) the SAML service provider's Single Logout Service
+    /// URL. Single-value: re-invoking replaces the previous URL. Rejects
+    /// malformed URLs.
+    ///
+    /// # Errors
+    /// * `OperationError::InvalidAttribute` — the URL does not parse.
+    /// * `OperationError::NoMatchingEntries` — no SAML client with the
+    ///   given `client_name` exists.
+    /// * Other `OperationError` variants from the underlying search/modify.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_slo_url_set(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        url: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_saml_slo_url_set(&self.idms, client_auth_info, client_name, url).await
+    }
+
+    /// Clear the SAML service provider's Single Logout Service URL.
+    /// Idempotent.
+    ///
+    /// # Errors
+    /// * `OperationError::NoMatchingEntries` — no SAML client with the
+    ///   given `client_name` exists.
+    /// * Other `OperationError` variants from the underlying search/modify.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_slo_url_clear(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_saml_slo_url_clear(&self.idms, client_auth_info, client_name).await
+    }
 }
 
 /// Shared implementation for the OAuth2 / SAML `add-group-mapping` handlers.
@@ -2443,6 +2482,89 @@ async fn handle_oauth2_backchannel_uri_clear(
     let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
         .map_err(|e| {
             error!(err = ?e, "Failed to begin modify for backchannel_logout_uri clear");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Set the SAML SP's Single Logout Service URL (single-value).
+async fn handle_saml_slo_url_set(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+    url: String,
+) -> Result<(), OperationError> {
+    use url::Url;
+
+    let parsed = Url::parse(url.trim()).map_err(|_| {
+        OperationError::InvalidAttribute(format!(
+            "saml_single_logout_service_url '{}' is not a valid absolute URL",
+            url
+        ))
+    })?;
+
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::SamlClient.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    let ml = ModifyList::new_list(vec![
+        Modify::Purged(Attribute::SamlSingleLogoutServiceUrl),
+        Modify::Present(Attribute::SamlSingleLogoutServiceUrl, Value::Url(parsed)),
+    ]);
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify for saml SLO URL set");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Clear the SAML SP's Single Logout Service URL. Idempotent.
+async fn handle_saml_slo_url_clear(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+) -> Result<(), OperationError> {
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::SamlClient.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    let ml = ModifyList::new_purge(Attribute::SamlSingleLogoutServiceUrl);
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify for saml SLO URL clear");
             e
         })?;
 

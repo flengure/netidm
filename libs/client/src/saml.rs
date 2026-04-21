@@ -163,4 +163,35 @@ impl NetidmClient {
         }
         Ok(out)
     }
+
+    /// Set (replace) the SAML service provider's Single Logout Service
+    /// URL. Single-value: re-invoking replaces the previous URL.
+    /// Rejects malformed URLs.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer or
+    /// the server rejects the URL as malformed.
+    pub async fn idm_saml_client_set_slo_url(
+        &self,
+        name: &str,
+        url: &str,
+    ) -> Result<(), ClientError> {
+        self.perform_post_request(
+            format!("/v1/saml_client/{name}/_slo_url").as_str(),
+            url.to_string(),
+        )
+        .await
+    }
+
+    /// Clear the SAML service provider's Single Logout Service URL.
+    /// Idempotent.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_saml_client_clear_slo_url(&self, name: &str) -> Result<(), ClientError> {
+        self.perform_delete_request(format!("/v1/saml_client/{name}/_slo_url").as_str())
+            .await
+    }
 }

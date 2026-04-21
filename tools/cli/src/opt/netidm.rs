@@ -1686,6 +1686,23 @@ pub enum SamlClientOpt {
         /// SAML upstream client name.
         name: String,
     },
+    /// Set (replace) the SAML service provider's Single Logout Service
+    /// URL. Advertised in IdP metadata and used to route inbound
+    /// `<LogoutRequest>` validation.
+    #[clap(name = "set-slo-url")]
+    SetSloUrl {
+        /// SAML SP name.
+        name: String,
+        /// Absolute URL of the SP's SLO endpoint.
+        url: String,
+    },
+    /// Clear the SAML service provider's Single Logout Service URL.
+    /// Idempotent.
+    #[clap(name = "clear-slo-url")]
+    ClearSloUrl {
+        /// SAML SP name.
+        name: String,
+    },
 }
 
 #[derive(Debug, Subcommand, Clone)]

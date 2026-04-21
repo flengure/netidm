@@ -3219,6 +3219,11 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             post(super::v1_saml::saml_client_id_group_mapping_post)
                 .delete(super::v1_saml::saml_client_id_group_mapping_delete),
         )
+        .route(
+            "/v1/saml_client/{name}/_slo_url",
+            post(super::v1_saml::saml_client_id_slo_url_post)
+                .delete(super::v1_saml::saml_client_id_slo_url_delete),
+        )
         .route("/v1/raw/create", post(raw_create))
         .route("/v1/raw/modify", post(raw_modify))
         .route("/v1/raw/delete", post(raw_delete))
