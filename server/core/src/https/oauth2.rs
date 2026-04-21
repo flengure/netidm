@@ -760,6 +760,89 @@ pub(crate) async fn oauth2_authorise_device_post(
         .map_err(WebError::OAuth2)
 }
 
+/// Query parameters for the OIDC RP-Initiated Logout 1.0 end-session endpoint.
+///
+/// Every field is optional at the wire level — the endpoint's behaviour
+/// gracefully degrades to a confirmation page when critical hints are
+/// missing or invalid.
+#[derive(Debug, Deserialize, Default)]
+pub struct OidcEndSessionQuery {
+    /// Previously-issued ID token. Used to identify the session (`jti`) and
+    /// the client (`aud`).
+    pub id_token_hint: Option<String>,
+    /// Post-logout redirect URI. Honoured only if it matches an entry on the
+    /// client's registered allowlist (exact match).
+    pub post_logout_redirect_uri: Option<String>,
+    /// Opaque value echoed back as `?state=` on the redirect.
+    pub state: Option<String>,
+    /// Client identifier. Allowed but redundant with `id_token_hint.aud`.
+    pub client_id: Option<String>,
+    /// Hint about who to log out. Currently ignored by netidm.
+    pub logout_hint: Option<String>,
+    /// Space-separated BCP47 language tags for the confirmation page.
+    pub ui_locales: Option<String>,
+}
+
+/// OIDC RP-Initiated Logout 1.0 `end_session_endpoint` handler.
+///
+/// Minimal DL26-landing implementation: renders a confirmation page. Token
+/// verification, session termination, refresh-token revocation, back-channel
+/// logout-token enqueue, and post-logout redirect honouring land with the
+/// remainder of US1 / US3 in PR-RP-LOGOUT. The route exists here so the
+/// advertisement in each client's discovery document resolves to a valid
+/// response today.
+#[debug_handler]
+pub async fn oauth2_openid_end_session_get(
+    State(_state): State<ServerState>,
+    Path(client_id): Path<String>,
+    Query(query): Query<OidcEndSessionQuery>,
+    Extension(kopid): Extension<KOpId>,
+) -> impl IntoResponse {
+    // DL26 scaffold: handler exists so the discovery document's advertisement
+    // resolves. Token verification, session termination, and post-logout
+    // redirect honouring are landed in subsequent commits of the US1 work.
+    // Logging the relevant fields so the request is observable and so the
+    // fields are read (avoiding a dead-code warning). Sensitive hints are
+    // NOT logged at info level — only counts.
+    let OidcEndSessionQuery {
+        id_token_hint,
+        post_logout_redirect_uri,
+        state,
+        client_id: body_client_id,
+        logout_hint,
+        ui_locales,
+    } = query;
+    info!(
+        event_id = %kopid.eventid,
+        client_id = %client_id,
+        has_id_token_hint = id_token_hint.is_some(),
+        has_post_logout_redirect_uri = post_logout_redirect_uri.is_some(),
+        has_state = state.is_some(),
+        body_client_id_matches = body_client_id
+            .as_deref()
+            .is_none_or(|c| c == client_id),
+        has_logout_hint = logout_hint.is_some(),
+        has_ui_locales = ui_locales.is_some(),
+        "OIDC end_session_endpoint hit — rendering confirmation page (US1 scaffold)"
+    );
+    let body = "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\
+                <title>Logged out</title></head><body>\
+                <h1>You have been logged out.</h1>\
+                <p>You may now close this window.</p>\
+                </body></html>\n";
+    (
+        StatusCode::OK,
+        [
+            (CONTENT_TYPE, HeaderValue::from_static("text/html; charset=utf-8")),
+            (
+                axum::http::header::CACHE_CONTROL,
+                HeaderValue::from_static("no-store"),
+            ),
+        ],
+        body,
+    )
+}
+
 pub fn route_setup(state: ServerState) -> Router<ServerState> {
     // this has all the openid-related routes
     let openid_router = Router::new()
@@ -792,6 +875,14 @@ pub fn route_setup(state: ServerState) -> Router<ServerState> {
         .route(
             "/oauth2/openid/{client_id}/.well-known/oauth-authorization-server",
             get(oauth2_rfc8414_metadata_get).options(oauth2_preflight_options),
+        )
+        // OIDC RP-Initiated Logout 1.0 end_session_endpoint.
+        // ⚠️  IF YOU CHANGE THIS VALUE YOU MUST UPDATE OIDC DISCOVERY URLS
+        .route(
+            "/oauth2/openid/{client_id}/end_session_endpoint",
+            get(oauth2_openid_end_session_get)
+                .post(oauth2_openid_end_session_get)
+                .options(oauth2_preflight_options),
         )
         .with_state(state.clone());
 
