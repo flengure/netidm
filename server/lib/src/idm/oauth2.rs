@@ -494,6 +494,10 @@ pub struct Oauth2RS {
     revocation_endpoint: Url,
     introspection_endpoint: Url,
     userinfo_endpoint: Url,
+    /// OIDC RP-Initiated Logout 1.0 `end_session_endpoint` URL for this client,
+    /// advertised in the discovery document. Matches netidm's per-client OIDC
+    /// URL idiom (same shape as `userinfo_endpoint`).
+    end_session_endpoint: Url,
     jwks_uri: Url,
     scopes_supported: BTreeSet<String>,
     prefer_short_username: bool,
@@ -883,6 +887,10 @@ impl Oauth2ResourceServersWriteTransaction<'_> {
                 let mut userinfo_endpoint = self.inner.origin.clone();
                 userinfo_endpoint.set_path(&format!("/oauth2/openid/{name}/userinfo"));
 
+                let mut end_session_endpoint = self.inner.origin.clone();
+                end_session_endpoint
+                    .set_path(&format!("/oauth2/openid/{name}/end_session_endpoint"));
+
                 let mut jwks_uri = self.inner.origin.clone();
                 jwks_uri.set_path(&format!("/oauth2/openid/{name}/public_key.jwk"));
 
@@ -939,6 +947,7 @@ impl Oauth2ResourceServersWriteTransaction<'_> {
                     revocation_endpoint,
                     introspection_endpoint,
                     userinfo_endpoint,
+                    end_session_endpoint,
                     jwks_uri,
                     scopes_supported,
                     prefer_short_username,
@@ -3090,6 +3099,10 @@ impl IdmServerProxyReadTransaction<'_> {
             introspection_endpoint_auth_methods_supported,
             introspection_endpoint_auth_signing_alg_values_supported: None,
             device_authorization_endpoint: o2rs.device_authorization_endpoint.clone(),
+            // DL26 — OIDC RP-Initiated Logout 1.0 + OIDC Back-Channel Logout 1.0
+            end_session_endpoint: Some(o2rs.end_session_endpoint.clone()),
+            backchannel_logout_supported: true,
+            backchannel_logout_session_supported: true,
         })
     }
 
@@ -5555,6 +5568,19 @@ mod tests {
         assert!(discovery
             .introspection_endpoint_auth_signing_alg_values_supported
             .is_none());
+
+        // DL26 — OIDC RP-Initiated Logout 1.0 + OIDC Back-Channel Logout 1.0.
+        assert_eq!(
+            discovery.end_session_endpoint,
+            Some(
+                Url::parse(
+                    "https://idm.example.com/oauth2/openid/test_resource_server/end_session_endpoint"
+                )
+                .unwrap()
+            )
+        );
+        assert!(discovery.backchannel_logout_supported);
+        assert!(discovery.backchannel_logout_session_supported);
     }
 
     #[idm_test]

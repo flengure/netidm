@@ -671,6 +671,22 @@ pub struct OidcDiscoveryResponse {
 
     /// Ref <https://www.rfc-editor.org/rfc/rfc8628#section-4>
     pub device_authorization_endpoint: Option<Url>,
+
+    /// OIDC RP-Initiated Logout 1.0 end_session_endpoint URL.
+    /// Ref <https://openid.net/specs/openid-connect-rpinitiated-1_0.html>
+    pub end_session_endpoint: Option<Url>,
+
+    /// OIDC Back-Channel Logout 1.0: whether netidm supports sending logout
+    /// tokens to relying parties out of band when a session ends.
+    /// Ref <https://openid.net/specs/openid-connect-backchannel-1_0.html>
+    #[serde(default)]
+    pub backchannel_logout_supported: bool,
+
+    /// OIDC Back-Channel Logout 1.0: whether logout tokens include a `sid`
+    /// (session identifier) claim, allowing relying parties to tie logout
+    /// notifications to specific sessions.
+    #[serde(default)]
+    pub backchannel_logout_session_supported: bool,
 }
 
 /// The response to an OAuth2 rfc8414 metadata request
