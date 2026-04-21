@@ -516,6 +516,87 @@ mod tests {
         assert_eq!(person_marker_count(&mut txn, person_uuid), 0);
     }
 
+    /// US4 — after reconciliation commits, the Person's `MemberOf` (computed
+    /// by the `memberof` plugin from the group-side `Member` writes) includes
+    /// the mapped group. This is the pre-requisite for the downstream OAuth2
+    /// `groups` claim to reflect upstream-reconciled memberships, since
+    /// `account.groups` on every token issuance is sourced from `MemberOf`.
+    /// The downstream projection at `server/lib/src/idm/oauth2.rs:3291-3324`
+    /// requires no change for this to work — it already reads `MemberOf`.
+    #[qs_test]
+    async fn reconcile_updates_memberof_after_commit(server: &QueryServer) {
+        let time = duration_from_epoch_now();
+        let mut txn = server.write(time).await.unwrap();
+        let (person_uuid, group_a_uuid, _) = seed_person_and_groups(&mut txn);
+
+        let provider_uuid = uuid!("4e4e4e4e-4e4e-4e4e-9e4e-4e4e4e4e4e4e");
+        let mapping = vec![GroupMapping {
+            upstream_name: "upstream-a".to_string(),
+            netidm_uuid: group_a_uuid,
+        }];
+
+        reconcile_upstream_memberships(
+            &mut txn,
+            person_uuid,
+            provider_uuid,
+            &mapping,
+            &["upstream-a".to_string()],
+        )
+        .expect("reconcile failed");
+
+        // Commit to fire the `memberof` plugin.
+        txn.commit().expect("commit failed");
+
+        // Re-read the Person in a fresh read txn and confirm MemberOf
+        // contains the target group. This is the seam the downstream token
+        // groups-claim projection reads from. The read txn is scoped so we
+        // can open a subsequent write.
+        {
+            let mut read_txn = server.read().await.unwrap();
+            let person = read_txn
+                .internal_search(filter!(f_eq(
+                    Attribute::Uuid,
+                    PartialValue::Uuid(person_uuid)
+                )))
+                .expect("search failed")
+                .into_iter()
+                .next()
+                .expect("person missing");
+
+            let memberof = person
+                .get_ava_refer(Attribute::MemberOf)
+                .expect("MemberOf unset after reconcile");
+            assert!(
+                memberof.contains(&group_a_uuid),
+                "expected MemberOf to contain {group_a_uuid} after reconcile; got {memberof:?}"
+            );
+        }
+
+        // Now reconcile the membership away and re-check.
+        let mut txn2 = server.write(duration_from_epoch_now()).await.unwrap();
+        reconcile_upstream_memberships(&mut txn2, person_uuid, provider_uuid, &mapping, &[])
+            .expect("remove reconcile failed");
+        txn2.commit().expect("commit failed");
+
+        {
+            let mut read_txn2 = server.read().await.unwrap();
+            let person2 = read_txn2
+                .internal_search(filter!(f_eq(
+                    Attribute::Uuid,
+                    PartialValue::Uuid(person_uuid)
+                )))
+                .expect("second search failed")
+                .into_iter()
+                .next()
+                .expect("person missing after remove");
+            let memberof2 = person2.get_ava_refer(Attribute::MemberOf);
+            assert!(
+                !memberof2.is_some_and(|m| m.contains(&group_a_uuid)),
+                "expected MemberOf to NOT contain {group_a_uuid} after revoke"
+            );
+        }
+    }
+
     /// US2 acceptance 5 / FR-014 — a mapping to an unknown group UUID is
     /// skipped with a warning; reconcile proceeds for the rest.
     #[qs_test]
