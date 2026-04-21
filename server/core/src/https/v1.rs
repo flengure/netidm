@@ -3155,6 +3155,11 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
                 .delete(super::v1_oauth2::oauth2_client_id_group_mapping_delete),
         )
         .route(
+            "/v1/oauth2/_client/{name}/_post_logout_redirect_uri",
+            post(super::v1_oauth2::oauth2_client_id_post_logout_redirect_uri_post)
+                .delete(super::v1_oauth2::oauth2_client_id_post_logout_redirect_uri_delete),
+        )
+        .route(
             "/v1/oauth2/{rs_name}",
             get(super::v1_oauth2::oauth2_id_get)
                 .patch(super::v1_oauth2::oauth2_id_patch)

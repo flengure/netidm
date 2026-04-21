@@ -657,6 +657,75 @@ pub(crate) async fn oauth2_client_id_patch(
 
 #[utoipa::path(
     post,
+    path = "/v1/oauth2/_client/{name}/_post_logout_redirect_uri",
+    request_body=String,
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "oauth2",
+    operation_id = "oauth2_client_id_post_logout_redirect_uri_post"
+)]
+/// Add a URI to the OAuth2 client's `OAuth2RsPostLogoutRedirectUri`
+/// allowlist. The request body is the URI as a JSON string. Idempotent:
+/// adding a URI already present succeeds with no side effect. Rejects
+/// malformed URIs.
+pub(crate) async fn oauth2_client_id_post_logout_redirect_uri_post(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(uri): Json<String>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_oauth2_client_post_logout_redirect_uri_add(
+            client_auth_info,
+            name,
+            uri,
+            kopid.eventid,
+        )
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/v1/oauth2/_client/{name}/_post_logout_redirect_uri",
+    request_body=String,
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "oauth2",
+    operation_id = "oauth2_client_id_post_logout_redirect_uri_delete"
+)]
+/// Remove a URI from the OAuth2 client's `OAuth2RsPostLogoutRedirectUri`
+/// allowlist. The request body is the URI as a JSON string. Idempotent:
+/// removing a URI not present returns success with no side effect.
+pub(crate) async fn oauth2_client_id_post_logout_redirect_uri_delete(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(uri): Json<String>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_oauth2_client_post_logout_redirect_uri_remove(
+            client_auth_info,
+            name,
+            uri,
+            kopid.eventid,
+        )
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    post,
     path = "/v1/oauth2/_client/{name}/_group_mapping/{upstream}",
     request_body=String,
     responses(

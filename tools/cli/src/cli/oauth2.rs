@@ -708,6 +708,45 @@ impl Oauth2Opt {
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
+            Oauth2Opt::AddPostLogoutRedirectUri { name, uri } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_add_post_logout_redirect_uri(name.as_str(), uri.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::RemovePostLogoutRedirectUri { name, uri } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_remove_post_logout_redirect_uri(
+                        name.as_str(),
+                        uri.as_str(),
+                    )
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::ListPostLogoutRedirectUris { name } => {
+                let client = opt.to_client(OpType::Read).await;
+                match client
+                    .idm_oauth2_client_list_post_logout_redirect_uris(name.as_str())
+                    .await
+                {
+                    Ok(uris) => {
+                        if uris.is_empty() {
+                            opt.output_mode.print_message("(no post-logout redirect URIs)");
+                        } else {
+                            for uri in uris {
+                                opt.output_mode.print_message(uri);
+                            }
+                        }
+                    }
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
         }
     }
 }

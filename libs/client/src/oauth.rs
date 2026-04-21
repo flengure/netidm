@@ -10,7 +10,8 @@ use netidm_proto::constants::{
     ATTR_OAUTH2_GROUP_MAPPING, ATTR_OAUTH2_ISSUER, ATTR_OAUTH2_JIT_PROVISIONING,
     ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE, ATTR_OAUTH2_LINK_BY,
     ATTR_OAUTH2_PREFER_SHORT_USERNAME, ATTR_OAUTH2_REQUEST_SCOPES, ATTR_OAUTH2_RS_BASIC_SECRET,
-    ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING, ATTR_OAUTH2_STRICT_REDIRECT_URI,
+    ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING,
+    ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI, ATTR_OAUTH2_STRICT_REDIRECT_URI,
     ATTR_OAUTH2_TOKEN_ENDPOINT, ATTR_OAUTH2_USERINFO_ENDPOINT,
 };
 use netidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin};
@@ -790,6 +791,71 @@ impl NetidmClient {
             .insert(ATTR_OAUTH2_LINK_BY.to_string(), vec![link_by.to_string()]);
         self.perform_patch_request(format!("/v1/oauth2/_client/{id}").as_str(), entry)
             .await
+    }
+
+    /// Add a URI to the OAuth2 client's `OAuth2RsPostLogoutRedirectUri`
+    /// allowlist. URIs on this allowlist are accepted as
+    /// `post_logout_redirect_uri` values on OIDC RP-Initiated Logout
+    /// requests (exact match). Idempotent: adding a URI already present
+    /// succeeds with no side effect. Rejects malformed (non-absolute) URIs.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer or
+    /// the server rejects the URI as malformed.
+    pub async fn idm_oauth2_client_add_post_logout_redirect_uri(
+        &self,
+        id: &str,
+        uri: &str,
+    ) -> Result<(), ClientError> {
+        self.perform_post_request(
+            format!("/v1/oauth2/_client/{id}/_post_logout_redirect_uri").as_str(),
+            uri.to_string(),
+        )
+        .await
+    }
+
+    /// Remove a URI from the OAuth2 client's `OAuth2RsPostLogoutRedirectUri`
+    /// allowlist. Idempotent: removing a URI not present returns `Ok(())`
+    /// with no side effect.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_oauth2_client_remove_post_logout_redirect_uri(
+        &self,
+        id: &str,
+        uri: &str,
+    ) -> Result<(), ClientError> {
+        self.perform_delete_request_with_body(
+            format!("/v1/oauth2/_client/{id}/_post_logout_redirect_uri").as_str(),
+            uri.to_string(),
+        )
+        .await
+    }
+
+    /// List all URIs on the OAuth2 client's
+    /// `OAuth2RsPostLogoutRedirectUri` allowlist. Order is whatever the
+    /// server returns (no ordering guarantee).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the client entry cannot be fetched.
+    pub async fn idm_oauth2_client_list_post_logout_redirect_uris(
+        &self,
+        id: &str,
+    ) -> Result<Vec<String>, ClientError> {
+        let entry: Option<Entry> = self
+            .perform_get_request(format!("/v1/oauth2/_client/{id}").as_str())
+            .await?;
+        let entry = entry.ok_or_else(|| {
+            ClientError::InvalidRequest(format!("no such OAuth2 client: {id}"))
+        })?;
+        Ok(entry
+            .attrs
+            .get(ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI)
+            .cloned()
+            .unwrap_or_default())
     }
 
     /// Add a mapping from an upstream group name to a netidm group UUID on an

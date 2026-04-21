@@ -1193,6 +1193,33 @@ pub enum Oauth2Opt {
         /// OAuth2 upstream client name.
         name: String,
     },
+    /// Add a URI to the OAuth2 client's post-logout redirect allowlist.
+    /// URIs on this allowlist are honoured as `post_logout_redirect_uri`
+    /// values on OIDC RP-Initiated Logout requests (exact match).
+    /// Idempotent: adding a URI already present is a no-op.
+    #[clap(name = "add-post-logout-redirect-uri")]
+    AddPostLogoutRedirectUri {
+        /// OAuth2 client name.
+        name: String,
+        /// Absolute URI to allow as a post-logout redirect destination.
+        uri: String,
+    },
+    /// Remove a URI from the OAuth2 client's post-logout redirect
+    /// allowlist. Idempotent.
+    #[clap(name = "remove-post-logout-redirect-uri")]
+    RemovePostLogoutRedirectUri {
+        /// OAuth2 client name.
+        name: String,
+        /// Exact URI to remove.
+        uri: String,
+    },
+    /// List all URIs on the OAuth2 client's post-logout redirect
+    /// allowlist. One URI per line; no ordering guarantee.
+    #[clap(name = "list-post-logout-redirect-uris")]
+    ListPostLogoutRedirectUris {
+        /// OAuth2 client name.
+        name: String,
+    },
 }
 
 #[derive(Args, Debug, Clone)]

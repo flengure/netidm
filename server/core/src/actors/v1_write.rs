@@ -2054,6 +2054,50 @@ impl QueryServerWriteV1 {
         Ok(token)
     }
 
+    /// Add a post-logout redirect URI to the OAuth2 client's
+    /// `OAuth2RsPostLogoutRedirectUri` allowlist. Idempotent: adding a URI
+    /// already present succeeds with no side effect. Rejects malformed URIs
+    /// (non-absolute, unparseable).
+    ///
+    /// # Errors
+    /// * `OperationError::InvalidAttribute` — the URI does not parse as an
+    ///   absolute URL.
+    /// * `OperationError::NoMatchingEntries` — no OAuth2 client with the
+    ///   given `client_name` exists.
+    /// * Other `OperationError` variants from the underlying search/modify.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_oauth2_client_post_logout_redirect_uri_add(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        uri: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_oauth2_post_logout_uri_add(&self.idms, client_auth_info, client_name, uri).await
+    }
+
+    /// Remove a post-logout redirect URI from the OAuth2 client's allowlist.
+    /// Idempotent: removing a URI not present returns `Ok(())` with no side
+    /// effect.
+    ///
+    /// # Errors
+    /// * `OperationError::InvalidAttribute` — the URI does not parse.
+    /// * `OperationError::NoMatchingEntries` — no OAuth2 client with the
+    ///   given `client_name` exists.
+    /// * Other `OperationError` variants from the underlying search/modify.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_oauth2_client_post_logout_redirect_uri_remove(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        uri: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_oauth2_post_logout_uri_remove(&self.idms, client_auth_info, client_name, uri).await
+    }
+
     /// Add a group mapping (`<upstream>:<group-uuid>`) to an OAuth2 upstream
     /// client. Rejects the operation if another mapping for the same
     /// `upstream` name already exists on the connector (FR-007a).
@@ -2172,6 +2216,117 @@ impl QueryServerWriteV1 {
 /// mapping values, and modify-append into one place. The variant is selected
 /// by `class` (`OAuth2Client` vs. `SamlClient`) and `attr`
 /// (`OAuth2GroupMapping` vs. `SamlGroupMapping`).
+/// Append a post-logout redirect URI to the named OAuth2 client's
+/// `OAuth2RsPostLogoutRedirectUri` set. Idempotent: if the URI is already
+/// present, commit and return `Ok(())` without producing a duplicate.
+async fn handle_oauth2_post_logout_uri_add(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+    uri: String,
+) -> Result<(), OperationError> {
+    use url::Url;
+
+    let parsed = Url::parse(uri.trim()).map_err(|_| {
+        OperationError::InvalidAttribute(format!(
+            "post_logout_redirect_uri '{}' is not a valid absolute URL",
+            uri
+        ))
+    })?;
+
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    // Idempotent: if already present, commit and return Ok without modify.
+    let entries = idms_prox_write.qs_write.internal_search(filter.clone())?;
+    let entry = entries.first().ok_or(OperationError::NoMatchingEntries)?;
+    if let Some(existing_set) = entry
+        .get_ava_set(Attribute::OAuth2RsPostLogoutRedirectUri)
+        .and_then(|vs| vs.as_url_set())
+    {
+        if existing_set.contains(&parsed) {
+            return idms_prox_write.commit().map(|_| ());
+        }
+    }
+
+    let ml = ModifyList::new_append(
+        Attribute::OAuth2RsPostLogoutRedirectUri,
+        Value::Url(parsed),
+    );
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify for post_logout_redirect_uri add");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Remove a post-logout redirect URI from the named OAuth2 client's
+/// `OAuth2RsPostLogoutRedirectUri` set. Idempotent.
+async fn handle_oauth2_post_logout_uri_remove(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+    uri: String,
+) -> Result<(), OperationError> {
+    use url::Url;
+
+    let parsed = Url::parse(uri.trim()).map_err(|_| {
+        OperationError::InvalidAttribute(format!(
+            "post_logout_redirect_uri '{}' is not a valid absolute URL",
+            uri
+        ))
+    })?;
+
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    let ml = ModifyList::new_remove(
+        Attribute::OAuth2RsPostLogoutRedirectUri,
+        PartialValue::Url(parsed),
+    );
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify for post_logout_redirect_uri remove");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
 async fn handle_group_mapping_add(
     idms: &std::sync::Arc<IdmServer>,
     client_auth_info: ClientAuthInfo,
