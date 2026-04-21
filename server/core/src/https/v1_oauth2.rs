@@ -657,22 +657,22 @@ pub(crate) async fn oauth2_client_id_patch(
 
 #[utoipa::path(
     post,
-    path = "/v1/oauth2/_client/{name}/_post_logout_redirect_uri",
+    path = "/v1/oauth2/{rs_name}/_post_logout_redirect_uri",
     request_body=String,
     responses(
         DefaultApiResponse,
     ),
     security(("token_jwt" = [])),
     tag = "oauth2",
-    operation_id = "oauth2_client_id_post_logout_redirect_uri_post"
+    operation_id = "oauth2_id_post_logout_redirect_uri_post"
 )]
-/// Add a URI to the OAuth2 client's `OAuth2RsPostLogoutRedirectUri`
+/// Add a URI to the OAuth2 relying party's `OAuth2RsPostLogoutRedirectUri`
 /// allowlist. The request body is the URI as a JSON string. Idempotent:
 /// adding a URI already present succeeds with no side effect. Rejects
 /// malformed URIs.
-pub(crate) async fn oauth2_client_id_post_logout_redirect_uri_post(
+pub(crate) async fn oauth2_id_post_logout_redirect_uri_post(
     State(state): State<ServerState>,
-    Path(name): Path<String>,
+    Path(rs_name): Path<String>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Json(uri): Json<String>,
@@ -681,7 +681,7 @@ pub(crate) async fn oauth2_client_id_post_logout_redirect_uri_post(
         .qe_w_ref
         .handle_oauth2_client_post_logout_redirect_uri_add(
             client_auth_info,
-            name,
+            rs_name,
             uri,
             kopid.eventid,
         )
@@ -692,21 +692,22 @@ pub(crate) async fn oauth2_client_id_post_logout_redirect_uri_post(
 
 #[utoipa::path(
     delete,
-    path = "/v1/oauth2/_client/{name}/_post_logout_redirect_uri",
+    path = "/v1/oauth2/{rs_name}/_post_logout_redirect_uri",
     request_body=String,
     responses(
         DefaultApiResponse,
     ),
     security(("token_jwt" = [])),
     tag = "oauth2",
-    operation_id = "oauth2_client_id_post_logout_redirect_uri_delete"
+    operation_id = "oauth2_id_post_logout_redirect_uri_delete"
 )]
-/// Remove a URI from the OAuth2 client's `OAuth2RsPostLogoutRedirectUri`
-/// allowlist. The request body is the URI as a JSON string. Idempotent:
-/// removing a URI not present returns success with no side effect.
-pub(crate) async fn oauth2_client_id_post_logout_redirect_uri_delete(
+/// Remove a URI from the OAuth2 relying party's
+/// `OAuth2RsPostLogoutRedirectUri` allowlist. The request body is the
+/// URI as a JSON string. Idempotent: removing a URI not present returns
+/// success with no side effect.
+pub(crate) async fn oauth2_id_post_logout_redirect_uri_delete(
     State(state): State<ServerState>,
-    Path(name): Path<String>,
+    Path(rs_name): Path<String>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Json(uri): Json<String>,
@@ -715,7 +716,7 @@ pub(crate) async fn oauth2_client_id_post_logout_redirect_uri_delete(
         .qe_w_ref
         .handle_oauth2_client_post_logout_redirect_uri_remove(
             client_auth_info,
-            name,
+            rs_name,
             uri,
             kopid.eventid,
         )
@@ -726,27 +727,33 @@ pub(crate) async fn oauth2_client_id_post_logout_redirect_uri_delete(
 
 #[utoipa::path(
     post,
-    path = "/v1/oauth2/_client/{name}/_backchannel_logout_uri",
+    path = "/v1/oauth2/{rs_name}/_backchannel_logout_uri",
     request_body=String,
     responses(
         DefaultApiResponse,
     ),
     security(("token_jwt" = [])),
     tag = "oauth2",
-    operation_id = "oauth2_client_id_backchannel_logout_uri_post"
+    operation_id = "oauth2_id_backchannel_logout_uri_post"
 )]
-/// Set the OAuth2 client's `OAuth2RsBackchannelLogoutUri`. Single-value:
-/// re-invoking replaces the previous URI. Rejects malformed URIs.
-pub(crate) async fn oauth2_client_id_backchannel_logout_uri_post(
+/// Set the OAuth2 relying party's `OAuth2RsBackchannelLogoutUri`.
+/// Single-value: re-invoking replaces the previous URI. Rejects
+/// malformed URIs.
+pub(crate) async fn oauth2_id_backchannel_logout_uri_post(
     State(state): State<ServerState>,
-    Path(name): Path<String>,
+    Path(rs_name): Path<String>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Json(uri): Json<String>,
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_oauth2_client_backchannel_logout_uri_set(client_auth_info, name, uri, kopid.eventid)
+        .handle_oauth2_client_backchannel_logout_uri_set(
+            client_auth_info,
+            rs_name,
+            uri,
+            kopid.eventid,
+        )
         .await
         .map(Json::from)
         .map_err(WebError::from)
@@ -754,24 +761,25 @@ pub(crate) async fn oauth2_client_id_backchannel_logout_uri_post(
 
 #[utoipa::path(
     delete,
-    path = "/v1/oauth2/_client/{name}/_backchannel_logout_uri",
+    path = "/v1/oauth2/{rs_name}/_backchannel_logout_uri",
     responses(
         DefaultApiResponse,
     ),
     security(("token_jwt" = [])),
     tag = "oauth2",
-    operation_id = "oauth2_client_id_backchannel_logout_uri_delete"
+    operation_id = "oauth2_id_backchannel_logout_uri_delete"
 )]
-/// Clear the OAuth2 client's `OAuth2RsBackchannelLogoutUri`. Idempotent.
-pub(crate) async fn oauth2_client_id_backchannel_logout_uri_delete(
+/// Clear the OAuth2 relying party's `OAuth2RsBackchannelLogoutUri`.
+/// Idempotent.
+pub(crate) async fn oauth2_id_backchannel_logout_uri_delete(
     State(state): State<ServerState>,
-    Path(name): Path<String>,
+    Path(rs_name): Path<String>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_oauth2_client_backchannel_logout_uri_clear(client_auth_info, name, kopid.eventid)
+        .handle_oauth2_client_backchannel_logout_uri_clear(client_auth_info, rs_name, kopid.eventid)
         .await
         .map(Json::from)
         .map_err(WebError::from)

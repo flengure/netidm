@@ -26,7 +26,7 @@ use crate::constants::{
     UUID_SCHEMA_ATTR_SAML_SESSION_INDEX, UUID_SCHEMA_ATTR_SAML_SESSION_SP,
     UUID_SCHEMA_ATTR_SAML_SESSION_UAT_UUID, UUID_SCHEMA_ATTR_SAML_SESSION_USER,
     UUID_SCHEMA_ATTR_SAML_SINGLE_LOGOUT_SERVICE_URL, UUID_SCHEMA_CLASS_LOGOUT_DELIVERY,
-    UUID_SCHEMA_CLASS_OAUTH2_CLIENT, UUID_SCHEMA_CLASS_PERSON, UUID_SCHEMA_CLASS_SAML_CLIENT,
+    UUID_SCHEMA_CLASS_OAUTH2_RS, UUID_SCHEMA_CLASS_PERSON, UUID_SCHEMA_CLASS_SAML_CLIENT,
     UUID_SCHEMA_CLASS_SAML_SESSION,
 };
 use crate::prelude::*;
@@ -228,39 +228,45 @@ pub static SCHEMA_ATTR_SAML_SESSION_CREATED_DL26: LazyLock<SchemaAttribute> =
         ..Default::default()
     });
 
-/// OAuth2 client class updated for DL26: adds the two new URL attributes to
-/// `systemmay` (post-logout redirect allowlist and back-channel logout URI).
-/// Every systemmay entry carried forward from DL25.
-pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL26: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
-    uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
-    name: EntryClass::OAuth2Client.into(),
-    description: "The class representing a configured OAuth2 Confidential Client acting as \
-                      an authentication source."
-        .to_string(),
-    systemmust: vec![
-        Attribute::Name,
-        Attribute::OAuth2ClientId,
-        Attribute::OAuth2ClientSecret,
-        Attribute::OAuth2AuthorisationEndpoint,
-        Attribute::OAuth2TokenEndpoint,
-        Attribute::OAuth2RequestScopes,
-    ],
+/// OAuth2 **resource server** class updated for DL26: adds the two new
+/// URL attributes (post-logout redirect allowlist and back-channel
+/// logout URI). These live on the downstream relying-party entry (the
+/// class netidm mints tokens FOR), not on `OAuth2Client` which is the
+/// upstream federation class. The `Oauth2RS` loader in
+/// `idm::oauth2::reload_oauth2` reads these values off resource-server
+/// entries to populate the post-logout allowlist and the back-channel
+/// endpoint used by `terminate_session`'s enqueue path.
+///
+/// `systemmay` entries carried forward from DL23's
+/// `SCHEMA_CLASS_OAUTH2_RS_DL23`; only the two DL26 URL attrs are new.
+pub static SCHEMA_CLASS_OAUTH2_RS_DL26: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_OAUTH2_RS,
+    name: EntryClass::OAuth2ResourceServer.into(),
+    description: "The class representing a configured OAuth2 Client".to_string(),
+
     systemmay: vec![
         Attribute::DisplayName,
-        Attribute::OAuth2UserinfoEndpoint,
-        Attribute::OAuth2JitProvisioning,
-        Attribute::OAuth2ClaimMapName,
-        Attribute::OAuth2ClaimMapDisplayname,
-        Attribute::OAuth2ClaimMapEmail,
-        Attribute::OAuth2EmailLinkAccounts,
-        Attribute::OAuth2ClientLogoUri,
-        Attribute::OAuth2Issuer,
-        Attribute::OAuth2JwksUri,
-        Attribute::OAuth2LinkBy,
-        Attribute::OAuth2GroupMapping,
+        Attribute::Description,
+        Attribute::OAuth2RsScopeMap,
+        Attribute::OAuth2RsSupScopeMap,
+        Attribute::OAuth2JwtLegacyCryptoEnable,
+        Attribute::OAuth2PreferShortUsername,
+        Attribute::Image,
+        Attribute::OAuth2RsClaimMap,
+        Attribute::OAuth2Session,
+        Attribute::OAuth2RsOrigin,
+        Attribute::OAuth2StrictRedirectUri,
+        Attribute::OAuth2DeviceFlowEnable,
+        Attribute::OAuth2ConsentPromptEnable,
+        // Deprecated
+        Attribute::Rs256PrivateKeyDer,
+        Attribute::OAuth2RsTokenKey,
+        Attribute::Es256PrivateKeyDer,
+        // DL26 additions — RP-Initiated Logout 1.0 + Back-Channel Logout 1.0
         Attribute::OAuth2RsPostLogoutRedirectUri,
         Attribute::OAuth2RsBackchannelLogoutUri,
     ],
+    systemmust: vec![Attribute::OAuth2RsOriginLanding, Attribute::Name],
     ..Default::default()
 });
 

@@ -808,7 +808,7 @@ impl NetidmClient {
         uri: &str,
     ) -> Result<(), ClientError> {
         self.perform_post_request(
-            format!("/v1/oauth2/_client/{id}/_post_logout_redirect_uri").as_str(),
+            format!("/v1/oauth2/{id}/_post_logout_redirect_uri").as_str(),
             uri.to_string(),
         )
         .await
@@ -827,7 +827,7 @@ impl NetidmClient {
         uri: &str,
     ) -> Result<(), ClientError> {
         self.perform_delete_request_with_body(
-            format!("/v1/oauth2/_client/{id}/_post_logout_redirect_uri").as_str(),
+            format!("/v1/oauth2/{id}/_post_logout_redirect_uri").as_str(),
             uri.to_string(),
         )
         .await
@@ -845,10 +845,11 @@ impl NetidmClient {
         id: &str,
     ) -> Result<Vec<String>, ClientError> {
         let entry: Option<Entry> = self
-            .perform_get_request(format!("/v1/oauth2/_client/{id}").as_str())
+            .perform_get_request(format!("/v1/oauth2/{id}").as_str())
             .await?;
-        let entry = entry
-            .ok_or_else(|| ClientError::InvalidRequest(format!("no such OAuth2 client: {id}")))?;
+        let entry = entry.ok_or_else(|| {
+            ClientError::InvalidRequest(format!("no such OAuth2 resource server: {id}"))
+        })?;
         Ok(entry
             .attrs
             .get(ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI)
@@ -870,7 +871,7 @@ impl NetidmClient {
         uri: &str,
     ) -> Result<(), ClientError> {
         self.perform_post_request(
-            format!("/v1/oauth2/_client/{id}/_backchannel_logout_uri").as_str(),
+            format!("/v1/oauth2/{id}/_backchannel_logout_uri").as_str(),
             uri.to_string(),
         )
         .await
@@ -887,10 +888,8 @@ impl NetidmClient {
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
-        self.perform_delete_request(
-            format!("/v1/oauth2/_client/{id}/_backchannel_logout_uri").as_str(),
-        )
-        .await
+        self.perform_delete_request(format!("/v1/oauth2/{id}/_backchannel_logout_uri").as_str())
+            .await
     }
 
     /// Add a mapping from an upstream group name to a netidm group UUID on an

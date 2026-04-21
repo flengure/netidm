@@ -8,6 +8,7 @@ mod identity_verification_tests;
 mod integration;
 mod ip_addr_extractors;
 mod ldap_basic;
+mod logout_test;
 mod oauth2_client_test;
 mod oauth2_proxy_test;
 mod oauth2_test;

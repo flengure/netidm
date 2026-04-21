@@ -2409,7 +2409,7 @@ async fn handle_oauth2_post_logout_uri_add(
         })?;
 
     let filter = filter_all!(f_and!([
-        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Class, EntryClass::OAuth2ResourceServer.into()),
         f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
     ]));
 
@@ -2467,7 +2467,7 @@ async fn handle_oauth2_post_logout_uri_remove(
         })?;
 
     let filter = filter_all!(f_and!([
-        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Class, EntryClass::OAuth2ResourceServer.into()),
         f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
     ]));
 
@@ -2516,7 +2516,7 @@ async fn handle_oauth2_backchannel_uri_set(
         })?;
 
     let filter = filter_all!(f_and!([
-        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Class, EntryClass::OAuth2ResourceServer.into()),
         f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
     ]));
 
@@ -2555,7 +2555,7 @@ async fn handle_oauth2_backchannel_uri_clear(
         })?;
 
     let filter = filter_all!(f_and!([
-        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Class, EntryClass::OAuth2ResourceServer.into()),
         f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
     ]));
 

@@ -61,7 +61,7 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
 
 pub fn phase_2_schema_classes() -> Vec<EntryInitNew> {
     let mut classes = super::dl25::phase_2_schema_classes();
-    classes.push(SCHEMA_CLASS_OAUTH2_CLIENT_DL26.clone().into());
+    classes.push(SCHEMA_CLASS_OAUTH2_RS_DL26.clone().into());
     classes.push(SCHEMA_CLASS_SAML_CLIENT_DL26.clone().into());
     classes.push(SCHEMA_CLASS_PERSON_DL26.clone().into());
     classes.push(SCHEMA_CLASS_LOGOUT_DELIVERY_DL26.clone().into());
@@ -89,7 +89,7 @@ pub fn phase_6_builtin_non_admin_entries(
 
 pub fn phase_7_builtin_access_control_profiles() -> Vec<EntryInitNew> {
     let mut acps = super::dl25::phase_7_builtin_access_control_profiles();
-    acps.push(access::IDM_ACP_OAUTH2_CLIENT_ADMIN_DL26.clone().into());
+    acps.push(access::IDM_ACP_OAUTH2_MANAGE_DL26.clone().into());
     acps.push(access::IDM_ACP_SAML_CLIENT_ADMIN_DL26.clone().into());
     acps.push(access::IDM_ACP_LOGOUT_DELIVERY_READ_DL26.clone().into());
     acps
