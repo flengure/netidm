@@ -51,6 +51,9 @@
 //!     user → two distinct UATs each bound to an OAuth2Session on
 //!     the same RP → logout_all produces two back-channel POSTs
 //!     with distinct `sid` claims.
+//!   * T036 — malformed `post_logout_redirect_uri` values are
+//!     rejected by the server (URL schema type); storage remains
+//!     unchanged on failed add.
 
 use axum::extract::Form;
 use axum::{routing::post, Router};
@@ -1045,6 +1048,65 @@ async fn test_logout_post_logout_redirect_uri_crud_rejects_non_admin(rsclient: &
         listed.is_empty(),
         "denied CRUD must not leave ghost values; got {listed:?}"
     );
+}
+
+/// T036 / US2 Acceptance Scenario 4 — the server rejects malformed
+/// `post_logout_redirect_uri` values. The URL schema type is
+/// authoritative — a non-URL string must not be accepted and must
+/// not corrupt storage. Covers FR validation requirement on the
+/// allowlist.
+#[netidmd_testkit::test]
+async fn test_logout_post_logout_redirect_uri_malformed_rejected(rsclient: &NetidmClient) {
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+    rsclient
+        .idm_oauth2_rs_basic_create(
+            TEST_INTEGRATION_RS_ID,
+            TEST_INTEGRATION_RS_DISPLAY,
+            TEST_INTEGRATION_RS_URL,
+        )
+        .await
+        .expect("create RS");
+
+    // Malformed inputs — none of these should be accepted by the
+    // URL schema type. Testing a couple of flavours to catch naïve
+    // partial validation.
+    for bad in ["not-a-url", "example.com/missing-scheme", " "] {
+        let add_result = rsclient
+            .idm_oauth2_client_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, bad)
+            .await;
+        assert!(
+            add_result.is_err(),
+            "malformed post-logout URI {bad:?} must be rejected; got Ok"
+        );
+    }
+
+    // Storage must remain untouched by the failed adds.
+    let listed = rsclient
+        .idm_oauth2_client_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
+        .await
+        .expect("list");
+    assert!(
+        listed.is_empty(),
+        "rejected adds must not leave ghost values; got {listed:?}"
+    );
+
+    // A properly-formed URL must still succeed — sanity check that
+    // we didn't break the happy path.
+    rsclient
+        .idm_oauth2_client_add_post_logout_redirect_uri(
+            TEST_INTEGRATION_RS_ID,
+            "https://demo.example.com/after-logout",
+        )
+        .await
+        .expect("well-formed URI must still succeed");
+    let listed = rsclient
+        .idm_oauth2_client_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
+        .await
+        .expect("list");
+    assert_eq!(listed.len(), 1, "one well-formed URL should be stored");
 }
 
 /// T080 / US5 Acceptance Scenario 2 — `/v1/self/logout_all` fans out

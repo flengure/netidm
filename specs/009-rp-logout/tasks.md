@@ -109,7 +109,7 @@ description: "Task list for feature 009-rp-logout"
 ### Tests for User Story 2
 
 - [X] T035 [P] [US2] Integration test `oauth2_post_logout_uri_crud` in `server/testkit/tests/`: create an OAuth2 client; add a URI; list returns it; add a second URI; list returns both; remove the first; list returns only the second (acceptance scenarios 1–3)
-- [ ] T036 [P] [US2] Integration test `oauth2_post_logout_uri_malformed_rejected` in `server/testkit/tests/`: attempt to add `"not-a-url"`; assert CLI exits non-zero; assert storage unchanged via subsequent list (acceptance scenario 4)
+- [X] T036 [P] [US2] Integration test `oauth2_post_logout_uri_malformed_rejected` in `server/testkit/tests/`: attempt to add `"not-a-url"`; assert CLI exits non-zero; assert storage unchanged via subsequent list (acceptance scenario 4)
 - [X] T037 [P] [US2] Integration test `oauth2_post_logout_uri_persists_across_restart` in `server/testkit/tests/`: add a URI; restart the testkit server; assert the URI is still present via list (integrates with US1's allowlist check)
 - [X] T038 [P] [US2] Integration test `oauth2_post_logout_uri_acp_admin_only` in `server/testkit/tests/`: attempt each CRUD verb as a non-admin identity; assert all are rejected with an ACP error (acceptance criterion for FR-016) — landed as `test_logout_post_logout_redirect_uri_crud_rejects_non_admin`
 
