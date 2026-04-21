@@ -353,6 +353,10 @@ pub fn list_due_pending_deliveries(
     Ok(out)
 }
 
+/// Poll interval for the back-channel logout worker. Covers missed
+/// notifications and retries whose `next_attempt` has come due.
+pub const WORKER_POLL_INTERVAL: Duration = Duration::from_secs(30);
+
 #[cfg(test)]
 mod tests {
     use super::*;

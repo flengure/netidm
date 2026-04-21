@@ -105,6 +105,12 @@ pub struct IdmServer {
     origin: Url,
     oauth2_client_providers: HashMap<Uuid, OAuth2ClientProvider>,
     saml_client_providers: HashMap<Uuid, SamlClientProvider>,
+
+    /// Wakes the back-channel logout delivery worker when a new
+    /// `LogoutDelivery` entry is enqueued, so it can attempt the first
+    /// delivery immediately rather than waiting for the next 30 s poll
+    /// tick. See `idm::logout_delivery::run_worker`.
+    logout_delivery_notify: std::sync::Arc<tokio::sync::Notify>,
 }
 
 /// Contains methods that require writes, but in the context of writing to the idm in memory structures (maybe the query server too). This is things like authentication.
@@ -253,6 +259,7 @@ impl IdmServer {
             origin: origin.clone(),
             oauth2_client_providers: HashMap::new(),
             saml_client_providers: HashMap::new(),
+            logout_delivery_notify: std::sync::Arc::new(tokio::sync::Notify::new()),
         };
         let idm_server_delayed = IdmServerDelayed { async_rx };
         let idm_server_audit = IdmServerAudit { audit_rx };
@@ -312,6 +319,17 @@ impl IdmServer {
             saml_client_providers: self.saml_client_providers.read(),
             // async_tx: self.async_tx.clone(),
         })
+    }
+
+    /// Handle to the shared [`tokio::sync::Notify`] that the back-channel
+    /// logout delivery worker waits on. `terminate_session` and any other
+    /// caller that just enqueued a `LogoutDelivery` record should call
+    /// `.notify_one()` on the returned handle so the worker attempts the
+    /// first delivery immediately rather than waiting out the next 30 s
+    /// poll tick.
+    #[must_use]
+    pub fn logout_delivery_notify(&self) -> std::sync::Arc<tokio::sync::Notify> {
+        self.logout_delivery_notify.clone()
     }
 
     #[instrument(level = "debug", skip_all)]

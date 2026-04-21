@@ -34,6 +34,7 @@ mod crypto;
 mod https;
 mod interval;
 mod ldaps;
+mod logout_worker;
 mod repl;
 mod tcp;
 mod utils;
@@ -926,6 +927,7 @@ pub(crate) enum TaskName {
     MigrationReload,
     WgHandshakePoller,
     WgPeerRevocation,
+    LogoutDeliveryWorker,
 }
 
 impl Display for TaskName {
@@ -946,6 +948,7 @@ impl Display for TaskName {
                 TaskName::MigrationReload => "Migration Reload Monitor",
                 TaskName::WgHandshakePoller => "WireGuard Handshake Poller",
                 TaskName::WgPeerRevocation => "WireGuard Peer Revocation",
+                TaskName::LogoutDeliveryWorker => "Back-Channel Logout Delivery Worker",
             }
         )
     }
@@ -1254,6 +1257,15 @@ pub async fn create_server_core(
 
     // Create the server async write entry point.
     let server_write_ref = QueryServerWriteV1::start_static(idms_arc.clone());
+
+    // Background task: drive OIDC Back-Channel Logout deliveries. Polls
+    // the persistent `LogoutDelivery` queue and POSTs each due record's
+    // signed logout token to the relying-party endpoint with a bounded
+    // timeout and bounded retry budget. Woken immediately via
+    // `idms_arc.logout_delivery_notify()` when `terminate_session`
+    // enqueues a new record (US3 of PR-RP-LOGOUT).
+    let logout_worker_handle =
+        logout_worker::spawn_worker(idms_arc.clone(), broadcast_tx.subscribe());
 
     // Background task: poll WireGuard handshake timestamps every 60 seconds and
     // write last_seen back to WgPeer entries.
@@ -1633,6 +1645,7 @@ pub async fn create_server_core(
         (TaskName::MigrationReload, migration_reload_handle),
         (TaskName::WgHandshakePoller, wg_handshake_handle),
         (TaskName::WgPeerRevocation, wg_revoke_handle),
+        (TaskName::LogoutDeliveryWorker, logout_worker_handle),
     ];
 
     if let Some(backup_handle) = maybe_backup_handle {
