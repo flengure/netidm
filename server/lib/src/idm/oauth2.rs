@@ -2193,8 +2193,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         post_logout_redirect_uri: Option<&str>,
         state: Option<String>,
     ) -> Result<crate::idm::logout::OidcLogoutOutcome, OperationError> {
-        use crate::idm::account::DestroySessionTokenEvent;
-        use crate::idm::logout::OidcLogoutOutcome;
+        use crate::idm::logout::{terminate_session, OidcLogoutOutcome};
 
         let o2rs = self
             .oauth2rs
@@ -2215,10 +2214,9 @@ impl IdmServerProxyWriteTransaction<'_> {
             jws.from_json::<OidcToken>().ok()
         });
 
-        // Stage 2 — if verified and `aud` matches the client, attempt to
-        // destroy the named session. Idempotent: any "already gone" error
-        // from the underlying delete is swallowed, since OIDC logout is
-        // meant to be idempotent from the relying party's perspective.
+        // Stage 2 — if verified and `aud` matches the client, terminate the
+        // single session named by (sub, jti) via the central convergence
+        // routine. Idempotent; see `terminate_session` docs.
         if let Some(token) = verified.as_ref() {
             let aud_matches = token.aud == client_id;
             let user_uuid = match &token.sub {
@@ -2232,40 +2230,7 @@ impl IdmServerProxyWriteTransaction<'_> {
 
             if aud_matches {
                 if let (Some(target), Some(token_id)) = (user_uuid, session_uuid) {
-                    let dte = DestroySessionTokenEvent {
-                        ident: Identity::from_internal(),
-                        target,
-                        token_id,
-                    };
-                    match self.account_destroy_session_token(&dte) {
-                        Ok(()) => {
-                            info!(
-                                target_uuid = %target,
-                                session_uuid = %token_id,
-                                client_id,
-                                "OIDC RP-initiated logout terminated session"
-                            );
-                        }
-                        Err(OperationError::NoMatchingEntries) => {
-                            // Idempotent — the session was already gone.
-                            trace!(
-                                target_uuid = %target,
-                                session_uuid = %token_id,
-                                client_id,
-                                "OIDC RP-initiated logout: session already terminated"
-                            );
-                        }
-                        Err(err) => {
-                            error!(
-                                ?err,
-                                target_uuid = %target,
-                                session_uuid = %token_id,
-                                client_id,
-                                "OIDC RP-initiated logout: failed to terminate session"
-                            );
-                            return Err(err);
-                        }
-                    }
+                    terminate_session(self, target, token_id)?;
                 } else {
                     trace!(
                         client_id,
