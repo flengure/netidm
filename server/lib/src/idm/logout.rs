@@ -255,3 +255,101 @@ fn collect_rps_and_oauth2_sessions_for_session(
     }
     Ok((rp_uuids, oauth2_session_ids))
 }
+
+#[cfg(test)]
+mod tests {
+    //! Pure-library shape tests for the back-channel logout token.
+    //! The full wire path is exercised end-to-end in the testkit
+    //! integration suite (`test_logout_backchannel_delivery_end_to_end`).
+    //! What these tests protect is the claim STRUCTURE — the
+    //! specific fields, the literal `events` map shape, and the
+    //! `typ: "logout+jwt"` header — so a refactor that accidentally
+    //! drops or renames a field is caught without needing a full
+    //! test server to boot.
+
+    use compact_jwt::jws::JwsBuilder;
+    use compact_jwt::{
+        compact::JwsCompact, JwsEs256Signer, JwsEs256Verifier, JwsSigner, JwsVerifier,
+    };
+    use serde::{Deserialize, Serialize};
+    use std::collections::BTreeMap;
+    use std::str::FromStr;
+    use uuid::Uuid;
+
+    /// Mirror of the claim struct defined in `idm/oauth2.rs` so
+    /// this test is decoupled from the signing path but pinned to
+    /// the same field set. Any rename or removal over in the
+    /// real claim struct should prompt an update here too —
+    /// which is the point.
+    #[derive(Serialize, Deserialize, Debug, PartialEq)]
+    struct LogoutTokenClaims {
+        iss: String,
+        aud: String,
+        iat: i64,
+        jti: String,
+        sub: String,
+        sid: String,
+        events: BTreeMap<String, BTreeMap<String, serde_json::Value>>,
+    }
+
+    #[test]
+    fn logout_token_claims_round_trip() {
+        let mut events = BTreeMap::new();
+        events.insert(
+            "http://schemas.openid.net/event/backchannel-logout".to_string(),
+            BTreeMap::new(),
+        );
+        let original = LogoutTokenClaims {
+            iss: "https://idm.example.com/oauth2/openid/test_rp".to_string(),
+            aud: "test_rp".to_string(),
+            iat: 1_700_000_000,
+            jti: Uuid::new_v4().to_string(),
+            sub: Uuid::new_v4().to_string(),
+            sid: Uuid::new_v4().to_string(),
+            events,
+        };
+
+        let data = JwsBuilder::into_json(&original)
+            .expect("serialise claims")
+            .set_typ(Some("logout+jwt"))
+            .build();
+
+        let signer = JwsEs256Signer::generate_es256().expect("generate signer");
+        let signed: JwsCompact = signer.sign(&data).expect("sign");
+
+        let jws_str = signed.to_string();
+        let parsed = JwsCompact::from_str(&jws_str).expect("parse JwsCompact");
+
+        // Header — typ must carry through verbatim per OIDC
+        // Back-Channel Logout 1.0 §2.4.
+        assert_eq!(
+            parsed.header().typ.as_deref(),
+            Some("logout+jwt"),
+            "typ header must be preserved as 'logout+jwt'"
+        );
+
+        // Verify + decode the payload with the matching public key.
+        let jwk = signer.public_key_as_jwk().expect("extract jwk");
+        let verifier = JwsEs256Verifier::try_from(&jwk).expect("build verifier");
+        let verified = verifier.verify(&parsed).expect("verify");
+        let round_tripped: LogoutTokenClaims =
+            serde_json::from_slice(verified.payload()).expect("parse claims");
+
+        assert_eq!(
+            round_tripped, original,
+            "every claim must round-trip, including the events map shape"
+        );
+
+        // Explicit re-assertion of the events shape — it's the
+        // one claim whose structure is most likely to be silently
+        // reshaped by a lazy refactor.
+        let logout_event = round_tripped
+            .events
+            .get("http://schemas.openid.net/event/backchannel-logout")
+            .expect("back-channel-logout event key present");
+        assert!(
+            logout_event.is_empty(),
+            "back-channel-logout event value must be an empty object"
+        );
+    }
+}

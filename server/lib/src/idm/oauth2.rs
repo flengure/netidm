@@ -8842,4 +8842,62 @@ mod tests {
     //         "prompt=consent must force the consent screen even when consent was previously granted"
     //     );
     // }
+
+    /// T019 — `logout::terminate_session` revokes the OAuth2 refresh
+    /// tokens bound to the terminated UAT. Complements the testkit
+    /// integration coverage by proving the invariant at the lib
+    /// boundary, independent of the HTTP surface.
+    #[idm_test]
+    async fn test_idm_logout_terminate_session_revokes_refresh_tokens(
+        idms: &IdmServer,
+        idms_delayed: &mut IdmServerDelayed,
+    ) {
+        use crate::idm::logout::terminate_session;
+
+        let ct = Duration::from_secs(TEST_CURRENT_TIME);
+        let (access_token_response, client_authz) =
+            setup_refresh_token(idms, idms_delayed, ct).await;
+
+        let refresh_token = access_token_response
+            .refresh_token
+            .as_ref()
+            .expect("refresh token minted")
+            .clone();
+
+        // Resolve the UAT UUID that parents the OAuth2Session. The
+        // handler path goes through the ID token's jti → session
+        // lookup → parent; here we skip the JWT parse and read the
+        // parent field straight off the session entry.
+        let ct_terminate = Duration::from_secs(TEST_CURRENT_TIME + 5);
+        let mut idms_prox_write = idms.proxy_write(ct_terminate).await.unwrap();
+        let entry = idms_prox_write
+            .qs_write
+            .internal_search_uuid(UUID_TESTPERSON_1)
+            .expect("testperson entry");
+        let uat_uuid = entry
+            .get_ava_as_oauth2session_map(Attribute::OAuth2Session)
+            .and_then(|map| map.values().next().cloned())
+            .and_then(|session| session.parent)
+            .expect("OAuth2Session must have a parent UAT");
+
+        terminate_session(&mut idms_prox_write, UUID_TESTPERSON_1, uat_uuid)
+            .expect("terminate_session must succeed");
+        idms_prox_write
+            .commit()
+            .expect("terminate_session commit must succeed");
+
+        // Refresh grant must now fail — the OAuth2Session was
+        // revoked as part of terminate_session.
+        let mut idms_prox_write = idms.proxy_write(ct_terminate).await.unwrap();
+        let token_req: AccessTokenRequest = GrantTypeReq::RefreshToken {
+            refresh_token,
+            scope: None,
+        }
+        .into();
+        let err = idms_prox_write
+            .check_oauth2_token_exchange(&client_authz, &token_req, ct_terminate)
+            .expect_err("refresh after terminate_session must be rejected");
+        assert_eq!(err, Oauth2Error::InvalidGrant);
+        idms_prox_write.commit().expect("commit");
+    }
 }
