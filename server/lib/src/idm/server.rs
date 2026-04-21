@@ -164,6 +164,11 @@ pub struct IdmServerProxyWriteTransaction<'a> {
     pub(crate) origin: &'a Url,
     pub(crate) oauth2_client_providers: HashMapWriteTxn<'a, Uuid, OAuth2ClientProvider>,
     pub(crate) saml_client_providers: HashMapWriteTxn<'a, Uuid, SamlClientProvider>,
+    /// Reference to the shared back-channel logout delivery notify
+    /// handle on the owning `IdmServer`. Call `notify_one()` after
+    /// enqueueing a `LogoutDelivery` to wake the delivery worker
+    /// immediately rather than waiting for its next poll tick.
+    pub(crate) logout_delivery_notify: &'a std::sync::Arc<tokio::sync::Notify>,
 }
 
 pub struct IdmServerDelayed {
@@ -354,6 +359,7 @@ impl IdmServer {
             origin: &self.origin,
             oauth2_client_providers: self.oauth2_client_providers.write(),
             saml_client_providers: self.saml_client_providers.write(),
+            logout_delivery_notify: &self.logout_delivery_notify,
         })
     }
 

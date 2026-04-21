@@ -133,9 +133,11 @@ pub fn terminate_session(
     // do not unwind the termination — a missed back-channel
     // notification is preferable to a re-logged-in session.
     let ct = crate::prelude::duration_from_epoch_now();
+    let mut enqueued_any = false;
     for rp_uuid in rp_uuids {
         match idms.enqueue_backchannel_logout_for_rp(rp_uuid, user_uuid, session_uuid, ct) {
             Ok(Some(delivery_uuid)) => {
+                enqueued_any = true;
                 tracing::info!(
                     %rp_uuid,
                     %delivery_uuid,
@@ -157,6 +159,15 @@ pub fn terminate_session(
                 );
             }
         }
+    }
+
+    // Wake the delivery worker so it attempts these records immediately
+    // rather than waiting for its next poll tick. Signal is edge-like —
+    // one `notify_one` per batch is sufficient since the worker drains
+    // all due records in one pass. Safe to call even if no records
+    // were enqueued; a spurious wake just causes an empty iteration.
+    if enqueued_any {
+        idms.logout_delivery_notify.notify_one();
     }
 
     Ok(())
