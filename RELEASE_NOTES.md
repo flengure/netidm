@@ -14,6 +14,65 @@ We value your feedback! First, please see our [code of conduct]. If you have que
 
 ## Release Notes
 
+### 2026-04-21 - Netidm 0.1.11 (fork)
+
+Second feature drop of the netidm fork — two back-to-back dex-parity PRs land
+in this release. Both are additive; there are no incompatible changes from
+0.1.10 beyond new schema attributes, which migrate forward automatically at
+startup.
+
+#### 0.1.11 Important Changes
+
+- Domain Level bumped to DL26. Upgrade from DL25 runs automatically on first
+  boot. There is no downgrade path from DL26.
+- OIDC RP-Initiated Logout 1.0 and Back-Channel Logout 1.0 are now wired up.
+  A new `/oauth2/openid/{client_id}/end_session_endpoint` terminates the
+  caller's session, revokes the refresh tokens minted against it, and POSTs a
+  signed `logout_token` to every relying party with a registered back-channel
+  URL. Admins get three new OAuth2 CRUD verbs:
+  `add-post-logout-redirect-uri`, `remove-post-logout-redirect-uri`, and
+  `set-backchannel-logout-uri` (plus their `clear-` / `list-` siblings).
+- `/v1/self/logout_all` (self-service) and `/v1/person/{id}/logout_all`
+  (admin) terminate every active UAT a user holds — each session's
+  termination fans out through the normal back-channel pipeline.
+- Admin visibility into the back-channel delivery queue via
+  `GET /v1/logout_deliveries` (status filter) and
+  `GET /v1/logout_deliveries/{uuid}`. ACP-gated to system administrators.
+- Upstream-provider group mapping (dex-groups-pipeline, DL25) now reconciles
+  upstream group claims onto a user's memberOf at login time, honouring
+  per-connector allowlists.
+
+#### 0.1.11 Release Highlights
+
+- DL26 schema: new URL attributes `OAuth2RsPostLogoutRedirectUri`,
+  `OAuth2RsBackchannelLogoutUri`, and `SamlSingleLogoutServiceUrl`; new
+  `EntryClass::LogoutDelivery` with attributes for persistent back-channel
+  queue state (endpoint, status, attempts, `next_attempt`, created, RP).
+- Back-channel delivery worker runs in-process: 30 s poll interval plus
+  edge-triggered wake on enqueue, 6-step retry schedule budgeting roughly
+  10–24 h per stuck receiver, durable across netidmd restarts via the MVCC
+  entry database.
+- Logout token header carries `typ: "logout+jwt"` per OIDC BCL 1.0 §2.4; the
+  events claim carries the
+  `http://schemas.openid.net/event/backchannel-logout` key with the
+  spec-required empty-object value.
+- SAML SP single-logout surface: admin CRUD for `SamlSingleLogoutServiceUrl`
+  on `EntryClass::SamlClient`. The IdP-side SLO handler chain (inbound
+  `<LogoutRequest>` verification, `<LogoutResponse>` emission, metadata
+  `<md:SingleLogoutService>` advertisement) is deferred to a follow-up PR
+  because netidm's current SAML integration is SP-side; see
+  `specs/009-rp-logout/saml-slo-deferred.md` for the architectural note.
+- Restart-resume end-to-end integration coverage for the delivery queue
+  (T055) is deferred with `specs/009-rp-logout/tasks.md` — the testkit
+  needs a persistent-DB + graceful-shutdown primitive before this can be
+  exercised end-to-end. The underlying state machine is covered at the
+  unit level.
+- DL25 upstream group mapping (dex-groups-pipeline) adds three new
+  multi-value UTF-8 attributes on `EntryClass::OAuth2Client`,
+  `EntryClass::SamlClient`, and `EntryClass::Person` (same
+  attribute UUIDs, no new classes); ACP entries for admin management of
+  upstream mappings land with the same migration.
+
 ### 2026-02-11 - Netidm 1.9.0
 
 This is the latest stable release of the Netidm Identity Management project. Every release is the combined effort of our
