@@ -1851,7 +1851,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                     parent_session_id,
                     session_id,
                     nonce,
-                    upstream_binding_for_mint,
+                    upstream_binding_for_mint.as_ref(),
                 )
             }
         }
@@ -2098,7 +2098,10 @@ impl IdmServerProxyWriteTransaction<'_> {
         // this mint. `Some((connector_uuid, blob))` for connector-bound
         // sessions on the refresh path; `None` for code-flow initial
         // mints and for the cached-claims (pre-DL27) refresh branch.
-        upstream_binding: Option<(Uuid, Vec<u8>)>,
+        // Taken by reference (clippy::needless_pass_by_value) — the
+        // blob is cloned on write into the new `Oauth2Session`; the
+        // caller retains ownership.
+        upstream_binding: Option<&(Uuid, Vec<u8>)>,
     ) -> Result<AccessTokenResponse, Oauth2Error> {
         let odt_ct = OffsetDateTime::UNIX_EPOCH + ct;
         let iat = ct.as_secs() as i64;
@@ -2279,8 +2282,8 @@ impl IdmServerProxyWriteTransaction<'_> {
                 // flow initial mints and the pre-DL27 cached-claims
                 // refresh branch — stays None, which is the correct
                 // default for those paths.
-                upstream_connector: upstream_binding.as_ref().map(|(uuid, _)| *uuid),
-                upstream_refresh_state: upstream_binding.as_ref().map(|(_, blob)| blob.clone()),
+                upstream_connector: upstream_binding.map(|(uuid, _)| *uuid),
+                upstream_refresh_state: upstream_binding.map(|(_, blob)| blob.clone()),
             },
         );
 
