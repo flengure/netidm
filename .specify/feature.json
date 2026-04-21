@@ -1,1 +1,3 @@
-{"feature_directory":"specs/009-rp-logout"}
+{
+  "feature_directory": "specs/010-refresh-claims"
+}
