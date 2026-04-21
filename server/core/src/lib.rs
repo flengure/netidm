@@ -55,6 +55,8 @@ use netidm_proto::internal::OperationError;
 use netidm_proto::scim_v1::client::ScimAssertGeneric;
 use netidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
 use netidmd_lib::idm::ldap::LdapServer;
+use netidmd_lib::idm::oauth2_connector::ConnectorRegistry;
+use netidmd_lib::idm::server::IdmServer;
 use netidmd_lib::prelude::*;
 use netidmd_lib::schema::Schema;
 use netidmd_lib::status::StatusActor;
@@ -959,9 +961,19 @@ pub struct CoreHandle {
     tx: broadcast::Sender<CoreAction>,
     /// This stores a name for the handle, and the handle itself so we can tell which failed/succeeded at the end.
     handles: Vec<(TaskName, task::JoinHandle<()>)>,
+    connector_registry: Arc<ConnectorRegistry>,
+    idm_server: Arc<IdmServer>,
 }
 
 impl CoreHandle {
+    pub fn connector_registry(&self) -> Arc<ConnectorRegistry> {
+        Arc::clone(&self.connector_registry)
+    }
+
+    pub fn idm_server(&self) -> Arc<IdmServer> {
+        Arc::clone(&self.idm_server)
+    }
+
     pub fn subscribe(&mut self) -> broadcast::Receiver<CoreAction> {
         self.tx.subscribe()
     }
@@ -1157,6 +1169,7 @@ pub async fn create_server_core(
     };
 
     // Arc the idms and ldap
+    let connector_registry = idms.connector_registry();
     let idms_arc = Arc::new(idms);
     let ldap_arc = Arc::new(ldap);
 
@@ -1676,5 +1689,7 @@ pub async fn create_server_core(
         clean_shutdown: false,
         tx: broadcast_tx,
         handles,
+        connector_registry,
+        idm_server: Arc::clone(&idms_arc),
     })
 }

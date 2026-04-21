@@ -13,7 +13,9 @@ use netidm_client::{NetidmClient, NetidmClientBuilder};
 use netidm_proto::internal::{CURegState, Filter, Modify, ModifyList};
 use netidmd_core::config::{Configuration, IntegrationTestConfig};
 use netidmd_core::{create_server_core, CoreHandle};
+use netidmd_lib::idm::server::IdmServer;
 use netidmd_lib::prelude::{Attribute, NAME_SYSTEM_ADMINS};
+use std::sync::Arc;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicU16, Ordering};
@@ -79,6 +81,8 @@ pub struct AsyncTestEnvironment {
     pub http_sock_addr: SocketAddr,
     pub core_handle: CoreHandle,
     pub ldap_url: Option<Url>,
+    pub connector_registry: Arc<ConnectorRegistry>,
+    pub idm_server: Arc<IdmServer>,
 }
 
 // allowed because the use of this function is behind a test gate
@@ -126,6 +130,9 @@ pub async fn setup_async_test(mut config: Configuration) -> AsyncTestEnvironment
     // We have to yield now to guarantee that the elements are setup.
     task::yield_now().await;
 
+    let connector_registry = core_handle.connector_registry();
+    let idm_server = core_handle.idm_server();
+
     #[allow(clippy::panic)]
     let rsclient = match NetidmClientBuilder::new()
         .address(addr.to_string())
@@ -144,6 +151,8 @@ pub async fn setup_async_test(mut config: Configuration) -> AsyncTestEnvironment
         http_sock_addr,
         core_handle,
         ldap_url,
+        connector_registry,
+        idm_server,
     }
 }
 

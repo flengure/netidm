@@ -14,6 +14,7 @@ mod oauth2_proxy_test;
 mod oauth2_test;
 mod person;
 mod proto_v1_test;
+mod refresh_claims_test;
 mod scim_test;
 mod service_account;
 mod system;
