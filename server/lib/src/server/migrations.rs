@@ -77,6 +77,7 @@ impl QueryServer {
                 DOMAIN_LEVEL_23 => write_txn.migrate_domain_22_to_23()?,
                 DOMAIN_LEVEL_24 => write_txn.migrate_domain_23_to_24()?,
                 DOMAIN_LEVEL_25 => write_txn.migrate_domain_24_to_25()?,
+                DOMAIN_LEVEL_26 => write_txn.migrate_domain_25_to_26()?,
                 _ => {
                     error!("Invalid requested domain target level for server bootstrap");
                     debug_assert!(false);
@@ -1606,6 +1607,112 @@ impl QueryServerWriteTransaction<'_> {
         Ok(())
     }
 
+    /// DL25 → DL26 migration: RP-Initiated Logout.
+    ///
+    /// Adds three URL attributes on existing client classes (OIDC post-logout
+    /// redirect allowlist, OIDC back-channel logout endpoint, SAML SLO URL),
+    /// two new entry classes (`LogoutDelivery`, `SamlSession`), updates the
+    /// OAuth2 / SAML client admin ACPs to include the new URL attributes, and
+    /// adds `idm_acp_logout_delivery_read`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OperationError`] if any migration phase fails or if this
+    /// level is not yet enabled in the current build.
+    pub(crate) fn migrate_domain_25_to_26(&mut self) -> Result<(), OperationError> {
+        if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_26 {
+            error!("Unable to raise domain level from 25 to 26.");
+            return Err(OperationError::MG0004DomainLevelInDevelopment);
+        }
+
+        self.internal_migrate_or_create_batch(
+            &format!("phase 1 - schema attrs target {}", DOMAIN_TGT_LEVEL),
+            migration_data::dl26::phase_1_schema_attrs(),
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 2 - schema classes",
+            migration_data::dl26::phase_2_schema_classes(),
+        )?;
+
+        self.reload()?;
+        self.reindex(false)?;
+        self.set_phase(ServerPhase::SchemaReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 3 - key provider",
+            migration_data::dl26::phase_3_key_provider(),
+        )?;
+
+        self.reload()?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 4 - dl26 system entries",
+            migration_data::dl26::phase_4_system_entries(),
+        )?;
+
+        self.reload()?;
+        self.set_phase(ServerPhase::DomainInfoReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 5 - builtin admin entries",
+            migration_data::dl26::phase_5_builtin_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 6 - builtin not admin entries",
+            migration_data::dl26::phase_6_builtin_non_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 7 - builtin access control profiles",
+            migration_data::dl26::phase_7_builtin_access_control_profiles(),
+        )?;
+
+        self.internal_delete_batch(
+            "phase 8 - delete UUIDs",
+            migration_data::dl26::phase_8_delete_uuids(),
+        )?;
+
+        self.reload()?;
+
+        self.backfill_saml_session_indices()?;
+
+        Ok(())
+    }
+
+    /// DL26 backfill step for the SAML `<SessionIndex>` migration.
+    ///
+    /// Pre-DL26 SAML assertions did not carry `<SessionIndex>`, so any
+    /// currently-active SAML session cannot be uniquely addressed by an
+    /// inbound `<LogoutRequest>` carrying a SessionIndex. The spec's Q5/C
+    /// decision calls for backfilling a synthetic SessionIndex onto every
+    /// such active session at migration time.
+    ///
+    /// In DL26 Foundational this helper is a safe no-op: it logs a note that
+    /// pre-existing SAML sessions will fall through to the "no SessionIndex"
+    /// branch of SLO correlation (ending every session of that user at that
+    /// SP) until those sessions naturally expire and are re-issued with
+    /// SessionIndex by the US4 auth-response path. The real Stage-1 /
+    /// Stage-2 backfill described in `specs/009-rp-logout/research.md` R6
+    /// lands with US4 (SAML SLO) once SessionIndex emission is wired into
+    /// the SAML IdP response builder.
+    ///
+    /// # Errors
+    ///
+    /// Returns any [`OperationError`] if the underlying log-and-return path
+    /// grows DB touches in a later revision.
+    pub(crate) fn backfill_saml_session_indices(&mut self) -> Result<(), OperationError> {
+        info!(
+            "DL26 SAML SessionIndex backfill: no-op in Foundational phase. \
+             Pre-existing SAML sessions will be SLO-addressable via the \
+             no-SessionIndex branch until they naturally expire and are \
+             re-issued with a SessionIndex by the DL26 SAML IdP auth path \
+             (landing with US4 of PR-RP-LOGOUT)."
+        );
+        Ok(())
+    }
+
     #[instrument(level = "info", skip_all)]
     pub(crate) fn initialise_schema_core(&mut self) -> Result<(), OperationError> {
         admin_debug!("initialise_schema_core -> start ...");
@@ -2200,6 +2307,100 @@ mod tests {
         write_txn
             .internal_search_uuid(UUID_SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP)
             .expect("UUID_SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP missing after DL25 migration");
+
+        write_txn.commit().expect("Unable to commit");
+    }
+
+    /// DL25 → DL26: asserts that the RP-Initiated Logout schema elements
+    /// (three URL attributes on existing client classes, two new entry
+    /// classes with their attribute sets, and the new admin read-only ACP
+    /// for the delivery queue) are present after migration.
+    #[qs_test(domain_level=DOMAIN_LEVEL_25)]
+    async fn test_migrations_dl25_dl26(server: &QueryServer) {
+        let mut write_txn = server.write(duration_from_epoch_now()).await.unwrap();
+
+        let db_domain_version = write_txn
+            .internal_search_uuid(UUID_DOMAIN_INFO)
+            .expect("unable to access domain entry")
+            .get_ava_single_uint32(Attribute::Version)
+            .expect("Attribute Version not present");
+
+        assert_eq!(db_domain_version, DOMAIN_LEVEL_25);
+
+        write_txn
+            .internal_apply_domain_migration(DOMAIN_LEVEL_26)
+            .expect("Unable to set domain level to version 26");
+
+        // The three new URL attrs on existing client classes.
+        write_txn
+            .internal_search_uuid(UUID_SCHEMA_ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI)
+            .expect("UUID_SCHEMA_ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI missing after DL26 migration");
+        write_txn
+            .internal_search_uuid(UUID_SCHEMA_ATTR_OAUTH2_RS_BACKCHANNEL_LOGOUT_URI)
+            .expect("UUID_SCHEMA_ATTR_OAUTH2_RS_BACKCHANNEL_LOGOUT_URI missing after DL26 migration");
+        write_txn
+            .internal_search_uuid(UUID_SCHEMA_ATTR_SAML_SINGLE_LOGOUT_SERVICE_URL)
+            .expect("UUID_SCHEMA_ATTR_SAML_SINGLE_LOGOUT_SERVICE_URL missing after DL26 migration");
+
+        // LogoutDelivery class + its seven attributes.
+        write_txn
+            .internal_search_uuid(UUID_SCHEMA_CLASS_LOGOUT_DELIVERY)
+            .expect("UUID_SCHEMA_CLASS_LOGOUT_DELIVERY missing after DL26 migration");
+        for (uuid, label) in [
+            (
+                UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_ENDPOINT,
+                "LOGOUT_DELIVERY_ENDPOINT",
+            ),
+            (
+                UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_TOKEN,
+                "LOGOUT_DELIVERY_TOKEN",
+            ),
+            (
+                UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_STATUS,
+                "LOGOUT_DELIVERY_STATUS",
+            ),
+            (
+                UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_ATTEMPTS,
+                "LOGOUT_DELIVERY_ATTEMPTS",
+            ),
+            (
+                UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_NEXT_ATTEMPT,
+                "LOGOUT_DELIVERY_NEXT_ATTEMPT",
+            ),
+            (
+                UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_CREATED,
+                "LOGOUT_DELIVERY_CREATED",
+            ),
+            (UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_RP, "LOGOUT_DELIVERY_RP"),
+        ] {
+            write_txn.internal_search_uuid(uuid).unwrap_or_else(|_| {
+                panic!("UUID_SCHEMA_ATTR_{label} missing after DL26 migration")
+            });
+        }
+
+        // SamlSession class + its five attributes.
+        write_txn
+            .internal_search_uuid(UUID_SCHEMA_CLASS_SAML_SESSION)
+            .expect("UUID_SCHEMA_CLASS_SAML_SESSION missing after DL26 migration");
+        for (uuid, label) in [
+            (UUID_SCHEMA_ATTR_SAML_SESSION_USER, "SAML_SESSION_USER"),
+            (UUID_SCHEMA_ATTR_SAML_SESSION_SP, "SAML_SESSION_SP"),
+            (UUID_SCHEMA_ATTR_SAML_SESSION_INDEX, "SAML_SESSION_INDEX"),
+            (
+                UUID_SCHEMA_ATTR_SAML_SESSION_UAT_UUID,
+                "SAML_SESSION_UAT_UUID",
+            ),
+            (UUID_SCHEMA_ATTR_SAML_SESSION_CREATED, "SAML_SESSION_CREATED"),
+        ] {
+            write_txn.internal_search_uuid(uuid).unwrap_or_else(|_| {
+                panic!("UUID_SCHEMA_ATTR_{label} missing after DL26 migration")
+            });
+        }
+
+        // The new admin read-only ACP for the delivery queue.
+        write_txn
+            .internal_search_uuid(UUID_IDM_ACP_LOGOUT_DELIVERY_READ)
+            .expect("UUID_IDM_ACP_LOGOUT_DELIVERY_READ missing after DL26 migration");
 
         write_txn.commit().expect("Unable to commit");
     }

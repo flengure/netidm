@@ -208,6 +208,28 @@ pub const ATTR_OAUTH2_LINK_BY: &str = "oauth2_link_by";
 pub const ATTR_OAUTH2_GROUP_MAPPING: &str = "oauth2_group_mapping";
 pub const ATTR_SAML_GROUP_MAPPING: &str = "saml_group_mapping";
 pub const ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP: &str = "oauth2_upstream_synced_group";
+// DL26 — RP-Initiated Logout (OIDC end_session_endpoint + Back-Channel Logout +
+// SAML Single Logout). New configuration attributes on the existing client
+// classes plus two new entry classes (`LogoutDelivery` for the persistent
+// back-channel delivery queue, `SamlSession` for the per-SP session index
+// required by SAML SLO with `<SessionIndex>`).
+pub const ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI: &str = "oauth2_rs_post_logout_redirect_uri";
+pub const ATTR_OAUTH2_RS_BACKCHANNEL_LOGOUT_URI: &str = "oauth2_rs_backchannel_logout_uri";
+pub const ATTR_SAML_SINGLE_LOGOUT_SERVICE_URL: &str = "saml_single_logout_service_url";
+pub const ATTR_LOGOUT_DELIVERY_ENDPOINT: &str = "logout_delivery_endpoint";
+pub const ATTR_LOGOUT_DELIVERY_TOKEN: &str = "logout_delivery_token";
+pub const ATTR_LOGOUT_DELIVERY_STATUS: &str = "logout_delivery_status";
+pub const ATTR_LOGOUT_DELIVERY_ATTEMPTS: &str = "logout_delivery_attempts";
+pub const ATTR_LOGOUT_DELIVERY_NEXT_ATTEMPT: &str = "logout_delivery_next_attempt";
+pub const ATTR_LOGOUT_DELIVERY_CREATED: &str = "logout_delivery_created";
+pub const ATTR_LOGOUT_DELIVERY_RP: &str = "logout_delivery_rp";
+pub const ATTR_SAML_SESSION_USER: &str = "saml_session_user";
+pub const ATTR_SAML_SESSION_SP: &str = "saml_session_sp";
+pub const ATTR_SAML_SESSION_INDEX: &str = "saml_session_index";
+pub const ATTR_SAML_SESSION_UAT_UUID: &str = "saml_session_uat_uuid";
+pub const ATTR_SAML_SESSION_CREATED: &str = "saml_session_created";
+pub const ENTRYCLASS_LOGOUT_DELIVERY: &str = "logout_delivery";
+pub const ENTRYCLASS_SAML_SESSION: &str = "saml_session";
 // DL20 — OAuth2 client logo URI
 pub const ATTR_OAUTH2_CLIENT_LOGO_URI: &str = "oauth2_client_logo_uri";
 // DL21 — Generic OIDC upstream connector

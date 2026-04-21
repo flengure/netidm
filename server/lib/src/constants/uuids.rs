@@ -474,6 +474,42 @@ pub const UUID_SCHEMA_ATTR_OAUTH2_GROUP_MAPPING: Uuid =
 pub const UUID_SCHEMA_ATTR_SAML_GROUP_MAPPING: Uuid = uuid!("00000000-0000-0000-0000-ffff00000257");
 pub const UUID_SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP: Uuid =
     uuid!("00000000-0000-0000-0000-ffff00000258");
+// DL26 — RP-Initiated Logout. Attributes for OIDC end-session allowlist,
+// back-channel logout endpoint, SAML SLO URL; the `LogoutDelivery` persistent
+// delivery queue class; the `SamlSession` per-SP session index class; plus one
+// new ACP for admin read-only visibility into the delivery queue.
+pub const UUID_SCHEMA_ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000259");
+pub const UUID_SCHEMA_ATTR_OAUTH2_RS_BACKCHANNEL_LOGOUT_URI: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff0000025a");
+pub const UUID_SCHEMA_ATTR_SAML_SINGLE_LOGOUT_SERVICE_URL: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff0000025b");
+pub const UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_ENDPOINT: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff0000025c");
+pub const UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_TOKEN: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff0000025d");
+pub const UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_STATUS: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff0000025e");
+pub const UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_ATTEMPTS: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff0000025f");
+pub const UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_NEXT_ATTEMPT: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000260");
+pub const UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_CREATED: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000261");
+pub const UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_RP: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000262");
+pub const UUID_SCHEMA_ATTR_SAML_SESSION_USER: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000263");
+pub const UUID_SCHEMA_ATTR_SAML_SESSION_SP: Uuid = uuid!("00000000-0000-0000-0000-ffff00000264");
+pub const UUID_SCHEMA_CLASS_LOGOUT_DELIVERY: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000265");
+pub const UUID_SCHEMA_ATTR_SAML_SESSION_INDEX: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000266");
+pub const UUID_SCHEMA_ATTR_SAML_SESSION_UAT_UUID: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000267");
+pub const UUID_SCHEMA_ATTR_SAML_SESSION_CREATED: Uuid =
+    uuid!("00000000-0000-0000-0000-ffff00000268");
+pub const UUID_SCHEMA_CLASS_SAML_SESSION: Uuid = uuid!("00000000-0000-0000-0000-ffff00000269");
 
 // =====
 // Incorrectly name spaced.
@@ -613,6 +649,9 @@ pub const UUID_IDM_ACP_SYSTEM_CONFIG_SKIP_AUTH_ROUTE_MANAGE_DL19: Uuid =
     uuid!("00000000-0000-0000-0000-ffffff000084");
 // DL22 — SAML client admin ACP
 pub const UUID_IDM_ACP_SAML_CLIENT_ADMIN: Uuid = uuid!("00000000-0000-0000-0000-ffffff000085");
+// DL26 — admin read-only ACP for back-channel logout delivery queue
+pub const UUID_IDM_ACP_LOGOUT_DELIVERY_READ: Uuid =
+    uuid!("00000000-0000-0000-0000-ffffff000086");
 
 // End of system ranges
 pub const UUID_DOES_NOT_EXIST: Uuid = uuid!("00000000-0000-0000-0000-fffffffffffe");

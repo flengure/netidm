@@ -1,6 +1,6 @@
 # netidm Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-04-20
+Auto-generated from all feature plans. Last updated: 2026-04-21
 
 ## Active Technologies
 - Rust stable (see `rust-toolchain.toml`) (002-wg-mgmt-crate)
@@ -24,6 +24,8 @@ Auto-generated from all feature plans. Last updated: 2026-04-20
 - Netidm MVCC entry database — DL22 migration adds new `EntryClass::SamlClient` with 9 attributes; DB nonce via existing `AssertionNonce` infrastructure (007-saml2-connector)
 - Rust stable (see `rust-toolchain.toml`) + Existing — `netidmd_lib` (MVCC entry DB, schema/migration framework), `netidm_proto` (Attribute / EntryClass / constants), `async-trait`, `hashbrown` (std HashSet banned by clippy). No new workspace deps. (008-dex-groups-pipeline)
 - Netidm MVCC entry database. DL25 migration adds three new `Utf8String` multi-value attributes. Class UUIDs reuse existing `UUID_SCHEMA_CLASS_OAUTH2_CLIENT`, `UUID_SCHEMA_CLASS_SAML_CLIENT`, `UUID_SCHEMA_CLASS_PERSON`. No new classes. (008-dex-groups-pipeline)
+- Rust stable (see `rust-toolchain.toml`) + Existing — `netidmd_lib` (MVCC entry DB, schema/migration framework), `netidm_proto` (Attribute / EntryClass / constants), `compact_jwt` (JWS signing for the logout token, already used for OIDC), `samael` 0.0.20 (already vendored with `xmlsec` feature — used for SAML XML signing/verification since 007-saml2-connector), `reqwest` (HTTP client for back-channel delivery, already in `server/core`), `askama` (confirmation page template, already in use), `axum` / `axum-extra` (routing + cookies, already present). No new workspace deps. (009-rp-logout)
+- Netidm MVCC entry database. DL26 migration adds: (009-rp-logout)
 
 - Rust (stable, current toolchain — check `rust-toolchain.toml`) + Internal Netidm crates; `reqwest` for userinfo HTTP calls; `jsonwebtoken`/existing JWT handling for Google `id_token` verification; `serde_json` for claim parsing (001-social-login-jit)
 
@@ -43,9 +45,9 @@ cargo test && cargo clippy
 Rust (stable, current toolchain — check `rust-toolchain.toml`): Follow standard conventions
 
 ## Recent Changes
+- 009-rp-logout: Added Rust stable (see `rust-toolchain.toml`) + Existing — `netidmd_lib` (MVCC entry DB, schema/migration framework), `netidm_proto` (Attribute / EntryClass / constants), `compact_jwt` (JWS signing for the logout token, already used for OIDC), `samael` 0.0.20 (already vendored with `xmlsec` feature — used for SAML XML signing/verification since 007-saml2-connector), `reqwest` (HTTP client for back-channel delivery, already in `server/core`), `askama` (confirmation page template, already in use), `axum` / `axum-extra` (routing + cookies, already present). No new workspace deps.
 - 008-dex-groups-pipeline: Added Rust stable (see `rust-toolchain.toml`) + Existing — `netidmd_lib` (MVCC entry DB, schema/migration framework), `netidm_proto` (Attribute / EntryClass / constants), `async-trait`, `hashbrown` (std HashSet banned by clippy). No new workspace deps.
 - 007-saml2-connector: Added Rust stable (see `rust-toolchain.toml`) + `samael` 0.0.20 with `xmlsec` feature (SAML 2.0 parsing + XML signature verification); all other deps already present (`axum`, `askama`, `compact_jwt`, `netidmd_lib`, `netidm_proto`)
-- 006-oidc-connector: Added Rust stable (see `rust-toolchain.toml`) + `compact_jwt` 0.5.6 (workspace, already present — provides `OidcUnverified`, `JwkKeySet`, `JwsEs256Verifier`, `JwsRs256Verifier`); `reqwest` (workspace, already in `server/core` and `libs/client`); `serde_json` (already present)
 
 
 <!-- MANUAL ADDITIONS START -->
