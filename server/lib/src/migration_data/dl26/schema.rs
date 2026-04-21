@@ -160,7 +160,8 @@ pub static SCHEMA_ATTR_LOGOUT_DELIVERY_RP_DL26: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_LOGOUT_DELIVERY_RP,
         name: Attribute::LogoutDeliveryRp,
-        description: "UUID of the relying party this delivery pertains to; admin-visible.".to_string(),
+        description: "UUID of the relying party this delivery pertains to; admin-visible."
+            .to_string(),
         multivalue: false,
         syntax: SyntaxType::ReferenceUuid,
         ..Default::default()
@@ -179,17 +180,15 @@ pub static SCHEMA_ATTR_SAML_SESSION_USER_DL26: LazyLock<SchemaAttribute> =
     });
 
 /// The SAML service provider this session was created for.
-pub static SCHEMA_ATTR_SAML_SESSION_SP_DL26: LazyLock<SchemaAttribute> = LazyLock::new(|| {
-    SchemaAttribute {
+pub static SCHEMA_ATTR_SAML_SESSION_SP_DL26: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
         uuid: UUID_SCHEMA_ATTR_SAML_SESSION_SP,
         name: Attribute::SamlSessionSp,
-        description: "UUID of the SAML service provider this session was created for."
-            .to_string(),
+        description: "UUID of the SAML service provider this session was created for.".to_string(),
         multivalue: false,
         syntax: SyntaxType::ReferenceUuid,
         ..Default::default()
-    }
-});
+    });
 
 /// The `<SessionIndex>` value emitted on the matching `<AuthnStatement>`.
 /// Opaque to the SP; netidm uses a UUID-v4 string.
@@ -326,24 +325,25 @@ pub static SCHEMA_CLASS_PERSON_DL26: LazyLock<SchemaClass> = LazyLock::new(|| Sc
 
 /// Persistent back-channel logout delivery queue entry. One per pending /
 /// succeeded / permanently-failed delivery attempt.
-pub static SCHEMA_CLASS_LOGOUT_DELIVERY_DL26: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
-    uuid: UUID_SCHEMA_CLASS_LOGOUT_DELIVERY,
-    name: EntryClass::LogoutDelivery.into(),
-    description: "A single back-channel logout delivery record: target endpoint, signed \
+pub static SCHEMA_CLASS_LOGOUT_DELIVERY_DL26: LazyLock<SchemaClass> =
+    LazyLock::new(|| SchemaClass {
+        uuid: UUID_SCHEMA_CLASS_LOGOUT_DELIVERY,
+        name: EntryClass::LogoutDelivery.into(),
+        description: "A single back-channel logout delivery record: target endpoint, signed \
                       logout token payload, attempt bookkeeping, and terminal status."
-        .to_string(),
-    systemmust: vec![
-        Attribute::LogoutDeliveryEndpoint,
-        Attribute::LogoutDeliveryToken,
-        Attribute::LogoutDeliveryStatus,
-        Attribute::LogoutDeliveryAttempts,
-        Attribute::LogoutDeliveryNextAttempt,
-        Attribute::LogoutDeliveryCreated,
-        Attribute::LogoutDeliveryRp,
-    ],
-    systemmay: vec![],
-    ..Default::default()
-});
+            .to_string(),
+        systemmust: vec![
+            Attribute::LogoutDeliveryEndpoint,
+            Attribute::LogoutDeliveryToken,
+            Attribute::LogoutDeliveryStatus,
+            Attribute::LogoutDeliveryAttempts,
+            Attribute::LogoutDeliveryNextAttempt,
+            Attribute::LogoutDeliveryCreated,
+            Attribute::LogoutDeliveryRp,
+        ],
+        systemmay: vec![],
+        ..Default::default()
+    });
 
 /// Per-SP SAML session index entry. One per (user, SP, SessionIndex) tuple;
 /// consulted when an inbound `<LogoutRequest>` arrives.

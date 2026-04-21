@@ -2334,10 +2334,14 @@ mod tests {
         // The three new URL attrs on existing client classes.
         write_txn
             .internal_search_uuid(UUID_SCHEMA_ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI)
-            .expect("UUID_SCHEMA_ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI missing after DL26 migration");
+            .expect(
+                "UUID_SCHEMA_ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI missing after DL26 migration",
+            );
         write_txn
             .internal_search_uuid(UUID_SCHEMA_ATTR_OAUTH2_RS_BACKCHANNEL_LOGOUT_URI)
-            .expect("UUID_SCHEMA_ATTR_OAUTH2_RS_BACKCHANNEL_LOGOUT_URI missing after DL26 migration");
+            .expect(
+                "UUID_SCHEMA_ATTR_OAUTH2_RS_BACKCHANNEL_LOGOUT_URI missing after DL26 migration",
+            );
         write_txn
             .internal_search_uuid(UUID_SCHEMA_ATTR_SAML_SINGLE_LOGOUT_SERVICE_URL)
             .expect("UUID_SCHEMA_ATTR_SAML_SINGLE_LOGOUT_SERVICE_URL missing after DL26 migration");
@@ -2390,7 +2394,10 @@ mod tests {
                 UUID_SCHEMA_ATTR_SAML_SESSION_UAT_UUID,
                 "SAML_SESSION_UAT_UUID",
             ),
-            (UUID_SCHEMA_ATTR_SAML_SESSION_CREATED, "SAML_SESSION_CREATED"),
+            (
+                UUID_SCHEMA_ATTR_SAML_SESSION_CREATED,
+                "SAML_SESSION_CREATED",
+            ),
         ] {
             write_txn.internal_search_uuid(uuid).unwrap_or_else(|_| {
                 panic!("UUID_SCHEMA_ATTR_{label} missing after DL26 migration")

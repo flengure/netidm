@@ -247,7 +247,11 @@ pub async fn self_logout_all(
         .qe_w_ref
         .handle_user_logout_all_sessions(client_auth_info, kopid.eventid)
         .await
-        .map(|sessions_terminated| Json(LogoutAllSelfResponse { sessions_terminated }))
+        .map(|sessions_terminated| {
+            Json(LogoutAllSelfResponse {
+                sessions_terminated,
+            })
+        })
         .map_err(WebError::from)
 }
 

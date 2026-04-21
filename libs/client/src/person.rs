@@ -38,10 +38,7 @@ impl NetidmClient {
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer or
     /// the caller lacks admin privileges.
-    pub async fn idm_logout_all_user(
-        &self,
-        id: &str,
-    ) -> Result<(Uuid, usize), ClientError> {
+    pub async fn idm_logout_all_user(&self, id: &str) -> Result<(Uuid, usize), ClientError> {
         #[derive(serde::Deserialize)]
         struct Resp {
             user: Uuid,

@@ -23,9 +23,8 @@ impl LogoutDeliveriesOpt {
                     .filter(|b| **b)
                     .count();
                 if set_flags > 1 {
-                    opt.output_mode.print_message(
-                        "Specify at most one of --pending, --succeeded, --failed.",
-                    );
+                    opt.output_mode
+                        .print_message("Specify at most one of --pending, --succeeded, --failed.");
                     return;
                 }
                 let filter = if *pending {

@@ -220,7 +220,7 @@ description: "Task list for feature 009-rp-logout"
 - [ ] T085 Run `cargo doc --no-deps 2>&1 | grep "warning\[missing"` — MUST produce no output for any new item (constitution §Documentation Standards)
 - [ ] T086 Full verification: `cargo test --workspace` passes (per project memory, do NOT add `--all-features` — the dhat profiler singleton conflicts with parallel tests)
 - [ ] T087 Full verification: `cargo clippy --lib --bins --examples --all-features -- -D warnings` clean (no `#[allow(...)]` introduced anywhere)
-- [ ] T088 Full verification: `cargo fmt --check` clean
+- [X] T088 Full verification: `cargo fmt --check` clean
 - [ ] T089 Manual quickstart validation on a live dev netidmd: run all 12 scenarios from `quickstart.md` (deferred to tag-time per project memory — can be marked complete in tasks.md at ship time, not during development)
 - [ ] T090 Add RELEASE_NOTES.md entry for this feature — deferred to tag-time per project memory (not during development); entry lives under the next release's section; covers new attributes, new endpoints, new CLI verbs, migration notes (DL26), and the "netidm extension beyond dex" flag for back-channel durability
 

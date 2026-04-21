@@ -200,7 +200,6 @@ async fn attempt_one_delivery(idms: &IdmServer, http: &reqwest::Client, delivery
             tracing::error!(?e, %delivery_uuid, "Failed to open write txn to mark delivery");
         }
     }
-
 }
 
 /// POST the logout token to the RP's back-channel endpoint per OIDC

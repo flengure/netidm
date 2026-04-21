@@ -720,10 +720,7 @@ impl Oauth2Opt {
             Oauth2Opt::RemovePostLogoutRedirectUri { name, uri } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_remove_post_logout_redirect_uri(
-                        name.as_str(),
-                        uri.as_str(),
-                    )
+                    .idm_oauth2_client_remove_post_logout_redirect_uri(name.as_str(), uri.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -737,7 +734,8 @@ impl Oauth2Opt {
                 {
                     Ok(uris) => {
                         if uris.is_empty() {
-                            opt.output_mode.print_message("(no post-logout redirect URIs)");
+                            opt.output_mode
+                                .print_message("(no post-logout redirect URIs)");
                         } else {
                             for uri in uris {
                                 opt.output_mode.print_message(uri);

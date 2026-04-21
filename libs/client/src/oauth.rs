@@ -10,9 +10,8 @@ use netidm_proto::constants::{
     ATTR_OAUTH2_GROUP_MAPPING, ATTR_OAUTH2_ISSUER, ATTR_OAUTH2_JIT_PROVISIONING,
     ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE, ATTR_OAUTH2_LINK_BY,
     ATTR_OAUTH2_PREFER_SHORT_USERNAME, ATTR_OAUTH2_REQUEST_SCOPES, ATTR_OAUTH2_RS_BASIC_SECRET,
-    ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING,
-    ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI, ATTR_OAUTH2_STRICT_REDIRECT_URI,
-    ATTR_OAUTH2_TOKEN_ENDPOINT, ATTR_OAUTH2_USERINFO_ENDPOINT,
+    ATTR_OAUTH2_RS_ORIGIN, ATTR_OAUTH2_RS_ORIGIN_LANDING, ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI,
+    ATTR_OAUTH2_STRICT_REDIRECT_URI, ATTR_OAUTH2_TOKEN_ENDPOINT, ATTR_OAUTH2_USERINFO_ENDPOINT,
 };
 use netidm_proto::internal::{ImageValue, Oauth2ClaimMapJoin};
 use netidm_proto::v1::Entry;
@@ -848,9 +847,8 @@ impl NetidmClient {
         let entry: Option<Entry> = self
             .perform_get_request(format!("/v1/oauth2/_client/{id}").as_str())
             .await?;
-        let entry = entry.ok_or_else(|| {
-            ClientError::InvalidRequest(format!("no such OAuth2 client: {id}"))
-        })?;
+        let entry = entry
+            .ok_or_else(|| ClientError::InvalidRequest(format!("no such OAuth2 client: {id}")))?;
         Ok(entry
             .attrs
             .get(ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI)

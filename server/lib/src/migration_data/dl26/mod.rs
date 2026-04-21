@@ -48,11 +48,7 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     attrs.push(SCHEMA_ATTR_LOGOUT_DELIVERY_TOKEN_DL26.clone().into());
     attrs.push(SCHEMA_ATTR_LOGOUT_DELIVERY_STATUS_DL26.clone().into());
     attrs.push(SCHEMA_ATTR_LOGOUT_DELIVERY_ATTEMPTS_DL26.clone().into());
-    attrs.push(
-        SCHEMA_ATTR_LOGOUT_DELIVERY_NEXT_ATTEMPT_DL26
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_LOGOUT_DELIVERY_NEXT_ATTEMPT_DL26.clone().into());
     attrs.push(SCHEMA_ATTR_LOGOUT_DELIVERY_CREATED_DL26.clone().into());
     attrs.push(SCHEMA_ATTR_LOGOUT_DELIVERY_RP_DL26.clone().into());
     attrs.push(SCHEMA_ATTR_SAML_SESSION_USER_DL26.clone().into());

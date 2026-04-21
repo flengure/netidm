@@ -2425,10 +2425,7 @@ async fn handle_oauth2_post_logout_uri_add(
         }
     }
 
-    let ml = ModifyList::new_append(
-        Attribute::OAuth2RsPostLogoutRedirectUri,
-        Value::Url(parsed),
-    );
+    let ml = ModifyList::new_append(Attribute::OAuth2RsPostLogoutRedirectUri, Value::Url(parsed));
 
     let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
         .map_err(|e| {

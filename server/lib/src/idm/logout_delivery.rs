@@ -83,11 +83,11 @@ impl FromStr for LogoutDeliveryStatus {
 /// `specs/009-rp-logout/research.md` R1.
 pub const RETRY_SCHEDULE: [Duration; 6] = [
     Duration::ZERO,
-    Duration::from_secs(60),          // +1 min
-    Duration::from_secs(300),         // +5 min
-    Duration::from_secs(1_800),       // +30 min
-    Duration::from_secs(7_200),       // +2 h
-    Duration::from_secs(28_800),      // +8 h
+    Duration::from_secs(60),     // +1 min
+    Duration::from_secs(300),    // +5 min
+    Duration::from_secs(1_800),  // +30 min
+    Duration::from_secs(7_200),  // +2 h
+    Duration::from_secs(28_800), // +8 h
 ];
 
 /// Per-request HTTP timeout for one delivery attempt. Dex-convention
@@ -142,8 +142,14 @@ pub fn enqueue_logout_delivery(
         (Attribute::Class, EntryClass::Object.to_value()),
         (Attribute::Class, EntryClass::LogoutDelivery.to_value()),
         (Attribute::Uuid, Value::Uuid(uuid)),
-        (Attribute::LogoutDeliveryEndpoint, Value::Url(endpoint.clone())),
-        (Attribute::LogoutDeliveryToken, Value::new_utf8s(logout_token)),
+        (
+            Attribute::LogoutDeliveryEndpoint,
+            Value::Url(endpoint.clone())
+        ),
+        (
+            Attribute::LogoutDeliveryToken,
+            Value::new_utf8s(logout_token)
+        ),
         (
             Attribute::LogoutDeliveryStatus,
             Value::new_iutf8(LogoutDeliveryStatus::Pending.as_str())
@@ -384,10 +390,7 @@ pub fn list_logout_deliveries(
             ),
         ]))
     } else {
-        filter!(f_eq(
-            Attribute::Class,
-            EntryClass::LogoutDelivery.into()
-        ))
+        filter!(f_eq(Attribute::Class, EntryClass::LogoutDelivery.into()))
     };
     let entries = qs_read.internal_search(filter)?;
     let mut out = Vec::with_capacity(entries.len());
@@ -405,11 +408,17 @@ pub fn list_logout_deliveries(
             .unwrap_or(0);
         let next_attempt = entry
             .get_ava_single_datetime(Attribute::LogoutDeliveryNextAttempt)
-            .map(|dt| dt.format(&time::format_description::well_known::Rfc3339).unwrap_or_default())
+            .map(|dt| {
+                dt.format(&time::format_description::well_known::Rfc3339)
+                    .unwrap_or_default()
+            })
             .unwrap_or_default();
         let created = entry
             .get_ava_single_datetime(Attribute::LogoutDeliveryCreated)
-            .map(|dt| dt.format(&time::format_description::well_known::Rfc3339).unwrap_or_default())
+            .map(|dt| {
+                dt.format(&time::format_description::well_known::Rfc3339)
+                    .unwrap_or_default()
+            })
             .unwrap_or_default();
         let rp = entry
             .get_ava_single_refer(Attribute::LogoutDeliveryRp)

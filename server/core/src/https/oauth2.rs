@@ -828,9 +828,7 @@ pub async fn oauth2_openid_end_session_get(
     // segment, fall through to the confirmation page without touching any
     // session — this prevents an RP from naming a different client via the
     // body than the one keyed in the URL.
-    let client_id_mismatch = body_client_id
-        .as_deref()
-        .is_some_and(|c| c != client_id);
+    let client_id_mismatch = body_client_id.as_deref().is_some_and(|c| c != client_id);
     if client_id_mismatch {
         info!(
             event_id = %kopid.eventid,
@@ -859,7 +857,11 @@ pub async fn oauth2_openid_end_session_get(
             (
                 StatusCode::FOUND,
                 [
-                    (LOCATION, HeaderValue::try_from(url.as_str()).unwrap_or_else(|_| HeaderValue::from_static("/"))),
+                    (
+                        LOCATION,
+                        HeaderValue::try_from(url.as_str())
+                            .unwrap_or_else(|_| HeaderValue::from_static("/")),
+                    ),
                     (
                         axum::http::header::CACHE_CONTROL,
                         HeaderValue::from_static("no-store"),
@@ -896,7 +898,10 @@ fn end_session_confirmation_response() -> Response {
     (
         StatusCode::OK,
         [
-            (CONTENT_TYPE, HeaderValue::from_static("text/html; charset=utf-8")),
+            (
+                CONTENT_TYPE,
+                HeaderValue::from_static("text/html; charset=utf-8"),
+            ),
             (
                 axum::http::header::CACHE_CONTROL,
                 HeaderValue::from_static("no-store"),

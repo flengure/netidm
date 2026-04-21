@@ -195,7 +195,8 @@ fn collect_rps_for_session(
         }
         Err(err) => return Err(err),
     };
-    let Some(map) = entry.get_ava_as_oauth2session_map(netidm_proto::attribute::Attribute::OAuth2Session)
+    let Some(map) =
+        entry.get_ava_as_oauth2session_map(netidm_proto::attribute::Attribute::OAuth2Session)
     else {
         return Ok(hashbrown::HashSet::new());
     };

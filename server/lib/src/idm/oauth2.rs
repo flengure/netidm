@@ -2311,7 +2311,10 @@ impl IdmServerProxyWriteTransaction<'_> {
             .inner
             .rs_set_get(client_id)
             .ok_or_else(|| {
-                warn!(client_id, "Unknown OAuth2 client_id on end_session_endpoint");
+                warn!(
+                    client_id,
+                    "Unknown OAuth2 client_id on end_session_endpoint"
+                );
                 OperationError::NoMatchingEntries
             })?
             .clone();
@@ -2334,10 +2337,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 OidcSubject::U(u) => Some(*u),
                 OidcSubject::S(_) => None,
             };
-            let session_uuid = token
-                .jti
-                .as_deref()
-                .and_then(|s| Uuid::parse_str(s).ok());
+            let session_uuid = token.jti.as_deref().and_then(|s| Uuid::parse_str(s).ok());
 
             if aud_matches {
                 if let (Some(target), Some(token_id)) = (user_uuid, session_uuid) {
@@ -5836,12 +5836,7 @@ mod tests {
         // No id_token_hint → Confirmation, regardless of other params.
         let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
         let outcome = idms_prox_write
-            .handle_oauth2_rp_initiated_logout(
-                "test_resource_server",
-                None,
-                None,
-                None,
-            )
+            .handle_oauth2_rp_initiated_logout("test_resource_server", None, None, None)
             .expect("handler must not error on missing hint");
         assert!(matches!(outcome, OidcLogoutOutcome::Confirmation));
 
@@ -5882,12 +5877,8 @@ mod tests {
         assert!(matches!(outcome, OidcLogoutOutcome::Confirmation));
 
         // Unknown client_id → NoMatchingEntries error.
-        let outcome = idms_prox_write.handle_oauth2_rp_initiated_logout(
-            "nosuchclient",
-            None,
-            None,
-            None,
-        );
+        let outcome =
+            idms_prox_write.handle_oauth2_rp_initiated_logout("nosuchclient", None, None, None);
         assert!(matches!(outcome, Err(OperationError::NoMatchingEntries)));
 
         assert!(idms_prox_write.commit().is_ok());

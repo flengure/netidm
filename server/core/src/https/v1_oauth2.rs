@@ -746,12 +746,7 @@ pub(crate) async fn oauth2_client_id_backchannel_logout_uri_post(
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_oauth2_client_backchannel_logout_uri_set(
-            client_auth_info,
-            name,
-            uri,
-            kopid.eventid,
-        )
+        .handle_oauth2_client_backchannel_logout_uri_set(client_auth_info, name, uri, kopid.eventid)
         .await
         .map(Json::from)
         .map_err(WebError::from)
@@ -776,11 +771,7 @@ pub(crate) async fn oauth2_client_id_backchannel_logout_uri_delete(
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_oauth2_client_backchannel_logout_uri_clear(
-            client_auth_info,
-            name,
-            kopid.eventid,
-        )
+        .handle_oauth2_client_backchannel_logout_uri_clear(client_auth_info, name, kopid.eventid)
         .await
         .map(Json::from)
         .map_err(WebError::from)

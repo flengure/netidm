@@ -183,32 +183,24 @@ fn materialise(
     let user_uuid = entry
         .get_ava_single_refer(Attribute::SamlSessionUser)
         .ok_or_else(|| {
-            OperationError::InvalidAttribute(format!(
-                "SamlSession {uuid} missing user reference"
-            ))
+            OperationError::InvalidAttribute(format!("SamlSession {uuid} missing user reference"))
         })?;
     let sp_uuid = entry.get_ava_single_refer(Attribute::SamlSessionSp);
     let session_index = entry
         .get_ava_single_iutf8(Attribute::SamlSessionIndex)
         .map(str::to_string)
         .ok_or_else(|| {
-            OperationError::InvalidAttribute(format!(
-                "SamlSession {uuid} missing session_index"
-            ))
+            OperationError::InvalidAttribute(format!("SamlSession {uuid} missing session_index"))
         })?;
     let uat_uuid = entry
         .get_ava_single_uuid(Attribute::SamlSessionUatUuid)
         .ok_or_else(|| {
-            OperationError::InvalidAttribute(format!(
-                "SamlSession {uuid} missing uat_uuid"
-            ))
+            OperationError::InvalidAttribute(format!("SamlSession {uuid} missing uat_uuid"))
         })?;
     let created = entry
         .get_ava_single_datetime(Attribute::SamlSessionCreated)
         .ok_or_else(|| {
-            OperationError::InvalidAttribute(format!(
-                "SamlSession {uuid} missing created"
-            ))
+            OperationError::InvalidAttribute(format!("SamlSession {uuid} missing created"))
         })?;
     Ok(SamlSession {
         uuid,

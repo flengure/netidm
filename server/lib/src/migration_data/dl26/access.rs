@@ -231,8 +231,8 @@ pub(crate) static IDM_ACP_SAML_CLIENT_ADMIN_DL26: LazyLock<BuiltinAcp> =
 /// queue. System administrators can `search` `LogoutDelivery` entries; there
 /// is no modify / create / delete path — the delivery worker is the sole
 /// writer to these entries via server-internal ops.
-pub(crate) static IDM_ACP_LOGOUT_DELIVERY_READ_DL26: LazyLock<BuiltinAcp> =
-    LazyLock::new(|| BuiltinAcp {
+pub(crate) static IDM_ACP_LOGOUT_DELIVERY_READ_DL26: LazyLock<BuiltinAcp> = LazyLock::new(|| {
+    BuiltinAcp {
         classes: vec![
             EntryClass::Object,
             EntryClass::AccessControlProfile,
@@ -258,4 +258,5 @@ pub(crate) static IDM_ACP_LOGOUT_DELIVERY_READ_DL26: LazyLock<BuiltinAcp> =
             Attribute::LogoutDeliveryRp,
         ],
         ..Default::default()
-    });
+    }
+});
