@@ -5736,6 +5736,87 @@ mod tests {
         assert!(discovery.backchannel_logout_session_supported);
     }
 
+    /// DL26 / US1 — exercise `handle_oauth2_rp_initiated_logout` on the
+    /// graceful-degradation paths: missing `id_token_hint`, malformed
+    /// `id_token_hint`, and valid-shape-but-unverifiable `id_token_hint`.
+    /// All three MUST return `Confirmation` and MUST NOT redirect even if
+    /// `post_logout_redirect_uri` is supplied (OIDC RP-Initiated Logout
+    /// 1.0 §3 — servers MUST NOT redirect to a URL derived from an
+    /// unverifiable ID token). A full round-trip (issue ID token, present
+    /// as hint, assert session terminated) lives in the testkit
+    /// integration tests (T027–T030) since it requires the complete
+    /// authorisation-code exchange machinery.
+    #[idm_test]
+    async fn test_idm_oauth2_rp_initiated_logout_graceful_degradation(
+        idms: &IdmServer,
+        _idms_delayed: &mut IdmServerDelayed,
+    ) {
+        use crate::idm::logout::OidcLogoutOutcome;
+
+        let ct = Duration::from_secs(TEST_CURRENT_TIME);
+        let (_secret, _uat, _ident, _) =
+            setup_oauth2_resource_server_basic(idms, ct, true, false, false).await;
+
+        // No id_token_hint → Confirmation, regardless of other params.
+        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
+        let outcome = idms_prox_write
+            .handle_oauth2_rp_initiated_logout(
+                "test_resource_server",
+                None,
+                None,
+                None,
+            )
+            .expect("handler must not error on missing hint");
+        assert!(matches!(outcome, OidcLogoutOutcome::Confirmation));
+
+        // No id_token_hint, but post_logout_redirect_uri supplied → still
+        // Confirmation (redirect must not be honoured without a verified token).
+        let outcome = idms_prox_write
+            .handle_oauth2_rp_initiated_logout(
+                "test_resource_server",
+                None,
+                Some("https://demo.example.com/logged-out"),
+                Some("xyz".to_string()),
+            )
+            .expect("handler must not error");
+        assert!(matches!(outcome, OidcLogoutOutcome::Confirmation));
+
+        // Malformed id_token_hint → Confirmation.
+        let outcome = idms_prox_write
+            .handle_oauth2_rp_initiated_logout(
+                "test_resource_server",
+                Some("garbage.not-a-jwt"),
+                Some("https://demo.example.com/logged-out"),
+                None,
+            )
+            .expect("handler must not error on malformed hint");
+        assert!(matches!(outcome, OidcLogoutOutcome::Confirmation));
+
+        // Valid-shape JWS from an unrelated key → Confirmation.
+        // A well-formed JwsCompact with segments but wrong signing key.
+        let bogus_jws = "eyJhbGciOiJFUzI1NiJ9.eyJpc3MiOiJodHRwOi8vdGVzdCJ9.abc";
+        let outcome = idms_prox_write
+            .handle_oauth2_rp_initiated_logout(
+                "test_resource_server",
+                Some(bogus_jws),
+                Some("https://demo.example.com/logged-out"),
+                None,
+            )
+            .expect("handler must not error on untrusted signature");
+        assert!(matches!(outcome, OidcLogoutOutcome::Confirmation));
+
+        // Unknown client_id → NoMatchingEntries error.
+        let outcome = idms_prox_write.handle_oauth2_rp_initiated_logout(
+            "nosuchclient",
+            None,
+            None,
+            None,
+        );
+        assert!(matches!(outcome, Err(OperationError::NoMatchingEntries)));
+
+        assert!(idms_prox_write.commit().is_ok());
+    }
+
     #[idm_test]
     async fn test_idm_oauth2_openid_extensions(
         idms: &IdmServer,
