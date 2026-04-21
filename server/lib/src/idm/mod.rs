@@ -18,6 +18,7 @@ pub mod group_mapping;
 pub mod identityverification;
 pub mod logout;
 pub mod logout_delivery;
+pub mod saml_session;
 pub mod ldap;
 pub mod oauth2;
 pub(crate) mod oauth2_client;
