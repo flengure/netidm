@@ -111,6 +111,15 @@ pub struct IdmServer {
     /// delivery immediately rather than waiting for the next 30 s poll
     /// tick. See `idm::logout_delivery::run_worker`.
     logout_delivery_notify: std::sync::Arc<tokio::sync::Notify>,
+
+    /// Process-local lookup of concrete `RefreshableConnector`
+    /// implementations by connector-entry UUID. Populated at netidmd
+    /// boot; empty in this PR (PR-REFRESH-CLAIMS) — later connector
+    /// PRs register their impls here during their own boot hook. The
+    /// OAuth2 refresh-token path consults this registry when a session
+    /// carries `upstream_connector = Some(_)`; a missing lookup
+    /// yields `Oauth2Error::InvalidGrant` (FR-003).
+    connector_registry: std::sync::Arc<crate::idm::oauth2_connector::ConnectorRegistry>,
 }
 
 /// Contains methods that require writes, but in the context of writing to the idm in memory structures (maybe the query server too). This is things like authentication.
@@ -169,6 +178,12 @@ pub struct IdmServerProxyWriteTransaction<'a> {
     /// enqueueing a `LogoutDelivery` to wake the delivery worker
     /// immediately rather than waiting for its next poll tick.
     pub(crate) logout_delivery_notify: &'a std::sync::Arc<tokio::sync::Notify>,
+    /// Reference to the shared upstream-connector registry on the owning
+    /// `IdmServer`. The OAuth2 refresh-token handler consults this when
+    /// a session carries `upstream_connector = Some(_)` to re-fetch
+    /// claims from the connector that minted the session
+    /// (PR-REFRESH-CLAIMS, DL27).
+    pub(crate) connector_registry: &'a std::sync::Arc<crate::idm::oauth2_connector::ConnectorRegistry>,
 }
 
 pub struct IdmServerDelayed {
@@ -180,6 +195,18 @@ pub struct IdmServerAudit {
 }
 
 impl IdmServer {
+    /// Accessor for the process-local `ConnectorRegistry`. Used by
+    /// netidmd startup (and by test fixtures) to register concrete
+    /// `RefreshableConnector` implementations before the OAuth2
+    /// refresh-token path first consults the registry.
+    /// (PR-REFRESH-CLAIMS, DL27.)
+    #[must_use]
+    pub fn connector_registry(
+        &self,
+    ) -> std::sync::Arc<crate::idm::oauth2_connector::ConnectorRegistry> {
+        std::sync::Arc::clone(&self.connector_registry)
+    }
+
     pub async fn new(
         qs: QueryServer,
         origin: &Url,
@@ -265,6 +292,9 @@ impl IdmServer {
             oauth2_client_providers: HashMap::new(),
             saml_client_providers: HashMap::new(),
             logout_delivery_notify: std::sync::Arc::new(tokio::sync::Notify::new()),
+            connector_registry: std::sync::Arc::new(
+                crate::idm::oauth2_connector::ConnectorRegistry::new_empty(),
+            ),
         };
         let idm_server_delayed = IdmServerDelayed { async_rx };
         let idm_server_audit = IdmServerAudit { audit_rx };
@@ -360,6 +390,7 @@ impl IdmServer {
             oauth2_client_providers: self.oauth2_client_providers.write(),
             saml_client_providers: self.saml_client_providers.write(),
             logout_delivery_notify: &self.logout_delivery_notify,
+            connector_registry: &self.connector_registry,
         })
     }
 

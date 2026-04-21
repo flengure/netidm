@@ -127,18 +127,31 @@ pub const DOMAIN_LEVEL_25: DomainVersion = 25;
 /// the delivery queue.
 pub const DOMAIN_LEVEL_26: DomainVersion = 26;
 
+/// Domain Level 27: OAuth2 refresh-token claim re-fetch (PR-REFRESH-CLAIMS).
+/// Extends the `Oauth2Session` value with two new optional fields:
+/// `upstream_connector: Option<Uuid>` (UUID of the connector that federated
+/// the session, `None` for locally-authenticated sessions) and
+/// `upstream_refresh_state: Option<Vec<u8>>` (opaque connector-owned blob
+/// used by the connector's `RefreshableConnector::refresh` hook at refresh
+/// time). No new attribute, no new entry class, no new ACP — the change is
+/// internal to the `ValueSetOauth2Session` serialization. Sessions minted
+/// pre-DL27 decode with both fields as `None` and fall through to the
+/// existing (non-refreshing) cached-claims code path so the upgrade is
+/// non-disruptive.
+pub const DOMAIN_LEVEL_27: DomainVersion = 27;
+
 // The target supported domain functional level. During development this is
 // the NEXT level that users will upgrade too. In other words if we are
 // developing 1.6.0-dev, then we need to set TGT_LEVEL to 10 which is
 // the corresponding level.
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_26;
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_27;
 // The current patch level if any out of band fixes are required.
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
 
 // The maximum supported domain functional level. This generally
 // represents a *future* version of the server which doesn't exist
 // yet.
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_26;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_27;
 
 // This is the LOWEST level of database we can recreate. This is important for testing,
 // but we don't actually expect it to be used.

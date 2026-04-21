@@ -21,6 +21,7 @@ pub mod logout;
 pub mod logout_delivery;
 pub mod oauth2;
 pub(crate) mod oauth2_client;
+pub mod oauth2_connector;
 pub(crate) mod radius;
 pub(crate) mod reauth;
 pub(crate) mod saml_client;

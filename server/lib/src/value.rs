@@ -1325,6 +1325,21 @@ pub struct Oauth2Session {
     pub state: SessionState,
     pub issued_at: OffsetDateTime,
     pub rs_uuid: Uuid,
+    /// UUID of the upstream connector that federated this session
+    /// (via provider-initiated login). `None` for locally-authenticated
+    /// sessions and for sessions minted before DL27. When `Some(_)`,
+    /// the refresh-token exchange dispatches through
+    /// `ConnectorRegistry` to re-resolve claims (PR-REFRESH-CLAIMS,
+    /// DL27).
+    pub upstream_connector: Option<Uuid>,
+    /// Opaque connector-owned byte blob holding whatever per-session
+    /// state that connector needs at refresh time (upstream refresh
+    /// token, upstream `sub`, cached userinfo URL, etc.). Netidm
+    /// core stores and returns this unchanged; only the connector
+    /// interprets the contents. `None` when the session was not
+    /// connector-bound or when the connector chose not to persist
+    /// any state.
+    pub upstream_refresh_state: Option<Vec<u8>>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

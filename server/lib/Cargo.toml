@@ -23,8 +23,14 @@ dhat-heap = ["dep:dhat"]
 dhat-ad-hoc = ["dep:dhat"]
 dev-oauth2-device-flow = [] # still-in-development oauth2 device flow support
 test = []                   # Enable this for cross-package test features.
+# Enables the in-process `TestMockConnector` on `pub` surface so
+# integration tests in `netidmd_testkit` can register a mock
+# connector. Zero release-mode code — gated by
+# `#[cfg(any(test, feature = "testkit"))]` in source.
+testkit = []
 
 [dependencies]
+async-trait = { workspace = true }
 base64 = { workspace = true }
 base64urlsafedata = { workspace = true }
 bitflags = { workspace = true }

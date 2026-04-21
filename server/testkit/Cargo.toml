@@ -27,7 +27,9 @@ dev-oauth2-device-flow = []
 netidm_client = { workspace = true }
 netidm_proto = { workspace = true }
 netidmd_core = { workspace = true }
-netidmd_lib = { workspace = true }
+# Enable the `testkit` feature on `netidmd_lib` so the in-process
+# `TestMockConnector` is reachable from integration tests.
+netidmd_lib = { workspace = true, features = ["testkit"] }
 reqwest = { workspace = true }
 serde = { workspace = true }
 sketching = { workspace = true }

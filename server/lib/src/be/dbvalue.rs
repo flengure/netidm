@@ -723,6 +723,29 @@ pub enum DbValueOauth2Session {
         #[serde(rename = "r")]
         rs_uuid: Uuid,
     },
+    /// DL27 — adds upstream connector binding and opaque refresh
+    /// state for sessions federated through a provider-initiated
+    /// login. Both new fields are `Option`, default to `None` on
+    /// deserialization of pre-DL27 records via the V1/V2/V3 arms
+    /// (PR-REFRESH-CLAIMS).
+    V4 {
+        #[serde(rename = "u")]
+        refer: Uuid,
+        #[serde(rename = "p")]
+        parent: Option<Uuid>,
+        #[serde(rename = "e")]
+        state: DbValueSessionStateV1,
+        #[serde(rename = "i")]
+        issued_at: String,
+        #[serde(rename = "r")]
+        rs_uuid: Uuid,
+        /// UUID of the upstream connector that federated this session.
+        #[serde(rename = "uc")]
+        upstream_connector: Option<Uuid>,
+        /// Opaque connector-owned byte blob needed on refresh.
+        #[serde(rename = "urs")]
+        upstream_refresh_state: Option<Vec<u8>>,
+    },
 }
 
 // Internal representation of an image

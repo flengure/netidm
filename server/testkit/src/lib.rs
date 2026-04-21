@@ -42,6 +42,15 @@ pub const TEST_INTEGRATION_RS_REDIRECT_URL: &str = "https://demo.example.com/oau
 pub const TEST_INTEGRATION_STATE_VALUE: &str = "KrabzRc0ol";
 
 pub use testkit_macros::test;
+
+// PR-REFRESH-CLAIMS re-exports: integration tests land a mock
+// connector in the process-local ConnectorRegistry owned by the
+// in-test IdmServer. All four types come from the `testkit` feature
+// on `netidmd_lib`.
+pub use netidmd_lib::idm::oauth2_connector::{
+    ConnectorRefreshError, ConnectorRegistry, RefreshOutcome, RefreshableConnector,
+    TestMockConnector,
+};
 use tracing::trace;
 
 pub fn is_free_port(port: u16) -> bool {

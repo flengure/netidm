@@ -1233,6 +1233,11 @@ mod tests {
                         state: SessionState::NeverExpires,
                         issued_at,
                         rs_uuid,
+                        // refint plugin runs cleanup on orphaned sessions;
+                        // it does not federate through an upstream connector
+                        // (PR-REFRESH-CLAIMS, DL27).
+                        upstream_connector: None,
+                        upstream_refresh_state: None,
                     },
                 )
             ),

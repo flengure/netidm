@@ -4936,6 +4936,7 @@ dependencies = [
 name = "netidmd_lib"
 version = "0.1.12-dev"
 dependencies = [
+ "async-trait",
  "base64 0.22.1",
  "base64urlsafedata 0.6.0-dev",
  "bitflags 2.11.1",

@@ -1669,6 +1669,99 @@ impl IdmServerProxyWriteTransaction<'_> {
                     scopes
                 };
 
+                // --- PR-REFRESH-CLAIMS (DL27) — upstream connector re-fetch ---
+                //
+                // If this session was minted through a federated login
+                // (upstream connector), the refresh MUST re-resolve the
+                // caller's claims by dispatching to the connector
+                // before minting new tokens (FR-001, FR-003). A missing
+                // registry entry, a connector error, or a subject-
+                // mismatch return maps to `Oauth2Error::InvalidGrant`
+                // per FR-003 (fail-closed).
+                //
+                // This branch is a no-op when `upstream_connector` is
+                // `None` (the common case and the only case this PR
+                // exercises in production — concrete connector PRs
+                // land after #3 and populate the registry).
+                if let Some(connector_uuid) = oauth2_session.upstream_connector {
+                    let connector = self
+                        .connector_registry
+                        .get(connector_uuid)
+                        .ok_or_else(|| {
+                            error!(
+                                %connector_uuid,
+                                user_uuid = %uuid,
+                                "refresh rejected: upstream connector is not registered"
+                            );
+                            Oauth2Error::InvalidGrant
+                        })?;
+
+                    // Minimum viable `previous_claims` for the
+                    // subject-consistency contract — the user UUID is
+                    // the netidm-side stable identity, which concrete
+                    // connectors are expected to round-trip through
+                    // their opaque blob. Narrowable fields (email,
+                    // display_name, etc.) are left as None here; real
+                    // connectors receive fresher values via their own
+                    // blob-side state.
+                    let previous_claims =
+                        crate::idm::authsession::handler_oauth2_client::ExternalUserClaims {
+                            sub: uuid.to_string(),
+                            email: None,
+                            email_verified: None,
+                            display_name: None,
+                            username_hint: None,
+                            groups: Vec::new(),
+                        };
+
+                    let state_blob = oauth2_session
+                        .upstream_refresh_state
+                        .as_deref()
+                        .unwrap_or(&[]);
+
+                    // The handler is sync; the connector trait is
+                    // async (later connector PRs do network I/O).
+                    // Bridge via `block_in_place` on the current
+                    // multi-thread tokio runtime — the handler's
+                    // caller chain is async, so a runtime is present.
+                    let outcome = tokio::task::block_in_place(|| {
+                        tokio::runtime::Handle::current()
+                            .block_on(connector.refresh(state_blob, &previous_claims))
+                    })
+                    .map_err(|err| {
+                        error!(
+                            %connector_uuid,
+                            user_uuid = %uuid,
+                            ?err,
+                            "refresh rejected: connector returned error"
+                        );
+                        Oauth2Error::InvalidGrant
+                    })?;
+
+                    // Subject-consistency check: the connector must
+                    // return the same subject the session was minted
+                    // against. A mismatch is treated as a
+                    // security-class event equivalent to
+                    // `ConnectorRefreshError::TokenRevoked`.
+                    if outcome.claims.sub != previous_claims.sub {
+                        error!(
+                            %connector_uuid,
+                            user_uuid = %uuid,
+                            "refresh rejected: connector returned mismatched sub"
+                        );
+                        return Err(Oauth2Error::InvalidGrant);
+                    }
+
+                    // T016 (reconcile + persist-on-change) and
+                    // T017 (change-detection tracing span) land in
+                    // follow-up commits — this is the minimum
+                    // wiring required to exercise the dispatch and
+                    // fail-closed semantics.
+                    let _ = outcome.claims.groups;
+                    let _ = outcome.new_session_state;
+                }
+                // --- /PR-REFRESH-CLAIMS ---
+
                 // ----------
                 // good to go
 
@@ -1879,6 +1972,8 @@ impl IdmServerProxyWriteTransaction<'_> {
                 state: SessionState::ExpiresAt(odt_exp),
                 issued_at: odt_ct,
                 rs_uuid: o2rs.uuid,
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 
@@ -2091,6 +2186,15 @@ impl IdmServerProxyWriteTransaction<'_> {
                 state: SessionState::ExpiresAt(odt_refresh_expiry),
                 issued_at: odt_ct,
                 rs_uuid: o2rs.uuid,
+                // Default to None here. US1 refresh-handler wiring
+                // explicitly copies forward `upstream_connector` and
+                // rotates `upstream_refresh_state` from the prior
+                // session via the refresh call site (T014/T015).
+                // Pre-existing sessions being extended through the
+                // happy path (no connector) stay at None, which is
+                // the correct default.
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 

@@ -405,6 +405,8 @@ mod tests {
                         state,
                         issued_at,
                         rs_uuid,
+                        upstream_connector: None,
+                        upstream_refresh_state: None,
                     },
                 )
             ),
@@ -580,6 +582,8 @@ mod tests {
                         state: SessionState::NeverExpires,
                         issued_at,
                         rs_uuid,
+                        upstream_connector: None,
+                        upstream_refresh_state: None,
                     },
                 )
             ),
@@ -742,6 +746,8 @@ mod tests {
                 state: SessionState::NeverExpires,
                 issued_at,
                 rs_uuid,
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 

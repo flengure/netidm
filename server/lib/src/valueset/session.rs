@@ -587,6 +587,8 @@ impl ValueSetOauth2Session {
                                 state,
                                 issued_at,
                                 rs_uuid,
+                                upstream_connector: None,
+                                upstream_refresh_state: None,
                             },
                         ))
                     }
@@ -641,6 +643,8 @@ impl ValueSetOauth2Session {
                                 state,
                                 issued_at,
                                 rs_uuid,
+                                upstream_connector: None,
+                                upstream_refresh_state: None,
                             },
                         ))
                     } // End V2
@@ -693,9 +697,66 @@ impl ValueSetOauth2Session {
                                 state,
                                 issued_at,
                                 rs_uuid,
+                                upstream_connector: None,
+                                upstream_refresh_state: None,
                             },
                         ))
                     } // End V3
+                    DbValueOauth2Session::V4 {
+                        refer,
+                        parent,
+                        state,
+                        issued_at,
+                        rs_uuid,
+                        upstream_connector,
+                        upstream_refresh_state,
+                    } => {
+                        let issued_at = OffsetDateTime::parse(&issued_at, &Rfc3339)
+                            .map(|odt| odt.to_offset(time::UtcOffset::UTC))
+                            .map_err(|e| {
+                                admin_error!(
+                                    ?e,
+                                    "Invalidating session {} due to invalid issued_at timestamp",
+                                    refer
+                                )
+                            })
+                            .ok()?;
+
+                        let state = match state {
+                            DbValueSessionStateV1::ExpiresAt(e_inner) => {
+                                OffsetDateTime::parse(&e_inner, &Rfc3339)
+                                    .map(|odt| odt.to_offset(time::UtcOffset::UTC))
+                                    .map(SessionState::ExpiresAt)
+                                    .map_err(|e| {
+                                        admin_error!(
+                                    ?e,
+                                    "Invalidating session {} due to invalid expiry timestamp",
+                                    refer
+                                )
+                                    })
+                                    .ok()?
+                            }
+                            DbValueSessionStateV1::Never => SessionState::NeverExpires,
+                            DbValueSessionStateV1::RevokedAt(dc) => SessionState::RevokedAt(Cid {
+                                s_uuid: dc.server_id,
+                                ts: dc.timestamp,
+                            }),
+                        };
+
+                        rs_filter |= rs_uuid.as_u128();
+
+                        Some((
+                            refer,
+                            Oauth2Session {
+                                parent,
+                                state,
+                                issued_at,
+                                rs_uuid,
+                                upstream_connector,
+                                upstream_refresh_state,
+                            },
+                        ))
+                    } // End V4
                 }
             })
             .collect();
@@ -917,7 +978,7 @@ impl ValueSetT for ValueSetOauth2Session {
         DbValueSetV2::Oauth2Session(
             self.map
                 .iter()
-                .map(|(u, m)| DbValueOauth2Session::V3 {
+                .map(|(u, m)| DbValueOauth2Session::V4 {
                     refer: *u,
                     parent: m.parent,
                     state: match &m.state {
@@ -942,6 +1003,8 @@ impl ValueSetT for ValueSetOauth2Session {
                             .expect("Failed to format timestamp as RFC3339")
                     },
                     rs_uuid: m.rs_uuid,
+                    upstream_connector: m.upstream_connector,
+                    upstream_refresh_state: m.upstream_refresh_state.clone(),
                 })
                 .collect(),
         )
@@ -1708,6 +1771,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
+            upstream_connector: None,
+            upstream_refresh_state: None,
             },
         );
 
@@ -1739,6 +1804,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
+            upstream_connector: None,
+            upstream_refresh_state: None,
             },
         );
 
@@ -1750,6 +1817,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
+            upstream_connector: None,
+            upstream_refresh_state: None,
             },
         );
 
@@ -1776,6 +1845,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
+            upstream_connector: None,
+            upstream_refresh_state: None,
             },
         );
 
@@ -1787,6 +1858,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
+            upstream_connector: None,
+            upstream_refresh_state: None,
             },
         );
 
@@ -1816,6 +1889,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
+            upstream_connector: None,
+            upstream_refresh_state: None,
             },
         );
 
@@ -1828,6 +1903,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
+                upstream_connector: None,
+                upstream_refresh_state: None,
                 },
             ),
             (
@@ -1838,6 +1915,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
+                upstream_connector: None,
+                upstream_refresh_state: None,
                 },
             ),
         ])
@@ -1873,6 +1952,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
+            upstream_connector: None,
+            upstream_refresh_state: None,
             },
         );
 
@@ -1885,6 +1966,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
+                upstream_connector: None,
+                upstream_refresh_state: None,
                 },
             ),
             (
@@ -1895,6 +1978,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
+                upstream_connector: None,
+                upstream_refresh_state: None,
                 },
             ),
         ])
@@ -1934,6 +2019,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
+                upstream_connector: None,
+                upstream_refresh_state: None,
                 },
             ),
             (
@@ -1944,6 +2031,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
+                upstream_connector: None,
+                upstream_refresh_state: None,
                 },
             ),
             (
@@ -1954,6 +2043,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
+                upstream_connector: None,
+                upstream_refresh_state: None,
                 },
             ),
         ])
@@ -2014,6 +2105,8 @@ mod tests {
                 issued_at: OffsetDateTime::UNIX_EPOCH,
                 parent: Some(s_uuid),
                 rs_uuid: s_uuid,
+            upstream_connector: None,
+            upstream_refresh_state: None,
             },
         );
 
