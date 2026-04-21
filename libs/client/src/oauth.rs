@@ -858,6 +858,43 @@ impl NetidmClient {
             .unwrap_or_default())
     }
 
+    /// Set (replace) the OAuth2 client's back-channel logout endpoint URI.
+    /// Single-value: calling again overwrites the previous URI. Rejects
+    /// malformed URIs.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer or
+    /// the server rejects the URI as malformed.
+    pub async fn idm_oauth2_client_set_backchannel_logout_uri(
+        &self,
+        id: &str,
+        uri: &str,
+    ) -> Result<(), ClientError> {
+        self.perform_post_request(
+            format!("/v1/oauth2/_client/{id}/_backchannel_logout_uri").as_str(),
+            uri.to_string(),
+        )
+        .await
+    }
+
+    /// Clear the OAuth2 client's back-channel logout endpoint URI.
+    /// Idempotent: clearing an already-absent attribute returns `Ok(())`
+    /// with no side effect.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_oauth2_client_clear_backchannel_logout_uri(
+        &self,
+        id: &str,
+    ) -> Result<(), ClientError> {
+        self.perform_delete_request(
+            format!("/v1/oauth2/_client/{id}/_backchannel_logout_uri").as_str(),
+        )
+        .await
+    }
+
     /// Add a mapping from an upstream group name to a netidm group UUID on an
     /// OAuth2 upstream client connector. Stored as a single value in the
     /// connector's `oauth2_group_mapping` attribute. The server rejects the

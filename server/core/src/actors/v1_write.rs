@@ -2098,6 +2098,46 @@ impl QueryServerWriteV1 {
         handle_oauth2_post_logout_uri_remove(&self.idms, client_auth_info, client_name, uri).await
     }
 
+    /// Set (replace) the OAuth2 client's `OAuth2RsBackchannelLogoutUri`.
+    /// Single-value: re-invoking replaces the previous URI. Rejects
+    /// malformed URIs.
+    ///
+    /// # Errors
+    /// * `OperationError::InvalidAttribute` — the URI does not parse.
+    /// * `OperationError::NoMatchingEntries` — no OAuth2 client with the
+    ///   given `client_name` exists.
+    /// * Other `OperationError` variants from the underlying search/modify.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_oauth2_client_backchannel_logout_uri_set(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        uri: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_oauth2_backchannel_uri_set(&self.idms, client_auth_info, client_name, uri).await
+    }
+
+    /// Clear the OAuth2 client's `OAuth2RsBackchannelLogoutUri`. Idempotent:
+    /// clearing an already-absent attribute returns `Ok(())` with no side
+    /// effect.
+    ///
+    /// # Errors
+    /// * `OperationError::NoMatchingEntries` — no OAuth2 client with the
+    ///   given `client_name` exists.
+    /// * Other `OperationError` variants from the underlying search/modify.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_oauth2_client_backchannel_logout_uri_clear(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_oauth2_backchannel_uri_clear(&self.idms, client_auth_info, client_name).await
+    }
+
     /// Add a group mapping (`<upstream>:<group-uuid>`) to an OAuth2 upstream
     /// client. Rejects the operation if another mapping for the same
     /// `upstream` name already exists on the connector (FR-007a).
@@ -2318,6 +2358,91 @@ async fn handle_oauth2_post_logout_uri_remove(
     let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
         .map_err(|e| {
             error!(err = ?e, "Failed to begin modify for post_logout_redirect_uri remove");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Set the OAuth2 client's back-channel logout endpoint URI. Purges any
+/// existing value — this attribute is single-value at the schema level.
+async fn handle_oauth2_backchannel_uri_set(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+    uri: String,
+) -> Result<(), OperationError> {
+    use url::Url;
+
+    let parsed = Url::parse(uri.trim()).map_err(|_| {
+        OperationError::InvalidAttribute(format!(
+            "backchannel_logout_uri '{}' is not a valid absolute URL",
+            uri
+        ))
+    })?;
+
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    // Single-value: purge first, then append, within one modify list.
+    let ml = ModifyList::new_list(vec![
+        Modify::Purged(Attribute::OAuth2RsBackchannelLogoutUri),
+        Modify::Present(Attribute::OAuth2RsBackchannelLogoutUri, Value::Url(parsed)),
+    ]);
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify for backchannel_logout_uri set");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Clear the OAuth2 client's back-channel logout endpoint URI. Idempotent.
+async fn handle_oauth2_backchannel_uri_clear(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+) -> Result<(), OperationError> {
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    let ml = ModifyList::new_purge(Attribute::OAuth2RsBackchannelLogoutUri);
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify for backchannel_logout_uri clear");
             e
         })?;
 

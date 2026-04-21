@@ -747,6 +747,24 @@ impl Oauth2Opt {
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
+            Oauth2Opt::SetBackchannelLogoutUri { name, uri } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_set_backchannel_logout_uri(name.as_str(), uri.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::ClearBackchannelLogoutUri { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_clear_backchannel_logout_uri(name.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
         }
     }
 }

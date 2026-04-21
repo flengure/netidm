@@ -1220,6 +1220,24 @@ pub enum Oauth2Opt {
         /// OAuth2 client name.
         name: String,
     },
+    /// Set (replace) the OAuth2 client's back-channel logout endpoint URI.
+    /// When a session bound to this client terminates, netidm POSTs a
+    /// signed OIDC Back-Channel Logout token to this URL. Single-value:
+    /// setting again overwrites the previous URI.
+    #[clap(name = "set-backchannel-logout-uri")]
+    SetBackchannelLogoutUri {
+        /// OAuth2 client name.
+        name: String,
+        /// Absolute URL of the relying party's back-channel logout endpoint.
+        uri: String,
+    },
+    /// Clear the OAuth2 client's back-channel logout endpoint URI.
+    /// Idempotent.
+    #[clap(name = "clear-backchannel-logout-uri")]
+    ClearBackchannelLogoutUri {
+        /// OAuth2 client name.
+        name: String,
+    },
 }
 
 #[derive(Args, Debug, Clone)]
