@@ -1627,30 +1627,30 @@ impl QueryServerWriteTransaction<'_> {
     /// (encoded via `DbValueOauth2Session`) gains its V4 variant carrying
     /// `upstream_connector` and `upstream_refresh_state`. Existing sessions
     /// decode cleanly under V1/V2/V3 with both new fields defaulted to
-    /// `None`; new sessions are written in V4. The migration itself is a
-    /// no-op — the behaviour gate is the value-format bump plus the refresh
-    /// handler's consult of `Oauth2Session::upstream_connector`.
+    /// `None`; new sessions are written in V4.
+    ///
+    /// At bootstrap (fresh DB → DL27) this runs the full DL26 setup so the
+    /// base IDM schema + ACPs are present; DL27 itself adds no entries
+    /// (FR-012 — zero new external surface). At incremental upgrade
+    /// (existing DL26 DB → DL27) this is effectively a no-op since
+    /// `internal_migrate_or_create_batch` is idempotent: every entry from
+    /// the DL26 batches is already present at the expected schema shape.
     ///
     /// # Errors
     ///
     /// Returns [`OperationError::MG0004DomainLevelInDevelopment`] if this
-    /// level is not yet enabled in the current build.
+    /// level is not yet enabled in the current build, or any error from
+    /// the underlying DL26 phase batches.
     pub(crate) fn migrate_domain_26_to_27(&mut self) -> Result<(), OperationError> {
         if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_27 {
             error!("Unable to raise domain level from 26 to 27.");
             return Err(OperationError::MG0004DomainLevelInDevelopment);
         }
 
-        // No phase-1 schema attrs, no phase-2 classes, no phase-4 system
-        // entries, no phase-7 ACPs. PR-REFRESH-CLAIMS adds zero external
-        // surface (FR-012); the DL bump is a value-format marker only.
-        //
-        // When the first concrete connector PR (#4 PR-CONNECTOR-GITHUB)
-        // lands, it will introduce its own DL with the connector-entry
-        // schema — DL27 is intentionally empty of entries so the foundation
-        // can ship independently of any connector implementation.
-
-        Ok(())
+        // DL27 adds no new schema/ACP/entry data — delegate the full
+        // DL26 setup so bootstrap DBs get a complete base IDM. On
+        // incremental upgrade from DL26 this is idempotent.
+        self.migrate_domain_25_to_26()
     }
 
     pub(crate) fn migrate_domain_25_to_26(&mut self) -> Result<(), OperationError> {

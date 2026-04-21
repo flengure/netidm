@@ -9095,4 +9095,87 @@ mod tests {
         assert_eq!(err, Oauth2Error::InvalidGrant);
         idms_prox_write.commit().expect("commit");
     }
+
+    // =======================================================================
+    // PR-REFRESH-CLAIMS — US1 unit tests.
+    //
+    // `read_synced_markers` is the preflight helper the refresh handler
+    // consults to decide whether a reconciliation write is needed
+    // (FR-010 persist-on-change). Pure-function unit test covering the
+    // filter-by-provider semantics — deeper end-to-end dispatch tests
+    // are integration-level work (T021) because seeding a session with
+    // `upstream_connector = Some(_)` requires reaching past the
+    // `ValueSetOauth2Session` set-replace semantics that the existing
+    // `setup_refresh_token` helper doesn't expose.
+    // =======================================================================
+
+    #[idm_test]
+    async fn test_read_synced_markers_filters_by_provider(
+        idms: &IdmServer,
+        _idms_delayed: &mut IdmServerDelayed,
+    ) {
+        use crate::idm::oauth2_connector::read_synced_markers;
+
+        let provider_a = Uuid::new_v4();
+        let provider_b = Uuid::new_v4();
+        let group_a1 = Uuid::new_v4();
+        let group_a2 = Uuid::new_v4();
+        let group_b1 = Uuid::new_v4();
+
+        // Build a test person entry with mixed-provider markers.
+        let mut idms_prox_write = idms
+            .proxy_write(Duration::from_secs(TEST_CURRENT_TIME))
+            .await
+            .expect("w");
+
+        let person_uuid = Uuid::new_v4();
+        let e = entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Class, EntryClass::Account.to_value()),
+            (Attribute::Class, EntryClass::Person.to_value()),
+            (Attribute::Name, Value::new_iname("markers_test_user")),
+            (Attribute::DisplayName, Value::new_utf8s("Markers")),
+            (Attribute::Uuid, Value::Uuid(person_uuid)),
+            (
+                Attribute::OAuth2UpstreamSyncedGroup,
+                Value::new_utf8s(&format!("{provider_a}:{group_a1}"))
+            ),
+            (
+                Attribute::OAuth2UpstreamSyncedGroup,
+                Value::new_utf8s(&format!("{provider_a}:{group_a2}"))
+            ),
+            (
+                Attribute::OAuth2UpstreamSyncedGroup,
+                Value::new_utf8s(&format!("{provider_b}:{group_b1}"))
+            )
+        );
+        idms_prox_write
+            .qs_write
+            .internal_create(vec![e])
+            .expect("create person");
+
+        // Filtered to provider_a → only the two provider-A groups.
+        let markers_a =
+            read_synced_markers(&mut idms_prox_write.qs_write, person_uuid, provider_a)
+                .expect("read");
+        assert_eq!(markers_a.len(), 2);
+        assert!(markers_a.contains(&group_a1));
+        assert!(markers_a.contains(&group_a2));
+        assert!(!markers_a.contains(&group_b1));
+
+        // Filtered to provider_b → only the single provider-B group.
+        let markers_b =
+            read_synced_markers(&mut idms_prox_write.qs_write, person_uuid, provider_b)
+                .expect("read");
+        assert_eq!(markers_b.len(), 1);
+        assert!(markers_b.contains(&group_b1));
+
+        // Unknown provider → empty.
+        let markers_x =
+            read_synced_markers(&mut idms_prox_write.qs_write, person_uuid, Uuid::new_v4())
+                .expect("read");
+        assert!(markers_x.is_empty());
+
+        idms_prox_write.commit().expect("commit");
+    }
 }
