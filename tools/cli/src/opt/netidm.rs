@@ -1788,8 +1788,37 @@ pub enum NetidmClientOpt {
         #[clap(subcommand)]
         commands: WgOpt,
     },
+    /// Inspect the back-channel logout delivery queue. Admin-only.
+    #[clap(name = "logout-deliveries")]
+    LogoutDeliveries {
+        #[clap(subcommand)]
+        commands: LogoutDeliveriesOpt,
+    },
     /// Print the program version and exit
     Version,
+}
+
+#[derive(Debug, Subcommand, Clone)]
+pub enum LogoutDeliveriesOpt {
+    /// List delivery records, optionally filtered by status.
+    #[clap(name = "list")]
+    List {
+        /// Show only `pending` records (currently in flight / retrying).
+        #[clap(long)]
+        pending: bool,
+        /// Show only `succeeded` records.
+        #[clap(long)]
+        succeeded: bool,
+        /// Show only `failed` records (retry budget exhausted).
+        #[clap(long)]
+        failed: bool,
+    },
+    /// Show a single delivery record by its UUID.
+    #[clap(name = "show")]
+    Show {
+        /// Delivery UUID.
+        uuid: String,
+    },
 }
 
 // ---- WireGuard CLI types ----

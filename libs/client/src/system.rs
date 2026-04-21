@@ -1,4 +1,49 @@
 use crate::{ClientError, NetidmClient};
+use netidm_proto::v1::{LogoutDeliveryDto, LogoutDeliveryFilter, LogoutDeliveryListResponse};
+
+impl NetidmClient {
+    /// List every back-channel `LogoutDelivery` record, optionally
+    /// filtered by status. Admin-only; ACP-gated server-side via
+    /// `idm_acp_logout_delivery_read` added in DL26.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer
+    /// or the caller lacks admin privileges.
+    pub async fn idm_list_logout_deliveries(
+        &self,
+        filter: Option<LogoutDeliveryFilter>,
+    ) -> Result<Vec<LogoutDeliveryDto>, ClientError> {
+        let path = match filter {
+            Some(f) => format!("/v1/logout_deliveries?status={}", f.as_str()),
+            None => "/v1/logout_deliveries".to_string(),
+        };
+        let resp: LogoutDeliveryListResponse = self.perform_get_request(path.as_str()).await?;
+        Ok(resp.items)
+    }
+
+    /// Show one `LogoutDelivery` record by UUID. Returns `Ok(None)` if
+    /// the UUID does not exist. Admin-only.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer
+    /// or the caller lacks admin privileges.
+    pub async fn idm_show_logout_delivery(
+        &self,
+        delivery_uuid: uuid::Uuid,
+    ) -> Result<Option<LogoutDeliveryDto>, ClientError> {
+        let path = format!("/v1/logout_deliveries/{delivery_uuid}");
+        match self
+            .perform_get_request::<LogoutDeliveryDto>(path.as_str())
+            .await
+        {
+            Ok(d) => Ok(Some(d)),
+            Err(ClientError::Http(reqwest::StatusCode::NOT_FOUND, _, _)) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+}
 
 impl NetidmClient {
     pub async fn system_password_badlist_get(&self) -> Result<Vec<String>, ClientError> {

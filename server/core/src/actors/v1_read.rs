@@ -1477,6 +1477,50 @@ impl QueryServerReadV1 {
         idms_prox_read.oauth2_rfc8414_metadata(&client_id)
     }
 
+    /// List every back-channel `LogoutDelivery` record, optionally
+    /// filtered by terminal status (`Pending` | `Succeeded` |
+    /// `Failed`). Admin-only — ACP-gated via
+    /// `idm_acp_logout_delivery_read` added in DL26.
+    ///
+    /// # Errors
+    ///
+    /// Propagates any [`OperationError`] from the underlying search
+    /// (typically an ACP rejection for non-admins).
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_list_logout_deliveries(
+        &self,
+        status: Option<netidmd_lib::idm::logout_delivery::LogoutDeliveryStatus>,
+        eventid: Uuid,
+    ) -> Result<Vec<netidm_proto::v1::LogoutDeliveryDto>, OperationError> {
+        let _ = eventid;
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        netidmd_lib::idm::logout_delivery::list_logout_deliveries(
+            &mut idms_prox_read.qs_read,
+            status,
+        )
+    }
+
+    /// Show a single `LogoutDelivery` record by UUID. Returns `Ok(None)`
+    /// for unknown UUIDs; `Err` only on DB-level failures.
+    ///
+    /// # Errors
+    ///
+    /// Propagates any [`OperationError`] from the underlying search
+    /// other than `NoMatchingEntries`.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_show_logout_delivery(
+        &self,
+        delivery_uuid: Uuid,
+        eventid: Uuid,
+    ) -> Result<Option<netidm_proto::v1::LogoutDeliveryDto>, OperationError> {
+        let _ = eventid;
+        let mut idms_prox_read = self.idms.proxy_read().await?;
+        netidmd_lib::idm::logout_delivery::show_logout_delivery(
+            &mut idms_prox_read.qs_read,
+            delivery_uuid,
+        )
+    }
+
     #[instrument(
         level = "info",
         skip_all,

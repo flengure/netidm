@@ -28,6 +28,7 @@ mod common;
 mod domain;
 mod graph;
 mod group;
+mod logout_deliveries;
 mod oauth2;
 mod person;
 mod raw;
@@ -192,6 +193,7 @@ impl NetidmClientParser {
             } => commands.exec(self).await,
             NetidmClientOpt::Recycle { commands } => commands.exec(self).await,
             NetidmClientOpt::Wg { commands } => commands.exec(self).await,
+            NetidmClientOpt::LogoutDeliveries { commands } => commands.exec(self).await,
             NetidmClientOpt::Version => {
                 self.output_mode
                     .print_message(format!("netidm {}", env!("NETIDM_PKG_VERSION")));

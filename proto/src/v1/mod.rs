@@ -13,10 +13,12 @@ use utoipa::ToSchema;
 use uuid::Uuid;
 
 mod auth;
+mod logout;
 mod message;
 mod unix;
 
 pub use self::auth::*;
+pub use self::logout::*;
 pub use self::message::*;
 pub use self::unix::*;
 

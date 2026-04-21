@@ -136,9 +136,9 @@ description: "Task list for feature 009-rp-logout"
 - [X] T047 [US3] Wire up `handle_oauth2_client_set_backchannel_logout_uri` + `_clear_` actor handlers on `QueryServerWriteV1` (server/core/src/actors/v1_write.rs) that set / unset `Attribute::OAuth2RsBackchannelLogoutUri` on the client entry; expose via HTTP routes in `server/core/src/https/v1_oauth2.rs`
 - [X] T048 [P] [US3] Add client SDK methods `idm_oauth2_client_set_backchannel_logout_uri` + `idm_oauth2_client_clear_backchannel_logout_uri` in `libs/client/src/oauth.rs` (depends on T047)
 - [X] T049 [P] [US3] Add CLI variants `SetBackchannelLogoutUri`, `ClearBackchannelLogoutUri` on `OAuth2Opt` in `tools/cli/src/opt/netidm.rs` and handlers in `tools/cli/src/cli/oauth2.rs` (depends on T048)
-- [ ] T050 [US3] Implement admin read API: actor `handle_list_logout_deliveries(filter)` + `handle_show_logout_delivery(uuid)` on `QueryServerReadV1` in `server/core/src/actors/v1_read.rs`; HTTP routes `GET /v1/logout_deliveries` and `GET /v1/logout_deliveries/{uuid}` in `server/core/src/https/v1.rs` per contracts/http-endpoints.md §9
-- [ ] T051 [P] [US3] Add client SDK methods `idm_list_logout_deliveries(filter)` + `idm_show_logout_delivery(uuid)` in `libs/client/src/session.rs` (or the closest existing module); define `LogoutDeliveryDto` + `LogoutDeliveryFilter` in `libs/client/src/` (depends on T050)
-- [ ] T052 [P] [US3] Add CLI top-level `LogoutDeliveries` subcommand tree (list / show) in `tools/cli/src/opt/logout.rs` (new file) and handlers in `tools/cli/src/cli/logout.rs` (new file); register in `tools/cli/src/main.rs` per contracts/cli-commands.md §5 (depends on T051)
+- [X] T050 [US3] Implement admin read API: actor `handle_list_logout_deliveries(filter)` + `handle_show_logout_delivery(uuid)` on `QueryServerReadV1` in `server/core/src/actors/v1_read.rs`; HTTP routes `GET /v1/logout_deliveries` and `GET /v1/logout_deliveries/{uuid}` in `server/core/src/https/v1.rs` per contracts/http-endpoints.md §9
+- [X] T051 [P] [US3] Add client SDK methods `idm_list_logout_deliveries(filter)` + `idm_show_logout_delivery(uuid)` in `libs/client/src/session.rs` (or the closest existing module); define `LogoutDeliveryDto` + `LogoutDeliveryFilter` in `libs/client/src/` (depends on T050)
+- [X] T052 [P] [US3] Add CLI top-level `LogoutDeliveries` subcommand tree (list / show) in `tools/cli/src/opt/logout.rs` (new file) and handlers in `tools/cli/src/cli/logout.rs` (new file); register in `tools/cli/src/main.rs` per contracts/cli-commands.md §5 (depends on T051)
 
 ### Tests for User Story 3
 

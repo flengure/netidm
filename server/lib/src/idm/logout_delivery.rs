@@ -357,6 +357,132 @@ pub fn list_due_pending_deliveries(
 /// notifications and retries whose `next_attempt` has come due.
 pub const WORKER_POLL_INTERVAL: Duration = Duration::from_secs(30);
 
+/// List every `LogoutDelivery` entry optionally filtered by status,
+/// rendered as a DTO suitable for the admin queue API. Used by
+/// `QueryServerReadV1::handle_list_logout_deliveries`.
+///
+/// The RP UUID is taken verbatim from the `LogoutDeliveryRp`
+/// attribute; the admin CLI / UI can resolve it to a human name via a
+/// separate lookup if desired. The raw logout-token JWS is NOT in the
+/// returned DTO — admins see status, attempts, timing, and endpoint
+/// only; the token body is an implementation detail.
+///
+/// # Errors
+///
+/// Returns any [`OperationError`] propagated from the underlying
+/// search.
+pub fn list_logout_deliveries(
+    qs_read: &mut crate::server::QueryServerReadTransaction<'_>,
+    status: Option<LogoutDeliveryStatus>,
+) -> Result<Vec<netidm_proto::v1::LogoutDeliveryDto>, OperationError> {
+    let filter = if let Some(s) = status {
+        filter!(f_and!([
+            f_eq(Attribute::Class, EntryClass::LogoutDelivery.into()),
+            f_eq(
+                Attribute::LogoutDeliveryStatus,
+                PartialValue::new_iutf8(s.as_str())
+            ),
+        ]))
+    } else {
+        filter!(f_eq(
+            Attribute::Class,
+            EntryClass::LogoutDelivery.into()
+        ))
+    };
+    let entries = qs_read.internal_search(filter)?;
+    let mut out = Vec::with_capacity(entries.len());
+    for entry in entries {
+        let endpoint = entry
+            .get_ava_single_url(Attribute::LogoutDeliveryEndpoint)
+            .map(ToString::to_string)
+            .unwrap_or_default();
+        let status_str = entry
+            .get_ava_single_iutf8(Attribute::LogoutDeliveryStatus)
+            .unwrap_or("unknown")
+            .to_string();
+        let attempts = entry
+            .get_ava_single_uint32(Attribute::LogoutDeliveryAttempts)
+            .unwrap_or(0);
+        let next_attempt = entry
+            .get_ava_single_datetime(Attribute::LogoutDeliveryNextAttempt)
+            .map(|dt| dt.format(&time::format_description::well_known::Rfc3339).unwrap_or_default())
+            .unwrap_or_default();
+        let created = entry
+            .get_ava_single_datetime(Attribute::LogoutDeliveryCreated)
+            .map(|dt| dt.format(&time::format_description::well_known::Rfc3339).unwrap_or_default())
+            .unwrap_or_default();
+        let rp = entry
+            .get_ava_single_refer(Attribute::LogoutDeliveryRp)
+            .unwrap_or_else(uuid::Uuid::nil);
+        out.push(netidm_proto::v1::LogoutDeliveryDto {
+            uuid: entry.get_uuid(),
+            endpoint,
+            status: status_str,
+            attempts,
+            next_attempt,
+            created,
+            rp,
+        });
+    }
+    Ok(out)
+}
+
+/// Load one `LogoutDelivery` by UUID and render it as a
+/// [`netidm_proto::v1::LogoutDeliveryDto`]. Returns `Ok(None)` if the
+/// UUID does not exist; `Err` only on DB-level failures.
+///
+/// # Errors
+///
+/// Returns any [`OperationError`] other than `NoMatchingEntries`
+/// propagated from the underlying search.
+pub fn show_logout_delivery(
+    qs_read: &mut crate::server::QueryServerReadTransaction<'_>,
+    delivery_uuid: uuid::Uuid,
+) -> Result<Option<netidm_proto::v1::LogoutDeliveryDto>, OperationError> {
+    let entry = match qs_read.internal_search_uuid(delivery_uuid) {
+        Ok(e) => e,
+        Err(OperationError::NoMatchingEntries) => return Ok(None),
+        Err(err) => return Err(err),
+    };
+    let endpoint = entry
+        .get_ava_single_url(Attribute::LogoutDeliveryEndpoint)
+        .map(ToString::to_string)
+        .unwrap_or_default();
+    let status = entry
+        .get_ava_single_iutf8(Attribute::LogoutDeliveryStatus)
+        .unwrap_or("unknown")
+        .to_string();
+    let attempts = entry
+        .get_ava_single_uint32(Attribute::LogoutDeliveryAttempts)
+        .unwrap_or(0);
+    let next_attempt = entry
+        .get_ava_single_datetime(Attribute::LogoutDeliveryNextAttempt)
+        .map(|dt| {
+            dt.format(&time::format_description::well_known::Rfc3339)
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
+    let created = entry
+        .get_ava_single_datetime(Attribute::LogoutDeliveryCreated)
+        .map(|dt| {
+            dt.format(&time::format_description::well_known::Rfc3339)
+                .unwrap_or_default()
+        })
+        .unwrap_or_default();
+    let rp = entry
+        .get_ava_single_refer(Attribute::LogoutDeliveryRp)
+        .unwrap_or_else(uuid::Uuid::nil);
+    Ok(Some(netidm_proto::v1::LogoutDeliveryDto {
+        uuid: delivery_uuid,
+        endpoint,
+        status,
+        attempts,
+        next_attempt,
+        created,
+        rp,
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

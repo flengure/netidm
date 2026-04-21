@@ -6,8 +6,8 @@ use super::middleware::KOpId;
 use super::ServerState;
 use crate::https::apidocs::response_schema::{ApiResponseWithout200, DefaultApiResponse};
 use crate::https::extractors::{ClientConnInfo, VerifiedClientInformation};
-use axum::extract::{Path, State};
-use axum::http::{HeaderMap, HeaderValue};
+use axum::extract::{Path, Query, State};
+use axum::http::{HeaderMap, HeaderValue, StatusCode};
 use axum::middleware::from_fn;
 use axum::response::{IntoResponse, Response};
 use axum::routing::{delete, get, post, put};
@@ -249,6 +249,88 @@ pub async fn self_logout_all(
         .await
         .map(|sessions_terminated| Json(LogoutAllSelfResponse { sessions_terminated }))
         .map_err(WebError::from)
+}
+
+#[derive(serde::Deserialize)]
+pub struct LogoutDeliveriesQuery {
+    pub status: Option<String>,
+}
+
+/// List every back-channel `LogoutDelivery` record the caller has
+/// admin-read access to. Optional `?status=pending|succeeded|failed`
+/// filter.
+#[utoipa::path(
+    get,
+    path = "/v1/logout_deliveries",
+    params(
+        ("status" = Option<String>, Query, description = "Filter: pending | succeeded | failed")
+    ),
+    responses(
+        (status = 200, body = netidm_proto::v1::LogoutDeliveryListResponse),
+    ),
+    security(("token_jwt" = [])),
+    tag = "auth",
+    operation_id = "logout_deliveries_list"
+)]
+pub async fn logout_deliveries_list(
+    State(state): State<ServerState>,
+    Query(q): Query<LogoutDeliveriesQuery>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<netidm_proto::v1::LogoutDeliveryListResponse>, WebError> {
+    let _ = client_auth_info;
+    use netidmd_lib::idm::logout_delivery::LogoutDeliveryStatus;
+    use std::str::FromStr;
+    let filter = q
+        .status
+        .as_deref()
+        .map(LogoutDeliveryStatus::from_str)
+        .transpose()
+        .map_err(WebError::from)?;
+    state
+        .qe_r_ref
+        .handle_list_logout_deliveries(filter, kopid.eventid)
+        .await
+        .map(|items| Json(netidm_proto::v1::LogoutDeliveryListResponse { items }))
+        .map_err(WebError::from)
+}
+
+/// Show a single `LogoutDelivery` record by UUID. Admin-only.
+#[utoipa::path(
+    get,
+    path = "/v1/logout_deliveries/{uuid}",
+    params(
+        ("uuid" = String, Path, description = "Delivery UUID")
+    ),
+    responses(
+        (status = 200, body = netidm_proto::v1::LogoutDeliveryDto),
+        (status = 404, description = "No delivery with that UUID"),
+    ),
+    security(("token_jwt" = [])),
+    tag = "auth",
+    operation_id = "logout_deliveries_show"
+)]
+pub async fn logout_deliveries_show(
+    State(state): State<ServerState>,
+    Path(uuid): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Response, WebError> {
+    let _ = client_auth_info;
+    let parsed = Uuid::parse_str(&uuid).map_err(|_| {
+        WebError::from(OperationError::InvalidAttribute(format!(
+            "'{uuid}' is not a valid UUID"
+        )))
+    })?;
+    let item = state
+        .qe_r_ref
+        .handle_show_logout_delivery(parsed, kopid.eventid)
+        .await
+        .map_err(WebError::from)?;
+    match item {
+        Some(d) => Ok(Json(d).into_response()),
+        None => Ok((StatusCode::NOT_FOUND, Json(serde_json::json!({}))).into_response()),
+    }
 }
 
 /// Terminate every active netidm session the named user holds.
@@ -3322,6 +3404,8 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
         .route("/v1/self", get(whoami))
         .route("/v1/self/_uat", get(whoami_uat))
         .route("/v1/self/logout_all", post(self_logout_all))
+        .route("/v1/logout_deliveries", get(logout_deliveries_list))
+        .route("/v1/logout_deliveries/{uuid}", get(logout_deliveries_show))
         // .route("/v1/self/_attr/{attr}", get(|| async { "TODO" }))
         // .route("/v1/self/_credential", get(|| async { "TODO" }))
         // .route("/v1/self/_credential/{cid}/_lock", get(|| async { "TODO" }))
