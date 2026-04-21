@@ -32,6 +32,15 @@
 //!     end_session_endpoint → assert the receiver receives a POST
 //!     carrying `logout_token=<signed-jws>` whose claims match the
 //!     spec (iss, aud, sub, sid, events, typ=logout+jwt).
+//!   * T057 — back-channel delivery opt-out: RP with NO
+//!     `OAuth2RsBackchannelLogoutUri` registered → session terminates
+//!     successfully but no `LogoutDelivery` record is created.
+//!   * T082 — end_session_endpoint single-session semantics: a
+//!     second UAT (e.g. CLI login) for the same user survives when
+//!     an OIDC end-session terminates only the session named by the
+//!     id_token_hint.
+//!   * T036 / FR-016 — post-logout redirect URI CRUD requires admin
+//!     privileges; ordinary persons are denied.
 
 use axum::extract::Form;
 use axum::{routing::post, Router};
@@ -825,5 +834,178 @@ async fn test_logout_backchannel_delivery_end_to_end(rsclient: &NetidmClient) {
     assert!(
         logout_event.is_object(),
         "back-channel-logout event value must be an (empty) object"
+    );
+}
+
+/// T057 — when the RP has NO `OAuth2RsBackchannelLogoutUri`
+/// registered, session termination succeeds and produces zero
+/// `LogoutDelivery` records. The admin queue-list must stay empty
+/// after the logout flow.
+#[netidmd_testkit::test]
+async fn test_logout_backchannel_delivery_no_registration_skipped(rsclient: &NetidmClient) {
+    let http = get_reqwest_client();
+    let (_atr, id_token, _oauth2_session_uuid) =
+        setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
+
+    // No backchannel URI registration. Terminate the session.
+    let end_session_url = rsclient.make_url(&format!(
+        "/oauth2/openid/{TEST_INTEGRATION_RS_ID}/end_session_endpoint"
+    ));
+    let response = http
+        .get(end_session_url)
+        .query(&[("id_token_hint", id_token.as_str())])
+        .send()
+        .await
+        .expect("end_session");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Give the worker a moment to do NOTHING (so if we're about to
+    // deliver, we'd see it).
+    tokio::time::sleep(Duration::from_millis(500)).await;
+
+    // Admin queue-list must still be empty.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+    let deliveries = rsclient
+        .idm_list_logout_deliveries(None)
+        .await
+        .expect("list deliveries");
+    assert!(
+        deliveries.is_empty(),
+        "no LogoutDelivery records should be enqueued when RP has no backchannel URI; got {}",
+        deliveries.len()
+    );
+}
+
+/// T082 / US5 Acceptance Scenario 4 — OIDC end-session only
+/// terminates the single session named by the id_token_hint's `sid`
+/// claim (resolved via the OAuth2 session's parent). An unrelated
+/// netidm session (e.g. the admin's CLI login) for the SAME user
+/// must NOT be affected.
+#[netidmd_testkit::test]
+async fn test_logout_end_session_never_goes_global(rsclient: &NetidmClient) {
+    let http = get_reqwest_client();
+
+    // Drive the code flow; this returns an id_token for the
+    // NOT_ADMIN_TEST_USERNAME user. The helper also leaves the client
+    // authenticated AS that user (its `auth_simple_password` call).
+    // We rely on the admin's own CLI login staying alive
+    // independently — it's managed by a separate UAT.
+    let (_atr, id_token, _) = setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
+
+    // Establish a second, independent UAT for the user by re-authing
+    // with the user's password (same credential, fresh session). The
+    // first UAT was set up by the OAuth2 code flow.
+    rsclient
+        .auth_simple_password(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_PASSWORD)
+        .await
+        .expect("user second auth (second UAT)");
+    let second_uat = rsclient.get_token().await.expect("second UAT must exist");
+
+    // Terminate the ID-token session via end_session_endpoint. The
+    // second UAT is bound to a DIFFERENT parent session and must
+    // survive.
+    let response = http
+        .get(rsclient.make_url(&format!(
+            "/oauth2/openid/{TEST_INTEGRATION_RS_ID}/end_session_endpoint"
+        )))
+        .query(&[("id_token_hint", id_token.as_str())])
+        .send()
+        .await
+        .expect("end_session");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // The second UAT must still authenticate — hit `/v1/self` which
+    // requires a valid session.
+    let whoami = http
+        .get(rsclient.make_url("/v1/self"))
+        .bearer_auth(second_uat)
+        .send()
+        .await
+        .expect("whoami on surviving session");
+    assert_eq!(
+        whoami.status(),
+        StatusCode::OK,
+        "the second UAT must survive — OIDC end-session is single-session-only"
+    );
+}
+
+/// T036 / FR-016 — post-logout redirect URI CRUD requires admin
+/// privileges. A non-admin user hitting the admin endpoint must be
+/// denied. Covers the ACP gating added to `IDM_ACP_OAUTH2_MANAGE`
+/// in DL26.
+#[netidmd_testkit::test]
+async fn test_logout_post_logout_redirect_uri_crud_rejects_non_admin(rsclient: &NetidmClient) {
+    // Admin creates the RS.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+    rsclient
+        .idm_oauth2_rs_basic_create(
+            TEST_INTEGRATION_RS_ID,
+            TEST_INTEGRATION_RS_DISPLAY,
+            TEST_INTEGRATION_RS_URL,
+        )
+        .await
+        .expect("create RS");
+
+    // Create a non-admin person.
+    rsclient
+        .idm_person_account_create(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_USERNAME)
+        .await
+        .expect("create non-admin");
+    rsclient
+        .idm_person_account_primary_credential_set_password(
+            NOT_ADMIN_TEST_USERNAME,
+            NOT_ADMIN_TEST_PASSWORD,
+        )
+        .await
+        .expect("set password");
+
+    // Re-auth as the non-admin and attempt CRUD — must be denied at
+    // the ACP layer, not pass silently.
+    rsclient
+        .auth_simple_password(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_PASSWORD)
+        .await
+        .expect("non-admin auth");
+
+    let add_result = rsclient
+        .idm_oauth2_client_add_post_logout_redirect_uri(
+            TEST_INTEGRATION_RS_ID,
+            "https://demo.example.com/after-logout",
+        )
+        .await;
+    assert!(
+        add_result.is_err(),
+        "non-admin post-logout add must fail; got Ok"
+    );
+
+    let remove_result = rsclient
+        .idm_oauth2_client_remove_post_logout_redirect_uri(
+            TEST_INTEGRATION_RS_ID,
+            "https://demo.example.com/after-logout",
+        )
+        .await;
+    assert!(
+        remove_result.is_err(),
+        "non-admin post-logout remove must fail; got Ok"
+    );
+
+    // Re-auth as admin and confirm the RS still has an empty
+    // allowlist — no ghost state written by the denied requests.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin reauth");
+    let listed = rsclient
+        .idm_oauth2_client_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
+        .await
+        .expect("list");
+    assert!(
+        listed.is_empty(),
+        "denied CRUD must not leave ghost values; got {listed:?}"
     );
 }
