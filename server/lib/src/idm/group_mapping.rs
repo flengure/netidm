@@ -62,7 +62,7 @@ impl GroupMapping {
 /// Split the marker form `<provider-uuid>:<group-uuid>` on the last `:`.
 /// Returns `None` for malformed or foreign (non-UUID prefix) entries —
 /// callers log-and-skip them rather than fail.
-fn parse_marker(value: &str) -> Option<(Uuid, Uuid)> {
+pub(crate) fn parse_marker(value: &str) -> Option<(Uuid, Uuid)> {
     let (prov, grp) = value.rsplit_once(':')?;
     let prov = Uuid::parse_str(prov).ok()?;
     let grp = Uuid::parse_str(grp).ok()?;

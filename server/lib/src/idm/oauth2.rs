@@ -1680,9 +1680,9 @@ impl IdmServerProxyWriteTransaction<'_> {
                 // per FR-003 (fail-closed).
                 //
                 // This branch is a no-op when `upstream_connector` is
-                // `None` (the common case and the only case this PR
-                // exercises in production — concrete connector PRs
-                // land after #3 and populate the registry).
+                // `None` (FR-006 — pre-DL27 sessions and locally-
+                // authenticated sessions pass through to the cached-
+                // claims mint path unchanged).
                 if let Some(connector_uuid) = oauth2_session.upstream_connector {
                     let connector = self
                         .connector_registry
@@ -1699,11 +1699,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                     // Minimum viable `previous_claims` for the
                     // subject-consistency contract — the user UUID is
                     // the netidm-side stable identity, which concrete
-                    // connectors are expected to round-trip through
-                    // their opaque blob. Narrowable fields (email,
-                    // display_name, etc.) are left as None here; real
-                    // connectors receive fresher values via their own
-                    // blob-side state.
+                    // connectors round-trip through their opaque blob.
                     let previous_claims =
                         crate::idm::authsession::handler_oauth2_client::ExternalUserClaims {
                             sub: uuid.to_string(),
@@ -1717,16 +1713,18 @@ impl IdmServerProxyWriteTransaction<'_> {
                     let state_blob = oauth2_session
                         .upstream_refresh_state
                         .as_deref()
-                        .unwrap_or(&[]);
+                        .unwrap_or(&[])
+                        .to_vec();
 
                     // The handler is sync; the connector trait is
                     // async (later connector PRs do network I/O).
                     // Bridge via `block_in_place` on the current
                     // multi-thread tokio runtime — the handler's
                     // caller chain is async, so a runtime is present.
+                    let prev_claims_for_refresh = previous_claims.clone();
                     let outcome = tokio::task::block_in_place(|| {
                         tokio::runtime::Handle::current()
-                            .block_on(connector.refresh(state_blob, &previous_claims))
+                            .block_on(connector.refresh(&state_blob, &prev_claims_for_refresh))
                     })
                     .map_err(|err| {
                         error!(
@@ -1737,12 +1735,12 @@ impl IdmServerProxyWriteTransaction<'_> {
                         );
                         Oauth2Error::InvalidGrant
                     })?;
+                    drop(connector);
 
                     // Subject-consistency check: the connector must
                     // return the same subject the session was minted
-                    // against. A mismatch is treated as a
-                    // security-class event equivalent to
-                    // `ConnectorRefreshError::TokenRevoked`.
+                    // against. A mismatch is a security-class event
+                    // (FR-003; R2 invariant).
                     if outcome.claims.sub != previous_claims.sub {
                         error!(
                             %connector_uuid,
@@ -1752,12 +1750,79 @@ impl IdmServerProxyWriteTransaction<'_> {
                         return Err(Oauth2Error::InvalidGrant);
                     }
 
-                    // T016 (reconcile + persist-on-change) and
-                    // T017 (change-detection tracing span) land in
-                    // follow-up commits — this is the minimum
-                    // wiring required to exercise the dispatch and
-                    // fail-closed semantics.
-                    let _ = outcome.claims.groups;
+                    // T016 persist-on-change + T017 tracing span.
+                    //
+                    // Resolve desired upstream-synced set from the
+                    // connector's group-mapping table; compare to the
+                    // Person entry's current markers. Only call the
+                    // reconciler when the set actually changed
+                    // (FR-010). The span fires only on change
+                    // (FR-013).
+                    let mapping = self
+                        .oauth2_client_providers
+                        .get(&connector_uuid)
+                        .map(|p| p.group_mapping.clone())
+                        .unwrap_or_default();
+                    let mut desired: hashbrown::HashSet<uuid::Uuid> =
+                        hashbrown::HashSet::new();
+                    for name in &outcome.claims.groups {
+                        for gm in &mapping {
+                            if gm.upstream_name == *name {
+                                desired.insert(gm.netidm_uuid);
+                            }
+                        }
+                    }
+                    let existing = crate::idm::oauth2_connector::read_synced_markers(
+                        &mut self.qs_write,
+                        uuid,
+                        connector_uuid,
+                    )
+                    .map_err(|err| {
+                        error!(
+                            %connector_uuid,
+                            user_uuid = %uuid,
+                            ?err,
+                            "refresh: failed to read existing upstream-synced markers"
+                        );
+                        Oauth2Error::ServerError(err)
+                    })?;
+
+                    if existing != desired {
+                        let added: Vec<uuid::Uuid> =
+                            desired.difference(&existing).copied().collect();
+                        let removed: Vec<uuid::Uuid> =
+                            existing.difference(&desired).copied().collect();
+                        info!(
+                            target: "refresh_claims.groups_changed",
+                            user_uuid = %uuid,
+                            %connector_uuid,
+                            ?added,
+                            ?removed,
+                            "upstream-asserted group set changed for this session"
+                        );
+                        self.reconcile_upstream_memberships_for_provider(
+                            uuid,
+                            connector_uuid,
+                            &outcome.claims.groups,
+                        )
+                        .map_err(|err| {
+                            error!(
+                                %connector_uuid,
+                                user_uuid = %uuid,
+                                ?err,
+                                "refresh: failed to reconcile upstream memberships"
+                            );
+                            Oauth2Error::ServerError(err)
+                        })?;
+                    }
+
+                    // T015 rotation of upstream_refresh_state lands in
+                    // a follow-up: `generate_access_token_response`
+                    // constructs the new `Oauth2Session` with
+                    // `upstream_connector: None` today; the helper
+                    // needs a signature change to carry the new blob
+                    // forward. Not in US1-MVP scope — placeholder
+                    // access to avoid the lint.
                     let _ = outcome.new_session_state;
                 }
                 // --- /PR-REFRESH-CLAIMS ---

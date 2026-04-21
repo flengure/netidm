@@ -244,6 +244,48 @@ impl Default for ConnectorRegistry {
     }
 }
 
+/// Read the Person entry's `OAuth2UpstreamSyncedGroup` markers filtered to
+/// a single connector. Used by the OAuth2 refresh-token handler to decide
+/// whether the new upstream-asserted group set requires a reconciliation
+/// write (FR-010 persist-on-change).
+///
+/// Returns the set of netidm group UUIDs currently marked as
+/// upstream-synced for `(person_uuid, provider_uuid)`. Markers tagged to
+/// other providers are ignored; malformed marker values are logged and
+/// skipped (same semantics as
+/// [`crate::idm::group_mapping::reconcile_upstream_memberships`]).
+///
+/// # Errors
+///
+/// Returns any [`crate::prelude::OperationError`] propagated from the
+/// underlying `internal_search_uuid` call — typically
+/// `NoMatchingEntries` if `person_uuid` does not resolve, which the
+/// caller should treat as "no markers yet."
+pub fn read_synced_markers(
+    qs_write: &mut crate::server::QueryServerWriteTransaction,
+    person_uuid: Uuid,
+    provider_uuid: Uuid,
+) -> Result<hashbrown::HashSet<Uuid>, crate::prelude::OperationError> {
+    use crate::idm::group_mapping::parse_marker;
+    use crate::server::QueryServerTransaction;
+    use netidm_proto::attribute::Attribute;
+
+    let entry = qs_write.internal_search_uuid(person_uuid)?;
+    let mut out = hashbrown::HashSet::new();
+    if let Some(vs) = entry.get_ava_set(Attribute::OAuth2UpstreamSyncedGroup) {
+        if let Some(markers) = vs.as_utf8_iter() {
+            for value in markers {
+                if let Some((prov, grp)) = parse_marker(value) {
+                    if prov == provider_uuid {
+                        out.insert(grp);
+                    }
+                }
+            }
+        }
+    }
+    Ok(out)
+}
+
 // Ensure the debug derive doesn't need to format `dyn RefreshableConnector`
 // (which isn't Debug) — provide a minimal Debug impl that just lists keys.
 impl std::fmt::Debug for ConnectorRegistry {

@@ -78,6 +78,7 @@ impl QueryServer {
                 DOMAIN_LEVEL_24 => write_txn.migrate_domain_23_to_24()?,
                 DOMAIN_LEVEL_25 => write_txn.migrate_domain_24_to_25()?,
                 DOMAIN_LEVEL_26 => write_txn.migrate_domain_25_to_26()?,
+                DOMAIN_LEVEL_27 => write_txn.migrate_domain_26_to_27()?,
                 _ => {
                     error!("Invalid requested domain target level for server bootstrap");
                     debug_assert!(false);
@@ -1619,6 +1620,39 @@ impl QueryServerWriteTransaction<'_> {
     ///
     /// Returns [`OperationError`] if any migration phase fails or if this
     /// level is not yet enabled in the current build.
+    /// DL27 — PR-REFRESH-CLAIMS.
+    ///
+    /// No schema changes, no new attribute, no new entry class. The DL27
+    /// bump marks the point at which the `Oauth2Session` value format
+    /// (encoded via `DbValueOauth2Session`) gains its V4 variant carrying
+    /// `upstream_connector` and `upstream_refresh_state`. Existing sessions
+    /// decode cleanly under V1/V2/V3 with both new fields defaulted to
+    /// `None`; new sessions are written in V4. The migration itself is a
+    /// no-op — the behaviour gate is the value-format bump plus the refresh
+    /// handler's consult of `Oauth2Session::upstream_connector`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OperationError::MG0004DomainLevelInDevelopment`] if this
+    /// level is not yet enabled in the current build.
+    pub(crate) fn migrate_domain_26_to_27(&mut self) -> Result<(), OperationError> {
+        if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_27 {
+            error!("Unable to raise domain level from 26 to 27.");
+            return Err(OperationError::MG0004DomainLevelInDevelopment);
+        }
+
+        // No phase-1 schema attrs, no phase-2 classes, no phase-4 system
+        // entries, no phase-7 ACPs. PR-REFRESH-CLAIMS adds zero external
+        // surface (FR-012); the DL bump is a value-format marker only.
+        //
+        // When the first concrete connector PR (#4 PR-CONNECTOR-GITHUB)
+        // lands, it will introduce its own DL with the connector-entry
+        // schema — DL27 is intentionally empty of entries so the foundation
+        // can ship independently of any connector implementation.
+
+        Ok(())
+    }
+
     pub(crate) fn migrate_domain_25_to_26(&mut self) -> Result<(), OperationError> {
         if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_26 {
             error!("Unable to raise domain level from 25 to 26.");
