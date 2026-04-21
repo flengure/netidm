@@ -455,9 +455,8 @@ pub fn show_logout_delivery(
         f_eq(Attribute::Uuid, PartialValue::Uuid(delivery_uuid)),
     ]));
     let mut entries = qs_read.impersonate_search(filter.clone(), filter, ident)?;
-    let entry = match entries.pop() {
-        Some(e) => e,
-        None => return Ok(None),
+    let Some(entry) = entries.pop() else {
+        return Ok(None);
     };
     let endpoint = entry
         .get_ava_single_url(Attribute::LogoutDeliveryEndpoint)
