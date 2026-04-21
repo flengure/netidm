@@ -221,7 +221,7 @@ description: "Task list for feature 009-rp-logout"
 - [X] T086 Full verification: `cargo test --workspace` passes (per project memory, do NOT add `--all-features` — the dhat profiler singleton conflicts with parallel tests)
 - [X] T087 Full verification: `cargo clippy --lib --bins --examples --all-features -- -D warnings` clean (no `#[allow(...)]` introduced anywhere)
 - [X] T088 Full verification: `cargo fmt --check` clean
-- [ ] T089 Manual quickstart validation on a live dev netidmd: run all 12 scenarios from `quickstart.md` (deferred to tag-time per project memory — can be marked complete in tasks.md at ship time, not during development)
+- [-] T089 (deferred — operator gate) Manual quickstart validation on a live dev netidmd: run all 12 scenarios from `quickstart.md`. This is a human step that has to be driven against a deployed environment and cannot be automated from this workflow. Programmatic coverage of each scenario is already in the testkit suite (`server/testkit/tests/testkit/logout_test.rs` — 16 passing tests spanning US1–US5 including discovery, CRUD, full code-flow logout, back-channel delivery with distinct `sid` claims, ACP gating, and logout_all fan-out). The operator should run the quickstart before cutting the actual release.
 - [X] T090 Add RELEASE_NOTES.md entry for this feature — landed as the `### 2026-04-21 - Netidm 0.1.11 (fork)` section with DL25 + DL26 coverage (commit 52ea9ddd)
 
 ---
