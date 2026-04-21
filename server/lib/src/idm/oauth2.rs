@@ -1539,6 +1539,10 @@ impl IdmServerProxyWriteTransaction<'_> {
             parent_session_id,
             session_id,
             nonce,
+            // Initial code-flow mint — no connector binding yet;
+            // later connector PRs wire this when the caller is a
+            // provider-initiated login.
+            None,
         )
     }
 
@@ -1683,6 +1687,11 @@ impl IdmServerProxyWriteTransaction<'_> {
                 // `None` (FR-006 — pre-DL27 sessions and locally-
                 // authenticated sessions pass through to the cached-
                 // claims mint path unchanged).
+                //
+                // `upstream_binding_for_mint` is `Some((uuid, blob))`
+                // when we must rotate the connector binding onto the
+                // new session (FR-007); `None` otherwise.
+                let mut upstream_binding_for_mint: Option<(Uuid, Vec<u8>)> = None;
                 if let Some(connector_uuid) = oauth2_session.upstream_connector {
                     let connector = self
                         .connector_registry
@@ -1816,14 +1825,19 @@ impl IdmServerProxyWriteTransaction<'_> {
                         })?;
                     }
 
-                    // T015 rotation of upstream_refresh_state lands in
-                    // a follow-up: `generate_access_token_response`
-                    // constructs the new `Oauth2Session` with
-                    // `upstream_connector: None` today; the helper
-                    // needs a signature change to carry the new blob
-                    // forward. Not in US1-MVP scope — placeholder
-                    // access to avoid the lint.
-                    let _ = outcome.new_session_state;
+                    // T015 — carry the upstream connector binding
+                    // forward across the refresh-token rotation
+                    // (FR-007). The rotated session MUST keep the
+                    // same `upstream_connector` UUID and pick up
+                    // `outcome.new_session_state` when the connector
+                    // rotated its blob (otherwise copy the old blob).
+                    // Build the `upstream_binding` argument now;
+                    // `generate_access_token_response` below writes
+                    // it onto the new `Oauth2Session` entry.
+                    let rotated_blob = outcome
+                        .new_session_state
+                        .unwrap_or_else(|| state_blob.clone());
+                    upstream_binding_for_mint = Some((connector_uuid, rotated_blob));
                 }
                 // --- /PR-REFRESH-CLAIMS ---
 
@@ -1840,6 +1854,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                     parent_session_id,
                     session_id,
                     nonce,
+                    upstream_binding_for_mint,
                 )
             }
         }
@@ -1957,6 +1972,9 @@ impl IdmServerProxyWriteTransaction<'_> {
             parent_session_id,
             session_id,
             None,
+            // Service-account token exchange: no upstream connector
+            // federated this grant.
+            None,
         )
     }
 
@@ -2067,6 +2085,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn generate_access_token_response(
         &mut self,
         o2rs: &Oauth2RS,
@@ -2077,6 +2096,12 @@ impl IdmServerProxyWriteTransaction<'_> {
         parent_session_id: Uuid,
         session_id: Uuid,
         nonce: Option<String>,
+        // PR-REFRESH-CLAIMS (DL27, FR-007): upstream-connector binding
+        // to carry forward onto the rotated `Oauth2Session` written by
+        // this mint. `Some((connector_uuid, blob))` for connector-bound
+        // sessions on the refresh path; `None` for code-flow initial
+        // mints and for the cached-claims (pre-DL27) refresh branch.
+        upstream_binding: Option<(Uuid, Vec<u8>)>,
     ) -> Result<AccessTokenResponse, Oauth2Error> {
         let odt_ct = OffsetDateTime::UNIX_EPOCH + ct;
         let iat = ct.as_secs() as i64;
@@ -2251,15 +2276,16 @@ impl IdmServerProxyWriteTransaction<'_> {
                 state: SessionState::ExpiresAt(odt_refresh_expiry),
                 issued_at: odt_ct,
                 rs_uuid: o2rs.uuid,
-                // Default to None here. US1 refresh-handler wiring
-                // explicitly copies forward `upstream_connector` and
-                // rotates `upstream_refresh_state` from the prior
-                // session via the refresh call site (T014/T015).
-                // Pre-existing sessions being extended through the
-                // happy path (no connector) stay at None, which is
-                // the correct default.
-                upstream_connector: None,
-                upstream_refresh_state: None,
+                // PR-REFRESH-CLAIMS (FR-007): carry the upstream-
+                // connector binding forward across refresh-token
+                // rotation. `upstream_binding.is_none()` for code-
+                // flow initial mints and the pre-DL27 cached-claims
+                // refresh branch — stays None, which is the correct
+                // default for those paths.
+                upstream_connector: upstream_binding.as_ref().map(|(uuid, _)| *uuid),
+                upstream_refresh_state: upstream_binding
+                    .as_ref()
+                    .map(|(_, blob)| blob.clone()),
             },
         );
 
