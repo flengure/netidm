@@ -202,7 +202,7 @@ description: "Task list for feature 009-rp-logout"
 
 ### Tests for User Story 5
 
-- [ ] T079 [P] [US5] Integration test `logout_all_self_terminates_every_session` in `server/testkit/tests/`: log alice in from three test clients (three UATs); call `/v1/self/logout_all`; assert response is `{ sessions_terminated: 3 }`; assert all three UATs are deleted; assert the CLI token used to make the call is also invalidated (acceptance scenario 1 of US5)
+- [X] T079 [P] [US5] Integration test `logout_all_self_terminates_every_session` in `server/testkit/tests/`: log alice in from three test clients (three UATs); call `/v1/self/logout_all`; assert response is `{ sessions_terminated: 3 }`; assert all three UATs are deleted; assert the CLI token used to make the call is also invalidated (acceptance scenario 1 of US5)
 - [ ] T080 [P] [US5] Integration test `logout_all_self_fans_out_backchannel` in `server/testkit/tests/`: alice has two active sessions, each bound to an RP with a registered back-channel URL; call `/v1/self/logout_all`; assert the dummy receiver receives exactly two POSTs, one per session; assert each logout token's `sid` matches the corresponding UAT (acceptance scenario 2 of US5)
 - [X] T081 [P] [US5] Integration test `logout_all_admin_path_gated_by_acp` in `server/testkit/tests/`: attempt `POST /v1/person/alice/logout_all` as a non-admin; assert denied; attempt as admin; assert 200 and correct termination count (acceptance scenario 3 of US5)
 - [X] T082 [P] [US5] Integration test `logout_all_oidc_end_session_never_goes_global` in `server/testkit/tests/`: alice has two sessions; drive a US1 OIDC end-session on one; assert only that one UAT is deleted; the other stays (acceptance scenario 4 of US5)

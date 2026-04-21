@@ -41,6 +41,11 @@
 //!     id_token_hint.
 //!   * T036 / FR-016 — post-logout redirect URI CRUD requires admin
 //!     privileges; ordinary persons are denied.
+//!   * T079 — `/v1/self/logout_all` terminates every active UAT the
+//!     caller holds. Three independent sessions are established,
+//!     then logout_all is invoked via one of them; the response
+//!     reports `3` and all three UATs fail subsequent `/v1/self`
+//!     calls.
 
 use axum::extract::Form;
 use axum::{routing::post, Router};
@@ -1008,4 +1013,106 @@ async fn test_logout_post_logout_redirect_uri_crud_rejects_non_admin(rsclient: &
         listed.is_empty(),
         "denied CRUD must not leave ghost values; got {listed:?}"
     );
+}
+
+/// T079 / US5 Acceptance Scenario 1 — `/v1/self/logout_all`
+/// terminates every active netidm session the caller holds.
+/// Three independent UATs are established for the same user;
+/// a single invocation through one of them brings the response
+/// `sessions_terminated == 3` and every UAT subsequently fails
+/// at `/v1/self`.
+#[netidmd_testkit::test]
+async fn test_logout_self_logout_all_terminates_every_session(rsclient: &NetidmClient) {
+    let http = get_reqwest_client();
+
+    // Admin: create the non-admin person and set its password.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+    rsclient
+        .idm_person_account_create(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_USERNAME)
+        .await
+        .expect("create non-admin");
+    rsclient
+        .idm_person_account_primary_credential_set_password(
+            NOT_ADMIN_TEST_USERNAME,
+            NOT_ADMIN_TEST_PASSWORD,
+        )
+        .await
+        .expect("set password");
+
+    // Establish three independent UATs by re-authenticating three
+    // times. Each `auth_simple_password` mints a fresh UAT; the
+    // client's bearer slot holds the most recent one, so grab each
+    // value before the next login overwrites it.
+    rsclient
+        .auth_simple_password(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_PASSWORD)
+        .await
+        .expect("user auth 1");
+    let uat_one = rsclient.get_token().await.expect("uat 1");
+    rsclient
+        .auth_simple_password(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_PASSWORD)
+        .await
+        .expect("user auth 2");
+    let uat_two = rsclient.get_token().await.expect("uat 2");
+    rsclient
+        .auth_simple_password(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_PASSWORD)
+        .await
+        .expect("user auth 3");
+    let uat_three = rsclient.get_token().await.expect("uat 3");
+
+    // The three UATs must be distinct — else we don't have three
+    // sessions to log out.
+    assert_ne!(uat_one, uat_two, "uat 1 and uat 2 must differ");
+    assert_ne!(uat_two, uat_three, "uat 2 and uat 3 must differ");
+    assert_ne!(uat_one, uat_three, "uat 1 and uat 3 must differ");
+
+    // Sanity: every UAT currently authenticates.
+    for (label, token) in [
+        ("uat 1", uat_one.as_str()),
+        ("uat 2", uat_two.as_str()),
+        ("uat 3", uat_three.as_str()),
+    ] {
+        let resp = http
+            .get(rsclient.make_url("/v1/self"))
+            .bearer_auth(token)
+            .send()
+            .await
+            .expect("whoami pre-logout");
+        assert_eq!(
+            resp.status(),
+            StatusCode::OK,
+            "{label} must authenticate before logout_all"
+        );
+    }
+
+    // Invoke `/v1/self/logout_all` — the client is currently holding
+    // uat 3, so that's the session making the call. Expect three
+    // sessions terminated (including the caller's own).
+    let count = rsclient
+        .idm_logout_all_self()
+        .await
+        .expect("self logout_all");
+    assert_eq!(count, 3, "all three sessions must be reported terminated");
+
+    // Every UAT — the caller's included — must now be rejected at
+    // `/v1/self`.
+    for (label, token) in [
+        ("uat 1", uat_one.as_str()),
+        ("uat 2", uat_two.as_str()),
+        ("uat 3", uat_three.as_str()),
+    ] {
+        let resp = http
+            .get(rsclient.make_url("/v1/self"))
+            .bearer_auth(token)
+            .send()
+            .await
+            .expect("whoami post-logout");
+        assert_ne!(
+            resp.status(),
+            StatusCode::OK,
+            "{label} must be rejected after logout_all"
+        );
+    }
 }
