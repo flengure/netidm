@@ -532,6 +532,91 @@ impl QueryServerWriteV1 {
             .and_then(|r| idms_prox_write.commit().map(|_| r))
     }
 
+    /// Terminate every active netidm session the calling user holds.
+    ///
+    /// US5 self-service surface per `specs/009-rp-logout/spec.md`. Used by
+    /// `POST /v1/self/logout_all`. Enumerates the caller's `UserAuthTokenSession`
+    /// values and funnels each through
+    /// [`netidmd_lib::idm::logout::terminate_session`] so refresh-token
+    /// revocation and back-channel delivery (once US3 lands) fire per
+    /// session. Non-revoked sessions are the target; already-revoked ones
+    /// are skipped. The CLI token used to make this call is itself
+    /// invalidated as part of the termination.
+    ///
+    /// Returns the count of sessions terminated.
+    ///
+    /// # Errors
+    ///
+    /// Propagates any `OperationError` from identity validation, UAT
+    /// enumeration, or underlying session-termination.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_user_logout_all_sessions(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        eventid: Uuid,
+    ) -> Result<usize, OperationError> {
+        let _ = eventid;
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+
+        let ident = idms_prox_write
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(err = ?e, "Invalid identity");
+                e
+            })?;
+
+        let target = ident.get_uuid().ok_or_else(|| {
+            error!("Invalid identity - no uuid present");
+            OperationError::InvalidState
+        })?;
+
+        let count = terminate_all_sessions_for(&mut idms_prox_write, target)?;
+        idms_prox_write.commit().map(|_| count)
+    }
+
+    /// Terminate every active netidm session a named user holds.
+    ///
+    /// US5 admin surface. Used by `POST /v1/person/{id}/logout_all`.
+    /// ACP-gated via the underlying write identity; non-admin callers are
+    /// rejected at the `target_to_account` step.
+    ///
+    /// Returns the target user's UUID and the count of sessions terminated.
+    ///
+    /// # Errors
+    ///
+    /// Propagates any `OperationError` from identity validation, target
+    /// resolution, UAT enumeration, or underlying session-termination.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_admin_logout_all_sessions(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        target: String,
+        eventid: Uuid,
+    ) -> Result<(Uuid, usize), OperationError> {
+        let _ = eventid;
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+
+        let _ident = idms_prox_write
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(err = ?e, "Invalid identity");
+                e
+            })?;
+
+        let target_uuid = idms_prox_write
+            .qs_write
+            .name_to_uuid(target.as_str())
+            .map_err(|e| {
+                error!(err = ?e, "Error resolving id to target");
+                e
+            })?;
+
+        let count = terminate_all_sessions_for(&mut idms_prox_write, target_uuid)?;
+        idms_prox_write.commit().map(|_| (target_uuid, count))
+    }
+
     #[instrument(
         level = "info",
         skip_all,
@@ -2489,6 +2574,47 @@ async fn handle_oauth2_backchannel_uri_clear(
         .qs_write
         .modify(&mdf)
         .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Enumerate every non-revoked `UserAuthTokenSession` value on the target
+/// Person entry and funnel each through
+/// [`netidmd_lib::idm::logout::terminate_session`]. Returns the count of
+/// sessions actually terminated. Already-revoked sessions are skipped.
+///
+/// Shared by the US5 self-service and admin actor handlers.
+fn terminate_all_sessions_for(
+    idms_prox_write: &mut netidmd_lib::idm::server::IdmServerProxyWriteTransaction<'_>,
+    target_uuid: Uuid,
+) -> Result<usize, OperationError> {
+    use netidmd_lib::idm::logout::terminate_session;
+    use netidmd_lib::value::SessionState;
+
+    let entry = idms_prox_write
+        .qs_write
+        .internal_search_uuid(target_uuid)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to load target entry for logout-all");
+            e
+        })?;
+
+    let session_ids: Vec<Uuid> = entry
+        .get_ava_as_session_map(Attribute::UserAuthTokenSession)
+        .map(|map| {
+            map.iter()
+                .filter_map(|(sid, session)| match session.state {
+                    SessionState::RevokedAt(_) => None,
+                    _ => Some(*sid),
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+
+    let mut terminated: usize = 0;
+    for sid in session_ids {
+        terminate_session(idms_prox_write, target_uuid, sid)?;
+        terminated += 1;
+    }
+    Ok(terminated)
 }
 
 /// Set the SAML SP's Single Logout Service URL (single-value).

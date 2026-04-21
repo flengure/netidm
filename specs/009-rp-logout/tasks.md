@@ -194,11 +194,11 @@ description: "Task list for feature 009-rp-logout"
 
 ### Implementation for User Story 5
 
-- [ ] T074 [US5] Add actor `handle_user_logout_all_sessions` (self) on `QueryServerWriteV1` in `server/core/src/actors/v1_write.rs`: read all UATs where `Uuid_Owner == self.uuid`; for each, call `logout::terminate_session`; return `{ sessions_terminated: N }`
-- [ ] T075 [US5] Add actor `handle_admin_logout_all_sessions` (admin) on `QueryServerWriteV1`: ACP-gated to `idm_admins`; same logic as T074 but for the target user identified by path param; return `{ user, sessions_terminated }`
-- [ ] T076 [US5] Register HTTP routes in `server/core/src/https/v1.rs`: `POST /v1/self/logout_all` → self actor; `POST /v1/person/{id}/logout_all` → admin actor; per contracts/http-endpoints.md §8
-- [ ] T077 [P] [US5] Add client SDK methods `idm_logout_all_self` and `idm_logout_all_user(id)` in `libs/client/src/session.rs` (or closest existing module)
-- [ ] T078 [P] [US5] Add CLI variants on `SelfOpt` (`LogoutAll`) and `PersonOpt` (`LogoutAll { id }`) in `tools/cli/src/opt/netidm.rs` and handlers in `tools/cli/src/cli/self_cli.rs` and `tools/cli/src/cli/person.rs` per contracts/cli-commands.md §4
+- [X] T074 [US5] Add actor `handle_user_logout_all_sessions` (self) on `QueryServerWriteV1` in `server/core/src/actors/v1_write.rs`: read all UATs where `Uuid_Owner == self.uuid`; for each, call `logout::terminate_session`; return `{ sessions_terminated: N }`
+- [X] T075 [US5] Add actor `handle_admin_logout_all_sessions` (admin) on `QueryServerWriteV1`: ACP-gated to `idm_admins`; same logic as T074 but for the target user identified by path param; return `{ user, sessions_terminated }`
+- [X] T076 [US5] Register HTTP routes in `server/core/src/https/v1.rs`: `POST /v1/self/logout_all` → self actor; `POST /v1/person/{id}/logout_all` → admin actor; per contracts/http-endpoints.md §8
+- [X] T077 [P] [US5] Add client SDK methods `idm_logout_all_self` and `idm_logout_all_user(id)` in `libs/client/src/session.rs` (or closest existing module)
+- [X] T078 [P] [US5] Add CLI variants on `SelfOpt` (`LogoutAll`) and `PersonOpt` (`LogoutAll { id }`) in `tools/cli/src/opt/netidm.rs` and handlers in `tools/cli/src/cli/self_cli.rs` and `tools/cli/src/cli/person.rs` per contracts/cli-commands.md §4
 
 ### Tests for User Story 5
 

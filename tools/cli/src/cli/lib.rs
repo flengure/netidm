@@ -141,6 +141,15 @@ impl SelfOpt {
 
                 run_identity_verification_no_tui(IdentifyUserState::Start, client, spn, None).await;
             } // end PersonOpt::Validity
+            SelfOpt::LogoutAll => {
+                let client = opt.to_client(OpType::Write).await;
+                match client.idm_logout_all_self().await {
+                    Ok(count) => opt
+                        .output_mode
+                        .print_message(format!("Terminated {count} sessions.")),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
         }
     }
 }

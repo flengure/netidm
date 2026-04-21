@@ -589,6 +589,14 @@ pub enum PersonOpt {
     /// Search persons by name
     #[clap(name = "search")]
     Search { account_id: String },
+    /// Terminate every active netidm session the named person holds.
+    /// Admin-only. Useful as a security response when a person's account
+    /// is suspected compromised.
+    #[clap(name = "logout-all")]
+    LogoutAll {
+        /// Person's name or UUID.
+        id: String,
+    },
     /// Update a specific person's attributes
     #[clap(name = "update")]
     Update(PersonUpdateOpt),
@@ -823,6 +831,11 @@ pub enum SelfOpt {
     IdentifyUser,
     /// Show the current authenticated user's identity
     Whoami,
+    /// Terminate every active netidm session the caller holds. The token
+    /// used to make this call is itself invalidated; subsequent commands
+    /// prompt for fresh auth.
+    #[clap(name = "logout-all")]
+    LogoutAll,
 }
 
 #[derive(Debug, Args, Clone)]

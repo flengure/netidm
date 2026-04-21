@@ -10,6 +10,52 @@ impl NetidmClient {
         self.perform_get_request("/v1/person").await
     }
 
+    /// Terminate every active netidm session the caller holds. US5
+    /// self-service surface. Returns the count of sessions terminated.
+    /// The local bearer-token cache is cleared as part of the call since
+    /// the caller's own token is one of the sessions being terminated.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_logout_all_self(&self) -> Result<usize, ClientError> {
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            sessions_terminated: usize,
+        }
+        let resp: Resp = self
+            .perform_post_request("/v1/self/logout_all", serde_json::json!(null))
+            .await?;
+        let mut tguard = self.bearer_token.write().await;
+        *tguard = None;
+        Ok(resp.sessions_terminated)
+    }
+
+    /// Terminate every active netidm session a named user holds.
+    /// Admin-only (ACP-gated server-side). Returns `(user_uuid, count)`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer or
+    /// the caller lacks admin privileges.
+    pub async fn idm_logout_all_user(
+        &self,
+        id: &str,
+    ) -> Result<(Uuid, usize), ClientError> {
+        #[derive(serde::Deserialize)]
+        struct Resp {
+            user: Uuid,
+            sessions_terminated: usize,
+        }
+        let resp: Resp = self
+            .perform_post_request(
+                format!("/v1/person/{id}/logout_all").as_str(),
+                serde_json::json!(null),
+            )
+            .await?;
+        Ok((resp.user, resp.sessions_terminated))
+    }
+
     pub async fn idm_person_account_get(&self, id: &str) -> Result<Option<Entry>, ClientError> {
         self.perform_get_request(format!("/v1/person/{id}").as_str())
             .await

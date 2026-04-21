@@ -655,6 +655,7 @@ impl NetidmClient {
         }
     }
 
+
     pub fn get_token_cache_path(&self) -> String {
         self.token_cache_path.clone()
     }

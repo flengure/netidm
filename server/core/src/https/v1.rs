@@ -213,6 +213,78 @@ pub async fn logout(
         .map_err(WebError::from)
 }
 
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct LogoutAllSelfResponse {
+    pub sessions_terminated: usize,
+}
+
+#[derive(serde::Serialize, utoipa::ToSchema)]
+pub struct LogoutAllUserResponse {
+    #[schema(value_type = String, format = "uuid")]
+    pub user: Uuid,
+    pub sessions_terminated: usize,
+}
+
+/// Terminate every active netidm session the caller holds. US5
+/// self-service. The CLI / web token used to invoke this call is itself
+/// invalidated as part of the termination.
+#[utoipa::path(
+    post,
+    path = "/v1/self/logout_all",
+    responses(
+        (status = 200, body = LogoutAllSelfResponse),
+    ),
+    security(("token_jwt" = [])),
+    tag = "auth",
+    operation_id = "self_logout_all"
+)]
+pub async fn self_logout_all(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<LogoutAllSelfResponse>, WebError> {
+    state
+        .qe_w_ref
+        .handle_user_logout_all_sessions(client_auth_info, kopid.eventid)
+        .await
+        .map(|sessions_terminated| Json(LogoutAllSelfResponse { sessions_terminated }))
+        .map_err(WebError::from)
+}
+
+/// Terminate every active netidm session the named user holds.
+/// Admin-only (ACP-gated). US5 admin surface.
+#[utoipa::path(
+    post,
+    path = "/v1/person/{id}/logout_all",
+    params(
+        ("id" = String, Path, description = "User name or UUID")
+    ),
+    responses(
+        (status = 200, body = LogoutAllUserResponse),
+    ),
+    security(("token_jwt" = [])),
+    tag = "person",
+    operation_id = "person_logout_all"
+)]
+pub async fn person_logout_all(
+    State(state): State<ServerState>,
+    Path(id): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<LogoutAllUserResponse>, WebError> {
+    state
+        .qe_w_ref
+        .handle_admin_logout_all_sessions(client_auth_info, id, kopid.eventid)
+        .await
+        .map(|(user, sessions_terminated)| {
+            Json(LogoutAllUserResponse {
+                user,
+                sessions_terminated,
+            })
+        })
+        .map_err(WebError::from)
+}
+
 // // =============== REST generics ========================
 
 #[instrument(level = "trace", skip(state, kopid))]
@@ -3249,6 +3321,7 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
         )
         .route("/v1/self", get(whoami))
         .route("/v1/self/_uat", get(whoami_uat))
+        .route("/v1/self/logout_all", post(self_logout_all))
         // .route("/v1/self/_attr/{attr}", get(|| async { "TODO" }))
         // .route("/v1/self/_credential", get(|| async { "TODO" }))
         // .route("/v1/self/_credential/{cid}/_lock", get(|| async { "TODO" }))
@@ -3275,6 +3348,7 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
                 .patch(person_id_patch)
                 .delete(person_id_delete),
         )
+        .route("/v1/person/{id}/logout_all", post(person_logout_all))
         .route(
             "/v1/person/{id}/_attr/{attr}",
             get(person_id_get_attr)

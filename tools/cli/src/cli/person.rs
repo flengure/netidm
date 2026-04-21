@@ -261,6 +261,15 @@ impl PersonOpt {
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
+            PersonOpt::LogoutAll { id } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client.idm_logout_all_user(id.as_str()).await {
+                    Ok((user, count)) => opt.output_mode.print_message(format!(
+                        "Terminated {count} sessions for {id} ({user})."
+                    )),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
             PersonOpt::Search { account_id } => {
                 let client = opt.to_client(OpType::Read).await;
                 match client.idm_person_search(account_id).await {
