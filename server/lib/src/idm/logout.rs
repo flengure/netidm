@@ -1,13 +1,44 @@
-//! Central session-termination routine and OIDC Back-Channel logout-token
-//! minting.
+//! Central session-termination routine and OIDC RP-Initiated Logout
+//! orchestration.
 //!
-//! Every end-of-session path in netidm — OIDC `end_session_endpoint`, SAML
-//! `<LogoutRequest>`, session expiry, administrator revoke, and the US5 "log
-//! out everywhere" surface — is intended to call [`terminate_session`]. This
-//! routine ends the netidm session, revokes the refresh tokens issued against
-//! it, and enqueues back-channel-logout deliveries for every relying party
-//! that has a [`netidm_proto::attribute::Attribute::OAuth2RsBackchannelLogoutUri`].
+//! This module carries the outcome types and orchestration for OIDC
+//! RP-Initiated Logout 1.0. The actual protocol-level work
+//! (`id_token_hint` verification, session termination, post-logout redirect
+//! allowlist evaluation) lives on [`crate::idm::server::IdmServerProxyWriteTransaction`]
+//! alongside the other OAuth2 logic — see
+//! [`crate::idm::server::IdmServerProxyWriteTransaction::handle_oauth2_rp_initiated_logout`].
 //!
-//! Module scaffolding only in DL26 Foundational phase; the real `terminate_session`
-//! and `logout_token_for_rp` implementations land with US1 (Phase 3) of
-//! PR-RP-LOGOUT (specs/009-rp-logout/).
+//! The generic `terminate_session` (used by every end-of-session path —
+//! OIDC, SAML SLO, session expiry, admin revoke, and the US5 "log out
+//! everywhere" surface) and the back-channel `LogoutTokenClaims`
+//! minting will land here in subsequent PR-RP-LOGOUT commits (US3 +
+//! US4 + US5). See `specs/009-rp-logout/plan.md` Layer 3.
+
+use url::Url;
+
+/// Outcome of an OIDC RP-Initiated Logout 1.0 request.
+///
+/// The handler decides between a post-logout redirect back to the relying
+/// party (honoured only if the caller-supplied URI exactly matches an entry
+/// in the client's registered allowlist) and rendering netidm's own
+/// confirmation page. Both outcomes MUST carry `Cache-Control: no-store`
+/// at the HTTP layer.
+#[derive(Debug, Clone)]
+pub enum OidcLogoutOutcome {
+    /// Redirect the user-agent to a post-logout URI. The `state` parameter
+    /// from the original request (if any) is echoed back verbatim — the
+    /// caller at the HTTP layer is responsible for URL-encoding and
+    /// appending it to the returned URL.
+    Redirect {
+        /// Destination URI, guaranteed to be one of the client's registered
+        /// `OAuth2RsPostLogoutRedirectUri` values.
+        url: Url,
+        /// Opaque state to echo back.
+        state: Option<String>,
+    },
+    /// Render a netidm-owned confirmation page. Used when the request has
+    /// no valid `id_token_hint`, when `post_logout_redirect_uri` is absent
+    /// or not on the allowlist, or any time the redirect path cannot be
+    /// taken safely.
+    Confirmation,
+}

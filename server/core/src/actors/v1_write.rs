@@ -1777,6 +1777,40 @@ impl QueryServerWriteV1 {
             .and_then(|()| idms_prox_write.commit().map_err(Oauth2Error::ServerError))
     }
 
+    /// Dispatch an OIDC RP-Initiated Logout 1.0 end-session request to the
+    /// library layer, commit the resulting session-termination write, and
+    /// return the outcome (redirect or render confirmation) back to the
+    /// HTTP layer.
+    ///
+    /// # Errors
+    ///
+    /// Propagates [`OperationError`] from
+    /// [`netidmd_lib::idm::server::IdmServerProxyWriteTransaction::handle_oauth2_rp_initiated_logout`]
+    /// — primarily `NoMatchingEntries` if `client_id` is not a registered
+    /// OAuth2 client, and any DB-write errors that surface from the
+    /// session-termination step.
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_oauth2_rp_initiated_logout(
+        &self,
+        client_id: String,
+        id_token_hint: Option<String>,
+        post_logout_redirect_uri: Option<String>,
+        state: Option<String>,
+        eventid: Uuid,
+    ) -> Result<netidmd_lib::idm::logout::OidcLogoutOutcome, OperationError> {
+        let _ = eventid;
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+        let outcome = idms_prox_write.handle_oauth2_rp_initiated_logout(
+            &client_id,
+            id_token_hint.as_deref(),
+            post_logout_redirect_uri.as_deref(),
+            state,
+        )?;
+        idms_prox_write.commit()?;
+        Ok(outcome)
+    }
+
     #[cfg(feature = "dev-oauth2-device-flow")]
     pub async fn handle_oauth2_device_flow_start(
         &self,

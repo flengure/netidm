@@ -791,19 +791,21 @@ pub struct OidcEndSessionQuery {
 /// remainder of US1 / US3 in PR-RP-LOGOUT. The route exists here so the
 /// advertisement in each client's discovery document resolves to a valid
 /// response today.
+/// OIDC RP-Initiated Logout 1.0 `end_session_endpoint` handler.
+///
+/// Delegates to the library-layer handler on `IdmServerProxyWriteTransaction`
+/// which verifies the ID-token hint, destroys the named session, and
+/// evaluates the post-logout redirect allowlist. This handler then maps the
+/// returned [`netidmd_lib::idm::logout::OidcLogoutOutcome`] to either a 302
+/// redirect (with `state` URL-encoded onto the query string) or a 200 HTML
+/// confirmation page. Both responses carry `Cache-Control: no-store`.
 #[debug_handler]
 pub async fn oauth2_openid_end_session_get(
-    State(_state): State<ServerState>,
+    State(state_): State<ServerState>,
     Path(client_id): Path<String>,
     Query(query): Query<OidcEndSessionQuery>,
     Extension(kopid): Extension<KOpId>,
-) -> impl IntoResponse {
-    // DL26 scaffold: handler exists so the discovery document's advertisement
-    // resolves. Token verification, session termination, and post-logout
-    // redirect honouring are landed in subsequent commits of the US1 work.
-    // Logging the relevant fields so the request is observable and so the
-    // fields are read (avoiding a dead-code warning). Sensitive hints are
-    // NOT logged at info level — only counts.
+) -> Response {
     let OidcEndSessionQuery {
         id_token_hint,
         post_logout_redirect_uri,
@@ -812,19 +814,80 @@ pub async fn oauth2_openid_end_session_get(
         logout_hint,
         ui_locales,
     } = query;
-    info!(
-        event_id = %kopid.eventid,
-        client_id = %client_id,
-        has_id_token_hint = id_token_hint.is_some(),
-        has_post_logout_redirect_uri = post_logout_redirect_uri.is_some(),
-        has_state = state.is_some(),
-        body_client_id_matches = body_client_id
-            .as_deref()
-            .is_none_or(|c| c == client_id),
+
+    // `logout_hint` and `ui_locales` are accepted per the OIDC RP-Initiated
+    // Logout 1.0 spec but netidm does not yet interpret them — we only
+    // note their presence for observability.
+    trace!(
         has_logout_hint = logout_hint.is_some(),
         has_ui_locales = ui_locales.is_some(),
-        "OIDC end_session_endpoint hit — rendering confirmation page (US1 scaffold)"
+        "OIDC end_session_endpoint: optional hints received"
     );
+
+    // If a `client_id` form parameter arrived and contradicts the path
+    // segment, fall through to the confirmation page without touching any
+    // session — this prevents an RP from naming a different client via the
+    // body than the one keyed in the URL.
+    let client_id_mismatch = body_client_id
+        .as_deref()
+        .is_some_and(|c| c != client_id);
+    if client_id_mismatch {
+        info!(
+            event_id = %kopid.eventid,
+            client_id = %client_id,
+            "OIDC end_session_endpoint: body client_id does not match path — rendering confirmation"
+        );
+        return end_session_confirmation_response();
+    }
+
+    let outcome = state_
+        .qe_w_ref
+        .handle_oauth2_rp_initiated_logout(
+            client_id.clone(),
+            id_token_hint,
+            post_logout_redirect_uri,
+            state,
+            kopid.eventid,
+        )
+        .await;
+
+    match outcome {
+        Ok(netidmd_lib::idm::logout::OidcLogoutOutcome::Redirect { mut url, state }) => {
+            if let Some(st) = state {
+                url.query_pairs_mut().append_pair("state", &st);
+            }
+            (
+                StatusCode::FOUND,
+                [
+                    (LOCATION, HeaderValue::try_from(url.as_str()).unwrap_or_else(|_| HeaderValue::from_static("/"))),
+                    (
+                        axum::http::header::CACHE_CONTROL,
+                        HeaderValue::from_static("no-store"),
+                    ),
+                ],
+            )
+                .into_response()
+        }
+        Ok(netidmd_lib::idm::logout::OidcLogoutOutcome::Confirmation) => {
+            end_session_confirmation_response()
+        }
+        Err(err) => {
+            // Unknown client_id or DB-write error — degrade to the confirmation
+            // page rather than expose an error response. The relying party
+            // can't tell the user what went wrong anyway; the page is the
+            // universally useful fallback.
+            warn!(
+                ?err,
+                event_id = %kopid.eventid,
+                client_id = %client_id,
+                "OIDC end_session_endpoint: library returned error — rendering confirmation"
+            );
+            end_session_confirmation_response()
+        }
+    }
+}
+
+fn end_session_confirmation_response() -> Response {
     let body = "<!doctype html>\n<html lang=\"en\"><head><meta charset=\"utf-8\">\
                 <title>Logged out</title></head><body>\
                 <h1>You have been logged out.</h1>\
@@ -841,6 +904,7 @@ pub async fn oauth2_openid_end_session_get(
         ],
         body,
     )
+        .into_response()
 }
 
 pub fn route_setup(state: ServerState) -> Router<ServerState> {

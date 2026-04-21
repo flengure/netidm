@@ -498,6 +498,11 @@ pub struct Oauth2RS {
     /// advertised in the discovery document. Matches netidm's per-client OIDC
     /// URL idiom (same shape as `userinfo_endpoint`).
     end_session_endpoint: Url,
+    /// Relying-party allowlist of URIs accepted as `post_logout_redirect_uri`
+    /// on an OIDC end-session request. Exact-match semantics. Empty vec means
+    /// no URI will be honoured — the end-session request falls through to the
+    /// confirmation page.
+    post_logout_redirect_uris: Vec<Url>,
     jwks_uri: Url,
     scopes_supported: BTreeSet<String>,
     prefer_short_username: bool,
@@ -891,6 +896,12 @@ impl Oauth2ResourceServersWriteTransaction<'_> {
                 end_session_endpoint
                     .set_path(&format!("/oauth2/openid/{name}/end_session_endpoint"));
 
+                let post_logout_redirect_uris: Vec<Url> = ent
+                    .get_ava_set(Attribute::OAuth2RsPostLogoutRedirectUri)
+                    .and_then(|vs| vs.as_url_set())
+                    .map(|set| set.iter().cloned().collect())
+                    .unwrap_or_default();
+
                 let mut jwks_uri = self.inner.origin.clone();
                 jwks_uri.set_path(&format!("/oauth2/openid/{name}/public_key.jwk"));
 
@@ -948,6 +959,7 @@ impl Oauth2ResourceServersWriteTransaction<'_> {
                     introspection_endpoint,
                     userinfo_endpoint,
                     end_session_endpoint,
+                    post_logout_redirect_uris,
                     jwks_uri,
                     scopes_supported,
                     prefer_short_username,
@@ -2146,6 +2158,147 @@ impl IdmServerProxyWriteTransaction<'_> {
                     OperationError::SerdeJsonError
                 })
             })
+    }
+
+    /// Handle an OIDC RP-Initiated Logout 1.0 end-session request.
+    ///
+    /// If `id_token_hint` is present and verifiable with the identified
+    /// client's signing key, extract the session UUID (`jti`) and user UUID
+    /// (`sub`) and destroy that single netidm session. Then evaluate
+    /// `post_logout_redirect_uri` against the client's registered
+    /// [`Attribute::OAuth2RsPostLogoutRedirectUri`] allowlist (exact match);
+    /// on match, return a
+    /// [`crate::idm::logout::OidcLogoutOutcome::Redirect`], otherwise
+    /// return [`crate::idm::logout::OidcLogoutOutcome::Confirmation`].
+    ///
+    /// A missing, malformed, expired, or unverifiable `id_token_hint` is
+    /// tolerated: the session-destruction step is skipped and the outcome
+    /// is always `Confirmation` (no redirect is honoured even if a
+    /// `post_logout_redirect_uri` was supplied). This matches OIDC
+    /// RP-Initiated Logout 1.0 §3 — servers MUST NOT redirect to a URL
+    /// derived from an unverifiable ID token.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OperationError::NoMatchingEntries`] if `client_id` does
+    /// not resolve to a registered OAuth2 client. Other [`OperationError`]
+    /// variants can propagate from the underlying
+    /// [`crate::idm::account::IdmServerProxyWriteTransaction::account_destroy_session_token`]
+    /// call when it fails for reasons other than "session already gone"
+    /// (which is swallowed as success per the idempotent logout model).
+    pub fn handle_oauth2_rp_initiated_logout(
+        &mut self,
+        client_id: &str,
+        id_token_hint: Option<&str>,
+        post_logout_redirect_uri: Option<&str>,
+        state: Option<String>,
+    ) -> Result<crate::idm::logout::OidcLogoutOutcome, OperationError> {
+        use crate::idm::account::DestroySessionTokenEvent;
+        use crate::idm::logout::OidcLogoutOutcome;
+
+        let o2rs = self
+            .oauth2rs
+            .inner
+            .rs_set_get(client_id)
+            .ok_or_else(|| {
+                warn!(client_id, "Unknown OAuth2 client_id on end_session_endpoint");
+                OperationError::NoMatchingEntries
+            })?
+            .clone();
+
+        // Stage 1 — verify id_token_hint if present. Any failure here
+        // degrades gracefully to "render confirmation page"; it does not
+        // surface as an error to the caller.
+        let verified: Option<OidcToken> = id_token_hint.and_then(|hint| {
+            let jwsc = JwsCompact::from_str(hint).ok()?;
+            let jws = o2rs.key_object.jws_verify(&jwsc).ok()?;
+            jws.from_json::<OidcToken>().ok()
+        });
+
+        // Stage 2 — if verified and `aud` matches the client, attempt to
+        // destroy the named session. Idempotent: any "already gone" error
+        // from the underlying delete is swallowed, since OIDC logout is
+        // meant to be idempotent from the relying party's perspective.
+        if let Some(token) = verified.as_ref() {
+            let aud_matches = token.aud == client_id;
+            let user_uuid = match &token.sub {
+                OidcSubject::U(u) => Some(*u),
+                OidcSubject::S(_) => None,
+            };
+            let session_uuid = token
+                .jti
+                .as_deref()
+                .and_then(|s| Uuid::parse_str(s).ok());
+
+            if aud_matches {
+                if let (Some(target), Some(token_id)) = (user_uuid, session_uuid) {
+                    let dte = DestroySessionTokenEvent {
+                        ident: Identity::from_internal(),
+                        target,
+                        token_id,
+                    };
+                    match self.account_destroy_session_token(&dte) {
+                        Ok(()) => {
+                            info!(
+                                target_uuid = %target,
+                                session_uuid = %token_id,
+                                client_id,
+                                "OIDC RP-initiated logout terminated session"
+                            );
+                        }
+                        Err(OperationError::NoMatchingEntries) => {
+                            // Idempotent — the session was already gone.
+                            trace!(
+                                target_uuid = %target,
+                                session_uuid = %token_id,
+                                client_id,
+                                "OIDC RP-initiated logout: session already terminated"
+                            );
+                        }
+                        Err(err) => {
+                            error!(
+                                ?err,
+                                target_uuid = %target,
+                                session_uuid = %token_id,
+                                client_id,
+                                "OIDC RP-initiated logout: failed to terminate session"
+                            );
+                            return Err(err);
+                        }
+                    }
+                } else {
+                    trace!(
+                        client_id,
+                        "OIDC RP-initiated logout: verified id_token_hint lacks sub/jti"
+                    );
+                }
+            } else {
+                trace!(
+                    client_id,
+                    token_aud = %token.aud,
+                    "OIDC RP-initiated logout: id_token_hint aud does not match client_id"
+                );
+            }
+        }
+
+        // Stage 3 — post-logout redirect allowlist. Only honoured if
+        // `id_token_hint` verified AND `post_logout_redirect_uri` exactly
+        // matches one of the client's allowlist entries.
+        if verified.is_some() {
+            if let Some(uri_str) = post_logout_redirect_uri {
+                if let Ok(uri) = Url::parse(uri_str) {
+                    if o2rs.post_logout_redirect_uris.contains(&uri) {
+                        return Ok(OidcLogoutOutcome::Redirect { url: uri, state });
+                    }
+                    warn!(
+                        client_id,
+                        "OIDC RP-initiated logout: post_logout_redirect_uri not on allowlist"
+                    );
+                }
+            }
+        }
+
+        Ok(OidcLogoutOutcome::Confirmation)
     }
 }
 
