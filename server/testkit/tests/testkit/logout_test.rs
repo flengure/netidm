@@ -1084,8 +1084,7 @@ async fn test_logout_deliveries_admin_list_show_with_mix(rsclient: &NetidmClient
     let (receiver_base, captured) = spawn_bcl_receiver().await;
     let bcl_working = format!("{receiver_base}bcl");
 
-    let (_atr1, id_token1, _session1) =
-        setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
+    let (_atr1, id_token1, _session1) = setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
 
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
@@ -1331,8 +1330,7 @@ async fn test_logout_self_logout_all_fans_out_backchannel(rsclient: &NetidmClien
     let bcl_url = format!("{receiver_base}bcl");
 
     // First flow also provisions the RS and the user.
-    let (_atr1, _id_token1, _session1) =
-        setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
+    let (_atr1, _id_token1, _session1) = setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
 
     // Admin: register the back-channel URL.
     rsclient
@@ -1356,8 +1354,7 @@ async fn test_logout_self_logout_all_fans_out_backchannel(rsclient: &NetidmClien
 
     // Second flow (same user, fresh UAT, fresh OAuth2Session bound
     // to the RP that was already configured with a back-channel URL).
-    let (_atr2, _id_token2, _session2) =
-        drive_code_flow(rsclient, &http, &client_secret).await;
+    let (_atr2, _id_token2, _session2) = drive_code_flow(rsclient, &http, &client_secret).await;
 
     // The client is now authenticated as NOT_ADMIN_TEST_USERNAME
     // holding the second-flow UAT. Invoke `/v1/self/logout_all` —
