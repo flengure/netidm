@@ -1693,10 +1693,8 @@ impl IdmServerProxyWriteTransaction<'_> {
                 // new session (FR-007); `None` otherwise.
                 let mut upstream_binding_for_mint: Option<(Uuid, Vec<u8>)> = None;
                 if let Some(connector_uuid) = oauth2_session.upstream_connector {
-                    let connector = self
-                        .connector_registry
-                        .get(connector_uuid)
-                        .ok_or_else(|| {
+                    let connector =
+                        self.connector_registry.get(connector_uuid).ok_or_else(|| {
                             error!(
                                 %connector_uuid,
                                 user_uuid = %uuid,
@@ -1772,8 +1770,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                         .get(&connector_uuid)
                         .map(|p| p.group_mapping.clone())
                         .unwrap_or_default();
-                    let mut desired: hashbrown::HashSet<uuid::Uuid> =
-                        hashbrown::HashSet::new();
+                    let mut desired: hashbrown::HashSet<uuid::Uuid> = hashbrown::HashSet::new();
                     for name in &outcome.claims.groups {
                         for gm in &mapping {
                             if gm.upstream_name == *name {
@@ -2283,9 +2280,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 // refresh branch — stays None, which is the correct
                 // default for those paths.
                 upstream_connector: upstream_binding.as_ref().map(|(uuid, _)| *uuid),
-                upstream_refresh_state: upstream_binding
-                    .as_ref()
-                    .map(|(_, blob)| blob.clone()),
+                upstream_refresh_state: upstream_binding.as_ref().map(|(_, blob)| blob.clone()),
             },
         );
 
@@ -9155,18 +9150,16 @@ mod tests {
             .expect("create person");
 
         // Filtered to provider_a → only the two provider-A groups.
-        let markers_a =
-            read_synced_markers(&mut idms_prox_write.qs_write, person_uuid, provider_a)
-                .expect("read");
+        let markers_a = read_synced_markers(&mut idms_prox_write.qs_write, person_uuid, provider_a)
+            .expect("read");
         assert_eq!(markers_a.len(), 2);
         assert!(markers_a.contains(&group_a1));
         assert!(markers_a.contains(&group_a2));
         assert!(!markers_a.contains(&group_b1));
 
         // Filtered to provider_b → only the single provider-B group.
-        let markers_b =
-            read_synced_markers(&mut idms_prox_write.qs_write, person_uuid, provider_b)
-                .expect("read");
+        let markers_b = read_synced_markers(&mut idms_prox_write.qs_write, person_uuid, provider_b)
+            .expect("read");
         assert_eq!(markers_b.len(), 1);
         assert!(markers_b.contains(&group_b1));
 

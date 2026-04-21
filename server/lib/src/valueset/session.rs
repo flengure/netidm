@@ -1771,8 +1771,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
-            upstream_connector: None,
-            upstream_refresh_state: None,
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 
@@ -1804,8 +1804,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
-            upstream_connector: None,
-            upstream_refresh_state: None,
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 
@@ -1817,8 +1817,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
-            upstream_connector: None,
-            upstream_refresh_state: None,
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 
@@ -1845,8 +1845,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
-            upstream_connector: None,
-            upstream_refresh_state: None,
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 
@@ -1858,8 +1858,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
-            upstream_connector: None,
-            upstream_refresh_state: None,
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 
@@ -1889,8 +1889,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
-            upstream_connector: None,
-            upstream_refresh_state: None,
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 
@@ -1903,8 +1903,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
-                upstream_connector: None,
-                upstream_refresh_state: None,
+                    upstream_connector: None,
+                    upstream_refresh_state: None,
                 },
             ),
             (
@@ -1915,8 +1915,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
-                upstream_connector: None,
-                upstream_refresh_state: None,
+                    upstream_connector: None,
+                    upstream_refresh_state: None,
                 },
             ),
         ])
@@ -1952,8 +1952,8 @@ mod tests {
                 issued_at: OffsetDateTime::now_utc(),
                 parent: Some(Uuid::new_v4()),
                 rs_uuid: Uuid::new_v4(),
-            upstream_connector: None,
-            upstream_refresh_state: None,
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 
@@ -1966,8 +1966,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
-                upstream_connector: None,
-                upstream_refresh_state: None,
+                    upstream_connector: None,
+                    upstream_refresh_state: None,
                 },
             ),
             (
@@ -1978,8 +1978,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
-                upstream_connector: None,
-                upstream_refresh_state: None,
+                    upstream_connector: None,
+                    upstream_refresh_state: None,
                 },
             ),
         ])
@@ -2019,8 +2019,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
-                upstream_connector: None,
-                upstream_refresh_state: None,
+                    upstream_connector: None,
+                    upstream_refresh_state: None,
                 },
             ),
             (
@@ -2031,8 +2031,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
-                upstream_connector: None,
-                upstream_refresh_state: None,
+                    upstream_connector: None,
+                    upstream_refresh_state: None,
                 },
             ),
             (
@@ -2043,8 +2043,8 @@ mod tests {
                     issued_at: OffsetDateTime::now_utc(),
                     parent: Some(Uuid::new_v4()),
                     rs_uuid: Uuid::new_v4(),
-                upstream_connector: None,
-                upstream_refresh_state: None,
+                    upstream_connector: None,
+                    upstream_refresh_state: None,
                 },
             ),
         ])
@@ -2105,8 +2105,8 @@ mod tests {
                 issued_at: OffsetDateTime::UNIX_EPOCH,
                 parent: Some(s_uuid),
                 rs_uuid: s_uuid,
-            upstream_connector: None,
-            upstream_refresh_state: None,
+                upstream_connector: None,
+                upstream_refresh_state: None,
             },
         );
 

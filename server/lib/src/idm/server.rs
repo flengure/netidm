@@ -183,7 +183,8 @@ pub struct IdmServerProxyWriteTransaction<'a> {
     /// a session carries `upstream_connector = Some(_)` to re-fetch
     /// claims from the connector that minted the session
     /// (PR-REFRESH-CLAIMS, DL27).
-    pub(crate) connector_registry: &'a std::sync::Arc<crate::idm::oauth2_connector::ConnectorRegistry>,
+    pub(crate) connector_registry:
+        &'a std::sync::Arc<crate::idm::oauth2_connector::ConnectorRegistry>,
 }
 
 pub struct IdmServerDelayed {
