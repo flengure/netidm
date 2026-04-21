@@ -222,7 +222,7 @@ description: "Task list for feature 009-rp-logout"
 - [X] T087 Full verification: `cargo clippy --lib --bins --examples --all-features -- -D warnings` clean (no `#[allow(...)]` introduced anywhere)
 - [X] T088 Full verification: `cargo fmt --check` clean
 - [ ] T089 Manual quickstart validation on a live dev netidmd: run all 12 scenarios from `quickstart.md` (deferred to tag-time per project memory — can be marked complete in tasks.md at ship time, not during development)
-- [ ] T090 Add RELEASE_NOTES.md entry for this feature — deferred to tag-time per project memory (not during development); entry lives under the next release's section; covers new attributes, new endpoints, new CLI verbs, migration notes (DL26), and the "netidm extension beyond dex" flag for back-channel durability
+- [X] T090 Add RELEASE_NOTES.md entry for this feature — landed as the `### 2026-04-21 - Netidm 0.1.11 (fork)` section with DL25 + DL26 coverage (commit 52ea9ddd)
 
 ---
 
