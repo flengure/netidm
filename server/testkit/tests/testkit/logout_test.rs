@@ -54,6 +54,13 @@
 //!   * T036 — malformed `post_logout_redirect_uri` values are
 //!     rejected by the server (URL schema type); storage remains
 //!     unchanged on failed add.
+//!   * T057 — admin `logout_deliveries` list/show surface with a
+//!     mix of Succeeded + Pending records. Status filter narrows
+//!     the list; `show` returns one record by UUID. Non-admin is
+//!     denied (ACP gating). `Failed` status is out of scope for
+//!     the integration surface because flipping a record to
+//!     `Failed` requires exhausting the 6-step retry schedule
+//!     (many minutes of wall clock).
 
 use axum::extract::Form;
 use axum::{routing::post, Router};
@@ -1048,6 +1055,203 @@ async fn test_logout_post_logout_redirect_uri_crud_rejects_non_admin(rsclient: &
         listed.is_empty(),
         "denied CRUD must not leave ghost values; got {listed:?}"
     );
+}
+
+/// T057 / US3 — admin `logout_deliveries` list/show with a mix of
+/// Succeeded + Pending records; verifies the status filter and the
+/// show-by-UUID surface; asserts non-admin access is denied by ACP.
+///
+/// Flow:
+///   1. Drive a code flow and end the session against a WORKING
+///      back-channel receiver → that delivery transitions to
+///      Succeeded once the worker POSTs and gets `200`.
+///   2. Reconfigure the RP's back-channel URL to `http://127.0.0.1:1`
+///      (port 1 refuses connections) and drive a SECOND code flow
+///      for the same user; terminating that session enqueues a
+///      Pending delivery whose retries will never succeed within
+///      the test window — it stays Pending for our assertions.
+///   3. Assert: unfiltered list is ≥ 2; filter=succeeded returns
+///      exactly the first; filter=pending returns exactly the
+///      second; show-by-uuid returns the correct record.
+///   4. Non-admin is denied by ACP on the list endpoint.
+#[netidmd_testkit::test]
+async fn test_logout_deliveries_admin_list_show_with_mix(rsclient: &NetidmClient) {
+    use netidm_proto::v1::LogoutDeliveryFilter;
+
+    let http = get_reqwest_client();
+
+    // Step 1 — working receiver + first flow + terminate.
+    let (receiver_base, captured) = spawn_bcl_receiver().await;
+    let bcl_working = format!("{receiver_base}bcl");
+
+    let (_atr1, id_token1, _session1) =
+        setup_oauth2_flow_and_get_id_token(rsclient, &http).await;
+
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+    rsclient
+        .idm_oauth2_client_set_backchannel_logout_uri(TEST_INTEGRATION_RS_ID, bcl_working.as_str())
+        .await
+        .expect("set working backchannel URL");
+
+    let response = http
+        .get(rsclient.make_url(&format!(
+            "/oauth2/openid/{TEST_INTEGRATION_RS_ID}/end_session_endpoint"
+        )))
+        .query(&[("id_token_hint", id_token1.as_str())])
+        .send()
+        .await
+        .expect("end_session 1");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Wait for the Succeeded delivery to land at the receiver.
+    for _ in 0..40 {
+        if !captured.lock().await.is_empty() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
+    assert!(
+        !captured.lock().await.is_empty(),
+        "working receiver must have received the first delivery"
+    );
+
+    // Step 2 — swap the URL to an unreachable one + second flow +
+    // terminate.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin re-auth");
+    rsclient
+        .idm_oauth2_client_set_backchannel_logout_uri(
+            TEST_INTEGRATION_RS_ID,
+            "http://127.0.0.1:1/bcl",
+        )
+        .await
+        .expect("set unreachable backchannel URL");
+
+    let client_secret = rsclient
+        .idm_oauth2_rs_get_basic_secret(TEST_INTEGRATION_RS_ID)
+        .await
+        .ok()
+        .flatten()
+        .expect("basic secret");
+    let (_atr2, id_token2, _session2) = drive_code_flow(rsclient, &http, &client_secret).await;
+
+    let response = http
+        .get(rsclient.make_url(&format!(
+            "/oauth2/openid/{TEST_INTEGRATION_RS_ID}/end_session_endpoint"
+        )))
+        .query(&[("id_token_hint", id_token2.as_str())])
+        .send()
+        .await
+        .expect("end_session 2");
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Step 3 — list + show + filter assertions.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin re-auth for queue read");
+
+    // Poll until the second delivery is enqueued (worker moves
+    // deliveries out of the enqueue-then-notify window).
+    let mut all: Vec<_> = Vec::new();
+    for _ in 0..40 {
+        let items = rsclient
+            .idm_list_logout_deliveries(None)
+            .await
+            .expect("list unfiltered");
+        if items.len() >= 2 {
+            all = items;
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
+    assert!(
+        all.len() >= 2,
+        "unfiltered list must show both deliveries; got {}",
+        all.len()
+    );
+
+    // Filter narrows correctly. Succeeded/Pending each must match
+    // one delivery; both counts must be at least 1 (new records
+    // from a fresh DB guarantee exactly these two, but we assert
+    // ≥ 1 to stay robust against future fixture changes).
+    let succeeded = rsclient
+        .idm_list_logout_deliveries(Some(LogoutDeliveryFilter::Succeeded))
+        .await
+        .expect("list succeeded");
+    assert!(
+        succeeded.iter().all(|d| d.status == "succeeded"),
+        "filter=succeeded must only return succeeded rows; got {succeeded:?}"
+    );
+    assert!(
+        !succeeded.is_empty(),
+        "the working-receiver delivery must be Succeeded"
+    );
+
+    let pending = rsclient
+        .idm_list_logout_deliveries(Some(LogoutDeliveryFilter::Pending))
+        .await
+        .expect("list pending");
+    assert!(
+        pending.iter().all(|d| d.status == "pending"),
+        "filter=pending must only return pending rows; got {pending:?}"
+    );
+    assert!(
+        !pending.is_empty(),
+        "the unreachable-receiver delivery must be Pending"
+    );
+
+    // Show by UUID — pick the first pending row, look it up,
+    // assert the record matches.
+    let target = pending.first().expect("pending row");
+    let fetched = rsclient
+        .idm_show_logout_delivery(target.uuid)
+        .await
+        .expect("show delivery")
+        .expect("existing delivery returns Some");
+    assert_eq!(fetched.uuid, target.uuid);
+    assert_eq!(fetched.status, "pending");
+    assert_eq!(fetched.endpoint, target.endpoint);
+
+    // Step 4 — non-admin is denied by ACP.
+    rsclient
+        .idm_person_account_primary_credential_set_password(
+            NOT_ADMIN_TEST_USERNAME,
+            NOT_ADMIN_TEST_PASSWORD,
+        )
+        .await
+        .expect("set password (helper already created the person)");
+    rsclient
+        .auth_simple_password(NOT_ADMIN_TEST_USERNAME, NOT_ADMIN_TEST_PASSWORD)
+        .await
+        .expect("non-admin auth");
+    // Correct ACP behaviour is either an explicit denial or a
+    // filtered-empty list (no enumeration leak). An admin just saw
+    // ≥ 2 records against this same fixture; the non-admin must
+    // see none.
+    let as_non_admin = rsclient.idm_list_logout_deliveries(None).await;
+    match as_non_admin {
+        Err(_) => {}
+        Ok(items) => assert!(
+            items.is_empty(),
+            "non-admin must not observe any logout_deliveries; got {items:?}"
+        ),
+    }
+
+    // Show-by-UUID must also refuse to surface the admin-only
+    // record when called by a non-admin. Accept either a denial
+    // or `Ok(None)` (filtered out of the result set).
+    let show_as_non_admin = rsclient.idm_show_logout_delivery(target.uuid).await;
+    match show_as_non_admin {
+        Err(_) => {}
+        Ok(None) => {}
+        Ok(Some(d)) => panic!("non-admin must not observe delivery via show; got {d:?}"),
+    }
 }
 
 /// T036 / US2 Acceptance Scenario 4 — the server rejects malformed

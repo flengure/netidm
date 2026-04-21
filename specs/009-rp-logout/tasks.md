@@ -146,7 +146,7 @@ description: "Task list for feature 009-rp-logout"
 - [X] T054 [P] [US3] Integration test `backchannel_logout_failed_endpoint_does_not_block_user_logout` in `server/testkit/tests/`: register a back-channel URL pointing at `127.0.0.1:1` (refuses connections); drive a US1 logout; assert the logout response returns in under 1 s (i.e. not blocked on delivery); assert a `LogoutDelivery` entry with `status = Pending` and `attempts >= 1` exists after 2 s (acceptance scenario 5 / SC-004)
 - [ ] T055 [P] [US3] Integration test `backchannel_logout_delivery_resumes_after_restart` in `server/testkit/tests/`: enqueue a pending delivery; gracefully restart the testkit server; on next boot, assert the worker picks up the pending record and transitions it to `Succeeded` once the receiver comes online (SC-008)
 - [X] T056 [P] [US3] Integration test `backchannel_logout_endpoint_zero_rp_opt_out` in `server/testkit/tests/`: a client with no `OAuth2RsBackchannelLogoutUri` set; drive a US1 logout; assert no `LogoutDelivery` entry is created for that client (acceptance scenario 4) — landed as `test_logout_backchannel_delivery_no_registration_skipped`
-- [ ] T057 [P] [US3] Integration test `logout_deliveries_admin_list_show` in `server/testkit/tests/`: after producing a mix of succeeded/failed/pending records, call the CLI list + show; assert filter flags work; assert non-admin is denied by ACP
+- [X] T057 [P] [US3] Integration test `logout_deliveries_admin_list_show` in `server/testkit/tests/`: after producing a mix of succeeded/failed/pending records, call the CLI list + show; assert filter flags work; assert non-admin is denied by ACP
 
 **Checkpoint**: US1 + US2 + US3 give full OIDC logout with back-channel propagation. SAML is still unaffected (no SLO yet).
 

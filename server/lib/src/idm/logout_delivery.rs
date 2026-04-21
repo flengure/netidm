@@ -379,6 +379,7 @@ pub const WORKER_POLL_INTERVAL: Duration = Duration::from_secs(30);
 /// search.
 pub fn list_logout_deliveries(
     qs_read: &mut crate::server::QueryServerReadTransaction<'_>,
+    ident: &crate::prelude::Identity,
     status: Option<LogoutDeliveryStatus>,
 ) -> Result<Vec<netidm_proto::v1::LogoutDeliveryDto>, OperationError> {
     let filter = if let Some(s) = status {
@@ -392,7 +393,7 @@ pub fn list_logout_deliveries(
     } else {
         filter!(f_eq(Attribute::Class, EntryClass::LogoutDelivery.into()))
     };
-    let entries = qs_read.internal_search(filter)?;
+    let entries = qs_read.impersonate_search(filter.clone(), filter, ident)?;
     let mut out = Vec::with_capacity(entries.len());
     for entry in entries {
         let endpoint = entry
@@ -446,12 +447,17 @@ pub fn list_logout_deliveries(
 /// propagated from the underlying search.
 pub fn show_logout_delivery(
     qs_read: &mut crate::server::QueryServerReadTransaction<'_>,
+    ident: &crate::prelude::Identity,
     delivery_uuid: uuid::Uuid,
 ) -> Result<Option<netidm_proto::v1::LogoutDeliveryDto>, OperationError> {
-    let entry = match qs_read.internal_search_uuid(delivery_uuid) {
-        Ok(e) => e,
-        Err(OperationError::NoMatchingEntries) => return Ok(None),
-        Err(err) => return Err(err),
+    let filter = filter!(f_and!([
+        f_eq(Attribute::Class, EntryClass::LogoutDelivery.into()),
+        f_eq(Attribute::Uuid, PartialValue::Uuid(delivery_uuid)),
+    ]));
+    let mut entries = qs_read.impersonate_search(filter.clone(), filter, ident)?;
+    let entry = match entries.pop() {
+        Some(e) => e,
+        None => return Ok(None),
     };
     let endpoint = entry
         .get_ava_single_url(Attribute::LogoutDeliveryEndpoint)

@@ -1489,13 +1489,22 @@ impl QueryServerReadV1 {
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
     pub async fn handle_list_logout_deliveries(
         &self,
+        client_auth_info: ClientAuthInfo,
         status: Option<netidmd_lib::idm::logout_delivery::LogoutDeliveryStatus>,
         eventid: Uuid,
     ) -> Result<Vec<netidm_proto::v1::LogoutDeliveryDto>, OperationError> {
         let _ = eventid;
+        let ct = duration_from_epoch_now();
         let mut idms_prox_read = self.idms.proxy_read().await?;
+        let ident = idms_prox_read
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
         netidmd_lib::idm::logout_delivery::list_logout_deliveries(
             &mut idms_prox_read.qs_read,
+            &ident,
             status,
         )
     }
@@ -1510,13 +1519,22 @@ impl QueryServerReadV1 {
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
     pub async fn handle_show_logout_delivery(
         &self,
+        client_auth_info: ClientAuthInfo,
         delivery_uuid: Uuid,
         eventid: Uuid,
     ) -> Result<Option<netidm_proto::v1::LogoutDeliveryDto>, OperationError> {
         let _ = eventid;
+        let ct = duration_from_epoch_now();
         let mut idms_prox_read = self.idms.proxy_read().await?;
+        let ident = idms_prox_read
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(?e, "Invalid identity");
+                e
+            })?;
         netidmd_lib::idm::logout_delivery::show_logout_delivery(
             &mut idms_prox_read.qs_read,
+            &ident,
             delivery_uuid,
         )
     }

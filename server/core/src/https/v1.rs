@@ -282,7 +282,6 @@ pub async fn logout_deliveries_list(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
 ) -> Result<Json<netidm_proto::v1::LogoutDeliveryListResponse>, WebError> {
-    let _ = client_auth_info;
     use netidmd_lib::idm::logout_delivery::LogoutDeliveryStatus;
     use std::str::FromStr;
     let filter = q
@@ -293,7 +292,7 @@ pub async fn logout_deliveries_list(
         .map_err(WebError::from)?;
     state
         .qe_r_ref
-        .handle_list_logout_deliveries(filter, kopid.eventid)
+        .handle_list_logout_deliveries(client_auth_info, filter, kopid.eventid)
         .await
         .map(|items| Json(netidm_proto::v1::LogoutDeliveryListResponse { items }))
         .map_err(WebError::from)
@@ -320,7 +319,6 @@ pub async fn logout_deliveries_show(
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
 ) -> Result<Response, WebError> {
-    let _ = client_auth_info;
     let parsed = Uuid::parse_str(&uuid).map_err(|_| {
         WebError::from(OperationError::InvalidAttribute(format!(
             "'{uuid}' is not a valid UUID"
@@ -328,7 +326,7 @@ pub async fn logout_deliveries_show(
     })?;
     let item = state
         .qe_r_ref
-        .handle_show_logout_delivery(parsed, kopid.eventid)
+        .handle_show_logout_delivery(client_auth_info, parsed, kopid.eventid)
         .await
         .map_err(WebError::from)?;
     match item {
