@@ -1,11 +1,19 @@
 ---
 name: "Linux Build and Test"
-# Trigger the workflow on push to main or pull request
+# Trigger the workflow on push to main or pull request.
+# The `schedule` + `workflow_dispatch` triggers are for the non-blocking
+# beta / nightly-toolchain matrix in `rust_build_next`, which is gated
+# below to only run on those events — see its `if:` guard.
 "on":
   push:
     branches:
       - main
   pull_request:
+  schedule:
+    # Daily at 06:00 UTC — catches Rust beta/nightly regressions with
+    # ~24 h latency, which is plenty for non-blocking early-warning.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
 
 env:
   SCCACHE_GHA_ENABLED: "true"
@@ -49,7 +57,13 @@ jobs:
           df -h
           du -shc target/*
   rust_build_next:
-    # build future versions to find possible next-version bugs
+    # Build against future Rust versions to catch toolchain regressions
+    # before they reach stable. Non-blocking (`continue-on-error`) and
+    # gated to run only on the daily `schedule` cron or a manual
+    # `workflow_dispatch` — NOT on every PR or push-to-main, which
+    # would pay 2 × ~17 min of CI wall-clock for a signal that isn't
+    # gating any merge decision.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     continue-on-error: true
     env:
