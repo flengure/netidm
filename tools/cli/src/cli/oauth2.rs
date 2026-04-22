@@ -782,7 +782,10 @@ impl Oauth2Opt {
                 }
             }
             Oauth2Opt::GithubAddOrgFilter { name, org } => {
-                if !org.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+                if !org
+                    .chars()
+                    .all(|c| c.is_alphanumeric() || c == '-' || c == '_')
+                {
                     eprintln!("error: org name must contain only alphanumeric characters, hyphens, or underscores");
                     std::process::exit(1);
                 }

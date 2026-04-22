@@ -802,9 +802,9 @@ impl RefreshableConnector for GitHubConnector {
                 if let Some(new_rt) = rotated.refresh_token {
                     state.refresh_token = Some(new_rt);
                 }
-                state.access_token_expires_at = rotated.expires_in.map(|secs| {
-                    now + TimeDuration::seconds(secs as i64)
-                });
+                state.access_token_expires_at = rotated
+                    .expires_in
+                    .map(|secs| now + TimeDuration::seconds(secs as i64));
             }
         }
 
@@ -1020,9 +1020,7 @@ mod tests {
 
     // T024: access gate unit tests (FR-005a)
 
-    fn make_connector_with_allowed_teams(
-        allowed: &[&str],
-    ) -> GitHubConnector {
+    fn make_connector_with_allowed_teams(allowed: &[&str]) -> GitHubConnector {
         let http = reqwest::Client::builder()
             .build()
             .unwrap_or_else(|_| unreachable!());
@@ -1278,8 +1276,8 @@ mod tests {
     // T039: access gate enforced on refresh path (T035).
     #[tokio::test]
     async fn test_github_refresh_access_gate_enforced() {
-        use axum::routing::get;
         use crate::idm::oauth2_connector::RefreshableConnector;
+        use axum::routing::get;
 
         // Spin up inline mock returning a team NOT in allowed_teams.
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
@@ -1331,8 +1329,7 @@ mod tests {
             http,
         });
 
-        let blob =
-            make_session_state(99, "former-employee", "gho_any_token", None, None);
+        let blob = make_session_state(99, "former-employee", "gho_any_token", None, None);
         let prev = make_previous_claims(99, "user@example.com");
 
         let result = connector.refresh(&blob, &prev).await;

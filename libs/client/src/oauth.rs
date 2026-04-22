@@ -4,12 +4,12 @@ use netidm_proto::constants::{
     ATTR_DISPLAYNAME, ATTR_KEY_ACTION_REVOKE, ATTR_KEY_ACTION_ROTATE, ATTR_NAME,
     ATTR_OAUTH2_ALLOW_INSECURE_CLIENT_DISABLE_PKCE, ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT,
     ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
-    ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME, ATTR_OAUTH2_CLIENT_ID,
-    ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING, ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS,
+    ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME,
+    ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS, ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING,
     ATTR_OAUTH2_CLIENT_GITHUB_HOST, ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS,
     ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER, ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN,
-    ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD, ATTR_OAUTH2_CLIENT_PROVIDER_KIND,
-    ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
+    ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD, ATTR_OAUTH2_CLIENT_ID,
+    ATTR_OAUTH2_CLIENT_PROVIDER_KIND, ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
     ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS,
     ATTR_OAUTH2_GROUP_MAPPING, ATTR_OAUTH2_ISSUER, ATTR_OAUTH2_JIT_PROVISIONING,
     ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE, ATTR_OAUTH2_LINK_BY,
@@ -1018,9 +1018,10 @@ impl NetidmClient {
         let mut entry = Entry {
             attrs: BTreeMap::new(),
         };
-        entry
-            .attrs
-            .insert(ATTR_OAUTH2_CLIENT_PROVIDER_KIND.to_string(), vec![kind.to_string()]);
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_PROVIDER_KIND.to_string(),
+            vec![kind.to_string()],
+        );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
@@ -1041,9 +1042,10 @@ impl NetidmClient {
         let mut entry = Entry {
             attrs: BTreeMap::new(),
         };
-        entry
-            .attrs
-            .insert(ATTR_OAUTH2_CLIENT_GITHUB_HOST.to_string(), vec![url.to_string()]);
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_GITHUB_HOST.to_string(),
+            vec![url.to_string()],
+        );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
@@ -1095,10 +1097,7 @@ impl NetidmClient {
             .await?
             .and_then(|e| e.attrs.get(ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER).cloned())
             .unwrap_or_default();
-        let updated: Vec<String> = current
-            .into_iter()
-            .filter(|v| v != org)
-            .collect();
+        let updated: Vec<String> = current.into_iter().filter(|v| v != org).collect();
         let mut entry = Entry {
             attrs: BTreeMap::new(),
         };
@@ -1124,7 +1123,11 @@ impl NetidmClient {
         let mut current: Vec<String> = self
             .idm_oauth2_client_get(id)
             .await?
-            .and_then(|e| e.attrs.get(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS).cloned())
+            .and_then(|e| {
+                e.attrs
+                    .get(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS)
+                    .cloned()
+            })
             .unwrap_or_default();
         if !current.contains(&team.to_string()) {
             current.push(team.to_string());
@@ -1153,12 +1156,13 @@ impl NetidmClient {
         let current: Vec<String> = self
             .idm_oauth2_client_get(id)
             .await?
-            .and_then(|e| e.attrs.get(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS).cloned())
+            .and_then(|e| {
+                e.attrs
+                    .get(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS)
+                    .cloned()
+            })
             .unwrap_or_default();
-        let updated: Vec<String> = current
-            .into_iter()
-            .filter(|v| v != team)
-            .collect();
+        let updated: Vec<String> = current.into_iter().filter(|v| v != team).collect();
         let mut entry = Entry {
             attrs: BTreeMap::new(),
         };

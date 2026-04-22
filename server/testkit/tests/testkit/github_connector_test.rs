@@ -198,9 +198,7 @@ async fn test_github_fetch_callback_claims_org_filter() {
     let code = mock.mint_token_for(99).await;
 
     let mut config = make_test_config(&mock.base);
-    config
-        .org_filter
-        .insert("allowed-org".to_string());
+    config.org_filter.insert("allowed-org".to_string());
     let connector = Arc::new(GitHubConnector::new(config));
 
     let claims = connector
@@ -235,7 +233,8 @@ async fn test_github_enterprise_host_routing() {
     )
     .await;
     mock.set_orgs(1, vec!["corp"]).await;
-    mock.set_teams(1, vec![("corp", "platform", "Platform")]).await;
+    mock.set_teams(1, vec![("corp", "platform", "Platform")])
+        .await;
 
     let code = mock.mint_token_for(1).await;
     // HTTP Host headers include the port ("127.0.0.1:PORT"); mock.addr gives the exact form.
@@ -257,7 +256,10 @@ async fn test_github_enterprise_host_routing() {
     // All requests must have landed on the configured mock host —
     // minimum 5: token + user + emails + orgs + teams.
     let count = mock.requests_on_host(&host_str).await;
-    assert!(count >= 5, "expected ≥ 5 requests to mock host, got {count}");
+    assert!(
+        count >= 5,
+        "expected ≥ 5 requests to mock host, got {count}"
+    );
 }
 
 // ── T022d: full end-to-end SSO login flow (Phase 4, expanded in T014) ────────
@@ -323,7 +325,8 @@ async fn test_github_login_allowed_after_adding_to_allowed_team() {
     .await;
     mock.set_orgs(56, vec!["acme"]).await;
     // User is now in acme:eng — should pass.
-    mock.set_teams(56, vec![("acme", "eng", "Engineering")]).await;
+    mock.set_teams(56, vec![("acme", "eng", "Engineering")])
+        .await;
 
     let code = mock.mint_token_for(56).await;
 
@@ -404,7 +407,8 @@ async fn test_github_org_filter_empty_match_login_succeeds_no_groups() {
     )
     .await;
     mock.set_orgs(71, vec!["other-org"]).await;
-    mock.set_teams(71, vec![("other-org", "staff", "Staff")]).await;
+    mock.set_teams(71, vec![("other-org", "staff", "Staff")])
+        .await;
 
     let code = mock.mint_token_for(71).await;
 
@@ -452,7 +456,8 @@ async fn test_github_refresh_reflects_upstream_team_mutation() {
     )
     .await;
     mock.set_orgs(100, vec!["acme"]).await;
-    mock.set_teams(100, vec![("acme", "eng", "Engineering")]).await;
+    mock.set_teams(100, vec![("acme", "eng", "Engineering")])
+        .await;
 
     let code = mock.mint_token_for(100).await;
     let config = make_test_config(&mock.base);
@@ -526,18 +531,22 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
     };
     use netidm_proto::v1::Entry as ProtoEntry;
     let mut create_entry = ProtoEntry::default();
-    create_entry
-        .attrs
-        .insert(netidm_proto::constants::ATTR_NAME.to_string(), vec!["gh-cli-test".to_string()]);
-    create_entry
-        .attrs
-        .insert(netidm_proto::constants::ATTR_DISPLAYNAME.to_string(), vec!["gh-cli-test".to_string()]);
-    create_entry
-        .attrs
-        .insert(ATTR_OAUTH2_CLIENT_ID.to_string(), vec!["cli-client-id".to_string()]);
-    create_entry
-        .attrs
-        .insert(ATTR_OAUTH2_CLIENT_SECRET.to_string(), vec!["cli-secret".to_string()]);
+    create_entry.attrs.insert(
+        netidm_proto::constants::ATTR_NAME.to_string(),
+        vec!["gh-cli-test".to_string()],
+    );
+    create_entry.attrs.insert(
+        netidm_proto::constants::ATTR_DISPLAYNAME.to_string(),
+        vec!["gh-cli-test".to_string()],
+    );
+    create_entry.attrs.insert(
+        ATTR_OAUTH2_CLIENT_ID.to_string(),
+        vec!["cli-client-id".to_string()],
+    );
+    create_entry.attrs.insert(
+        ATTR_OAUTH2_CLIENT_SECRET.to_string(),
+        vec!["cli-secret".to_string()],
+    );
     create_entry.attrs.insert(
         ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
         vec!["https://github.com/login/oauth/authorize".to_string()],
@@ -546,9 +555,10 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
         ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
         vec!["https://github.com/login/oauth/access_token".to_string()],
     );
-    create_entry
-        .attrs
-        .insert(ATTR_OAUTH2_REQUEST_SCOPES.to_string(), vec!["openid".to_string()]);
+    create_entry.attrs.insert(
+        ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+        vec!["openid".to_string()],
+    );
     rsclient
         .perform_post_request::<_, ()>("/v1/oauth2/_client", create_entry)
         .await
@@ -664,7 +674,10 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
         .expect("get")
         .expect("present");
     assert_eq!(
-        entry.attrs.get("oauth2_client_github_team_name_field").cloned(),
+        entry
+            .attrs
+            .get("oauth2_client_github_team_name_field")
+            .cloned(),
         Some(vec!["name".to_string()]),
         "team name field"
     );
@@ -681,7 +694,10 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
         .expect("get")
         .expect("present");
     assert_eq!(
-        entry.attrs.get("oauth2_client_github_load_all_groups").cloned(),
+        entry
+            .attrs
+            .get("oauth2_client_github_load_all_groups")
+            .cloned(),
         Some(vec!["true".to_string()]),
         "load all groups"
     );
@@ -698,7 +714,10 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
         .expect("get")
         .expect("present");
     assert_eq!(
-        entry.attrs.get("oauth2_client_github_preferred_email_domain").cloned(),
+        entry
+            .attrs
+            .get("oauth2_client_github_preferred_email_domain")
+            .cloned(),
         Some(vec!["example.com".to_string()]),
         "preferred email domain"
     );
@@ -720,7 +739,10 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
         .expect("get")
         .expect("present");
     assert_eq!(
-        entry.attrs.get("oauth2_client_github_allow_jit_provisioning").cloned(),
+        entry
+            .attrs
+            .get("oauth2_client_github_allow_jit_provisioning")
+            .cloned(),
         Some(vec!["true".to_string()]),
         "allow jit provisioning"
     );
