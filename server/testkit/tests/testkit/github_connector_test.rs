@@ -211,36 +211,50 @@ async fn test_github_fetch_callback_claims_org_filter() {
     assert_eq!(claims.groups, vec!["allowed-org:backend"]);
 }
 
-/// T033 stub — verify the mock's host counter tracks the calls made.
-/// Full GHE routing test (T033) will expand this.
+/// T033 — GitHub Enterprise host routing. All OAuth2 + REST traffic must
+/// reach the configured host; the mock's per-host counter proves it.
+///
+/// `make_test_config` already uses GHE-style routing (api_base at /api/v3/)
+/// which is exactly what `GitHubConfig::from_entry` derives for non-github.com
+/// hosts. The mock mounts REST routes under both `/api/v3` and bare paths,
+/// so this exercises the GHE code path end-to-end.
 #[tokio::test]
-async fn test_github_connector_uses_configured_host() {
+async fn test_github_enterprise_host_routing() {
     let mock = spawn_mock_github_server().await;
 
     mock.set_user(
         1,
-        "test-user",
-        None,
+        "ghe-user",
+        Some("GHE User"),
         vec![MockGithubEmail {
-            email: "test@example.com".to_string(),
+            email: "ghe@corp.example".to_string(),
             primary: true,
             verified: true,
         }],
     )
     .await;
+    mock.set_orgs(1, vec!["corp"]).await;
+    mock.set_teams(1, vec![("corp", "platform", "Platform")]).await;
 
     let code = mock.mint_token_for(1).await;
     // HTTP Host headers include the port ("127.0.0.1:PORT"); mock.addr gives the exact form.
     let host_str = mock.addr.to_string();
 
+    // make_test_config sets api_base = mock_base/api/v3/ — matching the GHE
+    // derivation in GitHubConfig::from_entry for non-github.com hosts.
     let config = make_test_config(&mock.base);
     let connector = Arc::new(GitHubConnector::new(config));
 
-    connector
+    let claims = connector
         .fetch_callback_claims(&code)
         .await
-        .expect("fetch_callback_claims");
+        .expect("GHE login");
 
+    assert_eq!(claims.sub, "1");
+    assert_eq!(claims.groups, vec!["corp:platform"]);
+
+    // All requests must have landed on the configured mock host —
+    // minimum 5: token + user + emails + orgs + teams.
     let count = mock.requests_on_host(&host_str).await;
     assert!(count >= 5, "expected ≥ 5 requests to mock host, got {count}");
 }
