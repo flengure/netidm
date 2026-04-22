@@ -173,7 +173,10 @@ impl std::fmt::Display for ConnectorRefreshError {
                 write!(f, "connector error: {msg}")
             }
             ConnectorRefreshError::AccessDenied => {
-                write!(f, "access denied: team membership does not satisfy connector policy")
+                write!(
+                    f,
+                    "access denied: team membership does not satisfy connector policy"
+                )
             }
         }
     }
