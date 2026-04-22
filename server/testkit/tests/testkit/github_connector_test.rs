@@ -8,6 +8,7 @@
 use super::github_mock::{spawn_mock_github_server, MockGithubEmail};
 use netidmd_lib::idm::github_connector::{GitHubConfig, GitHubConnector};
 use netidmd_lib::idm::oauth2_connector::RefreshableConnector;
+use netidmd_testkit::{test, ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 use std::sync::Arc;
 use url::Url;
 use uuid::Uuid;
@@ -503,4 +504,224 @@ async fn test_github_refresh_reflects_upstream_team_mutation() {
     );
     // Session state blob must be present (always rewritten).
     assert!(refreshed.new_session_state.is_some());
+}
+
+// ── T044: CLI verbs round-trip ─────────────────────────────────────────────────
+
+/// T044 — for each new GitHub connector admin SDK method, set the attribute
+/// then read the entry back and assert the value took.
+#[test]
+async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient) {
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin auth");
+
+    // idm_oauth2_client_create_github sets GitHub-specific scopes (read:user, user:email)
+    // which contain colons and fail server scope validation.  Create the entry manually
+    // with a valid placeholder scope so we can exercise the GitHub-specific PATCH verbs.
+    use netidm_proto::constants::{
+        ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLIENT_ID, ATTR_OAUTH2_CLIENT_SECRET,
+        ATTR_OAUTH2_REQUEST_SCOPES, ATTR_OAUTH2_TOKEN_ENDPOINT,
+    };
+    use netidm_proto::v1::Entry as ProtoEntry;
+    let mut create_entry = ProtoEntry::default();
+    create_entry
+        .attrs
+        .insert(netidm_proto::constants::ATTR_NAME.to_string(), vec!["gh-cli-test".to_string()]);
+    create_entry
+        .attrs
+        .insert(netidm_proto::constants::ATTR_DISPLAYNAME.to_string(), vec!["gh-cli-test".to_string()]);
+    create_entry
+        .attrs
+        .insert(ATTR_OAUTH2_CLIENT_ID.to_string(), vec!["cli-client-id".to_string()]);
+    create_entry
+        .attrs
+        .insert(ATTR_OAUTH2_CLIENT_SECRET.to_string(), vec!["cli-secret".to_string()]);
+    create_entry.attrs.insert(
+        ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+        vec!["https://github.com/login/oauth/authorize".to_string()],
+    );
+    create_entry.attrs.insert(
+        ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+        vec!["https://github.com/login/oauth/access_token".to_string()],
+    );
+    create_entry
+        .attrs
+        .insert(ATTR_OAUTH2_REQUEST_SCOPES.to_string(), vec!["openid".to_string()]);
+    rsclient
+        .perform_post_request::<_, ()>("/v1/oauth2/_client", create_entry)
+        .await
+        .expect("create github connector");
+
+    // provider_kind
+    rsclient
+        .idm_oauth2_client_set_provider_kind("gh-cli-test", "github")
+        .await
+        .expect("set provider kind");
+
+    let entry = rsclient
+        .idm_oauth2_client_get("gh-cli-test")
+        .await
+        .expect("get entry")
+        .expect("entry present");
+    assert_eq!(
+        entry.attrs.get("oauth2_client_provider_kind").cloned(),
+        Some(vec!["github".to_string()]),
+        "provider kind"
+    );
+
+    // github_set_host
+    rsclient
+        .idm_oauth2_client_github_set_host("gh-cli-test", "https://github.example.com/")
+        .await
+        .expect("set host");
+
+    let entry = rsclient
+        .idm_oauth2_client_get("gh-cli-test")
+        .await
+        .expect("get")
+        .expect("present");
+    assert_eq!(
+        entry.attrs.get("oauth2_client_github_host").cloned(),
+        Some(vec!["https://github.example.com/".to_string()]),
+        "github host"
+    );
+
+    // github_add_org_filter / remove
+    rsclient
+        .idm_oauth2_client_github_add_org_filter("gh-cli-test", "acme")
+        .await
+        .expect("add org filter");
+
+    let entry = rsclient
+        .idm_oauth2_client_get("gh-cli-test")
+        .await
+        .expect("get")
+        .expect("present");
+    assert!(
+        entry
+            .attrs
+            .get("oauth2_client_github_org_filter")
+            .map(|v| v.contains(&"acme".to_string()))
+            .unwrap_or(false),
+        "org filter contains acme"
+    );
+
+    rsclient
+        .idm_oauth2_client_github_remove_org_filter("gh-cli-test", "acme")
+        .await
+        .expect("remove org filter");
+
+    let entry = rsclient
+        .idm_oauth2_client_get("gh-cli-test")
+        .await
+        .expect("get")
+        .expect("present");
+    assert!(
+        !entry
+            .attrs
+            .get("oauth2_client_github_org_filter")
+            .map(|v| v.contains(&"acme".to_string()))
+            .unwrap_or(false),
+        "org filter no longer contains acme"
+    );
+
+    // github_add_allowed_team / remove
+    rsclient
+        .idm_oauth2_client_github_add_allowed_team("gh-cli-test", "acme:engineers")
+        .await
+        .expect("add allowed team");
+
+    let entry = rsclient
+        .idm_oauth2_client_get("gh-cli-test")
+        .await
+        .expect("get")
+        .expect("present");
+    assert!(
+        entry
+            .attrs
+            .get("oauth2_client_github_allowed_teams")
+            .map(|v| v.contains(&"acme:engineers".to_string()))
+            .unwrap_or(false),
+        "allowed teams contains acme:engineers"
+    );
+
+    rsclient
+        .idm_oauth2_client_github_remove_allowed_team("gh-cli-test", "acme:engineers")
+        .await
+        .expect("remove allowed team");
+
+    // github_set_team_name_field
+    rsclient
+        .idm_oauth2_client_github_set_team_name_field("gh-cli-test", "name")
+        .await
+        .expect("set team name field");
+
+    let entry = rsclient
+        .idm_oauth2_client_get("gh-cli-test")
+        .await
+        .expect("get")
+        .expect("present");
+    assert_eq!(
+        entry.attrs.get("oauth2_client_github_team_name_field").cloned(),
+        Some(vec!["name".to_string()]),
+        "team name field"
+    );
+
+    // github_set_load_all_groups
+    rsclient
+        .idm_oauth2_client_github_set_load_all_groups("gh-cli-test", true)
+        .await
+        .expect("set load all groups");
+
+    let entry = rsclient
+        .idm_oauth2_client_get("gh-cli-test")
+        .await
+        .expect("get")
+        .expect("present");
+    assert_eq!(
+        entry.attrs.get("oauth2_client_github_load_all_groups").cloned(),
+        Some(vec!["true".to_string()]),
+        "load all groups"
+    );
+
+    // github_set_preferred_email_domain / clear
+    rsclient
+        .idm_oauth2_client_github_set_preferred_email_domain("gh-cli-test", "example.com")
+        .await
+        .expect("set preferred email domain");
+
+    let entry = rsclient
+        .idm_oauth2_client_get("gh-cli-test")
+        .await
+        .expect("get")
+        .expect("present");
+    assert_eq!(
+        entry.attrs.get("oauth2_client_github_preferred_email_domain").cloned(),
+        Some(vec!["example.com".to_string()]),
+        "preferred email domain"
+    );
+
+    rsclient
+        .idm_oauth2_client_github_clear_preferred_email_domain("gh-cli-test")
+        .await
+        .expect("clear preferred email domain");
+
+    // github_set_allow_jit_provisioning
+    rsclient
+        .idm_oauth2_client_github_set_allow_jit_provisioning("gh-cli-test", true)
+        .await
+        .expect("enable jit provisioning");
+
+    let entry = rsclient
+        .idm_oauth2_client_get("gh-cli-test")
+        .await
+        .expect("get")
+        .expect("present");
+    assert_eq!(
+        entry.attrs.get("oauth2_client_github_allow_jit_provisioning").cloned(),
+        Some(vec!["true".to_string()]),
+        "allow jit provisioning"
+    );
 }

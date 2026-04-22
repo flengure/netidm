@@ -763,6 +763,138 @@ impl Oauth2Opt {
                     handle_client_error(e, opt.output_mode);
                 }
             }
+            Oauth2Opt::SetProviderKind { name, kind } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_set_provider_kind(name.as_str(), kind.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubSetHost { name, url } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_set_host(name.as_str(), url.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubAddOrgFilter { name, org } => {
+                if !org.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+                    eprintln!("error: org name must contain only alphanumeric characters, hyphens, or underscores");
+                    std::process::exit(1);
+                }
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_add_org_filter(name.as_str(), org.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubRemoveOrgFilter { name, org } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_remove_org_filter(name.as_str(), org.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubAddAllowedTeam { name, team } => {
+                if !team.contains(':') {
+                    eprintln!("error: team must be in 'org:team' format (e.g. acme:engineers)");
+                    std::process::exit(1);
+                }
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_add_allowed_team(name.as_str(), team.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubRemoveAllowedTeam { name, team } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_remove_allowed_team(name.as_str(), team.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubSetTeamNameField { name, field } => {
+                if !matches!(field.as_str(), "slug" | "name" | "both") {
+                    eprintln!("error: field must be one of: slug, name, both");
+                    std::process::exit(1);
+                }
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_set_team_name_field(name.as_str(), field.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubEnableLoadAllGroups { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_set_load_all_groups(name.as_str(), true)
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubDisableLoadAllGroups { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_set_load_all_groups(name.as_str(), false)
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubSetPreferredEmailDomain { name, domain } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_set_preferred_email_domain(
+                        name.as_str(),
+                        domain.as_str(),
+                    )
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubClearPreferredEmailDomain { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_clear_preferred_email_domain(name.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubEnableJitProvisioning { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_set_allow_jit_provisioning(name.as_str(), true)
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::GithubDisableJitProvisioning { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_github_set_allow_jit_provisioning(name.as_str(), false)
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
         }
     }
 }
