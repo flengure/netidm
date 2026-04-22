@@ -424,3 +424,83 @@ async fn test_github_org_filter_empty_match_login_succeeds_no_groups() {
         claims.groups
     );
 }
+
+// ── T040: refresh reflects upstream team mutation (US6) ──────────────────────
+
+/// T040 — after login, mutate the mock's team set, then call `refresh` with
+/// the session-state blob from the login. Assert the new claims carry the
+/// updated groups, not the ones from the initial login.
+#[tokio::test]
+async fn test_github_refresh_reflects_upstream_team_mutation() {
+    use netidmd_lib::idm::github_connector::{
+        GitHubSessionState, GITHUB_SESSION_STATE_FORMAT_VERSION,
+    };
+
+    let mock = spawn_mock_github_server().await;
+
+    // Initial state: user is in acme:eng.
+    mock.set_user(
+        100,
+        "rotating-user",
+        Some("Rotating User"),
+        vec![MockGithubEmail {
+            email: "rotating@example.com".to_string(),
+            primary: true,
+            verified: true,
+        }],
+    )
+    .await;
+    mock.set_orgs(100, vec!["acme"]).await;
+    mock.set_teams(100, vec![("acme", "eng", "Engineering")]).await;
+
+    let code = mock.mint_token_for(100).await;
+    let config = make_test_config(&mock.base);
+    let connector = Arc::new(GitHubConnector::new(config));
+
+    // Simulate a login: exchange the code to get claims + access token.
+    let initial_claims = connector
+        .fetch_callback_claims(&code)
+        .await
+        .expect("initial login");
+
+    assert_eq!(initial_claims.groups, vec!["acme:eng"]);
+
+    // Build a session-state blob that the refresh path will read.
+    // In production this would be written by the session-mint path (T016);
+    // here we construct it manually using the known access token.
+    let access_token = format!("gho_mock_{}", 100);
+    let session_state = GitHubSessionState {
+        format_version: GITHUB_SESSION_STATE_FORMAT_VERSION,
+        github_id: 100,
+        github_login: "rotating-user".to_string(),
+        access_token: access_token.clone(),
+        refresh_token: None,
+        access_token_expires_at: None,
+    }
+    .to_bytes()
+    .expect("serialise session state");
+
+    // Mutate the mock: user has moved to acme:ops.
+    mock.set_teams(100, vec![("acme", "ops", "Ops")]).await;
+
+    // Re-insert the access token in the mock (mint_token_for may have
+    // registered it; make_test_config's code exchange also registers it —
+    // this ensures it's definitely there).
+    let _token = mock.mint_token_for(100).await;
+
+    let refreshed = connector
+        .refresh(&session_state, &initial_claims)
+        .await
+        .expect("refresh should succeed");
+
+    // After the mutation, groups must reflect acme:ops, not acme:eng.
+    assert_eq!(refreshed.claims.sub, "100");
+    assert_eq!(refreshed.claims.groups, vec!["acme:ops"]);
+    // Email preserved from previous_claims.
+    assert_eq!(
+        refreshed.claims.email.as_deref(),
+        Some("rotating@example.com")
+    );
+    // Session state blob must be present (always rewritten).
+    assert!(refreshed.new_session_state.is_some());
+}

@@ -22,7 +22,7 @@ use crate::prelude::*;
 use async_trait::async_trait;
 use hashbrown::HashSet;
 use serde::{Deserialize, Serialize};
-use time::OffsetDateTime;
+use time::{Duration as TimeDuration, OffsetDateTime};
 use url::Url;
 use uuid::Uuid;
 
@@ -155,6 +155,34 @@ pub struct GitHubSessionState {
     /// Absolute instant the access token is known to expire. `None` when
     /// the `access_token` response didn't include `expires_in`.
     pub access_token_expires_at: Option<OffsetDateTime>,
+}
+
+impl GitHubSessionState {
+    /// Deserialise from the opaque bytes stored on the `Oauth2Session`.
+    /// Returns `ConnectorRefreshError::Serialization` on any decode failure
+    /// so the call site can map it to `Oauth2Error::InvalidGrant`.
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, ConnectorRefreshError> {
+        let s = std::str::from_utf8(bytes).map_err(|e| {
+            ConnectorRefreshError::Serialization(format!("session-state is not UTF-8: {e}"))
+        })?;
+        let state: Self = serde_json::from_str(s).map_err(|e| {
+            ConnectorRefreshError::Serialization(format!("session-state JSON parse failed: {e}"))
+        })?;
+        if state.format_version != GITHUB_SESSION_STATE_FORMAT_VERSION {
+            return Err(ConnectorRefreshError::Serialization(format!(
+                "session-state format_version {} is not supported (expected {})",
+                state.format_version, GITHUB_SESSION_STATE_FORMAT_VERSION
+            )));
+        }
+        Ok(state)
+    }
+
+    /// Serialise to bytes for storage on `Oauth2Session::upstream_refresh_state`.
+    pub fn to_bytes(&self) -> Result<Vec<u8>, ConnectorRefreshError> {
+        serde_json::to_vec(self).map_err(|e| {
+            ConnectorRefreshError::Serialization(format!("session-state serialisation failed: {e}"))
+        })
+    }
 }
 
 /// `GET /user` response. Other fields GitHub returns are tolerated but
@@ -410,6 +438,49 @@ impl GitHubConnector {
         resp.json::<GitHubTokenResponse>()
             .await
             .map_err(|e| ConnectorRefreshError::Other(format!("token parse error: {e}")))
+    }
+
+    /// Exchange a refresh token for a new access/refresh token pair.
+    /// Returns `ConnectorRefreshError::TokenRevoked` on a 4xx response
+    /// (GitHub signals an invalid or expired refresh token this way).
+    async fn post_refresh_token(
+        &self,
+        refresh_token: &str,
+    ) -> Result<GitHubTokenResponse, ConnectorRefreshError> {
+        let token_url = self
+            .config
+            .host
+            .join("login/oauth/access_token")
+            .map_err(|e| ConnectorRefreshError::Other(format!("token URL build error: {e}")))?;
+
+        let form = [
+            ("grant_type", "refresh_token"),
+            ("refresh_token", refresh_token),
+            ("client_id", self.config.client_id.as_str()),
+            ("client_secret", self.config.client_secret.as_str()),
+        ];
+
+        let resp = self
+            .config
+            .http
+            .post(token_url)
+            .header(reqwest::header::ACCEPT, "application/json")
+            .form(&form)
+            .send()
+            .await
+            .map_err(|e| ConnectorRefreshError::Network(e.to_string()))?;
+
+        let status = resp.status();
+        if status.is_client_error() {
+            return Err(ConnectorRefreshError::TokenRevoked);
+        }
+        if !status.is_success() {
+            return Err(ConnectorRefreshError::UpstreamRejected(status.as_u16()));
+        }
+
+        resp.json::<GitHubTokenResponse>()
+            .await
+            .map_err(|e| ConnectorRefreshError::Other(format!("refresh token parse error: {e}")))
     }
 
     /// `GET <api_base>/user` — fetch the authenticated user's profile.
@@ -712,13 +783,70 @@ impl GitHubConnector {
 impl RefreshableConnector for GitHubConnector {
     async fn refresh(
         &self,
-        _session_state: &[u8],
-        _previous_claims: &ExternalUserClaims,
+        session_state: &[u8],
+        previous_claims: &ExternalUserClaims,
     ) -> Result<RefreshOutcome, ConnectorRefreshError> {
         // T034 (US6): full refresh implementation.
-        Err(ConnectorRefreshError::Other(
-            "GitHub connector refresh not yet implemented".to_string(),
-        ))
+        //
+        // (a) Deserialise session state.
+        let mut state = GitHubSessionState::from_bytes(session_state)?;
+
+        // (b) Rotate the access token if it is known to be expired.
+        if let (Some(expires_at), Some(ref rt)) =
+            (state.access_token_expires_at, state.refresh_token.clone())
+        {
+            let now = OffsetDateTime::UNIX_EPOCH + crate::time::duration_from_epoch_now();
+            if now > expires_at {
+                let rotated = self.post_refresh_token(rt).await?;
+                state.access_token = rotated.access_token;
+                if let Some(new_rt) = rotated.refresh_token {
+                    state.refresh_token = Some(new_rt);
+                }
+                state.access_token_expires_at = rotated.expires_in.map(|secs| {
+                    now + TimeDuration::seconds(secs as i64)
+                });
+            }
+        }
+
+        // (c) Re-fetch team membership (and orgs for load_all_groups).
+        let token = &state.access_token;
+        let orgs = self.fetch_orgs(token).await?;
+        let teams = self.fetch_teams(token).await?;
+
+        // T035: access-gate is enforced on EVERY refresh, not just login.
+        // A user who has since left the allowed teams must be blocked.
+        let gate_profile = GithubUserProfile {
+            id: state.github_id,
+            login: state.github_login.clone(),
+            name: None,
+            email: None,
+        };
+        if let Err(ConnectorRefreshError::AccessDenied) =
+            self.check_access_gate(&gate_profile, &teams)
+        {
+            return Err(ConnectorRefreshError::TokenRevoked);
+        }
+
+        // (d) Compute the new claims. Sub MUST equal the session's original sub.
+        let groups = self.render_team_names(&teams, &orgs);
+        let new_claims = ExternalUserClaims {
+            sub: state.github_id.to_string(),
+            // Refresh path does not re-fetch emails — preserve the previous
+            // verified email (stable) to avoid unnecessary writes.
+            email: previous_claims.email.clone(),
+            email_verified: previous_claims.email_verified,
+            display_name: previous_claims.display_name.clone(),
+            username_hint: Some(state.github_login.clone()),
+            groups,
+        };
+
+        // (e) Serialise the (possibly rotated) session state.
+        let new_blob = state.to_bytes()?;
+
+        Ok(RefreshOutcome {
+            claims: new_claims,
+            new_session_state: Some(new_blob),
+        })
     }
 
     async fn fetch_callback_claims(
@@ -976,5 +1104,245 @@ mod tests {
         let profile = make_profile(4, "dave");
         let teams = vec![make_team("ACME", "ENG")];
         assert!(connector.check_access_gate(&profile, &teams).is_ok());
+    }
+
+    // T036–T039: refresh unit tests
+
+    /// Build a minimal `GitHubSessionState` suitable for unit tests.
+    fn make_session_state(
+        id: i64,
+        login: &str,
+        token: &str,
+        refresh_token: Option<&str>,
+        expires_at: Option<OffsetDateTime>,
+    ) -> Vec<u8> {
+        GitHubSessionState {
+            format_version: GITHUB_SESSION_STATE_FORMAT_VERSION,
+            github_id: id,
+            github_login: login.to_string(),
+            access_token: token.to_string(),
+            refresh_token: refresh_token.map(str::to_string),
+            access_token_expires_at: expires_at,
+        }
+        .to_bytes()
+        .unwrap_or_else(|_| unreachable!())
+    }
+
+    fn make_previous_claims(id: i64, email: &str) -> ExternalUserClaims {
+        ExternalUserClaims {
+            sub: id.to_string(),
+            email: Some(email.to_string()),
+            email_verified: Some(true),
+            display_name: Some("Test User".to_string()),
+            username_hint: Some("testuser".to_string()),
+            groups: vec!["old:group".to_string()],
+        }
+    }
+
+    // T036: refresh returns fresh claims with updated groups.
+    #[tokio::test]
+    async fn test_github_refresh_returns_fresh_claims() {
+        use crate::idm::oauth2_connector::RefreshableConnector;
+
+        // Spin up the mock server.
+        let mock_server_addr = std::net::SocketAddr::from(([127, 0, 0, 1], 0));
+        let listener = tokio::net::TcpListener::bind(mock_server_addr)
+            .await
+            .expect("bind");
+        let addr = listener.local_addr().expect("addr");
+
+        // We need the mock's State to register a token.  Use a minimal standalone
+        // reqwest call instead of the full mock; this test focuses on the connector
+        // logic, not the HTTP layer — so we re-use the mock helpers via the full
+        // integration path below in T040.  Here we test the non-refresh-needed path:
+        // token is not expiring.
+
+        // Build a connector pointing at a non-existent URL — but the token is NOT
+        // expiring so no HTTP call is made for refresh.  We still need to call
+        // fetch_orgs/teams, so we need the mock running.
+
+        // --- Use the public MockGithub struct from the testkit wouldn't be available
+        // in lib tests. Instead, spin up a tiny axum mock inline. ---
+        // This is complex; instead, use a session state with a token that maps to
+        // a user in our own mini-mock. Since we can't import github_mock here (it's
+        // in the testkit crate), we test via direct method calls instead.
+
+        // Build a connector where orgs/teams endpoints are served by our inline mock.
+        use axum::routing::get;
+        use axum::Json;
+        use serde_json::json;
+
+        let app = axum::Router::new()
+            .route(
+                "/api/v3/user/orgs",
+                get(|| async { Json(json!([{"login": "refreshcorp"}])) }),
+            )
+            .route(
+                "/api/v3/user/teams",
+                get(|| async {
+                    Json(json!([{
+                        "slug": "devs",
+                        "name": "Developers",
+                        "organization": {"login": "refreshcorp"}
+                    }]))
+                }),
+            );
+
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+
+        let base = url::Url::parse(&format!("http://{addr}")).expect("url");
+        let http = reqwest::Client::builder()
+            .default_headers({
+                let mut h = reqwest::header::HeaderMap::new();
+                h.insert(
+                    reqwest::header::ACCEPT,
+                    reqwest::header::HeaderValue::from_static("application/vnd.github+json"),
+                );
+                h
+            })
+            .build()
+            .unwrap_or_else(|_| unreachable!());
+
+        let mut api_base = base.clone();
+        api_base.set_path("/api/v3/");
+
+        let connector = GitHubConnector::new(GitHubConfig {
+            entry_uuid: uuid::Uuid::new_v4(),
+            host: base,
+            api_base,
+            client_id: "test".to_string(),
+            client_secret: "test".to_string(),
+            org_filter: HashSet::new(),
+            allowed_teams: HashSet::new(),
+            team_name_field: TeamNameField::Slug,
+            load_all_groups: false,
+            preferred_email_domain: None,
+            allow_jit_provisioning: false,
+            http,
+        });
+
+        // Token is not expiring (no expires_at), so no refresh call is made.
+        let blob = make_session_state(42, "alice", "gho_does_not_matter", None, None);
+        let prev = make_previous_claims(42, "alice@example.com");
+
+        let outcome = connector
+            .refresh(&blob, &prev)
+            .await
+            .expect("refresh should succeed");
+
+        assert_eq!(outcome.claims.sub, "42");
+        let mut groups = outcome.claims.groups.clone();
+        groups.sort();
+        assert_eq!(groups, vec!["refreshcorp:devs"]);
+        // Email preserved from previous_claims (refresh path doesn't re-fetch).
+        assert_eq!(outcome.claims.email.as_deref(), Some("alice@example.com"));
+        // new_session_state must be Some (blob always rewritten).
+        assert!(outcome.new_session_state.is_some());
+    }
+
+    // T037: refresh with serialization failure returns Serialization error.
+    #[tokio::test]
+    async fn test_github_refresh_error_serialization_failure() {
+        let http = reqwest::Client::builder()
+            .build()
+            .unwrap_or_else(|_| unreachable!());
+        let connector = GitHubConnector::new(GitHubConfig {
+            entry_uuid: uuid::Uuid::new_v4(),
+            host: GITHUB_COM_HOST.clone(),
+            api_base: GITHUB_API_BASE.clone(),
+            client_id: "test".to_string(),
+            client_secret: "test".to_string(),
+            org_filter: HashSet::new(),
+            allowed_teams: HashSet::new(),
+            team_name_field: TeamNameField::Slug,
+            load_all_groups: false,
+            preferred_email_domain: None,
+            allow_jit_provisioning: false,
+            http,
+        });
+        use crate::idm::oauth2_connector::RefreshableConnector;
+        let prev = make_previous_claims(1, "x@example.com");
+        // Corrupt blob.
+        let result = connector.refresh(b"not-valid-json", &prev).await;
+        assert!(
+            matches!(
+                result,
+                Err(crate::idm::oauth2_connector::ConnectorRefreshError::Serialization(_))
+            ),
+            "expected Serialization error, got {result:?}"
+        );
+    }
+
+    // T039: access gate enforced on refresh path (T035).
+    #[tokio::test]
+    async fn test_github_refresh_access_gate_enforced() {
+        use axum::routing::get;
+        use crate::idm::oauth2_connector::RefreshableConnector;
+
+        // Spin up inline mock returning a team NOT in allowed_teams.
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind");
+        let addr = listener.local_addr().expect("addr");
+
+        let app = axum::Router::new()
+            .route(
+                "/api/v3/user/orgs",
+                get(|| async { axum::Json(serde_json::json!([{"login": "acme"}])) }),
+            )
+            .route(
+                "/api/v3/user/teams",
+                get(|| async {
+                    axum::Json(serde_json::json!([{
+                        "slug": "contractors",
+                        "name": "Contractors",
+                        "organization": {"login": "acme"}
+                    }]))
+                }),
+            );
+        tokio::spawn(async move {
+            let _ = axum::serve(listener, app).await;
+        });
+
+        let base = url::Url::parse(&format!("http://{addr}")).expect("url");
+        let mut api_base = base.clone();
+        api_base.set_path("/api/v3/");
+
+        let mut allowed_teams = HashSet::new();
+        allowed_teams.insert("acme:employees".to_string());
+
+        let http = reqwest::Client::builder()
+            .build()
+            .unwrap_or_else(|_| unreachable!());
+        let connector = GitHubConnector::new(GitHubConfig {
+            entry_uuid: uuid::Uuid::new_v4(),
+            host: base,
+            api_base,
+            client_id: "test".to_string(),
+            client_secret: "test".to_string(),
+            org_filter: HashSet::new(),
+            allowed_teams,
+            team_name_field: TeamNameField::Slug,
+            load_all_groups: false,
+            preferred_email_domain: None,
+            allow_jit_provisioning: false,
+            http,
+        });
+
+        let blob =
+            make_session_state(99, "former-employee", "gho_any_token", None, None);
+        let prev = make_previous_claims(99, "user@example.com");
+
+        let result = connector.refresh(&blob, &prev).await;
+        // T035: access gate on refresh maps to TokenRevoked (not AccessDenied).
+        assert!(
+            matches!(
+                result,
+                Err(crate::idm::oauth2_connector::ConnectorRefreshError::TokenRevoked)
+            ),
+            "expected TokenRevoked on gate failure, got {result:?}"
+        );
     }
 }

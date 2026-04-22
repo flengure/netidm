@@ -103,6 +103,7 @@ ipnet = "2.12.0"
 whoami = { workspace = true }
 
 [dev-dependencies]
+axum = { workspace = true }
 compact_jwt = { workspace = true, features = ["unsafe_release_without_verify"] }
 futures = { workspace = true }
 netidmd_lib_macros = { workspace = true }
