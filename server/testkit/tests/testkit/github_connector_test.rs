@@ -324,3 +324,89 @@ async fn test_github_login_allowed_after_adding_to_allowed_team() {
     assert_eq!(claims.email.as_deref(), Some("future@example.com"));
     assert_eq!(claims.groups, vec!["acme:eng"]);
 }
+
+// ── T031: org_filter narrows groups without rejecting login (US4 / FR-005) ────
+
+/// T031a — user in multiple orgs with org_filter set to one org: only that
+/// org's teams appear in claims.groups; login succeeds.
+#[tokio::test]
+async fn test_github_org_filter_narrows_group_mapping_without_rejecting_login() {
+    let mock = spawn_mock_github_server().await;
+
+    mock.set_user(
+        70,
+        "multi-org-user",
+        None,
+        vec![MockGithubEmail {
+            email: "multi@example.com".to_string(),
+            primary: true,
+            verified: true,
+        }],
+    )
+    .await;
+    mock.set_orgs(70, vec!["allowed-org", "other-org"]).await;
+    mock.set_teams(
+        70,
+        vec![
+            ("allowed-org", "backend", "Backend"),
+            ("other-org", "frontend", "Frontend"),
+        ],
+    )
+    .await;
+
+    let code = mock.mint_token_for(70).await;
+
+    let mut config = make_test_config(&mock.base);
+    config.org_filter.insert("allowed-org".to_string());
+    let connector = Arc::new(GitHubConnector::new(config));
+
+    let claims = connector
+        .fetch_callback_claims(&code)
+        .await
+        .expect("login must succeed even with org_filter");
+
+    // FR-005: org_filter is NOT an access gate — login succeeds.
+    assert_eq!(claims.sub, "70");
+    // Only the allowed-org team appears in groups.
+    assert_eq!(claims.groups, vec!["allowed-org:backend"]);
+}
+
+/// T031b — user with NO teams in the filtered org: login still succeeds with
+/// an empty group list (org_filter ≠ access gate per FR-005).
+#[tokio::test]
+async fn test_github_org_filter_empty_match_login_succeeds_no_groups() {
+    let mock = spawn_mock_github_server().await;
+
+    mock.set_user(
+        71,
+        "outside-org-user",
+        None,
+        vec![MockGithubEmail {
+            email: "outside@example.com".to_string(),
+            primary: true,
+            verified: true,
+        }],
+    )
+    .await;
+    mock.set_orgs(71, vec!["other-org"]).await;
+    mock.set_teams(71, vec![("other-org", "staff", "Staff")]).await;
+
+    let code = mock.mint_token_for(71).await;
+
+    let mut config = make_test_config(&mock.base);
+    // org_filter = allowed-org but user has no teams there.
+    config.org_filter.insert("allowed-org".to_string());
+    let connector = Arc::new(GitHubConnector::new(config));
+
+    let claims = connector
+        .fetch_callback_claims(&code)
+        .await
+        .expect("login must succeed: org_filter is not an access gate");
+
+    assert_eq!(claims.sub, "71");
+    assert!(
+        claims.groups.is_empty(),
+        "no groups from outside orgs, got {:?}",
+        claims.groups
+    );
+}

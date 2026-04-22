@@ -838,6 +838,41 @@ mod tests {
         );
     }
 
+    // T030: org_filter drops teams from outside orgs (FR-005 — group-mapping filter only)
+    #[test]
+    fn test_github_org_filter_drops_outside_orgs() {
+        let http = reqwest::Client::builder()
+            .build()
+            .unwrap_or_else(|_| unreachable!());
+        let mut org_filter = HashSet::new();
+        org_filter.insert("org1".to_string());
+        let connector = GitHubConnector::new(GitHubConfig {
+            entry_uuid: uuid::Uuid::new_v4(),
+            host: GITHUB_COM_HOST.clone(),
+            api_base: GITHUB_API_BASE.clone(),
+            client_id: "test".to_string(),
+            client_secret: "test".to_string(),
+            org_filter,
+            allowed_teams: HashSet::new(),
+            team_name_field: TeamNameField::Slug,
+            load_all_groups: false,
+            preferred_email_domain: None,
+            allow_jit_provisioning: false,
+            http,
+        });
+
+        // Only org1 teams survive; org2:gamma is dropped.
+        let mut got = connector.render_team_names(&teams(), &orgs());
+        got.sort();
+        assert_eq!(got, vec!["org1:alpha", "org1:beta"]);
+
+        // Empty org_filter is a no-op pass-through.
+        let pass_through = make_connector(TeamNameField::Slug, false);
+        let mut all = pass_through.render_team_names(&teams(), &orgs());
+        all.sort();
+        assert_eq!(all, vec!["org1:alpha", "org1:beta", "org2:gamma"]);
+    }
+
     // T021: pagination link header parsing
     #[test]
     fn test_github_pagination_link_header() {
