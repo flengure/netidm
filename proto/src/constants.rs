@@ -230,6 +230,17 @@ pub const ATTR_SAML_SESSION_UAT_UUID: &str = "saml_session_uat_uuid";
 pub const ATTR_SAML_SESSION_CREATED: &str = "saml_session_created";
 pub const ENTRYCLASS_LOGOUT_DELIVERY: &str = "logout_delivery";
 pub const ENTRYCLASS_SAML_SESSION: &str = "saml_session";
+// DL28 — GitHub upstream connector (PR-CONNECTOR-GITHUB)
+pub const ATTR_OAUTH2_CLIENT_PROVIDER_KIND: &str = "oauth2_client_provider_kind";
+pub const ATTR_OAUTH2_CLIENT_GITHUB_HOST: &str = "oauth2_client_github_host";
+pub const ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER: &str = "oauth2_client_github_org_filter";
+pub const ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS: &str = "oauth2_client_github_allowed_teams";
+pub const ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD: &str = "oauth2_client_github_team_name_field";
+pub const ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS: &str = "oauth2_client_github_load_all_groups";
+pub const ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN: &str =
+    "oauth2_client_github_preferred_email_domain";
+pub const ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING: &str =
+    "oauth2_client_github_allow_jit_provisioning";
 // DL20 — OAuth2 client logo URI
 pub const ATTR_OAUTH2_CLIENT_LOGO_URI: &str = "oauth2_client_logo_uri";
 // DL21 — Generic OIDC upstream connector

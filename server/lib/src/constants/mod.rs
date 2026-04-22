@@ -140,18 +140,39 @@ pub const DOMAIN_LEVEL_26: DomainVersion = 26;
 /// non-disruptive.
 pub const DOMAIN_LEVEL_27: DomainVersion = 27;
 
+/// Domain Level 28: GitHub upstream connector (PR-CONNECTOR-GITHUB).
+/// First concrete implementation of the `RefreshableConnector` trait
+/// introduced in DL27. Adds one discriminator attribute
+/// (`OAuth2ClientProviderKind`) plus seven GitHub-specific config
+/// attributes on `EntryClass::OAuth2Client`:
+///
+///   * `OAuth2ClientGithubHost` (URL, default `https://github.com`)
+///   * `OAuth2ClientGithubOrgFilter` (utf8, multi)
+///   * `OAuth2ClientGithubAllowedTeams` (utf8, multi, `org:team`)
+///   * `OAuth2ClientGithubTeamNameField` (iutf8, enum)
+///   * `OAuth2ClientGithubLoadAllGroups` (bool)
+///   * `OAuth2ClientGithubPreferredEmailDomain` (iutf8)
+///   * `OAuth2ClientGithubAllowJitProvisioning` (bool)
+///
+/// All attributes are optional with documented defaults; pre-DL28
+/// entries without `OAuth2ClientProviderKind` behave as
+/// `"generic-oidc"` via PR-OIDC-CONNECTOR's path. DL28 extends the
+/// existing OAuth2 admin ACP to cover the new attributes; no new
+/// entry class, no new ACP entity.
+pub const DOMAIN_LEVEL_28: DomainVersion = 28;
+
 // The target supported domain functional level. During development this is
 // the NEXT level that users will upgrade too. In other words if we are
 // developing 1.6.0-dev, then we need to set TGT_LEVEL to 10 which is
 // the corresponding level.
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_27;
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_28;
 // The current patch level if any out of band fixes are required.
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
 
 // The maximum supported domain functional level. This generally
 // represents a *future* version of the server which doesn't exist
 // yet.
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_27;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_28;
 
 // This is the LOWEST level of database we can recreate. This is important for testing,
 // but we don't actually expect it to be used.

@@ -180,6 +180,17 @@ pub enum Attribute {
     SamlSessionIndex,
     SamlSessionUatUuid,
     SamlSessionCreated,
+    // PR-CONNECTOR-GITHUB (DL28) — per-connector config attributes on
+    // `EntryClass::OAuth2Client`. All optional with documented defaults.
+    // See `specs/012-github-connector/data-model.md`.
+    OAuth2ClientProviderKind,
+    OAuth2ClientGithubHost,
+    OAuth2ClientGithubOrgFilter,
+    OAuth2ClientGithubAllowedTeams,
+    OAuth2ClientGithubTeamNameField,
+    OAuth2ClientGithubLoadAllGroups,
+    OAuth2ClientGithubPreferredEmailDomain,
+    OAuth2ClientGithubAllowJitProvisioning,
     ObjectClass,
     OtherNoIndex,
     PassKeys,
@@ -558,6 +569,18 @@ impl Attribute {
             Attribute::SamlSessionIndex => ATTR_SAML_SESSION_INDEX,
             Attribute::SamlSessionUatUuid => ATTR_SAML_SESSION_UAT_UUID,
             Attribute::SamlSessionCreated => ATTR_SAML_SESSION_CREATED,
+            Attribute::OAuth2ClientProviderKind => ATTR_OAUTH2_CLIENT_PROVIDER_KIND,
+            Attribute::OAuth2ClientGithubHost => ATTR_OAUTH2_CLIENT_GITHUB_HOST,
+            Attribute::OAuth2ClientGithubOrgFilter => ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER,
+            Attribute::OAuth2ClientGithubAllowedTeams => ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS,
+            Attribute::OAuth2ClientGithubTeamNameField => ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD,
+            Attribute::OAuth2ClientGithubLoadAllGroups => ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS,
+            Attribute::OAuth2ClientGithubPreferredEmailDomain => {
+                ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN
+            }
+            Attribute::OAuth2ClientGithubAllowJitProvisioning => {
+                ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING
+            }
             Attribute::ObjectClass => ATTR_OBJECTCLASS,
             Attribute::OtherNoIndex => ATTR_OTHER_NO_INDEX,
             Attribute::PassKeys => ATTR_PASSKEYS,
@@ -810,6 +833,18 @@ impl Attribute {
             ATTR_SAML_SESSION_INDEX => Attribute::SamlSessionIndex,
             ATTR_SAML_SESSION_UAT_UUID => Attribute::SamlSessionUatUuid,
             ATTR_SAML_SESSION_CREATED => Attribute::SamlSessionCreated,
+            ATTR_OAUTH2_CLIENT_PROVIDER_KIND => Attribute::OAuth2ClientProviderKind,
+            ATTR_OAUTH2_CLIENT_GITHUB_HOST => Attribute::OAuth2ClientGithubHost,
+            ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER => Attribute::OAuth2ClientGithubOrgFilter,
+            ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS => Attribute::OAuth2ClientGithubAllowedTeams,
+            ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD => Attribute::OAuth2ClientGithubTeamNameField,
+            ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS => Attribute::OAuth2ClientGithubLoadAllGroups,
+            ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN => {
+                Attribute::OAuth2ClientGithubPreferredEmailDomain
+            }
+            ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING => {
+                Attribute::OAuth2ClientGithubAllowJitProvisioning
+            }
             ATTR_OBJECTCLASS => Attribute::ObjectClass,
             ATTR_OTHER_NO_INDEX => Attribute::OtherNoIndex,
             ATTR_PASSKEYS => Attribute::PassKeys,
