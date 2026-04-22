@@ -478,6 +478,153 @@ async fn test_refresh_connector_error_other(test_env: &AsyncTestEnvironment) {
     .await;
 }
 
+// ── T029 — locally-granted groups survive upstream narrowing ─────────────────
+
+/// T029 / US3 — a person with a local group membership and an upstream-synced
+/// marker retains the local group after the upstream connector narrows to zero
+/// groups.
+///
+/// Setup:
+///  1. Create a local group `local-group` and add the test user.
+///  2. Seed an `OAuth2UpstreamSyncedGroup` marker for the connector on a
+///     phantom group UUID (simulates a previously-synced upstream group).
+///  3. Drive a code flow and stamp the session with the connector.
+///  4. Configure the mock to return zero groups (upstream revokes everything).
+///  5. Refresh via HTTP.
+///
+/// Assert:
+///  * HTTP 200 — refresh succeeds.
+///  * New access + refresh tokens are issued.
+///  * The person is still a member of `local-group` (locally-granted L).
+///  * The `OAuth2UpstreamSyncedGroup` markers for the connector are empty.
+#[netidmd_testkit::test(with_test_env = true)]
+async fn test_refresh_claims_local_groups_survive_narrowing_upstream(
+    test_env: &AsyncTestEnvironment,
+) {
+    use netidmd_lib::modify::{Modify, ModifyList};
+    use netidmd_lib::prelude::{Attribute, Value};
+
+    let http = http_client();
+    let rsclient = &test_env.rsclient;
+    let secret = setup_rs_and_user(rsclient).await;
+
+    const LOCAL_GROUP_NAME: &str = "local-group-t029";
+
+    // Create a local group and add the test user.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin re-auth");
+    rsclient
+        .idm_group_create(LOCAL_GROUP_NAME, None)
+        .await
+        .expect("create local group");
+    rsclient
+        .idm_group_add_members(LOCAL_GROUP_NAME, &[NOT_ADMIN_TEST_USERNAME])
+        .await
+        .expect("add user to local group");
+
+    let group_entry = rsclient
+        .idm_group_get(LOCAL_GROUP_NAME)
+        .await
+        .expect("group get ok")
+        .expect("group exists");
+    let local_group_uuid_str = group_entry
+        .attrs
+        .get("uuid")
+        .and_then(|v| v.first())
+        .expect("group uuid");
+    let local_group_uuid =
+        Uuid::from_str(local_group_uuid_str).expect("parse group uuid");
+
+    let puuid = person_uuid(rsclient).await;
+
+    // Register mock returning no groups.
+    let connector_uuid = Uuid::new_v4();
+    let mock = Arc::new(TestMockConnector::new(puuid.to_string()));
+    mock.set_groups(vec![]);
+    test_env
+        .connector_registry
+        .register(connector_uuid, Arc::clone(&mock) as Arc<_>);
+
+    // Seed an upstream-synced marker (phantom group — simulates previously-
+    // synced upstream membership that the connector now revokes).
+    let upstream_group_uuid = Uuid::new_v4();
+    {
+        let ct = duration_from_epoch_now();
+        let mut w = test_env
+            .idm_server
+            .proxy_write(ct)
+            .await
+            .expect("seed write");
+        let marker = Value::new_utf8s(&format!("{connector_uuid}:{upstream_group_uuid}"));
+        let modlist = ModifyList::new_list(vec![Modify::Present(
+            Attribute::OAuth2UpstreamSyncedGroup,
+            marker,
+        )]);
+        w.qs_write
+            .internal_modify_uuid(puuid, &modlist)
+            .expect("seed marker");
+        w.commit().expect("seed commit");
+    }
+
+    let (atr, session_uuid) = drive_code_flow(rsclient, &http, &secret).await;
+    stamp_upstream_connector(test_env, puuid, session_uuid, connector_uuid).await;
+
+    let refresh_token = atr.refresh_token.expect("refresh token issued");
+    let resp = do_refresh(rsclient, &http, &secret, &refresh_token).await;
+
+    assert_eq!(
+        resp.status(),
+        StatusCode::OK,
+        "refresh must succeed even when upstream narrows to zero groups"
+    );
+
+    let new_atr: AccessTokenResponse = resp.json().await.expect("parse AccessTokenResponse");
+    assert!(
+        new_atr.access_token != atr.access_token,
+        "new access token must differ"
+    );
+
+    // Upstream marker must be cleared (reconcile ran and removed the upstream group).
+    {
+        use netidmd_lib::idm::oauth2_connector::read_synced_markers;
+        let ct = duration_from_epoch_now();
+        let mut w = test_env
+            .idm_server
+            .proxy_write(ct)
+            .await
+            .expect("post-refresh write");
+        let markers = read_synced_markers(&mut w.qs_write, puuid, connector_uuid)
+            .expect("read markers");
+        assert!(
+            markers.is_empty(),
+            "upstream marker must be cleared after connector returns empty groups"
+        );
+        w.commit().expect("post-refresh commit");
+    }
+
+    // Locally-granted group must survive — the reconciler only touches
+    // C-scoped `OAuth2UpstreamSyncedGroup` markers, not direct memberships.
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("admin re-auth for members check");
+    let members = rsclient
+        .idm_group_get_members(LOCAL_GROUP_NAME)
+        .await
+        .expect("group members get");
+    let member_strs = members.unwrap_or_default();
+    assert!(
+        member_strs
+            .iter()
+            .any(|s| s.contains(NOT_ADMIN_TEST_USERNAME)),
+        "test user must still be in local group after upstream narrowing; members={member_strs:?}"
+    );
+
+    let _ = local_group_uuid;
+}
+
 // ── T025 — missing connector → invalid_grant ─────────────────────────────────
 
 /// T025 — session references a connector UUID not registered in the registry.

@@ -1734,11 +1734,15 @@ impl IdmServerProxyWriteTransaction<'_> {
                         let sb = state_blob.clone();
                         let pc = prev_claims_for_refresh.clone();
                         std::thread::spawn(move || {
-                            tokio::runtime::Builder::new_current_thread()
+                            let rt = tokio::runtime::Builder::new_current_thread()
                                 .enable_all()
                                 .build()
-                                .expect("connector-dispatch runtime")
-                                .block_on(c.refresh(&sb, &pc))
+                                .map_err(|_| {
+                                    crate::idm::oauth2_connector::ConnectorRefreshError::Other(
+                                        "failed to build connector dispatch runtime".into(),
+                                    )
+                                })?;
+                            rt.block_on(c.refresh(&sb, &pc))
                         })
                         .join()
                         .unwrap_or_else(|_| Err(crate::idm::oauth2_connector::ConnectorRefreshError::Other("connector thread panicked".into())))
@@ -9391,6 +9395,105 @@ mod tests {
             2,
             "connector called once per refresh"
         );
+    }
+
+    // T028 — locally-granted group membership survives when upstream narrows.
+    //
+    // `UUID_TESTPERSON_1` is in `UUID_TESTGROUP` via a direct Member attribute
+    // (seeded by `setup_oauth2_resource_server_basic`). That group has no
+    // upstream marker and must remain unaffected when the reconciler clears the
+    // upstream-synced marker for connector C.
+    #[idm_test]
+    async fn test_refresh_preserves_locally_granted_groups(
+        idms: &IdmServer,
+        idms_delayed: &mut IdmServerDelayed,
+    ) {
+        use crate::idm::oauth2_connector::{read_synced_markers, TestMockConnector};
+
+        let ct = Duration::from_secs(TEST_CURRENT_TIME);
+        let (atr, client_authz) = setup_refresh_token(idms, idms_delayed, ct).await;
+
+        let refresh_token = atr
+            .refresh_token
+            .as_ref()
+            .expect("refresh token issued")
+            .clone();
+
+        let connector_uuid = Uuid::new_v4();
+        let mock = std::sync::Arc::new(TestMockConnector::new(UUID_TESTPERSON_1.to_string()));
+        mock.set_groups(vec![]);
+        idms.connector_registry()
+            .register(connector_uuid, std::sync::Arc::clone(&mock) as std::sync::Arc<_>);
+
+        let stale_group_uuid = Uuid::new_v4();
+        {
+            let mut w = idms.proxy_write(ct).await.expect("seed write");
+            let marker = Value::new_utf8s(&format!("{connector_uuid}:{stale_group_uuid}"));
+            let modlist = ModifyList::new_list(vec![Modify::Present(
+                Attribute::OAuth2UpstreamSyncedGroup,
+                marker,
+            )]);
+            w.qs_write
+                .internal_modify_uuid(UUID_TESTPERSON_1, &modlist)
+                .expect("seed marker");
+            w.commit().expect("seed commit");
+        }
+
+        // Confirm the person is in testgroup (locally-granted L) before refresh.
+        {
+            let mut r = idms.proxy_read().await.expect("proxy_read");
+            let group_entry = r
+                .qs_read
+                .internal_search_uuid(UUID_TESTGROUP)
+                .expect("testgroup entry");
+            assert!(
+                group_entry
+                    .get_ava_refer(Attribute::Member)
+                    .is_some_and(|m| m.contains(&UUID_TESTPERSON_1)),
+                "person must be in testgroup before refresh"
+            );
+        }
+
+        stamp_connector_onto_session(idms, &client_authz, &refresh_token, connector_uuid, ct)
+            .await;
+
+        let ct2 = Duration::from_secs(TEST_CURRENT_TIME + 10);
+        let mut w = idms.proxy_write(ct2).await.expect("proxy_write");
+        let token_req: AccessTokenRequest = GrantTypeReq::RefreshToken {
+            refresh_token,
+            scope: None,
+        }
+        .into();
+        w.check_oauth2_token_exchange(&client_authz, &token_req, ct2)
+            .expect("refresh must succeed");
+        w.commit().expect("commit");
+
+        // Upstream marker cleared — reconcile ran for connector_uuid.
+        {
+            let mut w = idms.proxy_write(ct2).await.expect("post-refresh write");
+            let markers = read_synced_markers(&mut w.qs_write, UUID_TESTPERSON_1, connector_uuid)
+                .expect("read markers");
+            assert!(
+                markers.is_empty(),
+                "upstream marker must be cleared after upstream narrowing"
+            );
+            w.commit().expect("post-refresh commit");
+        }
+
+        // Locally-granted group L is untouched — reconciler only touches C-scoped markers.
+        {
+            let mut r = idms.proxy_read().await.expect("proxy_read");
+            let group_entry = r
+                .qs_read
+                .internal_search_uuid(UUID_TESTGROUP)
+                .expect("testgroup entry");
+            assert!(
+                group_entry
+                    .get_ava_refer(Attribute::Member)
+                    .is_some_and(|m| m.contains(&UUID_TESTPERSON_1)),
+                "person must still be in testgroup after upstream narrowing (local group must survive)"
+            );
+        }
     }
 
     #[idm_test]
