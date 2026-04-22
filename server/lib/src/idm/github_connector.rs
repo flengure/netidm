@@ -855,6 +855,240 @@ impl RefreshableConnector for GitHubConnector {
     ) -> Result<ExternalUserClaims, ConnectorRefreshError> {
         self.do_fetch_callback_claims(code).await
     }
+
+    fn allow_jit_provisioning(&self) -> bool {
+        self.config.allow_jit_provisioning
+    }
+}
+
+/// 4-step GitHub account linking chain (T014 / FR-013a).
+///
+/// Runs the steps in order, returning on the first match:
+/// 1. Verified-email match — finds a `Person` whose `mail` equals `claims.email`
+///    (only when `claims.email_verified == Some(true)`).
+/// 2. Stable-ID match — finds a `Person` already linked to this provider with
+///    `OAuth2AccountUniqueUserId == claims.sub` (the numeric GitHub user ID).
+/// 3. Login match — finds a `Person` linked to this provider with
+///    `OAuth2AccountUniqueUserId == claims.username_hint`. On match the stored
+///    value is upgraded to the numeric ID so future logins resolve via step 2.
+/// 4. JIT provision — creates a new `Person` when `allow_jit_provisioning` is
+///    `true`; returns `Ok(None)` when it is `false` (caller redirects to the
+///    manual-provision page).
+///
+/// On success for steps 1, 3, and 4, both the `OAuth2Account` class and the
+/// three link attributes are written. Step 2 is a no-op write (already linked).
+pub fn github_link_or_provision_chain(
+    qs_write: &mut crate::server::QueryServerWriteTransaction,
+    provider_uuid: Uuid,
+    claims: &ExternalUserClaims,
+    allow_jit_provisioning: bool,
+) -> Result<Option<Uuid>, crate::prelude::OperationError> {
+    use crate::prelude::*;
+
+    // --- Step 1: verified email match ---
+    if claims.email_verified == Some(true) {
+        if let Some(ref email) = claims.email {
+            let mut matches = qs_write.internal_search(filter!(f_and!([
+                f_eq(Attribute::Mail, PartialValue::EmailAddress(email.clone())),
+                f_eq(Attribute::Class, EntryClass::Person.into()),
+            ])))?;
+            if let Some(entry) = matches.pop() {
+                let target = entry.get_uuid();
+                let cred_id = Uuid::new_v4();
+                qs_write
+                    .internal_modify(
+                        &filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(target))),
+                        &ModifyList::new_list(vec![
+                            Modify::Present(Attribute::Class, EntryClass::OAuth2Account.to_value()),
+                            Modify::Present(
+                                Attribute::OAuth2AccountProvider,
+                                Value::Refer(provider_uuid),
+                            ),
+                            Modify::Present(
+                                Attribute::OAuth2AccountUniqueUserId,
+                                Value::new_utf8s(&claims.sub),
+                            ),
+                            Modify::Present(
+                                Attribute::OAuth2AccountCredentialUuid,
+                                Value::Uuid(cred_id),
+                            ),
+                        ]),
+                    )
+                    .map_err(|e| {
+                        admin_error!(?e, "github link chain step 1 modify failed");
+                        e
+                    })?;
+                return Ok(Some(target));
+            }
+        }
+    }
+
+    // --- Step 2: stable numeric ID match (already linked — no write needed) ---
+    {
+        let mut matches = qs_write.internal_search(filter!(f_and!([
+            f_eq(
+                Attribute::OAuth2AccountProvider,
+                PartialValue::Refer(provider_uuid)
+            ),
+            f_eq(
+                Attribute::OAuth2AccountUniqueUserId,
+                PartialValue::new_utf8s(&claims.sub)
+            ),
+            f_eq(Attribute::Class, EntryClass::Person.into()),
+        ])))?;
+        if let Some(entry) = matches.pop() {
+            return Ok(Some(entry.get_uuid()));
+        }
+    }
+
+    // --- Step 3: login match — upgrade stored link to stable numeric ID ---
+    if let Some(ref login) = claims.username_hint {
+        let mut matches = qs_write.internal_search(filter!(f_and!([
+            f_eq(
+                Attribute::OAuth2AccountProvider,
+                PartialValue::Refer(provider_uuid)
+            ),
+            f_eq(
+                Attribute::OAuth2AccountUniqueUserId,
+                PartialValue::new_utf8s(login)
+            ),
+            f_eq(Attribute::Class, EntryClass::Person.into()),
+        ])))?;
+        if let Some(entry) = matches.pop() {
+            let target = entry.get_uuid();
+            qs_write
+                .internal_modify(
+                    &filter!(f_eq(Attribute::Uuid, PartialValue::Uuid(target))),
+                    &ModifyList::new_list(vec![
+                        Modify::Purged(Attribute::OAuth2AccountUniqueUserId),
+                        Modify::Present(
+                            Attribute::OAuth2AccountUniqueUserId,
+                            Value::new_utf8s(&claims.sub),
+                        ),
+                    ]),
+                )
+                .map_err(|e| {
+                    admin_error!(?e, "github link chain step 3 upgrade modify failed");
+                    e
+                })?;
+            return Ok(Some(target));
+        }
+    }
+
+    // --- Step 4: JIT provision ---
+    if !allow_jit_provisioning {
+        return Ok(None);
+    }
+
+    let desired_name = github_derive_username(qs_write, claims)?;
+    let display_name = claims
+        .display_name
+        .clone()
+        .unwrap_or_else(|| desired_name.clone());
+    let person_uuid = Uuid::new_v4();
+    let cred_id = Uuid::new_v4();
+
+    let mut entry: Entry<EntryInit, EntryNew> = Entry::new();
+    entry.add_ava(Attribute::Class, EntryClass::Object.to_value());
+    entry.add_ava(Attribute::Class, EntryClass::Account.to_value());
+    entry.add_ava(Attribute::Class, EntryClass::Person.to_value());
+    entry.add_ava(Attribute::Class, EntryClass::OAuth2Account.to_value());
+    entry.add_ava(Attribute::Uuid, Value::Uuid(person_uuid));
+    entry.add_ava(Attribute::Name, Value::new_iname(&desired_name));
+    entry.add_ava(Attribute::DisplayName, Value::new_utf8s(&display_name));
+    entry.add_ava(Attribute::OAuth2AccountProvider, Value::Refer(provider_uuid));
+    entry.add_ava(
+        Attribute::OAuth2AccountUniqueUserId,
+        Value::new_utf8s(&claims.sub),
+    );
+    entry.add_ava(
+        Attribute::OAuth2AccountCredentialUuid,
+        Value::Uuid(cred_id),
+    );
+    if let Some(ref email) = claims.email {
+        entry.add_ava(Attribute::Mail, Value::EmailAddress(email.clone(), true));
+    }
+
+    qs_write.internal_create(vec![entry]).map_err(|e| {
+        admin_error!(?e, "github link chain step 4 JIT provision create failed");
+        e
+    })?;
+
+    Ok(Some(person_uuid))
+}
+
+/// Derive a collision-free Netidm username from GitHub claims.
+///
+/// Candidate order: `username_hint` (GitHub login) → email local-part →
+/// first 8 alphanumeric chars of `sub`. The chosen candidate is lower-cased,
+/// non-alphanumeric characters replaced with `_`, and a leading digit
+/// prefixed with `u`. Suffix `_2`…`_100` is appended when the preferred
+/// name is taken.
+fn github_derive_username(
+    qs_write: &mut crate::server::QueryServerWriteTransaction,
+    claims: &ExternalUserClaims,
+) -> Result<String, crate::prelude::OperationError> {
+    use crate::prelude::*;
+
+    let base = claims
+        .username_hint
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .or_else(|| {
+            claims
+                .email
+                .as_deref()
+                .and_then(|e| e.split('@').next())
+                .filter(|s| !s.is_empty())
+        })
+        .map(|s| {
+            let n: String = s
+                .to_lowercase()
+                .chars()
+                .map(|c| if c.is_alphanumeric() { c } else { '_' })
+                .collect();
+            if n.starts_with(|c: char| c.is_ascii_digit()) {
+                format!("u{n}")
+            } else {
+                n
+            }
+        })
+        .unwrap_or_else(|| {
+            let frag: String = claims
+                .sub
+                .chars()
+                .filter(|c| c.is_alphanumeric())
+                .take(8)
+                .collect::<String>()
+                .to_lowercase();
+            if frag.starts_with(|c: char| c.is_ascii_digit()) {
+                format!("u{frag}")
+            } else {
+                frag
+            }
+        });
+
+    let mut name_is_free = |name: &str| -> Result<bool, OperationError> {
+        qs_write
+            .internal_search(filter_all!(f_eq(
+                Attribute::Name,
+                PartialValue::new_iname(name)
+            )))
+            .map(|res| res.is_empty())
+    };
+
+    if name_is_free(&base)? {
+        return Ok(base);
+    }
+    for suffix in 2u32..=100 {
+        let candidate = format!("{base}_{suffix}");
+        if name_is_free(&candidate)? {
+            return Ok(candidate);
+        }
+    }
+    Err(OperationError::InvalidAttribute(format!(
+        "No available username derived from GitHub hint '{base}' (tried _2 through _100)"
+    )))
 }
 
 #[cfg(test)]

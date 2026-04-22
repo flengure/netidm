@@ -94,6 +94,14 @@ pub trait RefreshableConnector: Send + Sync {
             "fetch_callback_claims not implemented for this connector".to_string(),
         ))
     }
+
+    /// Whether this connector permits JIT-provisioning of new local
+    /// accounts on first login (T014 / FR-017). Defaults to `false`
+    /// so generic connectors are unaffected. `GitHubConnector` overrides
+    /// this to expose `GitHubConfig::allow_jit_provisioning`.
+    fn allow_jit_provisioning(&self) -> bool {
+        false
+    }
 }
 
 /// Successful outcome of [`RefreshableConnector::refresh`]. Carries
