@@ -632,7 +632,7 @@ mod tests {
 
     // --- group_names_from_entry ---
 
-    fn entry_with_memberof(values: Vec<&str>) -> netidm_proto::v1::Entry {
+    fn entry_with_memberof(values: &[&str]) -> netidm_proto::v1::Entry {
         let mut attrs = std::collections::BTreeMap::new();
         attrs.insert(
             "memberof".to_string(),
@@ -643,14 +643,14 @@ mod tests {
 
     #[test]
     fn test_group_names_strips_domain() {
-        let entry = entry_with_memberof(vec!["admins@example.com", "developers@example.com"]);
+        let entry = entry_with_memberof(&["admins@example.com", "developers@example.com"]);
         let names = group_names_from_entry(&entry);
         assert_eq!(names, vec!["admins", "developers"]);
     }
 
     #[test]
     fn test_group_names_no_domain_passthrough() {
-        let entry = entry_with_memberof(vec!["plain-group"]);
+        let entry = entry_with_memberof(&["plain-group"]);
         let names = group_names_from_entry(&entry);
         assert_eq!(names, vec!["plain-group"]);
     }

@@ -1381,6 +1381,7 @@ impl ValueSetT for ValueSetApiToken {
 #[cfg(test)]
 mod tests {
     use super::{ValueSetOauth2Session, ValueSetSession, SESSION_MAXIMUM};
+    use crate::be::dbvalue::{DbValueOauth2Session, DbValueSessionStateV1};
     use crate::prelude::{IdentityId, SessionScope, Uuid, ValueSet, UUID_SYSTEM};
     use crate::repl::cid::Cid;
     use crate::value::{AuthType, Oauth2Session, Session, SessionState};
@@ -2122,5 +2123,96 @@ mod tests {
         "#;
 
         crate::valueset::scim_json_reflexive(&vs, data);
+    }
+
+    // ── T031 — DL26→DL27 serde round-trip ──────────────────────────────────────
+
+    /// T031a — decoding a V3 `DbValueOauth2Session` (pre-DL27 format) must
+    /// produce an `Oauth2Session` with `upstream_connector = None` and
+    /// `upstream_refresh_state = None`.
+    #[test]
+    fn test_oauth2_session_v3_roundtrip_new_fields_default_to_none() {
+        let session_uuid = Uuid::new_v4();
+        let rs_uuid = Uuid::new_v4();
+
+        let v3 = DbValueOauth2Session::V3 {
+            refer: session_uuid,
+            parent: None,
+            state: DbValueSessionStateV1::ExpiresAt("1970-01-01T00:01:40Z".to_string()),
+            issued_at: "1970-01-01T00:00:00Z".to_string(),
+            rs_uuid,
+        };
+
+        let vs = ValueSetOauth2Session::from_dbvs2(vec![v3]).expect("decode V3");
+        let map = vs.as_oauth2session_map().expect("oauth2session map");
+        let session = map.get(&session_uuid).expect("session present");
+
+        assert!(
+            session.upstream_connector.is_none(),
+            "upstream_connector must default to None for V3 records"
+        );
+        assert!(
+            session.upstream_refresh_state.is_none(),
+            "upstream_refresh_state must default to None for V3 records"
+        );
+        assert_eq!(session.rs_uuid, rs_uuid);
+    }
+
+    /// T031b — a V4 `DbValueOauth2Session` with `upstream_connector` and
+    /// `upstream_refresh_state` set to `Some(_)` round-trips through
+    /// `from_dbvs2` and back to `to_db_valueset_v2` without data loss.
+    #[test]
+    fn test_oauth2_session_v4_roundtrip_connector_fields_preserved() {
+        let session_uuid = Uuid::new_v4();
+        let rs_uuid = Uuid::new_v4();
+        let connector_uuid = Uuid::new_v4();
+        let state_blob = vec![0xde, 0xad, 0xbe, 0xef];
+
+        let v4 = DbValueOauth2Session::V4 {
+            refer: session_uuid,
+            parent: None,
+            state: DbValueSessionStateV1::Never,
+            issued_at: "1970-01-01T00:00:00Z".to_string(),
+            rs_uuid,
+            upstream_connector: Some(connector_uuid),
+            upstream_refresh_state: Some(state_blob.clone()),
+        };
+
+        // Decode V4 → in-memory Oauth2Session.
+        let vs = ValueSetOauth2Session::from_dbvs2(vec![v4]).expect("decode V4");
+        let map = vs.as_oauth2session_map().expect("oauth2session map");
+        let session = map.get(&session_uuid).expect("session present");
+
+        assert_eq!(
+            session.upstream_connector,
+            Some(connector_uuid),
+            "upstream_connector must round-trip"
+        );
+        assert_eq!(
+            session.upstream_refresh_state,
+            Some(state_blob.clone()),
+            "upstream_refresh_state must round-trip"
+        );
+
+        // Re-encode → must produce a V4 variant with the same fields.
+        let db_values = vs.to_db_valueset_v2();
+        let crate::be::dbvalue::DbValueSetV2::Oauth2Session(serialized) = db_values else {
+            panic!("expected Oauth2Session db valueset")
+        };
+        assert_eq!(serialized.len(), 1);
+        let encoded = &serialized[0];
+        match encoded {
+            DbValueOauth2Session::V4 {
+                refer,
+                upstream_connector,
+                upstream_refresh_state,
+                ..
+            } => {
+                assert_eq!(*refer, session_uuid);
+                assert_eq!(*upstream_connector, Some(connector_uuid));
+                assert_eq!(*upstream_refresh_state, Some(state_blob));
+            }
+            _ => panic!("expected V4 encoding; got a different variant"),
+        }
     }
 }

@@ -18,7 +18,7 @@
 //! site maps to `Oauth2Error::InvalidGrant` per FR-003.
 //!
 //! This PR (PR-REFRESH-CLAIMS) ships the trait, the registry plumbing,
-//! and a test-only [`TestMockConnector`] so the refresh-path code can
+//! and a test-only `TestMockConnector` so the refresh-path code can
 //! be exercised end-to-end in the testkit. No concrete production
 //! connector lands here — PR-CONNECTOR-GITHUB (#4) and the subsequent
 //! per-connector PRs implement [`RefreshableConnector`] for their
