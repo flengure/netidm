@@ -9197,6 +9197,179 @@ mod tests {
         w.commit().expect("stamp commit");
     }
 
+    // T043 — connector-dispatch overhead stays within 20% of the None-branch baseline (SC-005).
+    //
+    // Both branches share one `setup_refresh_token` call (avoiding UUID conflicts from
+    // calling it twice). The None branch runs first; then the connector is registered
+    // and the same session chain continues into the mock branch.
+    // N=5 is intentionally small to keep CI fast; 100 would give tighter statistics.
+    #[idm_test]
+    async fn test_refresh_overhead_within_budget(
+        idms: &IdmServer,
+        idms_delayed: &mut IdmServerDelayed,
+    ) {
+        use crate::idm::oauth2_connector::TestMockConnector;
+
+        const N: usize = 5;
+
+        let ct0 = Duration::from_secs(TEST_CURRENT_TIME);
+        let (mut atr, client_authz) = setup_refresh_token(idms, idms_delayed, ct0).await;
+
+        // ── None-branch baseline ──────────────────────────────────────────────
+
+        let mut none_elapsed = Duration::ZERO;
+        for i in 0..N {
+            let ct = ct0 + Duration::from_secs(10 * (i as u64 + 1));
+            let mut w = idms.proxy_write(ct).await.expect("proxy_write none");
+            let refresh_token = atr.refresh_token.as_ref().expect("refresh token").clone();
+            let t = std::time::Instant::now();
+            atr = w
+                .check_oauth2_token_exchange(
+                    &client_authz,
+                    &GrantTypeReq::RefreshToken {
+                        refresh_token,
+                        scope: None,
+                    }
+                    .into(),
+                    ct,
+                )
+                .expect("none-branch refresh");
+            none_elapsed += t.elapsed();
+            w.commit().expect("commit none");
+        }
+
+        // ── Mock-branch with connector dispatch ──────────────────────────────
+
+        let connector_uuid = Uuid::new_v4();
+        let mock = std::sync::Arc::new(TestMockConnector::new(UUID_TESTPERSON_1.to_string()));
+        mock.set_groups(vec![]);
+        idms.connector_registry()
+            .register(connector_uuid, std::sync::Arc::clone(&mock) as std::sync::Arc<_>);
+
+        let mut mock_elapsed = Duration::ZERO;
+        for i in 0..N {
+            let ct = ct0 + Duration::from_secs(10 * (N as u64 + i as u64 + 1));
+            let refresh_token = atr.refresh_token.as_ref().expect("refresh token").clone();
+
+            // Stamp outside the timed window — connector binding is setup overhead.
+            stamp_connector_onto_session(idms, &client_authz, &refresh_token, connector_uuid, ct)
+                .await;
+
+            let mut w = idms.proxy_write(ct).await.expect("proxy_write mock");
+            let t = std::time::Instant::now();
+            atr = w
+                .check_oauth2_token_exchange(
+                    &client_authz,
+                    &GrantTypeReq::RefreshToken {
+                        refresh_token,
+                        scope: None,
+                    }
+                    .into(),
+                    ct,
+                )
+                .expect("mock-branch refresh");
+            mock_elapsed += t.elapsed();
+            w.commit().expect("commit mock");
+        }
+
+        // ── Budget assertion (SC-005) ────────────────────────────────────────
+        // Add a 25 ms per-call floor to avoid false failures when both branches
+        // complete in microseconds (making the 20% ratio noisy).
+        let budget = none_elapsed.mul_f64(1.20) + Duration::from_millis(25) * N as u32;
+        assert!(
+            mock_elapsed <= budget,
+            "connector-dispatch overhead ({mock_elapsed:?}) exceeds SC-005 budget; None baseline={none_elapsed:?}, budget={budget:?}"
+        );
+    }
+
+    // T032 — pre-DL27 session (upstream_connector = None) takes the cached-claims path.
+    //
+    // Sessions minted before DL27 carry `upstream_connector = None`. The refresh
+    // path must fall through to the existing cached-claims code without touching the
+    // connector registry. The rotated session must also carry `None` so that
+    // repeated refreshes never accidentally gain a connector binding.
+    #[idm_test]
+    async fn test_refresh_predl27_session_passes_through(
+        idms: &IdmServer,
+        idms_delayed: &mut IdmServerDelayed,
+    ) {
+        use crate::idm::oauth2_connector::TestMockConnector;
+
+        let ct = Duration::from_secs(TEST_CURRENT_TIME);
+        let (atr, client_authz) = setup_refresh_token(idms, idms_delayed, ct).await;
+
+        // Register a mock so we can detect if the registry is consulted.
+        // The session has upstream_connector = None, so the mock must NOT be called.
+        let sentinel_uuid = Uuid::new_v4();
+        let mock = std::sync::Arc::new(TestMockConnector::new(UUID_TESTPERSON_1.to_string()));
+        idms.connector_registry()
+            .register(sentinel_uuid, std::sync::Arc::clone(&mock) as std::sync::Arc<_>);
+
+        let refresh_token = atr
+            .refresh_token
+            .as_ref()
+            .expect("refresh token issued")
+            .clone();
+
+        let ct2 = Duration::from_secs(TEST_CURRENT_TIME + 10);
+        let mut w = idms.proxy_write(ct2).await.expect("proxy_write");
+        let token_req: AccessTokenRequest = GrantTypeReq::RefreshToken {
+            refresh_token,
+            scope: None,
+        }
+        .into();
+        let new_atr = w
+            .check_oauth2_token_exchange(&client_authz, &token_req, ct2)
+            .expect("cached-claims refresh must succeed");
+        w.commit().expect("commit");
+
+        // New token issued and differs from the original.
+        assert_ne!(
+            new_atr.access_token, atr.access_token,
+            "rotated access token must differ"
+        );
+
+        // The sentinel mock was never called — connector registry was not consulted.
+        assert_eq!(
+            mock.refresh_call_count(),
+            0,
+            "connector registry must not be consulted for None-connector session"
+        );
+
+        // The rotated session must also carry upstream_connector = None so that
+        // future refreshes do not accidentally bind to a connector.
+        let new_refresh_token = new_atr
+            .refresh_token
+            .as_ref()
+            .expect("new refresh token issued")
+            .clone();
+        let mut w2 = idms.proxy_write(ct2).await.expect("proxy_write 2");
+        let rotated_token_inner = w2
+            .reflect_oauth2_token(&client_authz, &new_refresh_token)
+            .expect("reflect rotated token");
+        let crate::idm::oauth2::Oauth2TokenType::Refresh {
+            session_id: rotated_session_id,
+            uuid: person_uuid_rotated,
+            ..
+        } = rotated_token_inner
+        else {
+            panic!("expected Refresh token type");
+        };
+        let person_entry = w2
+            .qs_write
+            .internal_search_uuid(person_uuid_rotated)
+            .expect("person entry");
+        let rotated_session = person_entry
+            .get_ava_as_oauth2session_map(Attribute::OAuth2Session)
+            .and_then(|m| m.get(&rotated_session_id))
+            .expect("rotated session in entry");
+        assert!(
+            rotated_session.upstream_connector.is_none(),
+            "rotated session must carry upstream_connector = None (cached-claims path must not introduce a binding)"
+        );
+        w2.commit().expect("commit 2");
+    }
+
     // T018 — refresh dispatches to the connector when `upstream_connector` is set.
     #[idm_test]
     async fn test_refresh_dispatches_to_connector_when_bound(
