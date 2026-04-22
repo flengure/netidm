@@ -49,6 +49,9 @@ ldap3_proto = { workspace = true }
 # libsqlite3-sys = { workspace = true }
 num_enum = { workspace = true }
 rand = { workspace = true }
+# PR-CONNECTOR-GITHUB (DL28): outbound REST to GitHub for userinfo /
+# emails / orgs / teams and the token endpoint.
+reqwest = { workspace = true }
 regex = { workspace = true, features = [
     "std",
     "perf",
@@ -100,6 +103,7 @@ ipnet = "2.12.0"
 whoami = { workspace = true }
 
 [dev-dependencies]
+axum = { workspace = true }
 compact_jwt = { workspace = true, features = ["unsafe_release_without_verify"] }
 futures = { workspace = true }
 netidmd_lib_macros = { workspace = true }

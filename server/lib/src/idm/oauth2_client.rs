@@ -54,6 +54,47 @@ impl LinkBy {
     }
 }
 
+/// Discriminator selecting the concrete upstream connector implementation that
+/// handles an `OAuth2Client` entry (DL28+).
+///
+/// Backed by the `oauth2_client_provider_kind` attribute. Absence — and the
+/// case-insensitive `"generic-oidc"` — both map to [`ProviderKind::GenericOidc`],
+/// which is the pre-DL28 behaviour (byte-identical per FR-016). Connector-
+/// specific branches (currently only [`ProviderKind::Github`]) route the auth
+/// flow to a non-OIDC callback handler in `idm::github_connector` — the
+/// generic OIDC code-exchange / userinfo / JWKS path is bypassed entirely.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ProviderKind {
+    /// RFC 6749 + OIDC compliant upstream (the pre-DL28 default).
+    #[default]
+    GenericOidc,
+    /// GitHub / GitHub Enterprise (non-OIDC) — PR-CONNECTOR-GITHUB.
+    Github,
+}
+
+impl ProviderKind {
+    /// Canonical string form for storage in the `oauth2_client_provider_kind`
+    /// attribute. Echoed back by the admin CLI.
+    #[allow(dead_code)]
+    pub fn as_str(self) -> &'static str {
+        match self {
+            ProviderKind::GenericOidc => "generic-oidc",
+            ProviderKind::Github => "github",
+        }
+    }
+
+    /// Lenient parse used at entry-load time. Unknown values and absence both
+    /// fall back to [`ProviderKind::GenericOidc`] so legacy entries stay on
+    /// the OIDC path. Garbage values are logged at `warn` by the caller so
+    /// they surface in `journalctl`.
+    pub fn from_str_or_default(s: &str) -> Self {
+        match s {
+            "github" => ProviderKind::Github,
+            _ => ProviderKind::GenericOidc,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct OAuth2ClientProvider {
     pub(crate) name: String,
@@ -88,6 +129,11 @@ pub struct OAuth2ClientProvider {
     /// login time by
     /// [`crate::idm::group_mapping::reconcile_upstream_memberships`].
     pub(crate) group_mapping: Vec<crate::idm::group_mapping::GroupMapping>,
+    /// Discriminator selecting the concrete connector implementation that
+    /// handles this provider's callback (DL28+). Absence / unknown values
+    /// map to [`ProviderKind::GenericOidc`] — byte-identical behaviour to
+    /// DL27 per FR-016.
+    pub(crate) provider_kind: ProviderKind,
 }
 
 impl fmt::Debug for OAuth2ClientProvider {
@@ -144,6 +190,7 @@ impl OAuth2ClientProvider {
             jwks_uri: None,
             claim_map: BTreeMap::new(),
             group_mapping: Vec::new(),
+            provider_kind: ProviderKind::default(),
         }
     }
 }
@@ -170,7 +217,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             .and_then(|e| e.get_ava_single_bool(Attribute::OAuth2DomainEmailLinkAccounts))
             .unwrap_or(false);
 
-        for provider_entry in oauth2_client_provider_entries {
+        for provider_entry in &oauth2_client_provider_entries {
             let uuid = provider_entry.get_uuid();
             trace!(?uuid, "Checking OAuth2 Provider configuration");
 
@@ -286,6 +333,22 @@ impl IdmServerProxyWriteTransaction<'_> {
                 }
             }
 
+            let provider_kind = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| {
+                    let kind = ProviderKind::from_str_or_default(s);
+                    if s != "generic-oidc" && s != "github" {
+                        warn!(
+                            ?uuid,
+                            value = %s,
+                            "OAuth2 provider has an unrecognised oauth2_client_provider_kind \
+                             value; falling back to ProviderKind::GenericOidc"
+                        );
+                    }
+                    kind
+                })
+                .unwrap_or_default();
+
             let provider = OAuth2ClientProvider {
                 name,
                 display_name,
@@ -305,6 +368,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 jwks_uri,
                 claim_map,
                 group_mapping,
+                provider_kind,
             };
 
             oauth2_client_provider_structs.push((uuid, provider));
@@ -317,7 +381,38 @@ impl IdmServerProxyWriteTransaction<'_> {
         self.oauth2_client_providers
             .extend(oauth2_client_provider_structs);
 
-        // Done!
+        // T017: register GitHub connectors with the ConnectorRegistry.
+        // Iterate all GitHub-kind entries a second time (list is already
+        // resolved above; connector build may be slightly expensive so we
+        // keep it separate from the main loop). Failures are logged at error
+        // but MUST NOT prevent netidmd from starting.
+        for provider_entry in &oauth2_client_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_github = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| s == "github")
+                .unwrap_or(false);
+            if !is_github {
+                continue;
+            }
+            match crate::idm::github_connector::GitHubConfig::from_entry(provider_entry) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::github_connector::GitHubConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered GitHub connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build GitHub connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
         Ok(())
     }
 }

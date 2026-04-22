@@ -1251,6 +1251,105 @@ pub enum Oauth2Opt {
         /// OAuth2 client name.
         name: String,
     },
+    /// Set the provider kind discriminator. Use "github" for GitHub / GHE connectors.
+    #[clap(name = "set-provider-kind")]
+    SetProviderKind {
+        /// OAuth2 client name.
+        name: String,
+        /// Provider kind value (e.g. "github").
+        kind: String,
+    },
+    /// Set the GitHub / GitHub Enterprise base URL (e.g. https://github.example.com/).
+    /// Defaults to https://github.com/ when absent.
+    #[clap(name = "github-set-host")]
+    GithubSetHost {
+        /// OAuth2 client name.
+        name: String,
+        /// Base URL of the GitHub or GHE instance.
+        url: String,
+    },
+    /// Add an org name to the GitHub connector's org-filter list.
+    /// When non-empty, only teams from the listed orgs appear in group claims.
+    #[clap(name = "github-add-org-filter")]
+    GithubAddOrgFilter {
+        /// OAuth2 client name.
+        name: String,
+        /// GitHub organisation login name.
+        org: String,
+    },
+    /// Remove an org name from the GitHub connector's org-filter list.
+    #[clap(name = "github-remove-org-filter")]
+    GithubRemoveOrgFilter {
+        /// OAuth2 client name.
+        name: String,
+        /// GitHub organisation login name.
+        org: String,
+    },
+    /// Add a team slug (org:team) to the GitHub connector's access gate.
+    /// When non-empty, users must be in at least one listed team to log in.
+    #[clap(name = "github-add-allowed-team")]
+    GithubAddAllowedTeam {
+        /// OAuth2 client name.
+        name: String,
+        /// Team slug in "org:team" format.
+        team: String,
+    },
+    /// Remove a team slug from the GitHub connector's access gate.
+    #[clap(name = "github-remove-allowed-team")]
+    GithubRemoveAllowedTeam {
+        /// OAuth2 client name.
+        name: String,
+        /// Team slug in "org:team" format.
+        team: String,
+    },
+    /// Set which GitHub team name field is used in group claims.
+    /// Valid values: slug (default), name, both.
+    #[clap(name = "github-set-team-name-field")]
+    GithubSetTeamNameField {
+        /// OAuth2 client name.
+        name: String,
+        /// Field selector: slug, name, or both.
+        field: String,
+    },
+    /// Enable loading all GitHub team memberships as group claims.
+    #[clap(name = "github-enable-load-all-groups")]
+    GithubEnableLoadAllGroups {
+        /// OAuth2 client name.
+        name: String,
+    },
+    /// Disable loading all GitHub team memberships as group claims.
+    #[clap(name = "github-disable-load-all-groups")]
+    GithubDisableLoadAllGroups {
+        /// OAuth2 client name.
+        name: String,
+    },
+    /// Set the preferred email domain for the GitHub connector.
+    /// The connector picks email from this domain first among verified GitHub emails.
+    #[clap(name = "github-set-preferred-email-domain")]
+    GithubSetPreferredEmailDomain {
+        /// OAuth2 client name.
+        name: String,
+        /// Domain string (e.g. "example.com").
+        domain: String,
+    },
+    /// Clear the preferred email domain on a GitHub connector.
+    #[clap(name = "github-clear-preferred-email-domain")]
+    GithubClearPreferredEmailDomain {
+        /// OAuth2 client name.
+        name: String,
+    },
+    /// Enable Just-In-Time provisioning for the GitHub connector.
+    #[clap(name = "github-enable-jit-provisioning")]
+    GithubEnableJitProvisioning {
+        /// OAuth2 client name.
+        name: String,
+    },
+    /// Disable Just-In-Time provisioning for the GitHub connector.
+    #[clap(name = "github-disable-jit-provisioning")]
+    GithubDisableJitProvisioning {
+        /// OAuth2 client name.
+        name: String,
+    },
 }
 
 #[derive(Args, Debug, Clone)]

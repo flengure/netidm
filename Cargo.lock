@@ -4937,6 +4937,7 @@ name = "netidmd_lib"
 version = "0.1.12-dev"
 dependencies = [
  "async-trait",
+ "axum",
  "base64 0.22.1",
  "base64urlsafedata 0.6.0-dev",
  "bitflags 2.11.1",
@@ -4965,6 +4966,7 @@ dependencies = [
  "num_enum",
  "rand 0.10.1",
  "regex",
+ "reqwest 0.13.2",
  "rusqlite",
  "rustls",
  "samael",
@@ -5008,6 +5010,7 @@ dependencies = [
  "compact_jwt",
  "escargot",
  "futures",
+ "hashbrown 0.17.0",
  "hex",
  "http-body-util",
  "hyper",

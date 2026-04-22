@@ -2,7 +2,7 @@ use super::{CredState, BAD_AUTH_TYPE_MSG, BAD_OAUTH2_CSRF_STATE_MSG};
 use crate::idm::account::OAuth2AccountCredential;
 use crate::idm::authentication::{AuthCredential, AuthExternal};
 use crate::idm::oauth2::PkceS256Secret;
-use crate::idm::oauth2_client::OAuth2ClientProvider;
+use crate::idm::oauth2_client::{OAuth2ClientProvider, ProviderKind};
 use crate::prelude::*;
 use crate::utils;
 use crate::value::{AuthType, SessionExtMetadata};
@@ -64,6 +64,12 @@ pub struct CredHandlerOAuth2Client {
     /// reconciliation hook that per-connector PRs will add on the
     /// already-linked login path.
     group_mapping: Vec<crate::idm::group_mapping::GroupMapping>,
+    /// Connector dispatch discriminator snapshot from the provider entry
+    /// (DL28+). [`ProviderKind::GenericOidc`] preserves pre-DL28
+    /// behaviour; [`ProviderKind::Github`] short-circuits the
+    /// `OAuth2AuthorisationResponse` validator to the GitHub connector
+    /// (stubbed in T009; full implementation in T013).
+    provider_kind: ProviderKind,
 }
 
 impl fmt::Debug for CredHandlerOAuth2Client {
@@ -107,6 +113,7 @@ impl CredHandlerOAuth2Client {
             email_link_accounts: client_provider.email_link_accounts,
             claim_map: client_provider.claim_map.clone(),
             group_mapping: client_provider.group_mapping.clone(),
+            provider_kind: client_provider.provider_kind,
         }
     }
 
@@ -154,6 +161,29 @@ impl CredHandlerOAuth2Client {
     }
 
     fn validate_authorisation_response(&self, code: &str, state: Option<&str>) -> CredState {
+        // DL28 connector dispatch (FR-016): providers whose entry carries
+        // `oauth2_client_provider_kind = "github"` bypass the OIDC code-
+        // exchange / userinfo / JWKS path entirely. Absence of the attribute,
+        // or `"generic-oidc"`, resolves to `ProviderKind::GenericOidc` in
+        // `reload_oauth2_client_providers` and falls through to the pre-DL28
+        // path below — byte-identical to DL27.
+        if self.provider_kind == ProviderKind::Github {
+            // Validate CSRF state before dispatching (same check as the OIDC
+            // path below; must not be skipped for GitHub).
+            let csrf_valid = state.map(|s| s == self.csrf_state).unwrap_or_default();
+            if !csrf_valid {
+                return CredState::Denied(BAD_OAUTH2_CSRF_STATE_MSG);
+            }
+            // Hand the code to the HTTP loop which calls GitHubConnector::fetch_callback_claims
+            // (PR-CONNECTOR-GITHUB, T013). The loop transitions to ProvisioningRequired once
+            // claims are available.
+            return CredState::External(AuthExternal::GitHubCallbackRequest {
+                code: code.to_string(),
+                provider_uuid: self.provider_id,
+                email_link_accounts: self.email_link_accounts,
+            });
+        }
+
         // Validate our csrf state
 
         let csrf_valid = state.map(|s| s == self.csrf_state).unwrap_or_default();

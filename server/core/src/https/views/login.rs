@@ -1384,6 +1384,44 @@ async fn view_login_step(
                         error!("SamlAuthnRequest returned in auth session loop — this is a bug");
                         return Err(OperationError::InvalidState);
                     }
+                    AuthExternal::GitHubCallbackRequest {
+                        code,
+                        provider_uuid,
+                        email_link_accounts,
+                    } => {
+                        // Call the registered GitHubConnector to exchange the code
+                        // and fetch all claims (T013 — PR-CONNECTOR-GITHUB).
+                        let connector = state.qe_r_ref.idms.connector_registry().get(provider_uuid);
+                        let Some(connector) = connector else {
+                            error!(
+                                ?provider_uuid,
+                                "GitHub connector not found in registry — \
+                                 provider may not have been loaded at startup"
+                            );
+                            return Err(OperationError::InvalidState);
+                        };
+                        let claims = connector.fetch_callback_claims(&code).await.map_err(|e| {
+                            use netidmd_lib::idm::oauth2_connector::ConnectorRefreshError;
+                            match &e {
+                                ConnectorRefreshError::AccessDenied => {
+                                    // already logged at info inside check_access_gate
+                                }
+                                _ => warn!(?provider_uuid, ?e, "GitHub callback failed"),
+                            }
+                            match e {
+                                ConnectorRefreshError::AccessDenied => {
+                                    OperationError::NotAuthenticated
+                                }
+                                _ => OperationError::InvalidState,
+                            }
+                        })?;
+                        auth_state = AuthState::ProvisioningRequired {
+                            provider_uuid,
+                            claims,
+                            email_link_accounts,
+                        };
+                        continue;
+                    }
                 }
             }
             AuthState::Success(token, issue) => {

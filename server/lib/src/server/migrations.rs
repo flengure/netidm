@@ -79,6 +79,7 @@ impl QueryServer {
                 DOMAIN_LEVEL_25 => write_txn.migrate_domain_24_to_25()?,
                 DOMAIN_LEVEL_26 => write_txn.migrate_domain_25_to_26()?,
                 DOMAIN_LEVEL_27 => write_txn.migrate_domain_26_to_27()?,
+                DOMAIN_LEVEL_28 => write_txn.migrate_domain_27_to_28()?,
                 _ => {
                     error!("Invalid requested domain target level for server bootstrap");
                     debug_assert!(false);
@@ -1653,6 +1654,93 @@ impl QueryServerWriteTransaction<'_> {
         self.migrate_domain_25_to_26()
     }
 
+    /// DL28 — PR-CONNECTOR-GITHUB.
+    ///
+    /// Adds one discriminator attribute (`OAuth2ClientProviderKind`) + seven
+    /// GitHub-specific config attributes on `EntryClass::OAuth2Client`, plus
+    /// a DL28 refresh of `idm_acp_oauth2_client_admin` covering the new
+    /// attrs. No new entry class.
+    ///
+    /// Runs the full DL28 phase batches (schema attrs, ACP refresh) with
+    /// `internal_migrate_or_create_batch` semantics — idempotent on
+    /// incremental DL27→DL28 upgrades, and produces a complete base IDM on
+    /// bootstrap (DL0→DL28) by delegating phases 2–8 through the DL28→DL26
+    /// chain.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OperationError::MG0004DomainLevelInDevelopment`] if this
+    /// level is not yet enabled in the current build, or any error from
+    /// the underlying phase batches.
+    pub(crate) fn migrate_domain_27_to_28(&mut self) -> Result<(), OperationError> {
+        if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_28 {
+            error!("Unable to raise domain level from 27 to 28.");
+            return Err(OperationError::MG0004DomainLevelInDevelopment);
+        }
+
+        // Run the full DL28 phase chain. `dl28::phase_N` inherits
+        // `dl26::phase_N` for the phases DL28 doesn't extend, so
+        // bootstrap (DL0 → DL28) produces a complete base IDM;
+        // incremental upgrade from DL27 is idempotent.
+
+        self.internal_migrate_or_create_batch(
+            &format!("phase 1 - schema attrs target {}", DOMAIN_TGT_LEVEL),
+            migration_data::dl28::phase_1_schema_attrs(),
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 2 - schema classes",
+            migration_data::dl28::phase_2_schema_classes(),
+        )?;
+
+        self.reload()?;
+        self.reindex(false)?;
+        self.set_phase(ServerPhase::SchemaReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 3 - key provider",
+            migration_data::dl28::phase_3_key_provider(),
+        )?;
+
+        self.reload()?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 4 - dl28 system entries",
+            migration_data::dl28::phase_4_system_entries(),
+        )?;
+
+        self.reload()?;
+        self.set_phase(ServerPhase::DomainInfoReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 5 - builtin admin entries",
+            migration_data::dl28::phase_5_builtin_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 6 - builtin not admin entries",
+            migration_data::dl28::phase_6_builtin_non_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 7 - builtin access control profiles",
+            migration_data::dl28::phase_7_builtin_access_control_profiles(),
+        )?;
+
+        self.internal_delete_batch(
+            "phase 8 - delete UUIDs",
+            migration_data::dl28::phase_8_delete_uuids(),
+        )?;
+
+        self.reload()?;
+
+        // Delegate to DL26's backfill (SAML session indices). DL28
+        // adds no further backfill of its own.
+        self.backfill_saml_session_indices()?;
+
+        Ok(())
+    }
+
     pub(crate) fn migrate_domain_25_to_26(&mut self) -> Result<(), OperationError> {
         if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_26 {
             error!("Unable to raise domain level from 25 to 26.");
@@ -2442,6 +2530,190 @@ mod tests {
         write_txn
             .internal_search_uuid(UUID_IDM_ACP_LOGOUT_DELIVERY_READ)
             .expect("UUID_IDM_ACP_LOGOUT_DELIVERY_READ missing after DL26 migration");
+
+        write_txn.commit().expect("Unable to commit");
+    }
+
+    /// DL27 → DL28: asserts that the eight new schema attributes introduced
+    /// for the GitHub upstream connector (one discriminator + seven
+    /// GitHub-specific config attrs) are reachable through the schema after
+    /// migration, and that an `OAuth2Client` entry can round-trip each new
+    /// attribute through a write → commit → read cycle (which exercises both
+    /// the schema-class extension and the DL28 ACP refresh).
+    #[qs_test(domain_level=DOMAIN_LEVEL_27)]
+    async fn test_migrations_dl27_dl28(server: &QueryServer) {
+        let mut write_txn = server.write(duration_from_epoch_now()).await.unwrap();
+
+        let db_domain_version = write_txn
+            .internal_search_uuid(UUID_DOMAIN_INFO)
+            .expect("unable to access domain entry")
+            .get_ava_single_uint32(Attribute::Version)
+            .expect("Attribute Version not present");
+
+        assert_eq!(db_domain_version, DOMAIN_LEVEL_27);
+
+        write_txn
+            .internal_apply_domain_migration(DOMAIN_LEVEL_28)
+            .expect("Unable to set domain level to version 28");
+
+        // The eight new DL28 schema attributes must resolve by UUID after
+        // migration — that is, the schema phase has loaded them.
+        for (uuid, label) in [
+            (
+                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_PROVIDER_KIND,
+                "OAUTH2_CLIENT_PROVIDER_KIND",
+            ),
+            (
+                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_HOST,
+                "OAUTH2_CLIENT_GITHUB_HOST",
+            ),
+            (
+                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER,
+                "OAUTH2_CLIENT_GITHUB_ORG_FILTER",
+            ),
+            (
+                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS,
+                "OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS",
+            ),
+            (
+                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD,
+                "OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD",
+            ),
+            (
+                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS,
+                "OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS",
+            ),
+            (
+                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN,
+                "OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN",
+            ),
+            (
+                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING,
+                "OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING",
+            ),
+        ] {
+            write_txn.internal_search_uuid(uuid).unwrap_or_else(|_| {
+                panic!("UUID_SCHEMA_ATTR_{label} missing after DL28 migration")
+            });
+        }
+
+        // Round-trip: create an OAuth2Client entry carrying all eight
+        // DL28 attrs. Bound by schema, so success proves both that the
+        // `OAuth2Client` class was extended to include them in `systemmay`
+        // and that their declared syntaxes match the values we pass.
+        let client_uuid = Uuid::new_v4();
+        write_txn
+            .internal_create(vec![entry_init!(
+                (Attribute::Class, EntryClass::Object.to_value()),
+                (Attribute::Class, EntryClass::OAuth2Client.to_value()),
+                (Attribute::Name, Value::new_iname("test_github_connector")),
+                (Attribute::Uuid, Value::Uuid(client_uuid)),
+                (Attribute::DisplayName, Value::new_utf8s("Test GitHub")),
+                (
+                    Attribute::OAuth2ClientId,
+                    Value::new_utf8s("github-client-id")
+                ),
+                (
+                    Attribute::OAuth2ClientSecret,
+                    Value::new_utf8s("github-client-secret")
+                ),
+                (
+                    Attribute::OAuth2AuthorisationEndpoint,
+                    Value::new_url_s("https://github.com/login/oauth/authorize")
+                        .expect("valid url")
+                ),
+                (
+                    Attribute::OAuth2TokenEndpoint,
+                    Value::new_url_s("https://github.com/login/oauth/access_token")
+                        .expect("valid url")
+                ),
+                (
+                    Attribute::OAuth2RequestScopes,
+                    Value::new_oauthscope("read_user").expect("valid oauth scope")
+                ),
+                (
+                    Attribute::OAuth2ClientProviderKind,
+                    Value::new_iutf8("github")
+                ),
+                (
+                    Attribute::OAuth2ClientGithubHost,
+                    Value::new_url_s("https://github.acme.internal").expect("valid url")
+                ),
+                (
+                    Attribute::OAuth2ClientGithubOrgFilter,
+                    Value::new_utf8s("acme")
+                ),
+                (
+                    Attribute::OAuth2ClientGithubOrgFilter,
+                    Value::new_utf8s("widgetco")
+                ),
+                (
+                    Attribute::OAuth2ClientGithubAllowedTeams,
+                    Value::new_utf8s("acme:employees")
+                ),
+                (
+                    Attribute::OAuth2ClientGithubTeamNameField,
+                    Value::new_iutf8("slug")
+                ),
+                (
+                    Attribute::OAuth2ClientGithubLoadAllGroups,
+                    Value::Bool(true)
+                ),
+                (
+                    Attribute::OAuth2ClientGithubPreferredEmailDomain,
+                    Value::new_iutf8("acme.com")
+                ),
+                (
+                    Attribute::OAuth2ClientGithubAllowJitProvisioning,
+                    Value::Bool(false)
+                )
+            )])
+            .expect("Unable to create DL28 OAuth2Client test entry");
+
+        // Read-back each attribute to confirm round-trip.
+        let read_back = write_txn
+            .internal_search_uuid(client_uuid)
+            .expect("Unable to retrieve DL28 OAuth2Client test entry");
+
+        assert_eq!(
+            read_back.get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind),
+            Some("github")
+        );
+        assert_eq!(
+            read_back
+                .get_ava_single_url(Attribute::OAuth2ClientGithubHost)
+                .map(|u| u.as_str()),
+            Some("https://github.acme.internal/")
+        );
+        let org_filter: std::collections::BTreeSet<&str> = read_back
+            .get_ava_set(Attribute::OAuth2ClientGithubOrgFilter)
+            .and_then(|vs| vs.as_utf8_iter())
+            .expect("org filter present")
+            .collect();
+        assert!(org_filter.contains("acme"));
+        assert!(org_filter.contains("widgetco"));
+        let allowed_teams: std::collections::BTreeSet<&str> = read_back
+            .get_ava_set(Attribute::OAuth2ClientGithubAllowedTeams)
+            .and_then(|vs| vs.as_utf8_iter())
+            .expect("allowed teams present")
+            .collect();
+        assert!(allowed_teams.contains("acme:employees"));
+        assert_eq!(
+            read_back.get_ava_single_iutf8(Attribute::OAuth2ClientGithubTeamNameField),
+            Some("slug")
+        );
+        assert_eq!(
+            read_back.get_ava_single_bool(Attribute::OAuth2ClientGithubLoadAllGroups),
+            Some(true)
+        );
+        assert_eq!(
+            read_back.get_ava_single_iutf8(Attribute::OAuth2ClientGithubPreferredEmailDomain),
+            Some("acme.com")
+        );
+        assert_eq!(
+            read_back.get_ava_single_bool(Attribute::OAuth2ClientGithubAllowJitProvisioning),
+            Some(false)
+        );
 
         write_txn.commit().expect("Unable to commit");
     }

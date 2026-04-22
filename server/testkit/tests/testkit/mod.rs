@@ -1,5 +1,7 @@
 mod apidocs;
 mod domain;
+mod github_connector_test;
+mod github_mock;
 mod group;
 mod group_mapping_test;
 mod http_manifest;

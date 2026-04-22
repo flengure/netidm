@@ -80,6 +80,20 @@ pub trait RefreshableConnector: Send + Sync {
         session_state: &[u8],
         previous_claims: &ExternalUserClaims,
     ) -> Result<RefreshOutcome, ConnectorRefreshError>;
+
+    /// Exchange an OAuth2 `code` for user claims by making the full
+    /// upstream API call chain. Implemented by connectors that bypass
+    /// the OIDC state machine (PR-CONNECTOR-GITHUB, T013). The default
+    /// returns `ConnectorRefreshError::Other` so non-GitHub connectors
+    /// are unaffected.
+    async fn fetch_callback_claims(
+        &self,
+        _code: &str,
+    ) -> Result<ExternalUserClaims, ConnectorRefreshError> {
+        Err(ConnectorRefreshError::Other(
+            "fetch_callback_claims not implemented for this connector".to_string(),
+        ))
+    }
 }
 
 /// Successful outcome of [`RefreshableConnector::refresh`]. Carries
@@ -130,6 +144,11 @@ pub enum ConnectorRefreshError {
     /// Anything else the connector could not categorise. Keep for
     /// forward-compatibility with connector-internal error types.
     Other(String),
+    /// The user's upstream team memberships do not intersect the connector's
+    /// `allowed_teams` list. No Person state has been touched. The caller
+    /// MUST render an "access denied" page and MUST NOT create or modify any
+    /// local account (FR-005a / T023).
+    AccessDenied,
 }
 
 impl std::fmt::Display for ConnectorRefreshError {
@@ -152,6 +171,12 @@ impl std::fmt::Display for ConnectorRefreshError {
             }
             ConnectorRefreshError::Other(msg) => {
                 write!(f, "connector error: {msg}")
+            }
+            ConnectorRefreshError::AccessDenied => {
+                write!(
+                    f,
+                    "access denied: team membership does not satisfy connector policy"
+                )
             }
         }
     }

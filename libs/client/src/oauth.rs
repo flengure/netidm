@@ -4,8 +4,12 @@ use netidm_proto::constants::{
     ATTR_DISPLAYNAME, ATTR_KEY_ACTION_REVOKE, ATTR_KEY_ACTION_ROTATE, ATTR_NAME,
     ATTR_OAUTH2_ALLOW_INSECURE_CLIENT_DISABLE_PKCE, ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT,
     ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
-    ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME, ATTR_OAUTH2_CLIENT_ID,
-    ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
+    ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME,
+    ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS, ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING,
+    ATTR_OAUTH2_CLIENT_GITHUB_HOST, ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS,
+    ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER, ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN,
+    ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD, ATTR_OAUTH2_CLIENT_ID,
+    ATTR_OAUTH2_CLIENT_PROVIDER_KIND, ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
     ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS,
     ATTR_OAUTH2_GROUP_MAPPING, ATTR_OAUTH2_ISSUER, ATTR_OAUTH2_JIT_PROVISIONING,
     ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE, ATTR_OAUTH2_LINK_BY,
@@ -996,6 +1000,290 @@ impl NetidmClient {
             .attrs
             .insert(attr_key.to_string(), vec![provider_claim.to_string()]);
         self.perform_patch_request(format!("/v1/oauth2/{id}").as_str(), entry)
+            .await
+    }
+
+    /// Set the provider kind discriminator on an OAuth2 client entry.
+    /// Use `"github"` for GitHub / GitHub Enterprise connectors.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer or the
+    /// server rejects the value.
+    pub async fn idm_oauth2_client_set_provider_kind(
+        &self,
+        id: &str,
+        kind: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_PROVIDER_KIND.to_string(),
+            vec![kind.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    /// Set the GitHub / GitHub Enterprise base URL for this connector.
+    /// Defaults to `https://github.com/` when absent. Set to your GHE
+    /// appliance root (e.g. `https://github.example.com/`) to route all
+    /// OAuth and API calls through that host.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails or the server rejects the URL.
+    pub async fn idm_oauth2_client_github_set_host(
+        &self,
+        id: &str,
+        url: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_GITHUB_HOST.to_string(),
+            vec![url.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    /// Add an org name to the GitHub connector's org-filter list.
+    /// When the list is non-empty only teams belonging to the listed orgs
+    /// appear in the user's group claims. The filter is a group-mapping
+    /// filter only — it never rejects logins.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_oauth2_client_github_add_org_filter(
+        &self,
+        id: &str,
+        org: &str,
+    ) -> Result<(), ClientError> {
+        let mut current: Vec<String> = self
+            .idm_oauth2_client_get(id)
+            .await?
+            .and_then(|e| e.attrs.get(ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER).cloned())
+            .unwrap_or_default();
+        if !current.contains(&org.to_string()) {
+            current.push(org.to_string());
+        }
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry
+            .attrs
+            .insert(ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER.to_string(), current);
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    /// Remove an org name from the GitHub connector's org-filter list.
+    /// Idempotent: removing an org not in the list succeeds with no side effect.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_oauth2_client_github_remove_org_filter(
+        &self,
+        id: &str,
+        org: &str,
+    ) -> Result<(), ClientError> {
+        let current: Vec<String> = self
+            .idm_oauth2_client_get(id)
+            .await?
+            .and_then(|e| e.attrs.get(ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER).cloned())
+            .unwrap_or_default();
+        let updated: Vec<String> = current.into_iter().filter(|v| v != org).collect();
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry
+            .attrs
+            .insert(ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER.to_string(), updated);
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    /// Add a team slug (`org:team`) to the GitHub connector's allowed-teams
+    /// access gate. When the list is non-empty, users must be a member of at
+    /// least one listed team to complete login.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_oauth2_client_github_add_allowed_team(
+        &self,
+        id: &str,
+        team: &str,
+    ) -> Result<(), ClientError> {
+        let mut current: Vec<String> = self
+            .idm_oauth2_client_get(id)
+            .await?
+            .and_then(|e| {
+                e.attrs
+                    .get(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS)
+                    .cloned()
+            })
+            .unwrap_or_default();
+        if !current.contains(&team.to_string()) {
+            current.push(team.to_string());
+        }
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry
+            .attrs
+            .insert(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS.to_string(), current);
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    /// Remove a team slug from the GitHub connector's allowed-teams gate.
+    /// Idempotent.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_oauth2_client_github_remove_allowed_team(
+        &self,
+        id: &str,
+        team: &str,
+    ) -> Result<(), ClientError> {
+        let current: Vec<String> = self
+            .idm_oauth2_client_get(id)
+            .await?
+            .and_then(|e| {
+                e.attrs
+                    .get(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS)
+                    .cloned()
+            })
+            .unwrap_or_default();
+        let updated: Vec<String> = current.into_iter().filter(|v| v != team).collect();
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry
+            .attrs
+            .insert(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS.to_string(), updated);
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    /// Set which GitHub team name field is used when mapping teams to netidm
+    /// group names. Valid values: `"slug"` (default), `"name"`, `"both"`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails or the server rejects the value.
+    pub async fn idm_oauth2_client_github_set_team_name_field(
+        &self,
+        id: &str,
+        field: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD.to_string(),
+            vec![field.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    /// Enable or disable loading all GitHub team memberships as group claims
+    /// (regardless of group mappings). When `true`, every team the user
+    /// belongs to appears in their session groups.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_oauth2_client_github_set_load_all_groups(
+        &self,
+        id: &str,
+        enable: bool,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS.to_string(),
+            vec![enable.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    /// Set the preferred email domain for the GitHub connector. When set,
+    /// the connector picks the user's email address from that domain first
+    /// among their verified GitHub emails.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_oauth2_client_github_set_preferred_email_domain(
+        &self,
+        id: &str,
+        domain: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN.to_string(),
+            vec![domain.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    /// Clear the preferred email domain on a GitHub connector.
+    /// After clearing, the connector selects the first verified email
+    /// returned by GitHub. Passing an empty value list via PATCH purges
+    /// the attribute.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_oauth2_client_github_clear_preferred_email_domain(
+        &self,
+        id: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN.to_string(),
+            vec![],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    /// Enable or disable Just-In-Time provisioning for the GitHub connector.
+    /// When enabled, the first login from a GitHub user with no matching
+    /// local Person auto-provisions that Person.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`ClientError`] if the request fails at the HTTP layer.
+    pub async fn idm_oauth2_client_github_set_allow_jit_provisioning(
+        &self,
+        id: &str,
+        enable: bool,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING.to_string(),
+            vec![enable.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 }
