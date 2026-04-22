@@ -134,6 +134,7 @@ pub fn migration_entry_attrs(
             Attribute::OAuth2RsOrigin,
             Attribute::OAuth2RsOriginLanding,
             Attribute::OAuth2ConsentPromptEnable,
+            Attribute::OAuth2AllowInsecureClientDisablePkce,
         ])
     }
 
