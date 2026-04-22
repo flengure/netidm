@@ -217,7 +217,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             .and_then(|e| e.get_ava_single_bool(Attribute::OAuth2DomainEmailLinkAccounts))
             .unwrap_or(false);
 
-        for provider_entry in oauth2_client_provider_entries {
+        for provider_entry in &oauth2_client_provider_entries {
             let uuid = provider_entry.get_uuid();
             trace!(?uuid, "Checking OAuth2 Provider configuration");
 
@@ -381,7 +381,38 @@ impl IdmServerProxyWriteTransaction<'_> {
         self.oauth2_client_providers
             .extend(oauth2_client_provider_structs);
 
-        // Done!
+        // T017: register GitHub connectors with the ConnectorRegistry.
+        // Iterate all GitHub-kind entries a second time (list is already
+        // resolved above; connector build may be slightly expensive so we
+        // keep it separate from the main loop). Failures are logged at error
+        // but MUST NOT prevent netidmd from starting.
+        for provider_entry in &oauth2_client_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_github = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| s == "github")
+                .unwrap_or(false);
+            if !is_github {
+                continue;
+            }
+            match crate::idm::github_connector::GitHubConfig::from_entry(provider_entry) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::github_connector::GitHubConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered GitHub connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build GitHub connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
         Ok(())
     }
 }

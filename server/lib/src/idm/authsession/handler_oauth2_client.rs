@@ -1,7 +1,6 @@
 use super::{CredState, BAD_AUTH_TYPE_MSG, BAD_OAUTH2_CSRF_STATE_MSG};
 use crate::idm::account::OAuth2AccountCredential;
 use crate::idm::authentication::{AuthCredential, AuthExternal};
-use crate::idm::github_connector::GITHUB_CONNECTOR_STUB_MSG;
 use crate::idm::oauth2::PkceS256Secret;
 use crate::idm::oauth2_client::{OAuth2ClientProvider, ProviderKind};
 use crate::prelude::*;
@@ -169,15 +168,20 @@ impl CredHandlerOAuth2Client {
         // `reload_oauth2_client_providers` and falls through to the pre-DL28
         // path below — byte-identical to DL27.
         if self.provider_kind == ProviderKind::Github {
-            // T009 stub: full GitHub callback handler lands in T013.
-            // The `code` is intentionally unused here — captured in tracing
-            // so the dispatch is auditable.
-            let _ = code;
-            trace!(
-                provider_id = ?self.provider_id,
-                "github connector dispatch: stub path (T009) — full handler lands in T013"
-            );
-            return CredState::Denied(GITHUB_CONNECTOR_STUB_MSG);
+            // Validate CSRF state before dispatching (same check as the OIDC
+            // path below; must not be skipped for GitHub).
+            let csrf_valid = state.map(|s| s == self.csrf_state).unwrap_or_default();
+            if !csrf_valid {
+                return CredState::Denied(BAD_OAUTH2_CSRF_STATE_MSG);
+            }
+            // Hand the code to the HTTP loop which calls GitHubConnector::fetch_callback_claims
+            // (PR-CONNECTOR-GITHUB, T013). The loop transitions to ProvisioningRequired once
+            // claims are available.
+            return CredState::External(AuthExternal::GitHubCallbackRequest {
+                code: code.to_string(),
+                provider_uuid: self.provider_id,
+                email_link_accounts: self.email_link_accounts,
+            });
         }
 
         // Validate our csrf state

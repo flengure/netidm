@@ -80,6 +80,20 @@ pub trait RefreshableConnector: Send + Sync {
         session_state: &[u8],
         previous_claims: &ExternalUserClaims,
     ) -> Result<RefreshOutcome, ConnectorRefreshError>;
+
+    /// Exchange an OAuth2 `code` for user claims by making the full
+    /// upstream API call chain. Implemented by connectors that bypass
+    /// the OIDC state machine (PR-CONNECTOR-GITHUB, T013). The default
+    /// returns `ConnectorRefreshError::Other` so non-GitHub connectors
+    /// are unaffected.
+    async fn fetch_callback_claims(
+        &self,
+        _code: &str,
+    ) -> Result<ExternalUserClaims, ConnectorRefreshError> {
+        Err(ConnectorRefreshError::Other(
+            "fetch_callback_claims not implemented for this connector".to_string(),
+        ))
+    }
 }
 
 /// Successful outcome of [`RefreshableConnector::refresh`]. Carries

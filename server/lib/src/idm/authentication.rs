@@ -82,6 +82,17 @@ pub enum AuthExternal {
         saml_request: String,
         relay_state: String,
     },
+    /// GitHub OAuth2 authorisation code ready for the full non-OIDC
+    /// callback (token exchange + /user + /user/emails + /user/orgs +
+    /// /user/teams). The HTTP loop calls the registered
+    /// `GitHubConnector` from `ConnectorRegistry` and transitions
+    /// directly to `AuthState::ProvisioningRequired` with the assembled
+    /// `ExternalUserClaims` (PR-CONNECTOR-GITHUB, T013).
+    GitHubCallbackRequest {
+        code: String,
+        provider_uuid: uuid::Uuid,
+        email_link_accounts: bool,
+    },
 }
 
 impl fmt::Debug for AuthExternal {
@@ -92,6 +103,9 @@ impl fmt::Debug for AuthExternal {
             Self::OAuth2UserinfoRequest { .. } => write!(f, "OAuth2UserinfoRequest"),
             Self::OAuth2JwksRequest { .. } => write!(f, "OAuth2JwksRequest"),
             Self::SamlAuthnRequest { .. } => write!(f, "SamlAuthnRequest"),
+            Self::GitHubCallbackRequest { provider_uuid, .. } => {
+                write!(f, "GitHubCallbackRequest({})", provider_uuid)
+            }
         }
     }
 }
