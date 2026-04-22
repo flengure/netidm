@@ -23,7 +23,7 @@ use netidm_proto::oauth2::{
 use netidmd_lib::constants::NAME_IDM_ALL_ACCOUNTS;
 use netidmd_lib::idm::oauth2::Oauth2Error as Oauth2LibError;
 use netidmd_lib::modify::{Modify, ModifyList};
-use netidmd_lib::prelude::{Attribute, QueryServerTransaction, Value, duration_from_epoch_now};
+use netidmd_lib::prelude::{duration_from_epoch_now, Attribute, QueryServerTransaction, Value};
 use netidmd_lib::value::{Oauth2Session, SessionState};
 use netidmd_testkit::{
     AsyncTestEnvironment, ConnectorRefreshError, TestMockConnector, ADMIN_TEST_PASSWORD,
@@ -274,11 +274,7 @@ async fn stamp_upstream_connector(
 ) {
     let ct = duration_from_epoch_now();
 
-    let mut proxy_read = test_env
-        .idm_server
-        .proxy_read()
-        .await
-        .expect("proxy_read");
+    let mut proxy_read = test_env.idm_server.proxy_read().await.expect("proxy_read");
 
     let entry = proxy_read
         .qs_read
@@ -313,8 +309,10 @@ async fn stamp_upstream_connector(
         .expect("proxy_write");
 
     let session_value = Value::Oauth2Session(session_uuid, stamped);
-    let modlist =
-        ModifyList::new_list(vec![Modify::Present(Attribute::OAuth2Session, session_value)]);
+    let modlist = ModifyList::new_list(vec![Modify::Present(
+        Attribute::OAuth2Session,
+        session_value,
+    )]);
 
     proxy_write
         .qs_write
@@ -534,8 +532,7 @@ async fn test_refresh_claims_local_groups_survive_narrowing_upstream(
         .get("uuid")
         .and_then(|v| v.first())
         .expect("group uuid");
-    let local_group_uuid =
-        Uuid::from_str(local_group_uuid_str).expect("parse group uuid");
+    let local_group_uuid = Uuid::from_str(local_group_uuid_str).expect("parse group uuid");
 
     let puuid = person_uuid(rsclient).await;
 
@@ -595,8 +592,8 @@ async fn test_refresh_claims_local_groups_survive_narrowing_upstream(
             .proxy_write(ct)
             .await
             .expect("post-refresh write");
-        let markers = read_synced_markers(&mut w.qs_write, puuid, connector_uuid)
-            .expect("read markers");
+        let markers =
+            read_synced_markers(&mut w.qs_write, puuid, connector_uuid).expect("read markers");
         assert!(
             markers.is_empty(),
             "upstream marker must be cleared after connector returns empty groups"
