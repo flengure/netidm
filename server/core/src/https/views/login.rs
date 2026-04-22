@@ -1401,8 +1401,19 @@ async fn view_login_step(
                             return Err(OperationError::InvalidState);
                         };
                         let claims = connector.fetch_callback_claims(&code).await.map_err(|e| {
-                            warn!(?provider_uuid, ?e, "GitHub callback failed");
-                            OperationError::InvalidState
+                            use netidmd_lib::idm::oauth2_connector::ConnectorRefreshError;
+                            match &e {
+                                ConnectorRefreshError::AccessDenied => {
+                                    // already logged at info inside check_access_gate
+                                }
+                                _ => warn!(?provider_uuid, ?e, "GitHub callback failed"),
+                            }
+                            match e {
+                                ConnectorRefreshError::AccessDenied => {
+                                    OperationError::NotAuthenticated
+                                }
+                                _ => OperationError::InvalidState,
+                            }
                         })?;
                         auth_state = AuthState::ProvisioningRequired {
                             provider_uuid,

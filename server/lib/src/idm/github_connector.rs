@@ -628,6 +628,46 @@ impl GitHubConnector {
         }
     }
 
+    /// T023: access-gate check (FR-005a). If `config.allowed_teams` is
+    /// non-empty, compute the user's flat team set as lowercased `org:slug`
+    /// strings and intersect with the allowed list. An empty intersection
+    /// returns `ConnectorRefreshError::AccessDenied` and logs an audit line
+    /// BEFORE any Person state is touched.
+    fn check_access_gate(
+        &self,
+        profile: &GithubUserProfile,
+        teams: &[GithubTeam],
+    ) -> Result<(), ConnectorRefreshError> {
+        if self.config.allowed_teams.is_empty() {
+            return Ok(());
+        }
+
+        let user_teams: HashSet<String> = teams
+            .iter()
+            .map(|t| {
+                format!(
+                    "{}:{}",
+                    t.organization.login.to_lowercase(),
+                    t.slug.to_lowercase()
+                )
+            })
+            .collect();
+
+        let allowed = &self.config.allowed_teams;
+        if user_teams.iter().any(|t| allowed.contains(t)) {
+            return Ok(());
+        }
+
+        info!(
+            connector_uuid = ?self.config.entry_uuid,
+            github_id = profile.id,
+            github_login = %profile.login,
+            ?user_teams,
+            "github_access_gate_denied"
+        );
+        Err(ConnectorRefreshError::AccessDenied)
+    }
+
     /// Exchange an authorisation code for `ExternalUserClaims` by making
     /// the full GitHub API call chain (T013 implementation of
     /// [`RefreshableConnector::fetch_callback_claims`]). Steps:
@@ -637,6 +677,7 @@ impl GitHubConnector {
     /// 3. GET /user/emails
     /// 4. GET /user/orgs (paginated)
     /// 5. GET /user/teams (paginated, capped at 5000)
+    /// 6. T023 access-gate check (short-circuits if allowed_teams non-empty)
     ///
     /// Then T015 `render_team_names` populates `ExternalUserClaims.groups`.
     async fn do_fetch_callback_claims(
@@ -651,8 +692,9 @@ impl GitHubConnector {
         let orgs = self.fetch_orgs(token).await?;
         let teams = self.fetch_teams(token).await?;
 
-        let (email, email_verified) = self.select_email(&emails);
+        self.check_access_gate(&profile, &teams)?;
 
+        let (email, email_verified) = self.select_email(&emails);
         let groups = self.render_team_names(&teams, &orgs);
 
         Ok(ExternalUserClaims {
@@ -811,5 +853,93 @@ mod tests {
 
         let hdr_last_only = r#"<https://api.github.com/user/teams?per_page=2&page=5>; rel="last""#;
         assert_eq!(parse_next_link(hdr_last_only), None);
+    }
+
+    // T024: access gate unit tests (FR-005a)
+
+    fn make_connector_with_allowed_teams(
+        allowed: &[&str],
+    ) -> GitHubConnector {
+        let http = reqwest::Client::builder()
+            .build()
+            .unwrap_or_else(|_| unreachable!());
+        let allowed_teams = allowed.iter().map(|s| s.to_string()).collect();
+        GitHubConnector::new(GitHubConfig {
+            entry_uuid: uuid::Uuid::new_v4(),
+            host: GITHUB_COM_HOST.clone(),
+            api_base: GITHUB_API_BASE.clone(),
+            client_id: "test".to_string(),
+            client_secret: "test".to_string(),
+            org_filter: HashSet::new(),
+            allowed_teams,
+            team_name_field: TeamNameField::Slug,
+            load_all_groups: false,
+            preferred_email_domain: None,
+            allow_jit_provisioning: false,
+            http,
+        })
+    }
+
+    fn make_profile(id: i64, login: &str) -> GithubUserProfile {
+        GithubUserProfile {
+            id,
+            login: login.to_string(),
+            name: None,
+            email: None,
+        }
+    }
+
+    fn make_team(org: &str, slug: &str) -> GithubTeam {
+        GithubTeam {
+            slug: slug.to_string(),
+            name: slug.to_string(),
+            organization: GithubOrg {
+                login: org.to_string(),
+            },
+        }
+    }
+
+    #[test]
+    fn test_github_access_gate_empty_allowed_teams_passes() {
+        let connector = make_connector_with_allowed_teams(&[]);
+        let profile = make_profile(1, "alice");
+        // No allowed_teams configured → gate is off; any team set passes.
+        assert!(connector.check_access_gate(&profile, &[]).is_ok());
+        let teams = vec![make_team("org", "nope")];
+        assert!(connector.check_access_gate(&profile, &teams).is_ok());
+    }
+
+    #[test]
+    fn test_github_access_gate_empty_intersection_rejects() {
+        let connector = make_connector_with_allowed_teams(&["acme:eng"]);
+        let profile = make_profile(2, "bob");
+        let teams = vec![make_team("acme", "ops"), make_team("other", "devs")];
+        let result = connector.check_access_gate(&profile, &teams);
+        assert!(
+            matches!(
+                result,
+                Err(crate::idm::oauth2_connector::ConnectorRefreshError::AccessDenied)
+            ),
+            "expected AccessDenied, got {result:?}"
+        );
+    }
+
+    #[test]
+    fn test_github_access_gate_matching_team_passes() {
+        let connector = make_connector_with_allowed_teams(&["acme:eng", "other:staff"]);
+        let profile = make_profile(3, "carol");
+        // User is in acme:eng — intersection is non-empty.
+        let teams = vec![make_team("acme", "eng"), make_team("acme", "all")];
+        assert!(connector.check_access_gate(&profile, &teams).is_ok());
+    }
+
+    #[test]
+    fn test_github_access_gate_case_insensitive() {
+        // allowed_teams is lowercased at config parse time; gate check
+        // lowercases the user's org+slug — mixed-case teams must match.
+        let connector = make_connector_with_allowed_teams(&["acme:eng"]);
+        let profile = make_profile(4, "dave");
+        let teams = vec![make_team("ACME", "ENG")];
+        assert!(connector.check_access_gate(&profile, &teams).is_ok());
     }
 }

@@ -249,3 +249,78 @@ async fn test_github_connector_uses_configured_host() {
 // TODO(T014): expand to full netidm server integration test once the
 // 4-step linking chain is implemented. The connector-level tests above
 // validate claims assembly; person linking and session minting are T014/T016.
+
+// ── T025: team-based access gate (US2) ───────────────────────────────────────
+
+/// T025a — `fetch_callback_claims` returns `AccessDenied` when the user's
+/// teams don't intersect `allowed_teams`.
+#[tokio::test]
+async fn test_github_login_rejected_by_team_access_gate() {
+    let mock = spawn_mock_github_server().await;
+
+    mock.set_user(
+        55,
+        "denied-user",
+        None,
+        vec![MockGithubEmail {
+            email: "denied@example.com".to_string(),
+            primary: true,
+            verified: true,
+        }],
+    )
+    .await;
+    mock.set_orgs(55, vec!["acme"]).await;
+    mock.set_teams(55, vec![("acme", "ops", "Ops")]).await;
+
+    let code = mock.mint_token_for(55).await;
+
+    let mut config = make_test_config(&mock.base);
+    // Only acme:eng is allowed; user is in acme:ops → denied.
+    config.allowed_teams.insert("acme:eng".to_string());
+    let connector = Arc::new(GitHubConnector::new(config));
+
+    let result = connector.fetch_callback_claims(&code).await;
+    assert!(
+        matches!(
+            result,
+            Err(netidmd_lib::idm::oauth2_connector::ConnectorRefreshError::AccessDenied)
+        ),
+        "expected AccessDenied, got {result:?}"
+    );
+}
+
+/// T025b — after adding the user to an allowed team the same connector
+/// config (updated in-place) succeeds.
+#[tokio::test]
+async fn test_github_login_allowed_after_adding_to_allowed_team() {
+    let mock = spawn_mock_github_server().await;
+
+    mock.set_user(
+        56,
+        "future-member",
+        None,
+        vec![MockGithubEmail {
+            email: "future@example.com".to_string(),
+            primary: true,
+            verified: true,
+        }],
+    )
+    .await;
+    mock.set_orgs(56, vec!["acme"]).await;
+    // User is now in acme:eng — should pass.
+    mock.set_teams(56, vec![("acme", "eng", "Engineering")]).await;
+
+    let code = mock.mint_token_for(56).await;
+
+    let mut config = make_test_config(&mock.base);
+    config.allowed_teams.insert("acme:eng".to_string());
+    let connector = Arc::new(GitHubConnector::new(config));
+
+    let claims = connector
+        .fetch_callback_claims(&code)
+        .await
+        .expect("fetch_callback_claims should succeed for allowed team");
+
+    assert_eq!(claims.email.as_deref(), Some("future@example.com"));
+    assert_eq!(claims.groups, vec!["acme:eng"]);
+}
