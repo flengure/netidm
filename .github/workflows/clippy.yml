@@ -6,20 +6,26 @@ name: Linting checks
   push:
   pull_request:
 
-env:
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: "sccache"
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   clippy:
     runs-on: ubuntu-latest
+    env:
+      CARGO_INCREMENTAL: 0
+      CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@v6
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          # Clippy inspects every crate in the workspace — its cache
+          # shape is distinct from the build/test cache, so give it
+          # its own slot.
+          shared-key: "linting-clippy"
       - name: Install dependencies
         run: |
           sudo apt-get update && \
@@ -35,16 +41,15 @@ jobs:
             pkg-config \
             tpm-udev
       - name: "Run clippy"
-        run: |
-          rustup component add clippy
-          cargo clippy --lib --bins --examples --all-features
+        run: cargo clippy --lib --bins --examples --all-features
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - name: Setup sccache
-        uses: mozilla-actions/sccache-action@v0.0.9
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      # No rust-cache here — `cargo fmt --check` doesn't compile
+      # anything, so there's nothing to cache.
       - name: "Run cargo fmt"
-        run: |
-          rustup component add rustfmt
-          cargo fmt --check
+        run: cargo fmt --check
