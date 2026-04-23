@@ -343,7 +343,10 @@ impl GenericOidcConnector {
             }
         };
 
-        let now_secs = time::OffsetDateTime::now_utc().unix_timestamp();
+        let now_secs = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
         let token = exp_unverified.verify_exp(now_secs).map_err(|e| {
             ConnectorRefreshError::Other(format!("id_token expiry verification failed: {e}"))
         })?;
@@ -429,13 +432,7 @@ impl GenericOidcConnector {
         let email_verified = claims
             .get("email_verified")
             .and_then(|v| v.as_bool())
-            .or_else(|| {
-                if self.config.skip_email_verified {
-                    Some(true)
-                } else {
-                    None
-                }
-            });
+            .or(self.config.skip_email_verified.then_some(true));
 
         let username_hint = username_hint_raw.or_else(|| {
             email
@@ -515,19 +512,10 @@ impl GenericOidcConnector {
         &self,
         claims: &serde_json::Value,
     ) -> Result<Vec<String>, ConnectorRefreshError> {
-        // Determine which claim key to use. Standard key is config.groups_key
-        // (defaults to "groups"); override_claim_mapping forces it.
-        let claim_key = if self.config.override_claim_mapping
-            || claims.get(&*self.config.groups_key).is_some()
-        {
-            &self.config.groups_key
-        } else {
-            &self.config.groups_key
-        };
+        let claim_key = &self.config.groups_key;
 
-        let raw = match claims.get(claim_key.as_str()) {
-            None => return Ok(Vec::new()),
-            Some(v) => v,
+        let Some(raw) = claims.get(claim_key.as_str()) else {
+            return Ok(Vec::new());
         };
 
         let mut groups = match raw {

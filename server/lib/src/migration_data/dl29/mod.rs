@@ -3,8 +3,8 @@
 //! DL29 introduces the generic-OIDC upstream connector (PR-CONNECTOR-GENERIC-OIDC):
 //!   * Ten OIDC-specific config attributes on `EntryClass::OAuth2Client`
 //!     (enable_groups, groups_key, skip_email_verified, allowed_groups,
-//!      get_user_info, user_id_key, user_name_key, override_claim_mapping,
-//!      groups_prefix, groups_suffix).
+//!     get_user_info, user_id_key, user_name_key, override_claim_mapping,
+//!     groups_prefix, groups_suffix).
 //!   * An extended `idm_acp_oauth2_client_admin` covering the new attrs.
 //!
 //! No new entry class. No new ACP class. All new attributes are optional.
