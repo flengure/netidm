@@ -1259,8 +1259,8 @@ pub enum Oauth2Opt {
         /// Provider kind value (e.g. "github").
         kind: String,
     },
-    /// Set the GitHub / GitHub Enterprise base URL (e.g. https://github.example.com/).
-    /// Defaults to https://github.com/ when absent.
+    /// Set the GitHub / GitHub Enterprise base URL (e.g. `https://github.example.com/`).
+    /// Defaults to `https://github.com/` when absent.
     #[clap(name = "github-set-host")]
     GithubSetHost {
         /// OAuth2 client name.

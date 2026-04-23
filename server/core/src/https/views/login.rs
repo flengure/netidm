@@ -1508,12 +1508,51 @@ async fn view_login_step(
                 debug!("🧩 -> AuthState::ProvisioningRequired");
                 jar = cookies::destroy(jar, COOKIE_AUTH_SESSION_ID, &state);
 
-                // Attempt account linking when the provider (or domain default) permits it.
-                // The connector's `link_by` setting (DL24+) inside `find_and_link_account`
-                // decides which claim is matched (email / username / id) and enforces the
-                // security precondition appropriate to that strategy (e.g. `email_verified`
-                // for the Email branch).
-                if email_link_accounts {
+                // GitHub connectors use the 4-step linking chain (T014): email match,
+                // stable-ID match, login match, then optional JIT provisioning. This runs
+                // automatically without requiring the manual /ui/login/provision page.
+                let is_github_connector = state
+                    .qe_r_ref
+                    .idms
+                    .connector_registry()
+                    .get(provider_uuid)
+                    .is_some();
+
+                if is_github_connector {
+                    match state
+                        .qe_w_ref
+                        .handle_github_link_or_provision(
+                            provider_uuid,
+                            claims.clone(),
+                            kopid.eventid,
+                            client_auth_info.clone(),
+                        )
+                        .await
+                    {
+                        Ok(Some(_person_uuid)) => {
+                            security_info!(
+                                %provider_uuid,
+                                "GitHub account linked/provisioned — redirecting to login"
+                            );
+                            break Redirect::to("/ui/login").into_response();
+                        }
+                        Ok(None) => {
+                            // No match and JIT provisioning disabled — fall through to
+                            // the manual provision page.
+                            debug!("GitHub account-link: no match, JIT disabled — proceeding to provision page");
+                        }
+                        Err(e) => {
+                            warn!(
+                                ?e,
+                                "GitHub account-link/provision failed — proceeding to provision page"
+                            );
+                        }
+                    }
+                } else if email_link_accounts {
+                    // Generic OIDC/SAML providers: attempt account linking when the
+                    // provider (or domain default) permits it. The connector's `link_by`
+                    // setting (DL24+) inside `find_and_link_account` decides which claim
+                    // is matched and enforces the appropriate security precondition.
                     match state
                         .qe_w_ref
                         .handle_link_account_by_email(

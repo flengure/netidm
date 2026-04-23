@@ -1486,7 +1486,7 @@ dependencies = [
 
 [[package]]
 name = "daemon"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "clap",
  "clap_complete",
@@ -2132,9 +2132,9 @@ dependencies = [
 
 [[package]]
 name = "fraction"
-version = "0.15.3"
+version = "0.15.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f158e3ff0a1b334408dc9fb811cd99b446986f4d8b741bb08f9df1604085ae7"
+checksum = "e076045bb43dac435333ed5f04caf35c7463631d0dae2deb2638d94dd0a5b872"
 dependencies = [
  "lazy_static",
  "num",
@@ -4217,9 +4217,9 @@ checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 
 [[package]]
 name = "libmimalloc-sys"
-version = "0.1.46"
+version = "0.1.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bc89deee4af0429081d2a518c0431ae068222a5a262a3bc6ff4d8535ec2e02fe"
+checksum = "2d1eacfa31c33ec25e873c136ba5669f00f9866d0688bea7be4d3f7e43067df6"
 dependencies = [
  "cc",
 ]
@@ -4498,9 +4498,9 @@ checksum = "c2a86d3146ed3995b5913c414f6664344b9617457320782e64f0bb44afd49d74"
 
 [[package]]
 name = "mimalloc"
-version = "0.1.49"
+version = "0.1.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aca3c01a711f395b4257b81674c0e90e8dd1f1e62c4b7db45f684cc7a4fcb18a"
+checksum = "b3627c4272df786b9260cabaa46aec1d59c93ede723d4c3ef646c503816b0640"
 dependencies = [
  "libmimalloc-sys",
 ]
@@ -4584,7 +4584,7 @@ dependencies = [
 
 [[package]]
 name = "netidm-ipa-sync"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "chrono",
  "clap",
@@ -4610,7 +4610,7 @@ dependencies = [
 
 [[package]]
 name = "netidm-ldap-sync"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "chrono",
  "clap",
@@ -4637,7 +4637,7 @@ dependencies = [
 
 [[package]]
 name = "netidm-mail-sender"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "chrono",
  "clap",
@@ -4661,7 +4661,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_build_profiles"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "base64 0.22.1",
  "gix",
@@ -4672,7 +4672,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_client"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "compact_jwt",
  "http",
@@ -4695,7 +4695,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_device_flow"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "anyhow",
  "netidm_proto",
@@ -4708,7 +4708,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_lib_crypto"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "base64 0.22.1",
  "base64urlsafedata 0.6.0-dev",
@@ -4730,14 +4730,14 @@ dependencies = [
 
 [[package]]
 name = "netidm_lib_file_permissions"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "netidm_utils_users",
 ]
 
 [[package]]
 name = "netidm_proto"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "base32",
  "base64 0.22.1",
@@ -4766,7 +4766,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_tools"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "anyhow",
  "clap",
@@ -4796,7 +4796,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_unix_common"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "bytes",
  "csv",
@@ -4820,7 +4820,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_unix_int"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "async-trait",
  "clap",
@@ -4862,14 +4862,14 @@ dependencies = [
 
 [[package]]
 name = "netidm_utils_users"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "netidmd_core"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "askama",
  "askama_web",
@@ -4934,7 +4934,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_lib"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "async-trait",
  "axum",
@@ -4994,7 +4994,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_lib_macros"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5003,7 +5003,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_testkit"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "axum",
  "cidr",
@@ -5039,7 +5039,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_wg"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5303,7 +5303,7 @@ dependencies = [
 
 [[package]]
 name = "nss_netidm"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "cc",
  "libc",
@@ -5706,7 +5706,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "orca"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5775,7 +5775,7 @@ dependencies = [
 
 [[package]]
 name = "pam_netidm"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "libc",
  "netidm_unix_common",
@@ -6865,9 +6865,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.38"
+version = "0.23.39"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69f9466fb2c14ea04357e91413efb882e2a6d4a406e625449bc0a5d360d53a21"
+checksum = "7c2c118cb077cca2822033836dfb1b975355dfb784b5e8da48f7b6c5db74e60e"
 dependencies = [
  "aws-lc-rs",
  "log",
@@ -7039,7 +7039,7 @@ dependencies = [
 
 [[package]]
 name = "scim_proto"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "base64urlsafedata 0.6.0-dev",
  "peg",
@@ -7431,7 +7431,7 @@ checksum = "b2aa850e253778c88a04c3d7323b043aeda9d3e30d5971937c1855769763678e"
 
 [[package]]
 name = "sketching"
-version = "0.1.12-dev"
+version = "0.1.12"
 dependencies = [
  "gethostname",
  "num_enum",

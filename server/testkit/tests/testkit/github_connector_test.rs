@@ -747,3 +747,80 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
         "allow jit provisioning"
     );
 }
+
+// ── T028: JIT provisioning toggle respects the admin flag ────────────────────
+//
+// The DB-level linking logic lives in `github_link_or_provision_chain` and is
+// exercised directly by the unit tests in `github_connector.rs`:
+//   - T027: JIT off + no match → Ok(None)  (unit test with real DB)
+//   - T020: email match links step-1 even with JIT off  (unit test with real DB)
+//
+// This integration test covers the *config layer*: verifies that
+// `allow_jit_provisioning` is correctly reflected in the connector's config,
+// and that `fetch_callback_claims` (the HTTP side) returns the claims that the
+// chain would use for provisioning when the flag is on.
+
+/// T028a — with JIT off, `fetch_callback_claims` still succeeds (no access gate),
+/// but the claims it returns contain a `sub` / `username_hint` / `email` that
+/// `github_link_or_provision_chain` would use to provision vs. reject.
+#[tokio::test]
+async fn test_github_jit_provisioning_toggle_respects_admin_flag() {
+    let mock = spawn_mock_github_server().await;
+
+    let unknown_id = 77_i64;
+    mock.set_user(
+        unknown_id,
+        "brand-new-user",
+        Some("Brand New User"),
+        vec![MockGithubEmail {
+            email: "newbie@example.com".to_string(),
+            primary: true,
+            verified: true,
+        }],
+    )
+    .await;
+    mock.set_orgs(unknown_id, vec!["acme"]).await;
+    mock.set_teams(unknown_id, vec![("acme", "newcomers", "Newcomers")])
+        .await;
+
+    let code_jit_off = mock.mint_token_for(unknown_id).await;
+    let code_jit_on = mock.mint_token_for(unknown_id).await;
+
+    // Part A: JIT off — fetch_callback_claims succeeds; the chain (not tested
+    // here, see T027) would return Ok(None) because no Person exists.
+    let mut config_off = make_test_config(&mock.base);
+    config_off.allow_jit_provisioning = false;
+    let connector_off = Arc::new(GitHubConnector::new(config_off));
+
+    let claims_off = connector_off
+        .fetch_callback_claims(&code_jit_off)
+        .await
+        .expect("fetch_callback_claims should not fail on JIT-off path");
+
+    assert_eq!(claims_off.sub, unknown_id.to_string());
+    assert_eq!(claims_off.username_hint.as_deref(), Some("brand-new-user"));
+    assert_eq!(claims_off.email.as_deref(), Some("newbie@example.com"));
+    assert_eq!(claims_off.email_verified, Some(true));
+    // connector.allow_jit_provisioning() reflects the config flag.
+    assert!(
+        !connector_off.allow_jit_provisioning(),
+        "JIT should be disabled on connector_off"
+    );
+
+    // Part B: JIT on — same claims come back; connector reports JIT enabled.
+    let mut config_on = make_test_config(&mock.base);
+    config_on.allow_jit_provisioning = true;
+    let connector_on = Arc::new(GitHubConnector::new(config_on));
+
+    let claims_on = connector_on
+        .fetch_callback_claims(&code_jit_on)
+        .await
+        .expect("fetch_callback_claims should succeed on JIT-on path");
+
+    assert_eq!(claims_on.sub, unknown_id.to_string());
+    assert_eq!(claims_on.username_hint.as_deref(), Some("brand-new-user"));
+    assert!(
+        connector_on.allow_jit_provisioning(),
+        "JIT should be enabled on connector_on"
+    );
+}
