@@ -9,8 +9,7 @@
 //! ## Dispatch contract (FR-016)
 //!
 //! Absence of `oauth2_client_provider_kind` on an `OAuth2Client` entry, or
-//! an unrecognised value, both resolve to
-//! [`crate::idm::oauth2_client::ProviderKind::GenericOidc`] in
+//! an unrecognised value, both resolve to `ProviderKind::GenericOidc` in
 //! `reload_oauth2_client_providers` — so pre-DL28 providers decode
 //! byte-identically to DL27 and never reach this module.
 //!
@@ -228,8 +227,7 @@ pub struct GithubTeam {
 }
 
 /// GitHub upstream connector. Thin wrapper over [`GitHubConfig`] that
-/// owns the HTTP client and implements
-/// [`RefreshableConnector`](crate::idm::oauth2_connector::RefreshableConnector).
+/// owns the HTTP client and implements [`RefreshableConnector`].
 ///
 /// Stateless at instance level — every refresh call parses the opaque
 /// session-state blob fresh, talks to GitHub, and returns a
@@ -996,15 +994,15 @@ pub fn github_link_or_provision_chain(
     entry.add_ava(Attribute::Uuid, Value::Uuid(person_uuid));
     entry.add_ava(Attribute::Name, Value::new_iname(&desired_name));
     entry.add_ava(Attribute::DisplayName, Value::new_utf8s(&display_name));
-    entry.add_ava(Attribute::OAuth2AccountProvider, Value::Refer(provider_uuid));
+    entry.add_ava(
+        Attribute::OAuth2AccountProvider,
+        Value::Refer(provider_uuid),
+    );
     entry.add_ava(
         Attribute::OAuth2AccountUniqueUserId,
         Value::new_utf8s(&claims.sub),
     );
-    entry.add_ava(
-        Attribute::OAuth2AccountCredentialUuid,
-        Value::Uuid(cred_id),
-    );
+    entry.add_ava(Attribute::OAuth2AccountCredentialUuid, Value::Uuid(cred_id));
     if let Some(ref email) = claims.email {
         entry.add_ava(Attribute::Mail, Value::EmailAddress(email.clone(), true));
     }
@@ -1574,6 +1572,299 @@ mod tests {
                 Err(crate::idm::oauth2_connector::ConnectorRefreshError::TokenRevoked)
             ),
             "expected TokenRevoked on gate failure, got {result:?}"
+        );
+    }
+
+    // T020: linking chain step 1 (email match) links an existing Person.
+    #[idm_test]
+    async fn test_github_linking_chain_step_1_email(
+        idms: &IdmServer,
+        _idms_delayed: &mut IdmServerDelayed,
+    ) {
+        let ct = std::time::Duration::from_secs(6000);
+        // OAuth2AccountProvider is a ReferenceUuid — the referential integrity
+        // plugin rejects Modify if the UUID doesn't exist.  Use UUID_DOMAIN_INFO
+        // (always present after bootstrap) as a stand-in OAuth2Client reference
+        // so the modify succeeds without having to create a full OAuth2Client entry.
+        let provider_uuid = UUID_DOMAIN_INFO;
+        let person_uuid = Uuid::new_v4();
+
+        // Seed a Person with a verified email address.
+        let mut pw = idms.proxy_write(ct).await.expect("proxy_write");
+        let entry = entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Class, EntryClass::Account.to_value()),
+            (Attribute::Class, EntryClass::Person.to_value()),
+            (Attribute::Uuid, Value::Uuid(person_uuid)),
+            (Attribute::Name, Value::new_iname("alice")),
+            (Attribute::DisplayName, Value::new_utf8s("Alice")),
+            (
+                Attribute::Mail,
+                Value::EmailAddress("alice@example.com".to_string(), true)
+            )
+        );
+        pw.qs_write
+            .internal_create(vec![entry])
+            .expect("create person");
+        pw.commit().expect("commit");
+
+        // Call the chain: email match should link without JIT.
+        let claims = ExternalUserClaims {
+            sub: "99".to_string(),
+            email: Some("alice@example.com".to_string()),
+            email_verified: Some(true),
+            display_name: Some("Alice".to_string()),
+            username_hint: Some("alice-gh".to_string()),
+            groups: vec![],
+        };
+        let mut pw = idms.proxy_write(ct).await.expect("proxy_write");
+        let result =
+            github_link_or_provision_chain(&mut pw.qs_write, provider_uuid, &claims, false)
+                .expect("chain should not error");
+
+        assert_eq!(
+            result,
+            Some(person_uuid),
+            "step 1 should return the seeded person"
+        );
+
+        // The person should now carry the OAuth2Account link attributes.
+        let entry = pw
+            .qs_write
+            .internal_search_uuid(person_uuid)
+            .expect("search seeded person");
+        assert!(
+            entry.attribute_equality(
+                Attribute::OAuth2AccountUniqueUserId,
+                &PartialValue::new_utf8s("99")
+            ),
+            "numeric GitHub ID should be written as UniqueUserId"
+        );
+        pw.commit().expect("commit");
+    }
+
+    // T027: JIT disabled returns Ok(None) when no matching Person exists.
+    #[idm_test]
+    async fn test_github_jit_disabled_rejects_unknown_user(
+        idms: &IdmServer,
+        _idms_delayed: &mut IdmServerDelayed,
+    ) {
+        let ct = std::time::Duration::from_secs(6000);
+        let provider_uuid = Uuid::new_v4();
+
+        let claims = ExternalUserClaims {
+            sub: "999".to_string(),
+            email: Some("ghost@example.com".to_string()),
+            email_verified: Some(true),
+            display_name: None,
+            username_hint: Some("ghost-user".to_string()),
+            groups: vec![],
+        };
+
+        let mut pw = idms.proxy_write(ct).await.expect("proxy_write");
+        let result =
+            github_link_or_provision_chain(&mut pw.qs_write, provider_uuid, &claims, false)
+                .expect("chain should not error");
+
+        assert_eq!(
+            result, None,
+            "JIT disabled and no match should return Ok(None)"
+        );
+        pw.commit().expect("commit");
+    }
+
+    // T037: refresh returns the correct ConnectorRefreshError for HTTP failure variants.
+    #[tokio::test]
+    async fn test_github_refresh_error_variants() {
+        use crate::idm::oauth2_connector::ConnectorRefreshError;
+        use axum::routing::get;
+
+        // Helper to build a connector pointing at `addr`.
+        let make_conn = |addr: std::net::SocketAddr| -> GitHubConnector {
+            let base = url::Url::parse(&format!("http://{addr}")).expect("url");
+            let mut api_base = base.clone();
+            api_base.set_path("/api/v3/");
+            GitHubConnector::new(GitHubConfig {
+                entry_uuid: Uuid::new_v4(),
+                host: base,
+                api_base,
+                client_id: "t".to_string(),
+                client_secret: "t".to_string(),
+                org_filter: HashSet::new(),
+                allowed_teams: HashSet::new(),
+                team_name_field: TeamNameField::Slug,
+                load_all_groups: false,
+                preferred_email_domain: None,
+                allow_jit_provisioning: false,
+                http: reqwest::Client::builder()
+                    .build()
+                    .unwrap_or_else(|_| unreachable!()),
+            })
+        };
+
+        let blob = make_session_state(1, "user", "gho_tok", None, None);
+        let prev = make_previous_claims(1, "user@example.com");
+
+        // --- Variant 1: 401 from /api/v3/user/orgs → UpstreamRejected(401) ---
+        {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+                .await
+                .expect("bind");
+            let addr = listener.local_addr().expect("addr");
+            tokio::spawn(async move {
+                let _ = axum::serve(
+                    listener,
+                    axum::Router::new().route(
+                        "/api/v3/user/orgs",
+                        get(|| async { (axum::http::StatusCode::UNAUTHORIZED, "") }),
+                    ),
+                )
+                .await;
+            });
+            let result = make_conn(addr).refresh(&blob, &prev).await;
+            assert!(
+                matches!(result, Err(ConnectorRefreshError::UpstreamRejected(401))),
+                "401 from orgs should be UpstreamRejected(401), got {result:?}"
+            );
+        }
+
+        // --- Variant 2: 500 from /api/v3/user/teams → UpstreamRejected(500) ---
+        {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+                .await
+                .expect("bind");
+            let addr = listener.local_addr().expect("addr");
+            tokio::spawn(async move {
+                let _ = axum::serve(
+                    listener,
+                    axum::Router::new()
+                        .route(
+                            "/api/v3/user/orgs",
+                            get(|| async { axum::Json(serde_json::json!([])) }),
+                        )
+                        .route(
+                            "/api/v3/user/teams",
+                            get(|| async { (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "") }),
+                        ),
+                )
+                .await;
+            });
+            let result = make_conn(addr).refresh(&blob, &prev).await;
+            assert!(
+                matches!(result, Err(ConnectorRefreshError::UpstreamRejected(500))),
+                "500 from teams should be UpstreamRejected(500), got {result:?}"
+            );
+        }
+
+        // --- Variant 3: malformed JSON from /api/v3/user/orgs → Other ---
+        {
+            let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+                .await
+                .expect("bind");
+            let addr = listener.local_addr().expect("addr");
+            tokio::spawn(async move {
+                let _ = axum::serve(
+                    listener,
+                    axum::Router::new()
+                        .route("/api/v3/user/orgs", get(|| async { "not-valid-json" })),
+                )
+                .await;
+            });
+            let result = make_conn(addr).refresh(&blob, &prev).await;
+            assert!(
+                matches!(result, Err(ConnectorRefreshError::Other(_))),
+                "malformed JSON should be Other, got {result:?}"
+            );
+        }
+    }
+
+    // T038: refresh rotates the access token when it is known to be expired.
+    #[tokio::test]
+    async fn test_github_refresh_rotates_access_token_when_expired() {
+        use crate::idm::oauth2_connector::RefreshableConnector;
+        use axum::routing::{get, post};
+
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind");
+        let addr = listener.local_addr().expect("addr");
+
+        tokio::spawn(async move {
+            let _ = axum::serve(
+                listener,
+                axum::Router::new()
+                    // Rotation endpoint: returns new tokens.
+                    .route(
+                        "/login/oauth/access_token",
+                        post(|| async {
+                            axum::Json(serde_json::json!({
+                                "access_token": "gho_new_access_token",
+                                "token_type": "bearer",
+                                "refresh_token": "ghr_new_refresh_token",
+                                "expires_in": 3600
+                            }))
+                        }),
+                    )
+                    .route(
+                        "/api/v3/user/orgs",
+                        get(|| async { axum::Json(serde_json::json!([])) }),
+                    )
+                    .route(
+                        "/api/v3/user/teams",
+                        get(|| async { axum::Json(serde_json::json!([])) }),
+                    ),
+            )
+            .await;
+        });
+
+        let base = url::Url::parse(&format!("http://{addr}")).expect("url");
+        let mut api_base = base.clone();
+        api_base.set_path("/api/v3/");
+
+        let connector = GitHubConnector::new(GitHubConfig {
+            entry_uuid: Uuid::new_v4(),
+            host: base,
+            api_base,
+            client_id: "test".to_string(),
+            client_secret: "test".to_string(),
+            org_filter: HashSet::new(),
+            allowed_teams: HashSet::new(),
+            team_name_field: TeamNameField::Slug,
+            load_all_groups: false,
+            preferred_email_domain: None,
+            allow_jit_provisioning: false,
+            http: reqwest::Client::builder()
+                .build()
+                .unwrap_or_else(|_| unreachable!()),
+        });
+
+        // Token expired well in the past; refresh_token is present.
+        let expired_at = OffsetDateTime::UNIX_EPOCH + TimeDuration::seconds(1_000_000_000);
+        let blob = make_session_state(
+            7,
+            "bob",
+            "gho_old_access_token",
+            Some("ghr_old_refresh_token"),
+            Some(expired_at),
+        );
+        let prev = make_previous_claims(7, "bob@example.com");
+
+        let outcome = connector
+            .refresh(&blob, &prev)
+            .await
+            .expect("refresh should succeed");
+
+        let new_state = GitHubSessionState::from_bytes(
+            &outcome
+                .new_session_state
+                .expect("new_session_state should be Some"),
+        )
+        .expect("parse new session state");
+
+        assert_eq!(new_state.access_token, "gho_new_access_token");
+        assert_eq!(
+            new_state.refresh_token.as_deref(),
+            Some("ghr_new_refresh_token")
         );
     }
 }
