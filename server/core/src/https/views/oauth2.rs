@@ -159,9 +159,11 @@ async fn oauth2_auth_req(
         }) => {
             // Sign the auth req and hide it in our cookie - we'll come back for
             // you later.
+            // SameSite::Lax (not Strict) so the cookie survives the cross-site
+            // redirect from external SSO providers (e.g. GitHub) back to /ui/login/oauth2_landing.
             let maybe_jar = cookies::make_signed(&state, COOKIE_OAUTH2_REQ, &auth_req)
                 .map(|mut cookie| {
-                    cookie.set_same_site(SameSite::Strict);
+                    cookie.set_same_site(SameSite::Lax);
                     // Expire at the end of the session.
                     cookie.set_expires(None);
                     // Could experiment with this to a shorter value, but session should be enough.
@@ -172,12 +174,17 @@ async fn oauth2_auth_req(
 
             match maybe_jar {
                 Ok(new_jar) => {
+                    let available_sso_providers = state
+                        .qe_r_ref
+                        .handle_list_sso_providers()
+                        .await
+                        .unwrap_or_default();
                     let display_ctx = LoginDisplayCtx {
                         domain_info,
                         oauth2: Some(Oauth2Ctx { client_name }),
                         reauth: None,
                         error: None,
-                        available_sso_providers: Vec::new(),
+                        available_sso_providers,
                     };
 
                     super::login::view_oauth2_get(new_jar, display_ctx, login_hint)
