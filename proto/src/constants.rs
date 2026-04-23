@@ -254,6 +254,32 @@ pub const ATTR_OAUTH2_CLIENT_OIDC_OVERRIDE_CLAIM_MAPPING: &str =
     "oauth2_client_oidc_override_claim_mapping";
 pub const ATTR_OAUTH2_CLIENT_OIDC_GROUPS_PREFIX: &str = "oauth2_client_oidc_groups_prefix";
 pub const ATTR_OAUTH2_CLIENT_OIDC_GROUPS_SUFFIX: &str = "oauth2_client_oidc_groups_suffix";
+// DL30 — Google upstream connector attributes
+pub const ATTR_OAUTH2_CLIENT_GOOGLE_HOSTED_DOMAIN: &str = "oauth2_client_google_hosted_domain";
+pub const ATTR_OAUTH2_CLIENT_GOOGLE_SERVICE_ACCOUNT_JSON: &str =
+    "oauth2_client_google_service_account_json";
+pub const ATTR_OAUTH2_CLIENT_GOOGLE_ADMIN_EMAIL: &str = "oauth2_client_google_admin_email";
+pub const ATTR_OAUTH2_CLIENT_GOOGLE_FETCH_GROUPS: &str = "oauth2_client_google_fetch_groups";
+// DL31 — Microsoft Azure AD upstream connector attributes
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_TENANT: &str = "oauth2_client_microsoft_tenant";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_ONLY_SECURITY_GROUPS: &str =
+    "oauth2_client_microsoft_only_security_groups";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_GROUPS: &str = "oauth2_client_microsoft_groups";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_GROUP_NAME_FORMAT: &str =
+    "oauth2_client_microsoft_group_name_format";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_USE_GROUPS_AS_WHITELIST: &str =
+    "oauth2_client_microsoft_use_groups_as_whitelist";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_EMAIL_TO_LOWERCASE: &str =
+    "oauth2_client_microsoft_email_to_lowercase";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_API_URL: &str = "oauth2_client_microsoft_api_url";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_GRAPH_URL: &str = "oauth2_client_microsoft_graph_url";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_PROMPT_TYPE: &str = "oauth2_client_microsoft_prompt_type";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_DOMAIN_HINT: &str = "oauth2_client_microsoft_domain_hint";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_SCOPES: &str = "oauth2_client_microsoft_scopes";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_PREFERRED_USERNAME_FIELD: &str =
+    "oauth2_client_microsoft_preferred_username_field";
+pub const ATTR_OAUTH2_CLIENT_MICROSOFT_ALLOW_JIT_PROVISIONING: &str =
+    "oauth2_client_microsoft_allow_jit_provisioning";
 // DL20 — OAuth2 client logo URI
 pub const ATTR_OAUTH2_CLIENT_LOGO_URI: &str = "oauth2_client_logo_uri";
 // DL21 — Generic OIDC upstream connector

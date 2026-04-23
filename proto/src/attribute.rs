@@ -315,6 +315,34 @@ pub enum Attribute {
     OAuth2ClientGoogleAdminEmail,
     #[strum(serialize = "oauth2_client_google_fetch_groups")]
     OAuth2ClientGoogleFetchGroups,
+    // DL31 — Microsoft Azure AD upstream connector config attributes.
+    // All optional on `EntryClass::OAuth2Client`.
+    #[strum(serialize = "oauth2_client_microsoft_tenant")]
+    OAuth2ClientMicrosoftTenant,
+    #[strum(serialize = "oauth2_client_microsoft_only_security_groups")]
+    OAuth2ClientMicrosoftOnlySecurityGroups,
+    #[strum(serialize = "oauth2_client_microsoft_groups")]
+    OAuth2ClientMicrosoftGroups,
+    #[strum(serialize = "oauth2_client_microsoft_group_name_format")]
+    OAuth2ClientMicrosoftGroupNameFormat,
+    #[strum(serialize = "oauth2_client_microsoft_use_groups_as_whitelist")]
+    OAuth2ClientMicrosoftUseGroupsAsWhitelist,
+    #[strum(serialize = "oauth2_client_microsoft_email_to_lowercase")]
+    OAuth2ClientMicrosoftEmailToLowercase,
+    #[strum(serialize = "oauth2_client_microsoft_api_url")]
+    OAuth2ClientMicrosoftApiUrl,
+    #[strum(serialize = "oauth2_client_microsoft_graph_url")]
+    OAuth2ClientMicrosoftGraphUrl,
+    #[strum(serialize = "oauth2_client_microsoft_prompt_type")]
+    OAuth2ClientMicrosoftPromptType,
+    #[strum(serialize = "oauth2_client_microsoft_domain_hint")]
+    OAuth2ClientMicrosoftDomainHint,
+    #[strum(serialize = "oauth2_client_microsoft_scopes")]
+    OAuth2ClientMicrosoftScopes,
+    #[strum(serialize = "oauth2_client_microsoft_preferred_username_field")]
+    OAuth2ClientMicrosoftPreferredUsernameField,
+    #[strum(serialize = "oauth2_client_microsoft_allow_jit_provisioning")]
+    OAuth2ClientMicrosoftAllowJitProvisioning,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]
@@ -716,6 +744,37 @@ impl Attribute {
             }
             ATTR_OAUTH2_CLIENT_OIDC_GROUPS_PREFIX => Attribute::OAuth2ClientOidcGroupsPrefix,
             ATTR_OAUTH2_CLIENT_OIDC_GROUPS_SUFFIX => Attribute::OAuth2ClientOidcGroupsSuffix,
+            ATTR_OAUTH2_CLIENT_GOOGLE_HOSTED_DOMAIN => Attribute::OAuth2ClientGoogleHostedDomain,
+            ATTR_OAUTH2_CLIENT_GOOGLE_SERVICE_ACCOUNT_JSON => {
+                Attribute::OAuth2ClientGoogleServiceAccountJson
+            }
+            ATTR_OAUTH2_CLIENT_GOOGLE_ADMIN_EMAIL => Attribute::OAuth2ClientGoogleAdminEmail,
+            ATTR_OAUTH2_CLIENT_GOOGLE_FETCH_GROUPS => Attribute::OAuth2ClientGoogleFetchGroups,
+            ATTR_OAUTH2_CLIENT_MICROSOFT_TENANT => Attribute::OAuth2ClientMicrosoftTenant,
+            ATTR_OAUTH2_CLIENT_MICROSOFT_ONLY_SECURITY_GROUPS => {
+                Attribute::OAuth2ClientMicrosoftOnlySecurityGroups
+            }
+            ATTR_OAUTH2_CLIENT_MICROSOFT_GROUPS => Attribute::OAuth2ClientMicrosoftGroups,
+            ATTR_OAUTH2_CLIENT_MICROSOFT_GROUP_NAME_FORMAT => {
+                Attribute::OAuth2ClientMicrosoftGroupNameFormat
+            }
+            ATTR_OAUTH2_CLIENT_MICROSOFT_USE_GROUPS_AS_WHITELIST => {
+                Attribute::OAuth2ClientMicrosoftUseGroupsAsWhitelist
+            }
+            ATTR_OAUTH2_CLIENT_MICROSOFT_EMAIL_TO_LOWERCASE => {
+                Attribute::OAuth2ClientMicrosoftEmailToLowercase
+            }
+            ATTR_OAUTH2_CLIENT_MICROSOFT_API_URL => Attribute::OAuth2ClientMicrosoftApiUrl,
+            ATTR_OAUTH2_CLIENT_MICROSOFT_GRAPH_URL => Attribute::OAuth2ClientMicrosoftGraphUrl,
+            ATTR_OAUTH2_CLIENT_MICROSOFT_PROMPT_TYPE => Attribute::OAuth2ClientMicrosoftPromptType,
+            ATTR_OAUTH2_CLIENT_MICROSOFT_DOMAIN_HINT => Attribute::OAuth2ClientMicrosoftDomainHint,
+            ATTR_OAUTH2_CLIENT_MICROSOFT_SCOPES => Attribute::OAuth2ClientMicrosoftScopes,
+            ATTR_OAUTH2_CLIENT_MICROSOFT_PREFERRED_USERNAME_FIELD => {
+                Attribute::OAuth2ClientMicrosoftPreferredUsernameField
+            }
+            ATTR_OAUTH2_CLIENT_MICROSOFT_ALLOW_JIT_PROVISIONING => {
+                Attribute::OAuth2ClientMicrosoftAllowJitProvisioning
+            }
             ATTR_OBJECTCLASS => Attribute::ObjectClass,
             ATTR_OTHER_NO_INDEX => Attribute::OtherNoIndex,
             ATTR_PASSKEYS => Attribute::PassKeys,

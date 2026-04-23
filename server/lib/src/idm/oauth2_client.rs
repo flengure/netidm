@@ -72,6 +72,8 @@ pub enum ProviderKind {
     Github,
     /// Google Workspace / Google Identity (OIDC + Directory API) — PR-CONNECTOR-GOOGLE.
     Google,
+    /// Microsoft Azure AD / Entra ID (OAuth2 + Microsoft Graph) — PR-CONNECTOR-MICROSOFT.
+    Microsoft,
 }
 
 impl ProviderKind {
@@ -83,6 +85,7 @@ impl ProviderKind {
             ProviderKind::GenericOidc => "generic-oidc",
             ProviderKind::Github => "github",
             ProviderKind::Google => "google",
+            ProviderKind::Microsoft => "microsoft",
         }
     }
 
@@ -94,6 +97,7 @@ impl ProviderKind {
         match s {
             "github" => ProviderKind::Github,
             "google" => ProviderKind::Google,
+            "microsoft" => ProviderKind::Microsoft,
             _ => ProviderKind::GenericOidc,
         }
     }
@@ -341,7 +345,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
                 .map(|s| {
                     let kind = ProviderKind::from_str_or_default(s);
-                    if s != "generic-oidc" && s != "github" {
+                    if !matches!(s, "generic-oidc" | "github" | "google" | "microsoft") {
                         warn!(
                             ?uuid,
                             value = %s,
@@ -446,6 +450,37 @@ impl IdmServerProxyWriteTransaction<'_> {
                         ?entry_uuid,
                         ?e,
                         "Failed to build Google connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register Microsoft connectors with the ConnectorRegistry.
+        for provider_entry in &oauth2_client_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_microsoft = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| s == "microsoft")
+                .unwrap_or(false);
+            if !is_microsoft {
+                continue;
+            }
+            match crate::idm::microsoft_connector::MicrosoftConfig::from_entry(
+                provider_entry,
+                client_redirect_uri.clone(),
+            ) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::microsoft_connector::MicrosoftConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered Microsoft connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build Microsoft connector config; skipping this provider"
                     );
                 }
             }

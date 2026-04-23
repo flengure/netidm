@@ -2815,13 +2815,28 @@ impl IdmServerProxyReadTransaction<'_> {
         // We can always add a login timestamp later on.
 
         // OIDC Core 1.0 §3.1.2.1
-        // prompt=login - The Authorization Server MUST prompt the End-User to re-authenticate
+        // prompt=login - The Authorization Server MUST prompt the End-User to re-authenticate.
+        // However, if the user has a fresh session (issued within the last 5 minutes) we treat
+        // the requirement as already satisfied — they just logged in as part of this flow.
+        // Without this window, an OAuth2 client that always sends prompt=login (e.g. Portainer)
+        // would loop forever: the user authenticates, lands on /ui/oauth2/resume, and prompt=login
+        // immediately forces another authentication round-trip.
         if auth_req.prompt.contains(&Prompt::Login) {
-            debug!("prompt=login was requested, forcing re-authentication");
-            return Ok(AuthoriseResponse::AuthenticationRequired {
-                client_name: o2rs.displayname.clone(),
-                login_hint: auth_req.oidc_ext.login_hint.clone(),
-            });
+            let session_is_fresh = maybe_ident
+                .and_then(|ident| ident.get_session())
+                .is_some_and(|session| {
+                    let odt_ct = time::OffsetDateTime::UNIX_EPOCH + ct;
+                    let age = odt_ct - session.issued_at;
+                    age <= time::Duration::minutes(5)
+                });
+            if !session_is_fresh {
+                debug!("prompt=login was requested and session is not fresh, forcing re-authentication");
+                return Ok(AuthoriseResponse::AuthenticationRequired {
+                    client_name: o2rs.displayname.clone(),
+                    login_hint: auth_req.oidc_ext.login_hint.clone(),
+                });
+            }
+            debug!("prompt=login was requested but session is fresh, proceeding without re-authentication");
         }
 
         // TODO: display = popup vs touch vs wap etc.
@@ -8979,7 +8994,11 @@ mod tests {
     ///
     /// > The Authorization Server SHOULD prompt the End-User for reauthentication.
     ///
-    /// If the user is already authenticated, we still prompt for re-authentication.
+    /// With a stale session (> 5 min since login), prompt=login forces re-authentication.
+    /// With a fresh session (< 5 min since login), the requirement is considered satisfied —
+    /// the user just authenticated as part of this OAuth2 flow, so forcing another round-trip
+    /// would create an infinite loop (as seen with clients like Portainer that always send
+    /// prompt=login).
     #[idm_test]
     async fn test_idm_oauth2_prompt_login_forces_reauthentication(
         idms: &IdmServer,
@@ -8990,18 +9009,35 @@ mod tests {
             setup_oauth2_resource_server_basic(idms, ct, true, false, false).await;
 
         let idms_prox_read = idms.proxy_read().await.unwrap();
-        let pkce_secret = PkceS256Secret::default();
 
-        let auth_req = auth_req_with_prompt(pkce_secret.to_request(), Vec::from([Prompt::Login]));
+        // Stale session (6 minutes after session creation): prompt=login must force re-auth.
+        let stale_ct = ct + Duration::from_secs(6 * 60);
+        let pkce_stale = PkceS256Secret::default();
+        let auth_req_stale =
+            auth_req_with_prompt(pkce_stale.to_request(), Vec::from([Prompt::Login]));
 
-        // Even though the user is authenticated, prompt=login should force re-auth.
         let result = idms_prox_read
-            .check_oauth2_authorisation(Some(&ident), &auth_req, ct)
+            .check_oauth2_authorisation(Some(&ident), &auth_req_stale, stale_ct)
             .expect("prompt=login should not error");
 
         assert!(
             matches!(result, AuthoriseResponse::AuthenticationRequired { .. }),
-            "prompt=login must force re-authentication even when user is already authenticated"
+            "prompt=login must force re-authentication when session is stale (> 5 min old)"
+        );
+
+        // Fresh session (30 seconds after session creation): prompt=login is already satisfied.
+        let fresh_ct = ct + Duration::from_secs(30);
+        let pkce_fresh = PkceS256Secret::default();
+        let auth_req_fresh =
+            auth_req_with_prompt(pkce_fresh.to_request(), Vec::from([Prompt::Login]));
+
+        let result2 = idms_prox_read
+            .check_oauth2_authorisation(Some(&ident), &auth_req_fresh, fresh_ct)
+            .expect("prompt=login with fresh session should not error");
+
+        assert!(
+            !matches!(result2, AuthoriseResponse::AuthenticationRequired { .. }),
+            "prompt=login must not force re-authentication when session is fresh (< 5 min old)"
         );
     }
 

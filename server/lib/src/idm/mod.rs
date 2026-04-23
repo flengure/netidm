@@ -22,6 +22,7 @@ pub mod identityverification;
 pub mod ldap;
 pub mod logout;
 pub mod logout_delivery;
+pub mod microsoft_connector;
 pub mod oauth2;
 pub(crate) mod oauth2_client;
 pub mod oauth2_connector;

@@ -5,6 +5,7 @@
 //! decode unchanged.
 
 #[cfg(test)]
+#[allow(unused_imports)]
 pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
 
 use crate::constants::{

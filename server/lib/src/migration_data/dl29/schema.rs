@@ -6,6 +6,7 @@
 //! added in DL28 and is not repeated here.
 
 #[cfg(test)]
+#[allow(unused_imports)]
 pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
 
 use crate::constants::{
