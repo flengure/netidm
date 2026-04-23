@@ -440,6 +440,8 @@ impl GitHubConnector {
 
         let status = resp.status();
         if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            warn!(github_status = %status, github_body = %body, "GitHub token exchange failed");
             return Err(ConnectorRefreshError::UpstreamRejected(status.as_u16()));
         }
 
@@ -510,6 +512,8 @@ impl GitHubConnector {
 
         let status = resp.status();
         if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            warn!(github_status = %status, github_body = %body, "GitHub GET /user failed");
             return Err(ConnectorRefreshError::UpstreamRejected(status.as_u16()));
         }
 
@@ -536,6 +540,8 @@ impl GitHubConnector {
 
         let status = resp.status();
         if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            warn!(github_status = %status, github_body = %body, "GitHub GET /user/emails failed");
             return Err(ConnectorRefreshError::UpstreamRejected(status.as_u16()));
         }
 
@@ -768,8 +774,33 @@ impl GitHubConnector {
 
         let profile = self.fetch_user(token).await?;
         let emails = self.fetch_emails(token).await?;
-        let orgs = self.fetch_orgs(token).await?;
-        let teams = self.fetch_teams(token).await?;
+
+        // 403 from /user/orgs means the org has OAuth App access restrictions and hasn't
+        // approved this app. Treat as no visible org memberships rather than a hard failure.
+        let orgs = match self.fetch_orgs(token).await {
+            Ok(orgs) => orgs,
+            Err(ConnectorRefreshError::UpstreamRejected(403 | 404)) => {
+                warn!(
+                    "GitHub /user/orgs returned 403/404 — missing read:org scope or org \
+                     OAuth App restriction; proceeding without org memberships"
+                );
+                Vec::new()
+            }
+            Err(e) => return Err(e),
+        };
+        // 403 = org OAuth App restriction; 404 = missing read:org scope.
+        // Both mean we can't see team memberships — degrade gracefully.
+        let teams = match self.fetch_teams(token).await {
+            Ok(teams) => teams,
+            Err(ConnectorRefreshError::UpstreamRejected(403 | 404)) => {
+                warn!(
+                    "GitHub /user/teams returned 403/404 — missing read:org scope or org \
+                     OAuth App restriction; proceeding without team memberships"
+                );
+                Vec::new()
+            }
+            Err(e) => return Err(e),
+        };
 
         self.check_access_gate(&profile, &teams)?;
 
@@ -894,7 +925,26 @@ pub fn github_link_or_provision_chain(
 ) -> Result<Option<Uuid>, crate::prelude::OperationError> {
     use crate::prelude::*;
 
-    // --- Step 1: verified email match ---
+    // --- Step 1: stable numeric ID match (already linked — no write needed) ---
+    // Run this first so a previously-linked account is found without touching any attributes.
+    {
+        let mut matches = qs_write.internal_search(filter!(f_and!([
+            f_eq(
+                Attribute::OAuth2AccountProvider,
+                PartialValue::Refer(provider_uuid)
+            ),
+            f_eq(
+                Attribute::OAuth2AccountUniqueUserId,
+                PartialValue::new_utf8s(&claims.sub)
+            ),
+            f_eq(Attribute::Class, EntryClass::Person.into()),
+        ])))?;
+        if let Some(entry) = matches.pop() {
+            return Ok(Some(entry.get_uuid()));
+        }
+    }
+
+    // --- Step 2: verified email match — first-time link ---
     if claims.email_verified == Some(true) {
         if let Some(ref email) = claims.email {
             let mut matches = qs_write.internal_search(filter!(f_and!([
@@ -924,7 +974,7 @@ pub fn github_link_or_provision_chain(
                         ]),
                     )
                     .map_err(|e| {
-                        admin_error!(?e, "github link chain step 1 modify failed");
+                        admin_error!(?e, "github link chain step 2 modify failed");
                         e
                     })?;
                 return Ok(Some(target));
@@ -932,25 +982,7 @@ pub fn github_link_or_provision_chain(
         }
     }
 
-    // --- Step 2: stable numeric ID match (already linked — no write needed) ---
-    {
-        let mut matches = qs_write.internal_search(filter!(f_and!([
-            f_eq(
-                Attribute::OAuth2AccountProvider,
-                PartialValue::Refer(provider_uuid)
-            ),
-            f_eq(
-                Attribute::OAuth2AccountUniqueUserId,
-                PartialValue::new_utf8s(&claims.sub)
-            ),
-            f_eq(Attribute::Class, EntryClass::Person.into()),
-        ])))?;
-        if let Some(entry) = matches.pop() {
-            return Ok(Some(entry.get_uuid()));
-        }
-    }
-
-    // --- Step 3: login match — upgrade stored link to stable numeric ID ---
+    // --- Step 3: login-string match — upgrade stored link to stable numeric ID ---
     if let Some(ref login) = claims.username_hint {
         let mut matches = qs_write.internal_search(filter!(f_and!([
             f_eq(

@@ -83,13 +83,20 @@ impl ProviderInitiatedSession {
 
     /// Build the authorization redirect URL and request parameters.
     pub(crate) fn start_auth_request(&self) -> (Url, AuthorisationRequest) {
-        let pkce_request = self.pkce_secret.to_request();
+        // GitHub enforces PKCE round-trip: if code_challenge is in the auth request,
+        // code_verifier must be in the token exchange. The GitHub connector handles its
+        // own token exchange (post_token) without PKCE, so skip it for GitHub to avoid 400.
+        let pkce = if self.provider_kind == ProviderKind::Github {
+            None
+        } else {
+            Some(self.pkce_secret.to_request())
+        };
         let request = AuthorisationRequest {
             response_type: ResponseType::Code,
             response_mode: None,
             client_id: self.client_id.clone(),
             state: Some(self.csrf_state.clone()),
-            pkce_request: Some(pkce_request),
+            pkce_request: pkce,
             redirect_uri: self.client_redirect_url.clone(),
             scope: self.request_scopes.clone(),
             nonce: None,

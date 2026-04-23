@@ -1571,12 +1571,33 @@ async fn view_login_step(
                         )
                         .await
                     {
-                        Ok(Some(_person_uuid)) => {
+                        Ok(Some(token)) => {
                             security_info!(
                                 %provider_uuid,
-                                "GitHub account linked/provisioned — redirecting to login"
+                                "GitHub account linked/provisioned — issuing session"
                             );
-                            break Redirect::to("/ui/login").into_response();
+                            let token_str = token.to_string();
+                            let mut bearer_cookie = cookies::make_unsigned(
+                                &state,
+                                COOKIE_BEARER_TOKEN,
+                                token_str,
+                            );
+                            bearer_cookie.make_permanent();
+                            jar = jar.add(bearer_cookie);
+                            jar = jar.add(cookies::make_unsigned(
+                                &state,
+                                COOKIE_AUTH_METHOD_PREF,
+                                "sso".to_string(),
+                            ));
+                            jar = cookies::destroy(jar, COOKIE_AUTH_SESSION_ID, &state);
+                            let dest = if jar.get(COOKIE_OAUTH2_REQ).is_some() {
+                                Urls::Oauth2Resume.as_ref().to_string()
+                            } else if let Some(ref loc) = session_context.after_auth_loc {
+                                loc.as_str().to_string()
+                            } else {
+                                Urls::Apps.as_ref().to_string()
+                            };
+                            break Redirect::to(&dest).into_response();
                         }
                         Ok(None) => {
                             // No match and JIT provisioning disabled — fall through to

@@ -3047,6 +3047,58 @@ impl IdmServerProxyWriteTransaction<'_> {
             })
     }
 
+    /// Issue a signed ReadOnly session token for a person after a provider-initiated
+    /// OAuth2 login (GitHub SSO-first flow). Mirrors the pattern of `saml_complete_login`.
+    pub fn provider_initiated_complete_login(
+        &mut self,
+        person_uuid: Uuid,
+        ct: Duration,
+    ) -> Result<compact_jwt::JwsCompact, OperationError> {
+        use crate::value::AuthType;
+        use compact_jwt::Jws;
+
+        let entry = self.qs_write.internal_search_uuid(person_uuid)?;
+        let (account, account_policy) =
+            Account::try_from_entry_with_policy(&entry, &mut self.qs_write)?;
+
+        let session_id = Uuid::new_v4();
+        let scope = SessionScope::ReadWrite;
+
+        let cred_id = entry
+            .get_ava_single_uuid(Attribute::OAuth2AccountCredentialUuid)
+            .unwrap_or_else(Uuid::nil);
+
+        let uat = account
+            .to_userauthtoken(session_id, scope, ct, &account_policy)
+            .ok_or(OperationError::AU0004UserAuthTokenInvalid)?;
+
+        self.process_authsessionrecord(&AuthSessionRecord {
+            target_uuid: account.uuid,
+            session_id,
+            cred_id,
+            label: "GitHub SSO Session".to_string(),
+            expiry: uat.expiry,
+            issued_at: uat.issued_at,
+            issued_by: IdentityId::User(account.uuid),
+            scope,
+            type_: AuthType::OAuth2Trust,
+            ext_metadata: Default::default(),
+        })?;
+
+        let jwt = Jws::into_json(&uat).map_err(|e| {
+            admin_error!(?e, "Failed to serialise UAT into Jws");
+            OperationError::AU0002JwsSerialisation
+        })?;
+
+        self.qs_write
+            .get_domain_key_object_handle()?
+            .jws_es256_sign(&jwt, ct)
+            .map_err(|e| {
+                admin_error!(?e, "Failed to sign provider-initiated UAT");
+                OperationError::AU0003JwsSignature
+            })
+    }
+
     fn reload_oauth2(&mut self) -> Result<(), OperationError> {
         let domain_level = self.qs_write.get_domain_version();
         self.qs_write.get_oauth2rs_set().and_then(|oauth2rs_set| {

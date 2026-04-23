@@ -1970,7 +1970,7 @@ impl QueryServerWriteV1 {
         claims: netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
         eventid: Uuid,
         _client_auth_info: ClientAuthInfo,
-    ) -> Result<Option<Uuid>, OperationError> {
+    ) -> Result<Option<compact_jwt::JwsCompact>, OperationError> {
         let _ = eventid;
         let allow_jit = self
             .idms
@@ -1985,22 +1985,26 @@ impl QueryServerWriteV1 {
         let maybe_uuid =
             idms_prox_write.github_link_or_provision_chain(provider_uuid, &claims, allow_jit)?;
 
-        if let Some(person_uuid) = maybe_uuid {
-            if let Err(e) = idms_prox_write.reconcile_upstream_memberships_for_provider(
-                person_uuid,
-                provider_uuid,
-                &claims.groups,
-            ) {
-                warn!(
-                    ?e,
-                    ?provider_uuid,
-                    ?person_uuid,
-                    "reconcile_upstream_memberships failed during GitHub link/provision; proceeding"
-                );
-            }
+        let Some(person_uuid) = maybe_uuid else {
+            idms_prox_write.commit()?;
+            return Ok(None);
+        };
+
+        if let Err(e) = idms_prox_write.reconcile_upstream_memberships_for_provider(
+            person_uuid,
+            provider_uuid,
+            &claims.groups,
+        ) {
+            warn!(
+                ?e,
+                ?provider_uuid,
+                ?person_uuid,
+                "reconcile_upstream_memberships failed during GitHub link/provision; proceeding"
+            );
         }
 
-        idms_prox_write.commit().map(|_| maybe_uuid)
+        let token = idms_prox_write.provider_initiated_complete_login(person_uuid, ct)?;
+        idms_prox_write.commit().map(|_| Some(token))
     }
 
     /// Attempt to link an existing Person account to an OAuth2 provider by verified email.
