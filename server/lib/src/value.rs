@@ -91,7 +91,7 @@ pub static NSUNIQUEID_RE: LazyLock<Regex> = LazyLock::new(|| {
 /// Must not contain whitespace.
 pub static OAUTHSCOPE_RE: LazyLock<Regex> = LazyLock::new(|| {
     #[allow(clippy::expect_used)]
-    Regex::new("^[0-9a-zA-Z_]+$").expect("Invalid oauthscope regex found")
+    Regex::new("^[0-9a-zA-Z_]+([:\\-][0-9a-zA-Z_]+)*$").expect("Invalid oauthscope regex found")
 });
 
 /// Must not contain whitespace. Allows "abcd", "abcd:efgh", but ":" and "-" need to be separating
