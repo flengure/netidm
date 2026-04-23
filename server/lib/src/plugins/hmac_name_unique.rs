@@ -13,12 +13,6 @@ fn create_hmac_history(
     qs: &mut QueryServerWriteTransaction,
     cand: &mut [EntryInvalidNew],
 ) -> Result<(), OperationError> {
-    let domain_level = qs.get_domain_version();
-    if domain_level < DOMAIN_LEVEL_12 {
-        trace!("Skipping hmac name history generation");
-        return Ok(());
-    }
-
     let hmac_name_history_config = qs.get_feature_hmac_name_history_config();
 
     if !hmac_name_history_config.enabled {
@@ -51,12 +45,6 @@ fn update_hmac_history(
     pre_cand: &[Arc<EntrySealedCommitted>],
     cand: &mut [EntryInvalidCommitted],
 ) -> Result<(), OperationError> {
-    let domain_level = qs.get_domain_version();
-    if domain_level < DOMAIN_LEVEL_12 {
-        trace!("Skipping hmac name history generation");
-        return Ok(());
-    }
-
     let hmac_name_history_config = qs.get_feature_hmac_name_history_config();
 
     if !hmac_name_history_config.enabled {
@@ -100,12 +88,6 @@ fn build_memorials(
     cand: &[Arc<EntrySealedCommitted>],
     memorials: &mut BTreeMap<Uuid, EntryInitNew>,
 ) -> Result<(), OperationError> {
-    let domain_level = qs.get_domain_version();
-    if domain_level < DOMAIN_LEVEL_12 {
-        trace!("Skipping hmac name history generation");
-        return Ok(());
-    }
-
     let hmac_name_history_config = qs.get_feature_hmac_name_history_config();
 
     if !hmac_name_history_config.enabled {
@@ -131,12 +113,6 @@ fn teardown_memorials(
     qs: &mut QueryServerWriteTransaction,
     memorial_pairs: &mut [(&EntrySealedCommitted, &mut EntryInvalidCommitted)],
 ) -> Result<(), OperationError> {
-    let domain_level = qs.get_domain_version();
-    if domain_level < DOMAIN_LEVEL_12 {
-        trace!("Skipping hmac name history generation");
-        return Ok(());
-    }
-
     let hmac_name_history_config = qs.get_feature_hmac_name_history_config();
 
     if !hmac_name_history_config.enabled {
@@ -158,14 +134,6 @@ fn teardown_memorials(
 impl HmacNameUnique {
     #[instrument(level = "debug", name = "hmac_name_unique::fixup", skip_all)]
     pub(crate) fn fixup(qs: &mut QueryServerWriteTransaction) -> Result<(), OperationError> {
-        let domain_level = qs.get_domain_version();
-        if domain_level < DOMAIN_LEVEL_12 {
-            error!("HMAC name history available, but fixup task was run, log this as a bug!");
-            // should be IMPOSSIBLE to activate fixup from a lower domain level!!!
-            debug_assert!(false);
-            return Err(OperationError::KG005HowDidYouEvenManageThis);
-        }
-
         let hmac_name_history_config_enabled = qs.get_feature_hmac_name_history_config().enabled;
 
         if !hmac_name_history_config_enabled {

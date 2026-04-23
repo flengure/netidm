@@ -4,14 +4,17 @@ use serde::{Deserialize, Serialize};
 use std::convert::Infallible;
 use std::fmt;
 use std::str::FromStr;
+use strum::AsRefStr;
 use utoipa::ToSchema;
 
 pub use smartstring::alias::String as AttrString;
 
 #[derive(
     Serialize, Deserialize, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Default, ToSchema,
+    AsRefStr,
 )]
 #[cfg_attr(test, derive(enum_iterator::Sequence))]
+#[strum(serialize_all = "snake_case")]
 #[serde(rename_all = "lowercase", from = "String", into = "AttrString")]
 pub enum Attribute {
     Account,
@@ -24,11 +27,14 @@ pub enum Attribute {
     AcpModifyClass,
     AcpModifyPresentClass,
     AcpModifyRemoveClass,
+    #[strum(serialize = "acp_modify_presentattr")]
     AcpModifyPresentAttr,
+    #[strum(serialize = "acp_modify_removedattr")]
     AcpModifyRemovedAttr,
     AcpReceiver,
     AcpReceiverGroup,
     AcpSearchAttr,
+    #[strum(serialize = "acp_targetscope")]
     AcpTargetScope,
     ApiTokenSession,
     ApplicationPassword,
@@ -36,8 +42,11 @@ pub enum Attribute {
     AttestedPasskeys,
     #[default]
     Attr,
+    #[strum(serialize = "attributename")]
     AttributeName,
+    #[strum(serialize = "attributetype")]
     AttributeType,
+    #[strum(serialize = "authsession_expiry")]
     AuthSessionExpiry,
     AuthPasswordMinimumLength,
     BadlistPassword,
@@ -45,6 +54,7 @@ pub enum Attribute {
     CascadeDeleted,
     Claim,
     Class,
+    #[strum(serialize = "classname")]
     ClassName,
     Cn,
     CookiePrivateKey,
@@ -54,7 +64,9 @@ pub enum Attribute {
     DeniedName,
     DeleteAfter,
     Description,
+    #[strum(serialize = "directmemberof")]
     DirectMemberOf,
+    #[strum(serialize = "displayname")]
     DisplayName,
     Dn,
     Domain,
@@ -66,31 +78,43 @@ pub enum Attribute {
     DomainSsid,
     DomainTokenKey,
     DomainUuid,
+    #[strum(serialize = "dyngroup")]
     DynGroup,
+    #[strum(serialize = "dyngroup_filter")]
     DynGroupFilter,
+    #[strum(serialize = "dynmember")]
     DynMember,
     Enabled,
     Email,
+    #[strum(serialize = "emailalternative")]
     EmailAlternative,
+    #[strum(serialize = "emailprimary")]
     EmailPrimary,
+    #[strum(serialize = "entrydn")]
     EntryDn,
     EntryManagedBy,
+    #[strum(serialize = "entryuuid")]
     EntryUuid,
     Es256PrivateKeyDer,
     Excludes,
     FernetPrivateKeyStr,
     Gecos,
+    #[strum(serialize = "gidnumber")]
     GidNumber,
     GrantUiHint,
     Group,
     HmacNameHistory,
+    #[strum(serialize = "homedirectory")]
     HomeDirectory,
+    #[strum(serialize = "id_verification_eckey")]
     IdVerificationEcKey,
     Image,
     Index,
     Indexed,
     InMemoriam,
+    #[strum(serialize = "ipanthash")]
     IpaNtHash,
+    #[strum(serialize = "ipasshpubkey")]
     IpaSshPubKey,
     JwsEs256PrivateKey,
     KeyActionRotate,
@@ -102,70 +126,120 @@ pub enum Attribute {
     LastModifiedCid,
     LdapAllowUnixPwBind,
     /// An LDAP Compatible emailAddress
+    #[strum(serialize = "emailaddress")]
     LdapEmailAddress,
     /// An LDAP Compatible sshkeys virtual attribute
+    #[strum(serialize = "keys")]
     LdapKeys,
     LdapMaxQueryableAttrs,
+    #[strum(serialize = "legalname")]
     LegalName,
     LimitSearchMaxResults,
     LimitSearchMaxFilterTest,
     LinkedGroup,
+    #[strum(serialize = "loginshell")]
     LoginShell,
     Mail,
     MailDestination,
     May,
     Member,
     MemberCreateOnce,
+    #[strum(serialize = "memberof")]
     MemberOf,
     MessageTemplate,
+    #[strum(serialize = "multivalue")]
     MultiValue,
     Must,
     Name,
     NameHistory,
+    #[strum(serialize = "no-index")]
     NoIndex,
+    #[strum(serialize = "nsuniqueid")]
     NsUniqueId,
+    #[strum(serialize = "nsaccountlock")]
     NsAccountLock,
+    #[strum(serialize = "oauth2_allow_insecure_client_disable_pkce")]
     OAuth2AllowInsecureClientDisablePkce,
+    #[strum(serialize = "oauth2_allow_localhost_redirect")]
     OAuth2AllowLocalhostRedirect,
+    #[strum(serialize = "oauth2_authorisation_endpoint")]
     OAuth2AuthorisationEndpoint,
+    #[strum(serialize = "oauth2_client_id")]
     OAuth2ClientId,
+    #[strum(serialize = "oauth2_client_logo_uri")]
     OAuth2ClientLogoUri,
+    #[strum(serialize = "oauth2_client_secret")]
     OAuth2ClientSecret,
+    #[strum(serialize = "oauth2_consent_scope_map")]
     OAuth2ConsentScopeMap,
+    #[strum(serialize = "oauth2_device_flow_enable")]
     OAuth2DeviceFlowEnable,
+    #[strum(serialize = "oauth2_jwt_legacy_crypto_enable")]
     OAuth2JwtLegacyCryptoEnable,
+    #[strum(serialize = "oauth2_prefer_short_username")]
     OAuth2PreferShortUsername,
+    #[strum(serialize = "oauth2_request_scopes")]
     OAuth2RequestScopes,
+    #[strum(serialize = "oauth2_rs_basic_secret")]
     OAuth2RsBasicSecret,
+    #[strum(serialize = "oauth2_rs_claim_map")]
     OAuth2RsClaimMap,
+    #[strum(serialize = "oauth2_rs_implicit_scopes")]
     OAuth2RsImplicitScopes,
+    #[strum(serialize = "oauth2_rs_name")]
     OAuth2RsName,
+    #[strum(serialize = "oauth2_rs_origin")]
     OAuth2RsOrigin,
+    #[strum(serialize = "oauth2_rs_origin_landing")]
     OAuth2RsOriginLanding,
+    #[strum(serialize = "oauth2_rs_scope_map")]
     OAuth2RsScopeMap,
+    #[strum(serialize = "oauth2_rs_sup_scope_map")]
     OAuth2RsSupScopeMap,
+    #[strum(serialize = "oauth2_rs_token_key")]
     OAuth2RsTokenKey,
+    #[strum(serialize = "oauth2_session")]
     OAuth2Session,
+    #[strum(serialize = "oauth2_strict_redirect_uri")]
     OAuth2StrictRedirectUri,
+    #[strum(serialize = "oauth2_token_endpoint")]
     OAuth2TokenEndpoint,
+    #[strum(serialize = "oauth2_account_credential_uuid")]
     OAuth2AccountCredentialUuid,
+    #[strum(serialize = "oauth2_account_provider")]
     OAuth2AccountProvider,
+    #[strum(serialize = "oauth2_account_unique_user_id")]
     OAuth2AccountUniqueUserId,
+    #[strum(serialize = "oauth2_consent_prompt_enable")]
     OAuth2ConsentPromptEnable,
+    #[strum(serialize = "oauth2_userinfo_endpoint")]
     OAuth2UserinfoEndpoint,
+    #[strum(serialize = "oauth2_jit_provisioning")]
     OAuth2JitProvisioning,
+    #[strum(serialize = "oauth2_claim_map_name")]
     OAuth2ClaimMapName,
+    #[strum(serialize = "oauth2_claim_map_displayname")]
     OAuth2ClaimMapDisplayname,
+    #[strum(serialize = "oauth2_claim_map_email")]
     OAuth2ClaimMapEmail,
+    #[strum(serialize = "oauth2_email_link_accounts")]
     OAuth2EmailLinkAccounts,
+    #[strum(serialize = "oauth2_domain_email_link_accounts")]
     OAuth2DomainEmailLinkAccounts,
+    #[strum(serialize = "oauth2_issuer")]
     OAuth2Issuer,
+    #[strum(serialize = "oauth2_jwks_uri")]
     OAuth2JwksUri,
+    #[strum(serialize = "oauth2_link_by")]
     OAuth2LinkBy,
+    #[strum(serialize = "oauth2_group_mapping")]
     OAuth2GroupMapping,
     SamlGroupMapping,
+    #[strum(serialize = "oauth2_upstream_synced_group")]
     OAuth2UpstreamSyncedGroup,
+    #[strum(serialize = "oauth2_rs_post_logout_redirect_uri")]
     OAuth2RsPostLogoutRedirectUri,
+    #[strum(serialize = "oauth2_rs_backchannel_logout_uri")]
     OAuth2RsBackchannelLogoutUri,
     SamlSingleLogoutServiceUrl,
     LogoutDeliveryEndpoint,
@@ -183,18 +257,30 @@ pub enum Attribute {
     // PR-CONNECTOR-GITHUB (DL28) — per-connector config attributes on
     // `EntryClass::OAuth2Client`. All optional with documented defaults.
     // See `specs/012-github-connector/data-model.md`.
+    #[strum(serialize = "oauth2_client_provider_kind")]
     OAuth2ClientProviderKind,
+    #[strum(serialize = "oauth2_client_github_host")]
     OAuth2ClientGithubHost,
+    #[strum(serialize = "oauth2_client_github_org_filter")]
     OAuth2ClientGithubOrgFilter,
+    #[strum(serialize = "oauth2_client_github_allowed_teams")]
     OAuth2ClientGithubAllowedTeams,
+    #[strum(serialize = "oauth2_client_github_team_name_field")]
     OAuth2ClientGithubTeamNameField,
+    #[strum(serialize = "oauth2_client_github_load_all_groups")]
     OAuth2ClientGithubLoadAllGroups,
+    #[strum(serialize = "oauth2_client_github_preferred_email_domain")]
     OAuth2ClientGithubPreferredEmailDomain,
+    #[strum(serialize = "oauth2_client_github_allow_jit_provisioning")]
     OAuth2ClientGithubAllowJitProvisioning,
+    #[strum(serialize = "objectclass")]
     ObjectClass,
+    #[strum(serialize = "other-no-index")]
     OtherNoIndex,
+    #[strum(serialize = "passkeys")]
     PassKeys,
     PasswordImport,
+    #[strum(serialize = "pwd_changed_time")]
     PasswordChangedTime,
     PatchLevel,
     Phantom,
@@ -202,6 +288,7 @@ pub enum Attribute {
     PrivateCookieKey,
     PrivilegeExpiry,
     RadiusSecret,
+    #[strum(serialize = "recycled_directmemberof")]
     RecycledDirectMemberOf,
     Refers,
     Replicated,
@@ -209,6 +296,7 @@ pub enum Attribute {
     S256,
     /// A set of scim schemas. This is similar to a netidm class.
     #[serde(rename = "schemas")]
+    #[strum(serialize = "schemas")]
     ScimSchemas,
     Scope,
     SendAfter,
@@ -217,11 +305,15 @@ pub enum Attribute {
     SourceUuid,
     Spn,
     /// An LDAP-compatible sshpublickey
+    #[strum(serialize = "sshpublickey")]
     LdapSshPublicKey,
     /// The Netidm-local ssh_publickey
+    #[strum(serialize = "ssh_publickey")]
     SshPublicKey,
+    #[strum(serialize = "sudohost")]
     SudoHost,
     Supplements,
+    #[strum(serialize = "systemsupplements")]
     SystemSupplements,
     SyncAllowed,
     SyncClass,
@@ -232,18 +324,24 @@ pub enum Attribute {
     SyncTokenSession,
     SyncYieldAuthority,
     Syntax,
+    #[strum(serialize = "systemexcludes")]
     SystemExcludes,
+    #[strum(serialize = "systemmay")]
     SystemMay,
+    #[strum(serialize = "systemmust")]
     SystemMust,
     Term,
     TotpImport,
     Uid,
+    #[strum(serialize = "uidnumber")]
     UidNumber,
     Unique,
     UnixPassword,
     UnixPasswordImport,
     UserAuthTokenSession,
+    #[strum(serialize = "userid")]
     UserId,
+    #[strum(serialize = "userpassword")]
     UserPassword,
     Uuid,
     Version,
@@ -290,33 +388,36 @@ pub enum Attribute {
     SamlJitProvisioning,
 
     #[cfg(any(debug_assertions, test, feature = "test"))]
+    #[strum(serialize = "non-exist")]
     NonExist,
     #[cfg(any(debug_assertions, test, feature = "test"))]
+    #[strum(serialize = "testattr")]
     TestAttr,
     #[cfg(test)]
+    #[strum(serialize = "testattr_a")]
     TestAttrA,
     #[cfg(test)]
+    #[strum(serialize = "testattr_b")]
     TestAttrB,
     #[cfg(test)]
+    #[strum(serialize = "testattr_c")]
     TestAttrC,
     #[cfg(test)]
+    #[strum(serialize = "testattr_d")]
     TestAttrD,
     #[cfg(any(debug_assertions, test, feature = "test"))]
+    #[strum(serialize = "testattrnumber")]
     TestNumber,
     #[cfg(any(debug_assertions, test, feature = "test"))]
     Extra,
     #[cfg(any(debug_assertions, test, feature = "test"))]
+    #[strum(serialize = "notallowed")]
     TestNotAllowed,
 
     #[cfg(not(test))]
     #[schema(value_type = String)]
+    #[strum(serialize = "")]
     Custom(AttrString),
-}
-
-impl AsRef<str> for Attribute {
-    fn as_ref(&self) -> &str {
-        self.as_str()
-    }
 }
 
 impl AsRef<Attribute> for Attribute {
@@ -345,6 +446,14 @@ impl From<String> for Attribute {
     }
 }
 
+impl FromStr for Attribute {
+    type Err = Infallible;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        Ok(Self::inner_from_str(value))
+    }
+}
+
 impl<'a> From<&'a Attribute> for &'a str {
     fn from(val: &'a Attribute) -> Self {
         val.as_str()
@@ -357,307 +466,13 @@ impl From<Attribute> for AttrString {
     }
 }
 
-impl FromStr for Attribute {
-    type Err = Infallible;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        Ok(Self::inner_from_str(value))
-    }
-}
-
 impl Attribute {
     pub fn as_str(&self) -> &str {
-        match self {
-            Attribute::Account => ATTR_ACCOUNT,
-            Attribute::AccountExpire => ATTR_ACCOUNT_EXPIRE,
-            Attribute::AccountValidFrom => ATTR_ACCOUNT_VALID_FROM,
-            Attribute::AccountSoftlockExpire => ATTR_ACCOUNT_SOFTLOCK_EXPIRE,
-            Attribute::AcpCreateAttr => ATTR_ACP_CREATE_ATTR,
-            Attribute::AcpCreateClass => ATTR_ACP_CREATE_CLASS,
-            Attribute::AcpEnable => ATTR_ACP_ENABLE,
-            Attribute::AcpModifyClass => ATTR_ACP_MODIFY_CLASS,
-            Attribute::AcpModifyPresentClass => ATTR_ACP_MODIFY_PRESENT_CLASS,
-            Attribute::AcpModifyRemoveClass => ATTR_ACP_MODIFY_REMOVE_CLASS,
-            Attribute::AcpModifyPresentAttr => ATTR_ACP_MODIFY_PRESENTATTR,
-            Attribute::AcpModifyRemovedAttr => ATTR_ACP_MODIFY_REMOVEDATTR,
-            Attribute::AcpReceiver => ATTR_ACP_RECEIVER,
-            Attribute::AcpReceiverGroup => ATTR_ACP_RECEIVER_GROUP,
-            Attribute::AcpSearchAttr => ATTR_ACP_SEARCH_ATTR,
-            Attribute::AcpTargetScope => ATTR_ACP_TARGET_SCOPE,
-            Attribute::AllowPrimaryCredFallback => ATTR_ALLOW_PRIMARY_CRED_FALLBACK,
-            Attribute::WgInterface => ATTR_WG_INTERFACE,
-            Attribute::WgListenPort => ATTR_WG_LISTEN_PORT,
-            Attribute::WgAddress => ATTR_WG_ADDRESS,
-            Attribute::WgDns => ATTR_WG_DNS,
-            Attribute::WgMtu => ATTR_WG_MTU,
-            Attribute::WgTable => ATTR_WG_TABLE,
-            Attribute::WgPreUp => ATTR_WG_PRE_UP,
-            Attribute::WgPostUp => ATTR_WG_POST_UP,
-            Attribute::WgPreDown => ATTR_WG_PRE_DOWN,
-            Attribute::WgPostDown => ATTR_WG_POST_DOWN,
-            Attribute::WgSaveConfig => ATTR_WG_SAVE_CONFIG,
-            Attribute::WgPublicKey => ATTR_WG_PUBLIC_KEY,
-            Attribute::WgEndpoint => ATTR_WG_ENDPOINT,
-            Attribute::WgPubkey => ATTR_WG_PUBKEY,
-            Attribute::WgAllowedIps => ATTR_WG_ALLOWED_IPS,
-            Attribute::WgPresharedKey => ATTR_WG_PRESHARED_KEY,
-            Attribute::WgPersistentKeepalive => ATTR_WG_PERSISTENT_KEEPALIVE,
-            Attribute::WgTunnelRef => ATTR_WG_TUNNEL_REF,
-            Attribute::WgUserRef => ATTR_WG_USER_REF,
-            Attribute::WgPrivateKey => ATTR_WG_PRIVATE_KEY,
-            Attribute::WgLastSeen => ATTR_WG_LAST_SEEN,
-            Attribute::WgTokenSecret => ATTR_WG_TOKEN_SECRET,
-            Attribute::WgTokenUsesLeft => ATTR_WG_TOKEN_USES_LEFT,
-            Attribute::WgTokenExpiry => ATTR_WG_TOKEN_EXPIRY,
-            Attribute::WgTokenPrincipalRef => ATTR_WG_TOKEN_PRINCIPAL_REF,
-            Attribute::SamlIdpSsoUrl => "saml_idp_sso_url",
-            Attribute::SamlIdpCertificate => "saml_idp_certificate",
-            Attribute::SamlEntityId => "saml_entity_id",
-            Attribute::SamlAcsUrl => "saml_acs_url",
-            Attribute::SamlNameIdFormat => "saml_name_id_format",
-            Attribute::SamlAttrMapEmail => "saml_attr_map_email",
-            Attribute::SamlAttrMapDisplayname => "saml_attr_map_displayname",
-            Attribute::SamlAttrMapGroups => "saml_attr_map_groups",
-            Attribute::SamlJitProvisioning => "saml_jit_provisioning",
-            Attribute::ApiTokenSession => ATTR_API_TOKEN_SESSION,
-            Attribute::ApplicationPassword => ATTR_APPLICATION_PASSWORD,
-            Attribute::ApplicationUrl => ATTR_APPLICATION_URL,
-            Attribute::AttestedPasskeys => ATTR_ATTESTED_PASSKEYS,
-            Attribute::Attr => ATTR_ATTR,
-            Attribute::AttributeName => ATTR_ATTRIBUTENAME,
-            Attribute::AttributeType => ATTR_ATTRIBUTETYPE,
-            Attribute::AuthSessionExpiry => ATTR_AUTH_SESSION_EXPIRY,
-            Attribute::AuthPasswordMinimumLength => ATTR_AUTH_PASSWORD_MINIMUM_LENGTH,
-            Attribute::BadlistPassword => ATTR_BADLIST_PASSWORD,
-            Attribute::Certificate => ATTR_CERTIFICATE,
-            Attribute::CascadeDeleted => ATTR_CASCADE_DELETED,
-            Attribute::Claim => ATTR_CLAIM,
-            Attribute::Class => ATTR_CLASS,
-            Attribute::ClassName => ATTR_CLASSNAME,
-            Attribute::Cn => ATTR_CN,
-            Attribute::CookiePrivateKey => ATTR_COOKIE_PRIVATE_KEY,
-            Attribute::CreatedAtCid => ATTR_CREATED_AT_CID,
-            Attribute::CredentialUpdateIntentToken => ATTR_CREDENTIAL_UPDATE_INTENT_TOKEN,
-            Attribute::CredentialTypeMinimum => ATTR_CREDENTIAL_TYPE_MINIMUM,
-            Attribute::DeniedName => ATTR_DENIED_NAME,
-            Attribute::DeleteAfter => ATTR_DELETE_AFTER,
-            Attribute::Description => ATTR_DESCRIPTION,
-            Attribute::DirectMemberOf => ATTR_DIRECTMEMBEROF,
-            Attribute::DisplayName => ATTR_DISPLAYNAME,
-            Attribute::Dn => ATTR_DN,
-            Attribute::Domain => ATTR_DOMAIN,
-            Attribute::DomainAllowEasterEggs => ATTR_DOMAIN_ALLOW_EASTER_EGGS,
-            Attribute::DomainDevelopmentTaint => ATTR_DOMAIN_DEVELOPMENT_TAINT,
-            Attribute::DomainDisplayName => ATTR_DOMAIN_DISPLAY_NAME,
-            Attribute::DomainLdapBasedn => ATTR_DOMAIN_LDAP_BASEDN,
-            Attribute::DomainName => ATTR_DOMAIN_NAME,
-            Attribute::DomainSsid => ATTR_DOMAIN_SSID,
-            Attribute::DomainTokenKey => ATTR_DOMAIN_TOKEN_KEY,
-            Attribute::DomainUuid => ATTR_DOMAIN_UUID,
-            Attribute::DynGroup => ATTR_DYNGROUP,
-            Attribute::DynGroupFilter => ATTR_DYNGROUP_FILTER,
-            Attribute::DynMember => ATTR_DYNMEMBER,
-            Attribute::Enabled => ATTR_ENABLED,
-            Attribute::Email => ATTR_EMAIL,
-            Attribute::EmailAlternative => ATTR_EMAIL_ALTERNATIVE,
-            Attribute::EmailPrimary => ATTR_EMAIL_PRIMARY,
-            Attribute::EntryDn => ATTR_ENTRYDN,
-            Attribute::EntryManagedBy => ATTR_ENTRY_MANAGED_BY,
-            Attribute::EntryUuid => ATTR_ENTRYUUID,
-            Attribute::Es256PrivateKeyDer => ATTR_ES256_PRIVATE_KEY_DER,
-            Attribute::Excludes => ATTR_EXCLUDES,
-            Attribute::FernetPrivateKeyStr => ATTR_FERNET_PRIVATE_KEY_STR,
-            Attribute::Gecos => ATTR_GECOS,
-            Attribute::GidNumber => ATTR_GIDNUMBER,
-            Attribute::GrantUiHint => ATTR_GRANT_UI_HINT,
-            Attribute::Group => ATTR_GROUP,
-            Attribute::HmacNameHistory => ATTR_HMAC_NAME_HISTORY,
-            Attribute::HomeDirectory => ATTR_HOME_DIRECTORY,
-            Attribute::IdVerificationEcKey => ATTR_ID_VERIFICATION_ECKEY,
-            Attribute::Image => ATTR_IMAGE,
-            Attribute::Index => ATTR_INDEX,
-            Attribute::Indexed => ATTR_INDEXED,
-            Attribute::InMemoriam => ATTR_IN_MEMORIAM,
-            Attribute::IpaNtHash => ATTR_IPANTHASH,
-            Attribute::IpaSshPubKey => ATTR_IPASSHPUBKEY,
-            Attribute::JwsEs256PrivateKey => ATTR_JWS_ES256_PRIVATE_KEY,
-            Attribute::KeyActionRotate => ATTR_KEY_ACTION_ROTATE,
-            Attribute::KeyActionRevoke => ATTR_KEY_ACTION_REVOKE,
-            Attribute::KeyActionImportJwsEs256 => ATTR_KEY_ACTION_IMPORT_JWS_ES256,
-            Attribute::KeyActionImportJwsRs256 => ATTR_KEY_ACTION_IMPORT_JWS_RS256,
-            Attribute::KeyInternalData => ATTR_KEY_INTERNAL_DATA,
-            Attribute::KeyProvider => ATTR_KEY_PROVIDER,
-            Attribute::LastModifiedCid => ATTR_LAST_MODIFIED_CID,
-            Attribute::LdapAllowUnixPwBind => ATTR_LDAP_ALLOW_UNIX_PW_BIND,
-            Attribute::LdapEmailAddress => ATTR_LDAP_EMAIL_ADDRESS,
-            Attribute::LdapKeys => ATTR_LDAP_KEYS,
-            Attribute::LdapMaxQueryableAttrs => ATTR_LDAP_MAX_QUERYABLE_ATTRS,
-            Attribute::LdapSshPublicKey => ATTR_LDAP_SSHPUBLICKEY,
-            Attribute::LegalName => ATTR_LEGALNAME,
-            Attribute::LimitSearchMaxResults => ATTR_LIMIT_SEARCH_MAX_RESULTS,
-            Attribute::LimitSearchMaxFilterTest => ATTR_LIMIT_SEARCH_MAX_FILTER_TEST,
-            Attribute::LinkedGroup => ATTR_LINKEDGROUP,
-            Attribute::LoginShell => ATTR_LOGINSHELL,
-            Attribute::Mail => ATTR_MAIL,
-            Attribute::MailDestination => ATTR_MAIL_DESTINATION,
-            Attribute::May => ATTR_MAY,
-            Attribute::Member => ATTR_MEMBER,
-            Attribute::MemberCreateOnce => ATTR_MEMBER_CREATE_ONCE,
-            Attribute::MemberOf => ATTR_MEMBEROF,
-            Attribute::MessageTemplate => ATTR_MESSAGE_TEMPLATE,
-            Attribute::MultiValue => ATTR_MULTIVALUE,
-            Attribute::Must => ATTR_MUST,
-            Attribute::Name => ATTR_NAME,
-            Attribute::NameHistory => ATTR_NAME_HISTORY,
-            Attribute::NoIndex => ATTR_NO_INDEX,
-            Attribute::NsUniqueId => ATTR_NSUNIQUEID,
-            Attribute::NsAccountLock => ATTR_NSACCOUNTLOCK,
-            Attribute::OAuth2AllowInsecureClientDisablePkce => {
-                ATTR_OAUTH2_ALLOW_INSECURE_CLIENT_DISABLE_PKCE
-            }
-            Attribute::OAuth2AllowLocalhostRedirect => ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT,
-            Attribute::OAuth2AuthorisationEndpoint => ATTR_OAUTH2_AUTHORISATION_ENDPOINT,
-            Attribute::OAuth2ClientId => ATTR_OAUTH2_CLIENT_ID,
-            Attribute::OAuth2ClientLogoUri => ATTR_OAUTH2_CLIENT_LOGO_URI,
-            Attribute::OAuth2ClientSecret => ATTR_OAUTH2_CLIENT_SECRET,
-            Attribute::OAuth2ConsentScopeMap => ATTR_OAUTH2_CONSENT_SCOPE_MAP,
-            Attribute::OAuth2DeviceFlowEnable => ATTR_OAUTH2_DEVICE_FLOW_ENABLE,
-            Attribute::OAuth2JwtLegacyCryptoEnable => ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE,
-            Attribute::OAuth2PreferShortUsername => ATTR_OAUTH2_PREFER_SHORT_USERNAME,
-            Attribute::OAuth2RequestScopes => ATTR_OAUTH2_REQUEST_SCOPES,
-            Attribute::OAuth2RsBasicSecret => ATTR_OAUTH2_RS_BASIC_SECRET,
-            Attribute::OAuth2RsClaimMap => ATTR_OAUTH2_RS_CLAIM_MAP,
-            Attribute::OAuth2RsImplicitScopes => ATTR_OAUTH2_RS_IMPLICIT_SCOPES,
-            Attribute::OAuth2RsName => ATTR_OAUTH2_RS_NAME,
-            Attribute::OAuth2RsOrigin => ATTR_OAUTH2_RS_ORIGIN,
-            Attribute::OAuth2RsOriginLanding => ATTR_OAUTH2_RS_ORIGIN_LANDING,
-            Attribute::OAuth2RsScopeMap => ATTR_OAUTH2_RS_SCOPE_MAP,
-            Attribute::OAuth2RsSupScopeMap => ATTR_OAUTH2_RS_SUP_SCOPE_MAP,
-            Attribute::OAuth2RsTokenKey => ATTR_OAUTH2_RS_TOKEN_KEY,
-            Attribute::OAuth2Session => ATTR_OAUTH2_SESSION,
-            Attribute::OAuth2StrictRedirectUri => ATTR_OAUTH2_STRICT_REDIRECT_URI,
-            Attribute::OAuth2TokenEndpoint => ATTR_OAUTH2_TOKEN_ENDPOINT,
-            Attribute::OAuth2AccountCredentialUuid => ATTR_OAUTH2_ACCOUNT_CREDENTIAL_UUID,
-            Attribute::OAuth2AccountProvider => ATTR_OAUTH2_ACCOUNT_PROVIDER,
-            Attribute::OAuth2AccountUniqueUserId => ATTR_OAUTH2_ACCOUNT_UNIQUE_USER_ID,
-            Attribute::OAuth2ConsentPromptEnable => ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
-            Attribute::OAuth2UserinfoEndpoint => ATTR_OAUTH2_USERINFO_ENDPOINT,
-            Attribute::OAuth2JitProvisioning => ATTR_OAUTH2_JIT_PROVISIONING,
-            Attribute::OAuth2ClaimMapName => ATTR_OAUTH2_CLAIM_MAP_NAME,
-            Attribute::OAuth2ClaimMapDisplayname => ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
-            Attribute::OAuth2ClaimMapEmail => ATTR_OAUTH2_CLAIM_MAP_EMAIL,
-            Attribute::OAuth2EmailLinkAccounts => ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS,
-            Attribute::OAuth2DomainEmailLinkAccounts => ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS,
-            Attribute::OAuth2Issuer => ATTR_OAUTH2_ISSUER,
-            Attribute::OAuth2JwksUri => ATTR_OAUTH2_JWKS_URI,
-            Attribute::OAuth2LinkBy => ATTR_OAUTH2_LINK_BY,
-            Attribute::OAuth2GroupMapping => ATTR_OAUTH2_GROUP_MAPPING,
-            Attribute::SamlGroupMapping => ATTR_SAML_GROUP_MAPPING,
-            Attribute::OAuth2UpstreamSyncedGroup => ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP,
-            Attribute::OAuth2RsPostLogoutRedirectUri => ATTR_OAUTH2_RS_POST_LOGOUT_REDIRECT_URI,
-            Attribute::OAuth2RsBackchannelLogoutUri => ATTR_OAUTH2_RS_BACKCHANNEL_LOGOUT_URI,
-            Attribute::SamlSingleLogoutServiceUrl => ATTR_SAML_SINGLE_LOGOUT_SERVICE_URL,
-            Attribute::LogoutDeliveryEndpoint => ATTR_LOGOUT_DELIVERY_ENDPOINT,
-            Attribute::LogoutDeliveryToken => ATTR_LOGOUT_DELIVERY_TOKEN,
-            Attribute::LogoutDeliveryStatus => ATTR_LOGOUT_DELIVERY_STATUS,
-            Attribute::LogoutDeliveryAttempts => ATTR_LOGOUT_DELIVERY_ATTEMPTS,
-            Attribute::LogoutDeliveryNextAttempt => ATTR_LOGOUT_DELIVERY_NEXT_ATTEMPT,
-            Attribute::LogoutDeliveryCreated => ATTR_LOGOUT_DELIVERY_CREATED,
-            Attribute::LogoutDeliveryRp => ATTR_LOGOUT_DELIVERY_RP,
-            Attribute::SamlSessionUser => ATTR_SAML_SESSION_USER,
-            Attribute::SamlSessionSp => ATTR_SAML_SESSION_SP,
-            Attribute::SamlSessionIndex => ATTR_SAML_SESSION_INDEX,
-            Attribute::SamlSessionUatUuid => ATTR_SAML_SESSION_UAT_UUID,
-            Attribute::SamlSessionCreated => ATTR_SAML_SESSION_CREATED,
-            Attribute::OAuth2ClientProviderKind => ATTR_OAUTH2_CLIENT_PROVIDER_KIND,
-            Attribute::OAuth2ClientGithubHost => ATTR_OAUTH2_CLIENT_GITHUB_HOST,
-            Attribute::OAuth2ClientGithubOrgFilter => ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER,
-            Attribute::OAuth2ClientGithubAllowedTeams => ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS,
-            Attribute::OAuth2ClientGithubTeamNameField => ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD,
-            Attribute::OAuth2ClientGithubLoadAllGroups => ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS,
-            Attribute::OAuth2ClientGithubPreferredEmailDomain => {
-                ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN
-            }
-            Attribute::OAuth2ClientGithubAllowJitProvisioning => {
-                ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING
-            }
-            Attribute::ObjectClass => ATTR_OBJECTCLASS,
-            Attribute::OtherNoIndex => ATTR_OTHER_NO_INDEX,
-            Attribute::PassKeys => ATTR_PASSKEYS,
-            Attribute::PasswordChangedTime => ATTR_PWD_CHANGED_TIME,
-            Attribute::PasswordImport => ATTR_PASSWORD_IMPORT,
-            Attribute::PatchLevel => ATTR_PATCH_LEVEL,
-            Attribute::Phantom => ATTR_PHANTOM,
-            Attribute::PrimaryCredential => ATTR_PRIMARY_CREDENTIAL,
-            Attribute::PrivateCookieKey => ATTR_PRIVATE_COOKIE_KEY,
-            Attribute::PrivilegeExpiry => ATTR_PRIVILEGE_EXPIRY,
-            Attribute::RadiusSecret => ATTR_RADIUS_SECRET,
-            Attribute::RecycledDirectMemberOf => ATTR_RECYCLEDDIRECTMEMBEROF,
-            Attribute::Refers => ATTR_REFERS,
-            Attribute::Replicated => ATTR_REPLICATED,
-            Attribute::Rs256PrivateKeyDer => ATTR_RS256_PRIVATE_KEY_DER,
-            Attribute::S256 => ATTR_S256,
-            Attribute::Scope => ATTR_SCOPE,
-            Attribute::ScimSchemas => ATTR_SCIM_SCHEMAS,
-            Attribute::SendAfter => ATTR_SEND_AFTER,
-            Attribute::SentAt => ATTR_SENT_AT,
-            Attribute::SkipAuthRoute => ATTR_SKIP_AUTH_ROUTE,
-            Attribute::SourceUuid => ATTR_SOURCE_UUID,
-            Attribute::Spn => ATTR_SPN,
-            Attribute::SshPublicKey => ATTR_SSH_PUBLICKEY,
-            Attribute::SudoHost => ATTR_SUDOHOST,
-            Attribute::Supplements => ATTR_SUPPLEMENTS,
-            Attribute::SyncAllowed => ATTR_SYNC_ALLOWED,
-            Attribute::SyncClass => ATTR_SYNC_CLASS,
-            Attribute::SyncCookie => ATTR_SYNC_COOKIE,
-            Attribute::SyncCredentialPortal => ATTR_SYNC_CREDENTIAL_PORTAL,
-            Attribute::SyncExternalId => ATTR_SYNC_EXTERNAL_ID,
-            Attribute::SyncParentUuid => ATTR_SYNC_PARENT_UUID,
-            Attribute::SyncTokenSession => ATTR_SYNC_TOKEN_SESSION,
-            Attribute::SyncYieldAuthority => ATTR_SYNC_YIELD_AUTHORITY,
-            Attribute::Syntax => ATTR_SYNTAX,
-            Attribute::SystemExcludes => ATTR_SYSTEMEXCLUDES,
-            Attribute::SystemMay => ATTR_SYSTEMMAY,
-            Attribute::SystemMust => ATTR_SYSTEMMUST,
-            Attribute::SystemSupplements => ATTR_SYSTEMSUPPLEMENTS,
-            Attribute::Term => ATTR_TERM,
-            Attribute::TotpImport => ATTR_TOTP_IMPORT,
-            Attribute::Uid => ATTR_UID,
-            Attribute::UidNumber => ATTR_UIDNUMBER,
-            Attribute::Unique => ATTR_UNIQUE,
-            Attribute::UnixPassword => ATTR_UNIX_PASSWORD,
-            Attribute::UnixPasswordImport => ATTR_UNIX_PASSWORD_IMPORT,
-            Attribute::UserAuthTokenSession => ATTR_USER_AUTH_TOKEN_SESSION,
-            Attribute::UserId => ATTR_USERID,
-            Attribute::UserPassword => ATTR_USERPASSWORD,
-            Attribute::Uuid => ATTR_UUID,
-            Attribute::Version => ATTR_VERSION,
-            Attribute::WebauthnAttestationCaList => ATTR_WEBAUTHN_ATTESTATION_CA_LIST,
-
-            #[cfg(any(debug_assertions, test, feature = "test"))]
-            Attribute::NonExist => TEST_ATTR_NON_EXIST,
-            #[cfg(any(debug_assertions, test, feature = "test"))]
-            Attribute::TestAttr => TEST_ATTR_TEST_ATTR,
-
-            #[cfg(test)]
-            Attribute::TestAttrA => TEST_ATTR_TEST_ATTR_A,
-            #[cfg(test)]
-            Attribute::TestAttrB => TEST_ATTR_TEST_ATTR_B,
-            #[cfg(test)]
-            Attribute::TestAttrC => TEST_ATTR_TEST_ATTR_C,
-            #[cfg(test)]
-            Attribute::TestAttrD => TEST_ATTR_TEST_ATTR_D,
-
-            #[cfg(any(debug_assertions, test, feature = "test"))]
-            Attribute::Extra => TEST_ATTR_EXTRA,
-            #[cfg(any(debug_assertions, test, feature = "test"))]
-            Attribute::TestNumber => TEST_ATTR_NUMBER,
-            #[cfg(any(debug_assertions, test, feature = "test"))]
-            Attribute::TestNotAllowed => TEST_ATTR_NOTALLOWED,
-
-            #[cfg(not(test))]
-            Attribute::Custom(value) => value.as_str(),
+        #[cfg(not(test))]
+        if let Attribute::Custom(s) = self {
+            return s.as_str();
         }
+        <Self as AsRef<str>>::as_ref(self)
     }
 
     // We allow this because the standard lib from_str is fallible, and we want an infallible version.
@@ -1015,8 +830,8 @@ impl From<&str> for SubAttribute {
     }
 }
 
-impl FromStr for SubAttribute {
-    type Err = Infallible;
+impl std::str::FromStr for SubAttribute {
+    type Err = std::convert::Infallible;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
         Ok(Self::inner_from_str(value))
@@ -1066,9 +881,9 @@ mod test {
 
     #[test]
     fn test_valueattribute_from_str() {
-        assert_eq!(Attribute::Uuid, Attribute::from("UUID"));
-        assert_eq!(Attribute::Uuid, Attribute::from("UuiD"));
-        assert_eq!(Attribute::Uuid, Attribute::from("uuid"));
+        assert_eq!(Attribute::Uuid, Attribute::from("UUID".to_owned()));
+        assert_eq!(Attribute::Uuid, Attribute::from("UuiD".to_owned()));
+        assert_eq!(Attribute::Uuid, Attribute::from("uuid".to_owned()));
     }
 
     #[test]
@@ -1083,7 +898,7 @@ mod test {
         use enum_iterator::all;
         let the_list = all::<Attribute>().collect::<Vec<_>>();
         for attr in the_list {
-            let attr2 = Attribute::from(attr.as_str());
+            let attr2 = Attribute::from(attr.as_str().to_owned());
             assert!(
                 attr == attr2,
                 "Round-trip failed for {attr} <=> {attr2} check you've implemented a from and to string"

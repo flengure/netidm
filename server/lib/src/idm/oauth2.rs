@@ -661,7 +661,7 @@ impl Oauth2ResourceServersWriteTransaction<'_> {
         &mut self,
         value: Vec<Arc<EntrySealedCommitted>>,
         key_providers: &KeyProvidersWriteTransaction,
-        domain_level: DomainVersion,
+        _domain_level: DomainVersion,
     ) -> Result<(), OperationError> {
         let rs_set: Result<HashMap<_, _>, _> = value
             .into_iter()
@@ -745,12 +745,8 @@ impl Oauth2ResourceServersWriteTransaction<'_> {
 
                 let len_uris = maybe_extra_urls.map(|s| s.len() + 1).unwrap_or(1);
 
-                // If we are DL8, then strict enforcement is always required.
-                let strict_redirect_uri = cfg!(test)
-                    || domain_level >= DOMAIN_LEVEL_8
-                    || ent
-                        .get_ava_single_bool(Attribute::OAuth2StrictRedirectUri)
-                        .unwrap_or(false);
+                // Strict redirect URI enforcement is always required from DL28+
+                let strict_redirect_uri = true;
 
                 // The reason we have to allocate this is that we need to do some processing on these
                 // urls to determine if they are opaque or not.

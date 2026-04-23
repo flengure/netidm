@@ -177,6 +177,7 @@ dialoguer = "0.12.0"
 dhat = "0.3.3"
 dyn-clone = "^1.0.20"
 enum-iterator = "2.3.0"
+strum = { version = "0.26", features = ["derive"] }
 fantoccini = "0.22.0"
 filetime = "^0.2.27"
 fs4 = "^0.13.1"

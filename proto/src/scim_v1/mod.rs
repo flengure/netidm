@@ -425,7 +425,7 @@ peg::parser! {
             s:attrstring() { SubAttribute::from(s.as_str()) }
 
         pub(crate) rule attrname() -> Attribute =
-            s:attrstring() { Attribute::from(s.as_str()) }
+            s:attrstring() { Attribute::from(s) }
 
         pub(crate) rule attrstring() -> String =
             s:$([ 'a'..='z' | 'A'..='Z']['a'..='z' | 'A'..='Z' | '0'..='9' | '-' | '_' ]*) { s.to_string() }
@@ -581,7 +581,7 @@ mod tests {
         assert_eq!(
             scimfilter::attrpath("mail"),
             Ok(AttrPath {
-                a: Attribute::from("mail"),
+                a: Attribute::Mail,
                 s: None
             })
         );
@@ -589,7 +589,7 @@ mod tests {
         assert_eq!(
             scimfilter::attrpath("mail.primary"),
             Ok(AttrPath {
-                a: Attribute::from("mail"),
+                a: Attribute::Mail,
                 s: Some(SubAttribute::from("primary"))
             })
         );
@@ -605,7 +605,7 @@ mod tests {
         assert!(
             scimfilter::parse("mail pr")
                 == Ok(ScimFilter::Present(AttrPath {
-                    a: Attribute::from("mail"),
+                    a: Attribute::Mail,
                     s: None
                 }))
         );
@@ -617,7 +617,7 @@ mod tests {
             scimfilter::parse("mail eq \"dcba\"")
                 == Ok(ScimFilter::Equal(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
@@ -631,7 +631,7 @@ mod tests {
             scimfilter::parse("mail ne \"dcba\"")
                 == Ok(ScimFilter::NotEqual(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
@@ -645,7 +645,7 @@ mod tests {
             scimfilter::parse("mail co \"dcba\"")
                 == Ok(ScimFilter::Contains(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
@@ -659,7 +659,7 @@ mod tests {
             scimfilter::parse("mail sw \"dcba\"")
                 == Ok(ScimFilter::StartsWith(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
@@ -673,7 +673,7 @@ mod tests {
             scimfilter::parse("mail ew \"dcba\"")
                 == Ok(ScimFilter::EndsWith(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
@@ -687,7 +687,7 @@ mod tests {
             scimfilter::parse("mail gt \"dcba\"")
                 == Ok(ScimFilter::Greater(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
@@ -701,7 +701,7 @@ mod tests {
             scimfilter::parse("mail lt \"dcba\"")
                 == Ok(ScimFilter::Less(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
@@ -715,7 +715,7 @@ mod tests {
             scimfilter::parse("mail ge \"dcba\"")
                 == Ok(ScimFilter::GreaterOrEqual(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
@@ -729,7 +729,7 @@ mod tests {
             scimfilter::parse("mail le \"dcba\"")
                 == Ok(ScimFilter::LessOrEqual(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
@@ -744,7 +744,7 @@ mod tests {
         assert!(
             f == Ok(ScimFilter::Equal(
                 AttrPath {
-                    a: Attribute::from("mail"),
+                    a: Attribute::Mail,
                     s: None
                 },
                 JsonValue::String("dcba".to_string())
@@ -760,7 +760,7 @@ mod tests {
         assert!(
             f == Ok(ScimFilter::Not(Box::new(ScimFilter::Equal(
                 AttrPath {
-                    a: Attribute::from("mail"),
+                    a: Attribute::Mail,
                     s: None
                 },
                 JsonValue::String("dcba".to_string())
@@ -777,14 +777,14 @@ mod tests {
             f == Ok(ScimFilter::And(
                 Box::new(ScimFilter::Equal(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
                 )),
                 Box::new(ScimFilter::NotEqual(
                     AttrPath {
-                        a: Attribute::from("name"),
+                        a: Attribute::Name,
                         s: None
                     },
                     JsonValue::String("1234".to_string())
@@ -802,14 +802,14 @@ mod tests {
             f == Ok(ScimFilter::Or(
                 Box::new(ScimFilter::Equal(
                     AttrPath {
-                        a: Attribute::from("mail"),
+                        a: Attribute::Mail,
                         s: None
                     },
                     JsonValue::String("dcba".to_string())
                 )),
                 Box::new(ScimFilter::NotEqual(
                     AttrPath {
-                        a: Attribute::from("name"),
+                        a: Attribute::Name,
                         s: None
                     },
                     JsonValue::String("1234".to_string())
@@ -831,7 +831,7 @@ mod tests {
             f,
             Ok(ScimFilter::Or(
                 Box::new(ScimFilter::Complex(
-                    Attribute::from("mail"),
+                    Attribute::Mail,
                     Box::new(ScimComplexFilter::And(
                         Box::new(ScimComplexFilter::Equal(
                             SubAttribute::from("type"),
@@ -844,7 +844,7 @@ mod tests {
                     ))
                 )),
                 Box::new(ScimFilter::Complex(
-                    Attribute::from("testattr"),
+                    Attribute::TestAttr,
                     Box::new(ScimComplexFilter::And(
                         Box::new(ScimComplexFilter::Equal(
                             SubAttribute::from("type"),
@@ -870,22 +870,22 @@ mod tests {
             f == Ok(ScimFilter::Or(
                 Box::new(ScimFilter::Or(
                     Box::new(ScimFilter::Present(AttrPath {
-                        a: Attribute::from("testattr_a"),
+                        a: Attribute::TestAttrA,
                         s: None
                     })),
                     Box::new(ScimFilter::And(
                         Box::new(ScimFilter::Present(AttrPath {
-                            a: Attribute::from("testattr_b"),
+                            a: Attribute::TestAttrB,
                             s: None
                         })),
                         Box::new(ScimFilter::Present(AttrPath {
-                            a: Attribute::from("testattr_c"),
+                            a: Attribute::TestAttrC,
                             s: None
                         })),
                     )),
                 )),
                 Box::new(ScimFilter::Present(AttrPath {
-                    a: Attribute::from("testattr_d"),
+                    a: Attribute::TestAttrD,
                     s: None
                 }))
             ))
@@ -902,21 +902,21 @@ mod tests {
             f == Ok(ScimFilter::Or(
                 Box::new(ScimFilter::And(
                     Box::new(ScimFilter::Present(AttrPath {
-                        a: Attribute::from("testattr_a"),
+                        a: Attribute::TestAttrA,
                         s: None
                     })),
                     Box::new(ScimFilter::Present(AttrPath {
-                        a: Attribute::from("testattr_b"),
+                        a: Attribute::TestAttrB,
                         s: None
                     })),
                 )),
                 Box::new(ScimFilter::And(
                     Box::new(ScimFilter::Present(AttrPath {
-                        a: Attribute::from("testattr_c"),
+                        a: Attribute::TestAttrC,
                         s: None
                     })),
                     Box::new(ScimFilter::Present(AttrPath {
-                        a: Attribute::from("testattr_d"),
+                        a: Attribute::TestAttrD,
                         s: None
                     })),
                 )),
@@ -935,22 +935,22 @@ mod tests {
             f == Ok(ScimFilter::And(
                 Box::new(ScimFilter::And(
                     Box::new(ScimFilter::Present(AttrPath {
-                        a: Attribute::from("testattr_a"),
+                        a: Attribute::TestAttrA,
                         s: None
                     })),
                     Box::new(ScimFilter::Or(
                         Box::new(ScimFilter::Present(AttrPath {
-                            a: Attribute::from("testattr_b"),
+                            a: Attribute::TestAttrB,
                             s: None
                         })),
                         Box::new(ScimFilter::Present(AttrPath {
-                            a: Attribute::from("testattr_c"),
+                            a: Attribute::TestAttrC,
                             s: None
                         })),
                     )),
                 )),
                 Box::new(ScimFilter::Present(AttrPath {
-                    a: Attribute::from("testattr_d"),
+                    a: Attribute::TestAttrD,
                     s: None
                 })),
             ))
@@ -968,22 +968,22 @@ mod tests {
             f == Ok(ScimFilter::And(
                 Box::new(ScimFilter::And(
                     Box::new(ScimFilter::Present(AttrPath {
-                        a: Attribute::from("testattr_a"),
+                        a: Attribute::TestAttrA,
                         s: None
                     })),
                     Box::new(ScimFilter::Not(Box::new(ScimFilter::Or(
                         Box::new(ScimFilter::Present(AttrPath {
-                            a: Attribute::from("testattr_b"),
+                            a: Attribute::TestAttrB,
                             s: None
                         })),
                         Box::new(ScimFilter::Present(AttrPath {
-                            a: Attribute::from("testattr_c"),
+                            a: Attribute::TestAttrC,
                             s: None
                         })),
                     )))),
                 )),
                 Box::new(ScimFilter::Present(AttrPath {
-                    a: Attribute::from("testattr_d"),
+                    a: Attribute::TestAttrD,
                     s: None
                 })),
             ))
@@ -995,7 +995,7 @@ mod tests {
         assert_eq!(
             scimfilter::parse(r#"description eq "text ( ) [ ] 'single' \"escaped\" \\\\consecutive\\\\ \/slash\b\f\n\r\t\u0041 and or not eq ne co sw ew gt lt ge le pr true false""#),
             Ok(ScimFilter::Equal(
-                AttrPath { a: Attribute::from("description"), s: None },
+                AttrPath { a: Attribute::Description, s: None },
                 JsonValue::String("text ( ) [ ] 'single' \"escaped\" \\\\consecutive\\\\ /slash\u{08}\u{0C}\n\r\tA and or not eq ne co sw ew gt lt ge le pr true false".to_string())
             ))
         );
@@ -1013,7 +1013,7 @@ mod tests {
             scimfilter::parse(r#"name eq """#),
             Ok(ScimFilter::Equal(
                 AttrPath {
-                    a: Attribute::from("name"),
+                    a: Attribute::Name,
                     s: None
                 },
                 JsonValue::String("".to_string())

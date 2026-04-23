@@ -3,7 +3,6 @@ use crate::plugins::Plugin;
 use crate::prelude::*;
 use crate::utils::password_from_random;
 use crate::valueset::ValueSetUuid;
-use compact_jwt::{crypto::JwsRs256Signer, JwsEs256Signer};
 use std::sync::Arc;
 
 pub struct OAuth2 {}
@@ -45,11 +44,9 @@ impl Plugin for OAuth2 {
 
 impl OAuth2 {
     fn modify_inner<T: Clone>(
-        qs: &mut QueryServerWriteTransaction,
+        _qs: &mut QueryServerWriteTransaction,
         cand: &mut [Entry<EntryInvalid, T>],
     ) -> Result<(), OperationError> {
-        let domain_level = qs.get_domain_version();
-
         cand.iter_mut()
             .filter(|entry| {
                 entry.attribute_equality(Attribute::Class, &EntryClass::OAuth2Account.into())
@@ -82,44 +79,13 @@ impl OAuth2 {
 
             let has_rs256 = entry.get_ava_single_bool(Attribute::OAuth2JwtLegacyCryptoEnable).unwrap_or(false);
 
-            if domain_level >= DOMAIN_LEVEL_10 {
-                debug!("Generating OAuth2 Key Object");
-                // OAuth2 now requires a KeyObject, configure it now.
-                entry.add_ava(Attribute::Class, EntryClass::KeyObject.to_value());
-                entry.add_ava(Attribute::Class, EntryClass::KeyObjectJwtEs256.to_value());
-                entry.add_ava(Attribute::Class, EntryClass::KeyObjectJweA128GCM.to_value());
-                if has_rs256 {
-                    entry.add_ava(Attribute::Class, EntryClass::KeyObjectJwtRs256.to_value());
-                }
-            } else {
-                if !entry.attribute_pres(Attribute::OAuth2RsTokenKey) {
-                    security_info!("regenerating oauth2 token key");
-                    let k = password_from_random();
-                    let v = Value::new_secret_str(&k);
-                    entry.add_ava(Attribute::OAuth2RsTokenKey, v);
-                }
-                if !entry.attribute_pres(Attribute::Es256PrivateKeyDer) {
-                    security_info!("regenerating oauth2 es256 private key");
-                    let der = JwsEs256Signer::generate_es256()
-                        .and_then(|jws| jws.private_key_to_der())
-                        .map_err(|e| {
-                            admin_error!(err = ?e, "Unable to generate ES256 JwsSigner private key");
-                            OperationError::CryptographyError
-                        })?;
-                    let v = Value::new_privatebinary(&der);
-                    entry.add_ava(Attribute::Es256PrivateKeyDer, v);
-                }
-                    if has_rs256 && !entry.attribute_pres(Attribute::Rs256PrivateKeyDer) {
-                    security_info!("regenerating oauth2 legacy rs256 private key");
-                    let der = JwsRs256Signer::generate_rs256()
-                        .and_then(|jws| jws.private_key_to_der())
-                        .map_err(|e| {
-                            admin_error!(err = ?e, "Unable to generate Legacy RS256 JwsSigner private key");
-                            OperationError::CryptographyError
-                        })?;
-                    let v = Value::new_privatebinary(&der);
-                    entry.add_ava(Attribute::Rs256PrivateKeyDer, v);
-                }
+            debug!("Generating OAuth2 Key Object");
+            // OAuth2 now requires a KeyObject, configure it now.
+            entry.add_ava(Attribute::Class, EntryClass::KeyObject.to_value());
+            entry.add_ava(Attribute::Class, EntryClass::KeyObjectJwtEs256.to_value());
+            entry.add_ava(Attribute::Class, EntryClass::KeyObjectJweA128GCM.to_value());
+            if has_rs256 {
+                entry.add_ava(Attribute::Class, EntryClass::KeyObjectJwtRs256.to_value());
             }
 
             Ok(())

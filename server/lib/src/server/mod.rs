@@ -2612,103 +2612,13 @@ impl<'a> QueryServerWriteTransaction<'a> {
         }
         */
 
-        // This is to catch during development if we incorrectly move MIN_REMIGRATION but
-        // without actually updating these values correctly.
-        const { assert!(DOMAIN_MIN_REMIGRATION_LEVEL <= DOMAIN_PREVIOUS_TGT_LEVEL) };
-        const { assert!(DOMAIN_MIN_REMIGRATION_LEVEL >= DOMAIN_MIN_CREATION_LEVEL) };
-
-        const { assert!(DOMAIN_MIN_CREATION_LEVEL >= DOMAIN_LEVEL_10) };
-
-        //                     /--- This needs to be the minimum creation level.
-        //                     |                                          /-- This is the minlevel we can remigrate from
-        //                     v                                          v
-        if previous_version <= DOMAIN_LEVEL_10 && domain_info_version >= DOMAIN_LEVEL_11 {
-            // 1.6 -> 1.7
-            self.migrate_domain_10_to_11()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_11 && domain_info_version >= DOMAIN_LEVEL_12 {
-            // 1.7 -> 1.8
-            self.migrate_domain_11_to_12()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_12 && domain_info_version >= DOMAIN_LEVEL_13 {
-            // 1.8 -> 1.9
-            self.migrate_domain_12_to_13()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_13 && domain_info_version >= DOMAIN_LEVEL_14 {
-            // 1.9 -> 1.10
-            self.migrate_domain_13_to_14()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_14 && domain_info_version >= DOMAIN_LEVEL_15 {
-            // 1.10 -> 1.11
-            self.migrate_domain_14_to_15()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_15 && domain_info_version >= DOMAIN_LEVEL_16 {
-            // 1.11 -> 1.12
-            self.migrate_domain_15_to_16()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_16 && domain_info_version >= DOMAIN_LEVEL_17 {
-            // 1.12 -> 1.13
-            self.migrate_domain_16_to_17()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_17 && domain_info_version >= DOMAIN_LEVEL_18 {
-            // 1.13 -> 1.14
-            self.migrate_domain_17_to_18()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_18 && domain_info_version >= DOMAIN_LEVEL_19 {
-            // 1.14 -> 1.15
-            self.migrate_domain_18_to_19()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_19 && domain_info_version >= DOMAIN_LEVEL_20 {
-            // 1.15 -> 1.16
-            self.migrate_domain_19_to_20()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_20 && domain_info_version >= DOMAIN_LEVEL_21 {
-            self.migrate_domain_20_to_21()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_21 && domain_info_version >= DOMAIN_LEVEL_22 {
-            self.migrate_domain_21_to_22()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_22 && domain_info_version >= DOMAIN_LEVEL_23 {
-            self.migrate_domain_22_to_23()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_23 && domain_info_version >= DOMAIN_LEVEL_24 {
-            self.migrate_domain_23_to_24()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_24 && domain_info_version >= DOMAIN_LEVEL_25 {
-            self.migrate_domain_24_to_25()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_25 && domain_info_version >= DOMAIN_LEVEL_26 {
-            self.migrate_domain_25_to_26()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_26 && domain_info_version >= DOMAIN_LEVEL_27 {
-            self.migrate_domain_26_to_27()?;
-        }
-
-        if previous_version <= DOMAIN_LEVEL_27 && domain_info_version >= DOMAIN_LEVEL_28 {
-            self.migrate_domain_27_to_28()?;
-        }
-
-        // This is here to catch when we increase domain levels but didn't create the migration
-        // hooks. If this fails it probably means you need to add another migration hook
-        // in the above.
+        const { assert!(DOMAIN_MIN_CREATION_LEVEL == DOMAIN_LEVEL_28) };
         const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_28) };
         debug_assert!(domain_info_version <= DOMAIN_MAX_LEVEL);
+
+        if previous_version < DOMAIN_LEVEL_28 && domain_info_version == DOMAIN_LEVEL_28 {
+            self.bootstrap_dl28()?;
+        }
 
         Ok(())
     }
@@ -2772,7 +2682,6 @@ impl<'a> QueryServerWriteTransaction<'a> {
         })?;
 
         let current_time = self.get_curtime();
-        let domain_level = self.get_domain_version();
 
         let mut hmac_name_history_fixup = false;
 
@@ -2782,11 +2691,6 @@ impl<'a> QueryServerWriteTransaction<'a> {
         for feature_entry in feature_configs {
             match feature_entry.get_uuid() {
                 UUID_HMAC_NAME_FEATURE => {
-                    if domain_level < DOMAIN_LEVEL_12 {
-                        trace!("Skipping hmac name history config");
-                        continue;
-                    }
-
                     let key_object = self
                         .get_key_providers()
                         .get_key_object_handle(UUID_HMAC_NAME_FEATURE)

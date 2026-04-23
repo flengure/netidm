@@ -39,174 +39,28 @@ pub const SYSTEM_INDEX_VERSION: i64 = 32;
  */
 pub type DomainVersion = u32;
 
-/// Domain level 0 - this indicates that this instance
-/// is a new install and has never had a domain level
-/// previously.
+/// Domain level 0 - new install, no domain level previously assigned.
 pub const DOMAIN_LEVEL_0: DomainVersion = 0;
 
-/// Domain Level introduced with 1.3.0.
-/// Deprecated as of 1.5.0
-pub const DOMAIN_LEVEL_7: DomainVersion = 7;
-
-/// Domain Level introduced with 1.4.0.
-/// Deprecated as of 1.6.0
-pub const DOMAIN_LEVEL_8: DomainVersion = 8;
-
-/// Domain Level introduced with 1.5.0.
-/// Deprecated as of 1.7.0
-pub const DOMAIN_LEVEL_9: DomainVersion = 9;
 pub const PATCH_LEVEL_2: u32 = 2;
-
-/// Domain Level introduced with 1.6.0.
-/// Deprecated as of 1.8.0
-pub const DOMAIN_LEVEL_10: DomainVersion = 10;
-
-/// Domain Level introduced with 1.7.0.
-/// Deprecated as of 1.9.0
-pub const DOMAIN_LEVEL_11: DomainVersion = 11;
-
-/// Domain Level introduced with 1.8.0.
-/// Deprecated as of 1.10.0
-pub const DOMAIN_LEVEL_12: DomainVersion = 12;
-
-/// Domain Level introduced with 1.9.0.
-/// Deprecated as of 1.11.0
-pub const DOMAIN_LEVEL_13: DomainVersion = 13;
-
-/// Domain Level introduced with 1.10.0.
-/// Deprecated as of 1.12.0
-pub const DOMAIN_LEVEL_14: DomainVersion = 14;
-
-/// Domain Level introduced with 1.11.0.
-/// Deprecated as of 1.13.0
-pub const DOMAIN_LEVEL_15: DomainVersion = 15;
-
-/// Domain Level introduced with 1.12.0.
-pub const DOMAIN_LEVEL_16: DomainVersion = 16;
-
-/// Domain Level introduced with 1.13.0.
-pub const DOMAIN_LEVEL_17: DomainVersion = 17;
-
-/// Domain Level introduced with 1.14.0.
-pub const DOMAIN_LEVEL_18: DomainVersion = 18;
-
-/// Domain Level introduced with 1.15.0.
-pub const DOMAIN_LEVEL_19: DomainVersion = 19;
-
-/// Domain Level for SSO login choice UX (logo URI support).
-pub const DOMAIN_LEVEL_20: DomainVersion = 20;
-
-/// Domain Level for generic OIDC upstream connector (issuer + JWKS URI attributes).
-pub const DOMAIN_LEVEL_21: DomainVersion = 21;
-
-/// Domain Level for SAML 2.0 upstream connector (SamlClient entry class).
-pub const DOMAIN_LEVEL_22: DomainVersion = 22;
-
-/// Domain Level 23: adds DisplayName to systemmay on OAuth2ResourceServer so
-/// existing databases accept displayname in migration assertions without a DB wipe.
-pub const DOMAIN_LEVEL_23: DomainVersion = 23;
-
-/// Domain Level 24: adds `OAuth2LinkBy` to `systemmay` on `OAuth2Client` so per-connector
-/// account-linking key selection ("email" | "username" | "id") can be stored.
-pub const DOMAIN_LEVEL_24: DomainVersion = 24;
-
-/// Domain Level 25: upstream-to-netidm group mapping on OAuth2 / SAML connectors
-/// (`OAuth2GroupMapping`, `SamlGroupMapping`) and the per-person marker
-/// (`OAuth2UpstreamSyncedGroup`) tracking which connector-applied memberships
-/// are currently in effect. Pure plumbing — no connector populates upstream
-/// groups in this DL; later per-connector PRs do.
-pub const DOMAIN_LEVEL_25: DomainVersion = 25;
-
-/// Domain Level 26: RP-Initiated Logout across OIDC and SAML. Adds
-/// `OAuth2RsPostLogoutRedirectUri` + `OAuth2RsBackchannelLogoutUri` on
-/// `OAuth2Client`, `SamlSingleLogoutServiceUrl` on `SamlClient`, the
-/// `LogoutDelivery` class for the persistent back-channel delivery queue, and
-/// the `SamlSession` class for the per-SP SAML session index required by
-/// single-logout-with-SessionIndex. Also updates OAuth2 / SAML client admin
-/// ACPs to include the new URL attributes and adds a read-only admin ACP for
-/// the delivery queue.
-pub const DOMAIN_LEVEL_26: DomainVersion = 26;
-
-/// Domain Level 27: OAuth2 refresh-token claim re-fetch (PR-REFRESH-CLAIMS).
-/// Extends the `Oauth2Session` value with two new optional fields:
-/// `upstream_connector: Option<Uuid>` (UUID of the connector that federated
-/// the session, `None` for locally-authenticated sessions) and
-/// `upstream_refresh_state: Option<Vec<u8>>` (opaque connector-owned blob
-/// used by the connector's `RefreshableConnector::refresh` hook at refresh
-/// time). No new attribute, no new entry class, no new ACP — the change is
-/// internal to the `ValueSetOauth2Session` serialization. Sessions minted
-/// pre-DL27 decode with both fields as `None` and fall through to the
-/// existing (non-refreshing) cached-claims code path so the upgrade is
-/// non-disruptive.
-pub const DOMAIN_LEVEL_27: DomainVersion = 27;
 
 /// Domain Level 28: GitHub upstream connector (PR-CONNECTOR-GITHUB).
 /// First concrete implementation of the `RefreshableConnector` trait
 /// introduced in DL27. Adds one discriminator attribute
 /// (`OAuth2ClientProviderKind`) plus seven GitHub-specific config
-/// attributes on `EntryClass::OAuth2Client`:
-///
-///   * `OAuth2ClientGithubHost` (URL, default `https://github.com`)
-///   * `OAuth2ClientGithubOrgFilter` (utf8, multi)
-///   * `OAuth2ClientGithubAllowedTeams` (utf8, multi, `org:team`)
-///   * `OAuth2ClientGithubTeamNameField` (iutf8, enum)
-///   * `OAuth2ClientGithubLoadAllGroups` (bool)
-///   * `OAuth2ClientGithubPreferredEmailDomain` (iutf8)
-///   * `OAuth2ClientGithubAllowJitProvisioning` (bool)
-///
-/// All attributes are optional with documented defaults; pre-DL28
-/// entries without `OAuth2ClientProviderKind` behave as
-/// `"generic-oidc"` via PR-OIDC-CONNECTOR's path. DL28 extends the
-/// existing OAuth2 admin ACP to cover the new attributes; no new
-/// entry class, no new ACP entity.
+/// attributes on `EntryClass::OAuth2Client`.
 pub const DOMAIN_LEVEL_28: DomainVersion = 28;
 
-// The target supported domain functional level. During development this is
-// the NEXT level that users will upgrade too. In other words if we are
-// developing 1.6.0-dev, then we need to set TGT_LEVEL to 10 which is
-// the corresponding level.
 pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_28;
-// The current patch level if any out of band fixes are required.
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
-
-// The maximum supported domain functional level. This generally
-// represents a *future* version of the server which doesn't exist
-// yet.
 pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_28;
-
-// This is the LOWEST level of database we can recreate. This is important for testing,
-// but we don't actually expect it to be used.
-pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_10;
-
-// The previous releases domain functional level
+pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_28;
 pub const DOMAIN_PREVIOUS_TGT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL - 1;
-// The target domain functional level for the SUBSEQUENT release/dev cycle.
 pub const DOMAIN_TGT_NEXT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL + 1;
-
-// What domain level is the "one before" we could do a valid upgrade. We need to be able
-// to create this database, then attempt (and fail) to upgrade from it during tests. So
-// that technically means we have to keep one-extra migration level.
 pub const DOMAIN_MIGRATION_FROM_INVALID: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;
-
-// What is the MINIMUM domain level we *could* allow migration from? This has to be
-// one greater than our minimum so we can test this, and in releases it's one version prior.
-#[cfg(test)]
-pub const DOMAIN_MIGRATION_FROM_MIN: DomainVersion = DOMAIN_MIN_CREATION_LEVEL + 1;
-#[cfg(not(test))]
 pub const DOMAIN_MIGRATION_FROM_MIN: DomainVersion = DOMAIN_PREVIOUS_TGT_LEVEL;
-
-// The minimum level that we can re-migrate from. Remember, this
-// means we should be able to move from min level to the next level. It doesn't mean
-// we have to be able to *create* this level. Generally this means it's "off by one"
-// to migration-from-min.
-#[cfg(test)]
-pub const DOMAIN_MIN_REMIGRATION_LEVEL: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;
-#[cfg(not(test))]
-pub const DOMAIN_MIN_REMIGRATION_LEVEL: DomainVersion = DOMAIN_PREVIOUS_TGT_LEVEL - 1;
-
-// The minimum supported domain functional level (for replication)
+pub const DOMAIN_MIN_REMIGRATION_LEVEL: DomainVersion = DOMAIN_PREVIOUS_TGT_LEVEL;
 pub const DOMAIN_MINIMUM_REPLICATION_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL;
-// The minimum supported domain functional level (for replication)
 pub const DOMAIN_MAXIMUM_REPLICATION_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL;
 
 // On test builds define to 60 seconds

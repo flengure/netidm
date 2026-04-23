@@ -8,7 +8,7 @@
 use crate::idm::authentication::{AuthCredential, AuthExternal, AuthState};
 use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
 use crate::idm::oauth2::PkceS256Secret;
-use crate::idm::oauth2_client::OAuth2ClientProvider;
+use crate::idm::oauth2_client::{OAuth2ClientProvider, ProviderKind};
 use crate::prelude::*;
 use crate::utils;
 use netidm_proto::oauth2::{
@@ -53,6 +53,7 @@ pub(crate) struct ProviderInitiatedSession {
     pub(crate) jit_provisioning: bool,
     pub(crate) email_link_accounts: bool,
     pub(crate) state: ProviderSessionState,
+    provider_kind: ProviderKind,
 }
 
 impl ProviderInitiatedSession {
@@ -76,6 +77,7 @@ impl ProviderInitiatedSession {
             jit_provisioning: provider.jit_provisioning,
             email_link_accounts: provider.email_link_accounts,
             state: ProviderSessionState::AwaitingCode,
+            provider_kind: provider.provider_kind,
         }
     }
 
@@ -114,6 +116,13 @@ impl ProviderInitiatedSession {
                         .unwrap_or(false);
                     if !csrf_valid {
                         return AuthState::Denied(BAD_CSRF_STATE_MSG.to_string());
+                    }
+                    if self.provider_kind == ProviderKind::Github {
+                        return AuthState::External(AuthExternal::GitHubCallbackRequest {
+                            code: code.clone(),
+                            provider_uuid: self.provider_uuid,
+                            email_link_accounts: self.email_link_accounts,
+                        });
                     }
                     let code_verifier = self.pkce_secret.verifier().to_string();
                     let grant = GrantTypeReq::AuthorizationCode {

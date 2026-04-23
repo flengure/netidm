@@ -1,6 +1,5 @@
 use super::Plugin;
 use crate::prelude::*;
-use crate::valueset::ValueSetSecret;
 use std::sync::Arc;
 
 pub struct EcdhKeyGen {}
@@ -8,31 +7,9 @@ pub struct EcdhKeyGen {}
 impl EcdhKeyGen {
     // we optionally provide a target_cand to update only the entry with the given uuid
     fn generate_key<STATE: Clone>(
-        qs: &mut QueryServerWriteTransaction,
-        cands: &mut [Entry<EntryInvalid, STATE>],
+        _qs: &mut QueryServerWriteTransaction,
+        _cands: &mut [Entry<EntryInvalid, STATE>],
     ) -> Result<(), OperationError> {
-        let domain_level = qs.get_domain_version();
-        if domain_level >= DOMAIN_LEVEL_12 {
-            trace!("Skipping id key generation");
-            return Ok(());
-        }
-
-        for cand in cands.iter_mut() {
-            if cand.attribute_equality(Attribute::Class, &EntryClass::Person.to_partialvalue())
-                && !cand.attribute_pres(Attribute::IdVerificationEcKey)
-            {
-                debug!(
-                    "Generating {} for {}",
-                    Attribute::IdVerificationEcKey,
-                    cand.get_display_id()
-                );
-
-                cand.set_ava_set(
-                    &Attribute::IdVerificationEcKey,
-                    ValueSetSecret::new("no-longer-used".into()),
-                )
-            }
-        }
         Ok(())
     }
 }
