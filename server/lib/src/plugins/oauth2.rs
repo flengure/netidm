@@ -70,26 +70,31 @@ impl OAuth2 {
             })
             .try_for_each(|entry| {
                 // Regenerate the basic secret, if needed
-                if entry.attribute_equality(Attribute::Class, &EntryClass::OAuth2ResourceServerBasic.into()) &&
-                    !entry.attribute_pres(Attribute::OAuth2RsBasicSecret) {
-                        security_info!("regenerating oauth2 basic secret");
-                        let v = Value::SecretValue(password_from_random());
-                        entry.add_ava(Attribute::OAuth2RsBasicSecret, v);
+                if entry.attribute_equality(
+                    Attribute::Class,
+                    &EntryClass::OAuth2ResourceServerBasic.into(),
+                ) && !entry.attribute_pres(Attribute::OAuth2RsBasicSecret)
+                {
+                    security_info!("regenerating oauth2 basic secret");
+                    let v = Value::SecretValue(password_from_random());
+                    entry.add_ava(Attribute::OAuth2RsBasicSecret, v);
                 }
 
-            let has_rs256 = entry.get_ava_single_bool(Attribute::OAuth2JwtLegacyCryptoEnable).unwrap_or(false);
+                let has_rs256 = entry
+                    .get_ava_single_bool(Attribute::OAuth2JwtLegacyCryptoEnable)
+                    .unwrap_or(false);
 
-            debug!("Generating OAuth2 Key Object");
-            // OAuth2 now requires a KeyObject, configure it now.
-            entry.add_ava(Attribute::Class, EntryClass::KeyObject.to_value());
-            entry.add_ava(Attribute::Class, EntryClass::KeyObjectJwtEs256.to_value());
-            entry.add_ava(Attribute::Class, EntryClass::KeyObjectJweA128GCM.to_value());
-            if has_rs256 {
-                entry.add_ava(Attribute::Class, EntryClass::KeyObjectJwtRs256.to_value());
-            }
+                debug!("Generating OAuth2 Key Object");
+                // OAuth2 now requires a KeyObject, configure it now.
+                entry.add_ava(Attribute::Class, EntryClass::KeyObject.to_value());
+                entry.add_ava(Attribute::Class, EntryClass::KeyObjectJwtEs256.to_value());
+                entry.add_ava(Attribute::Class, EntryClass::KeyObjectJweA128GCM.to_value());
+                if has_rs256 {
+                    entry.add_ava(Attribute::Class, EntryClass::KeyObjectJwtRs256.to_value());
+                }
 
-            Ok(())
-        })
+                Ok(())
+            })
     }
 }
 

@@ -407,8 +407,6 @@ impl QueryServerWriteTransaction<'_> {
     }
     */
 
-
-
     /// DL28 — PR-CONNECTOR-GITHUB.
     ///
     /// Adds one discriminator attribute (`OAuth2ClientProviderKind`) + seven
@@ -495,7 +493,6 @@ impl QueryServerWriteTransaction<'_> {
 
         Ok(())
     }
-
 
     /// DL26 backfill step for the SAML `<SessionIndex>` migration.
     ///
@@ -727,7 +724,6 @@ mod tests {
 
         assert_eq!(err, OperationError::MG0010DowngradeNotAllowed);
     }
-
 
     /// DL28 idempotent re-migration: asserts that the eight new schema attributes introduced
     /// for the GitHub upstream connector (one discriminator + seven

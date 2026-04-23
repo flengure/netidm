@@ -595,7 +595,6 @@ impl Credential {
         }))
     }
 
-
     /// Get a reference to the contained webuthn credentials, if any.
     pub fn securitykey_ref(&self) -> Result<&Map<String, SecurityKey>, OperationError> {
         match &self.type_ {

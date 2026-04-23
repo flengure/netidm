@@ -10,7 +10,17 @@ use utoipa::ToSchema;
 pub use smartstring::alias::String as AttrString;
 
 #[derive(
-    Serialize, Deserialize, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash, Default, ToSchema,
+    Serialize,
+    Deserialize,
+    Clone,
+    Debug,
+    Eq,
+    PartialEq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Default,
+    ToSchema,
     AsRefStr,
 )]
 #[cfg_attr(test, derive(enum_iterator::Sequence))]
