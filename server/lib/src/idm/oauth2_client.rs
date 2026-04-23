@@ -70,6 +70,8 @@ pub enum ProviderKind {
     GenericOidc,
     /// GitHub / GitHub Enterprise (non-OIDC) — PR-CONNECTOR-GITHUB.
     Github,
+    /// Google Workspace / Google Identity (OIDC + Directory API) — PR-CONNECTOR-GOOGLE.
+    Google,
 }
 
 impl ProviderKind {
@@ -80,6 +82,7 @@ impl ProviderKind {
         match self {
             ProviderKind::GenericOidc => "generic-oidc",
             ProviderKind::Github => "github",
+            ProviderKind::Google => "google",
         }
     }
 
@@ -90,6 +93,7 @@ impl ProviderKind {
     pub fn from_str_or_default(s: &str) -> Self {
         match s {
             "github" => ProviderKind::Github,
+            "google" => ProviderKind::Google,
             _ => ProviderKind::GenericOidc,
         }
     }
@@ -411,6 +415,37 @@ impl IdmServerProxyWriteTransaction<'_> {
                         ?entry_uuid,
                         ?e,
                         "Failed to build GitHub connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register Google connectors with the ConnectorRegistry.
+        for provider_entry in &oauth2_client_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_google = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| s == "google")
+                .unwrap_or(false);
+            if !is_google {
+                continue;
+            }
+            match crate::idm::google_connector::GoogleConfig::from_entry(
+                provider_entry,
+                client_redirect_uri.clone(),
+            ) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::google_connector::GoogleConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered Google connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build Google connector config; skipping this provider"
                     );
                 }
             }

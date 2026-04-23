@@ -57,10 +57,16 @@ pub const DOMAIN_LEVEL_28: DomainVersion = 28;
 /// `GenericOidcConnector` / `ConnectorRegistry`.
 pub const DOMAIN_LEVEL_29: DomainVersion = 29;
 
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_29;
+/// DL30 — Google upstream connector (PR-CONNECTOR-GOOGLE).
+/// Adds four Google-specific config attributes on `EntryClass::OAuth2Client`:
+/// hosted-domain restriction (`hd` claim), service-account JSON key,
+/// admin impersonation email, and a fetch-groups toggle for Admin SDK access.
+pub const DOMAIN_LEVEL_30: DomainVersion = 30;
+
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_30;
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_29;
-pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_29;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_30;
+pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_30;
 pub const DOMAIN_PREVIOUS_TGT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL - 1;
 pub const DOMAIN_TGT_NEXT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL + 1;
 pub const DOMAIN_MIGRATION_FROM_INVALID: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;

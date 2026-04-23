@@ -305,6 +305,16 @@ pub enum Attribute {
     OAuth2ClientOidcGroupsPrefix,
     #[strum(serialize = "oauth2_client_oidc_groups_suffix")]
     OAuth2ClientOidcGroupsSuffix,
+    // DL30 — Google upstream connector config attributes.
+    // All optional on `EntryClass::OAuth2Client`.
+    #[strum(serialize = "oauth2_client_google_hosted_domain")]
+    OAuth2ClientGoogleHostedDomain,
+    #[strum(serialize = "oauth2_client_google_service_account_json")]
+    OAuth2ClientGoogleServiceAccountJson,
+    #[strum(serialize = "oauth2_client_google_admin_email")]
+    OAuth2ClientGoogleAdminEmail,
+    #[strum(serialize = "oauth2_client_google_fetch_groups")]
+    OAuth2ClientGoogleFetchGroups,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]

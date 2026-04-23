@@ -3,6 +3,8 @@ mod domain;
 mod forward_auth_test;
 mod github_connector_test;
 mod github_mock;
+mod google_connector_test;
+mod google_mock;
 mod group;
 mod group_mapping_test;
 mod http_manifest;
