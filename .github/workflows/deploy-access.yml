@@ -1,0 +1,64 @@
+---
+name: Deploy to Access Nodes
+
+on:
+  workflow_run:
+    workflows: ["Main Branch Rolling Release"]
+    types: [completed]
+
+jobs:
+  deploy:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: mgt
+            host: mgt.approovia.net
+          - name: dev
+            host: dev.approovia.net
+
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AUTOMATION_SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p 8722 -T 10 ${{ matrix.host }} >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy netidmd to ${{ matrix.name }}
+        run: |
+          ssh -p 8722 -o StrictHostKeyChecking=yes apadmin@${{ matrix.host }} bash << 'ENDSSH'
+          set -euo pipefail
+
+          TARBALL="netidm-main-latest-x86_64-unknown-linux-gnu.tar.gz"
+          RELEASE_BASE="https://github.com/flengure/netidm/releases/download/main-latest"
+
+          COMMIT=$(curl -sf "$RELEASE_BASE/COMMIT")
+          INSTALLED=$(cat /etc/netidm/installed-version 2>/dev/null || true)
+
+          if [ "$COMMIT" = "$INSTALLED" ]; then
+            echo "Already at $COMMIT — nothing to do"
+            exit 0
+          fi
+
+          echo "Upgrading $(hostname): $INSTALLED -> $COMMIT"
+
+          TMPDIR=$(mktemp -d)
+          trap "rm -rf $TMPDIR" EXIT
+
+          curl -sf "$RELEASE_BASE/$TARBALL" -o "$TMPDIR/$TARBALL"
+          curl -sf "$RELEASE_BASE/$TARBALL.sha256" -o "$TMPDIR/$TARBALL.sha256"
+          (cd "$TMPDIR" && sha256sum -c "$TARBALL.sha256")
+          tar -xzf "$TMPDIR/$TARBALL" -C "$TMPDIR"
+
+          sudo install -o root -g root -m 0755 "$TMPDIR/netidmd"                          /usr/local/bin/netidmd
+          sudo install -o root -g root -m 0755 "$TMPDIR/netidm"                           /usr/local/bin/netidm
+          sudo install -o root -g root -m 0755 "$TMPDIR/netidm_ssh_authorizedkeys_direct" /usr/local/bin/netidm_ssh_authorizedkeys_direct
+          sudo rsync -a --delete "$TMPDIR/static/" /usr/share/netidmd/static/
+
+          echo "$COMMIT" | sudo tee /etc/netidm/installed-version > /dev/null
+          sudo systemctl restart netidmd
+          echo "Deployed $COMMIT to $(hostname)"
+          ENDSSH
