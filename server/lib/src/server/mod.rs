@@ -2612,12 +2612,16 @@ impl<'a> QueryServerWriteTransaction<'a> {
         }
         */
 
-        const { assert!(DOMAIN_MIN_CREATION_LEVEL == DOMAIN_LEVEL_28) };
-        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_28) };
+        const { assert!(DOMAIN_MIN_CREATION_LEVEL == DOMAIN_LEVEL_29) };
+        const { assert!(DOMAIN_MAX_LEVEL == DOMAIN_LEVEL_29) };
         debug_assert!(domain_info_version <= DOMAIN_MAX_LEVEL);
 
         if previous_version < DOMAIN_LEVEL_28 && domain_info_version == DOMAIN_LEVEL_28 {
             self.bootstrap_dl28()?;
+        }
+
+        if previous_version < DOMAIN_LEVEL_29 && domain_info_version == DOMAIN_LEVEL_29 {
+            self.bootstrap_dl29()?;
         }
 
         Ok(())

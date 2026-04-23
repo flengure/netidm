@@ -1400,21 +1400,63 @@ async fn view_login_step(
                             );
                             return Err(OperationError::InvalidState);
                         };
-                        let claims = connector.fetch_callback_claims(&code).await.map_err(|e| {
-                            use netidmd_lib::idm::oauth2_connector::ConnectorRefreshError;
-                            match &e {
-                                ConnectorRefreshError::AccessDenied => {
-                                    // already logged at info inside check_access_gate
+                        let claims =
+                            connector
+                                .fetch_callback_claims(&code, None)
+                                .await
+                                .map_err(|e| {
+                                    use netidmd_lib::idm::oauth2_connector::ConnectorRefreshError;
+                                    match &e {
+                                        ConnectorRefreshError::AccessDenied => {
+                                            // already logged at info inside check_access_gate
+                                        }
+                                        _ => warn!(?provider_uuid, ?e, "GitHub callback failed"),
+                                    }
+                                    match e {
+                                        ConnectorRefreshError::AccessDenied => {
+                                            OperationError::NotAuthenticated
+                                        }
+                                        _ => OperationError::InvalidState,
+                                    }
+                                })?;
+                        auth_state = AuthState::ProvisioningRequired {
+                            provider_uuid,
+                            claims,
+                            email_link_accounts,
+                        };
+                        continue;
+                    }
+                    AuthExternal::GenericOidcCallbackRequest {
+                        code,
+                        code_verifier,
+                        provider_uuid,
+                        email_link_accounts,
+                    } => {
+                        let connector = state.qe_r_ref.idms.connector_registry().get(provider_uuid);
+                        let Some(connector) = connector else {
+                            error!(
+                                ?provider_uuid,
+                                "generic-OIDC connector not found in registry — \
+                                 provider may not have been loaded at startup"
+                            );
+                            return Err(OperationError::InvalidState);
+                        };
+                        let claims = connector
+                            .fetch_callback_claims(&code, Some(&code_verifier))
+                            .await
+                            .map_err(|e| {
+                                use netidmd_lib::idm::oauth2_connector::ConnectorRefreshError;
+                                match &e {
+                                    ConnectorRefreshError::AccessDenied => {}
+                                    _ => warn!(?provider_uuid, ?e, "generic-OIDC callback failed"),
                                 }
-                                _ => warn!(?provider_uuid, ?e, "GitHub callback failed"),
-                            }
-                            match e {
-                                ConnectorRefreshError::AccessDenied => {
-                                    OperationError::NotAuthenticated
+                                match e {
+                                    ConnectorRefreshError::AccessDenied => {
+                                        OperationError::NotAuthenticated
+                                    }
+                                    _ => OperationError::InvalidState,
                                 }
-                                _ => OperationError::InvalidState,
-                            }
-                        })?;
+                            })?;
                         auth_state = AuthState::ProvisioningRequired {
                             provider_uuid,
                             claims,

@@ -51,10 +51,16 @@ pub const PATCH_LEVEL_2: u32 = 2;
 /// attributes on `EntryClass::OAuth2Client`.
 pub const DOMAIN_LEVEL_28: DomainVersion = 28;
 
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_28;
+/// DL29 — Generic OIDC upstream connector (PR-CONNECTOR-GENERIC-OIDC).
+/// Adds ten OIDC-specific config attributes on `EntryClass::OAuth2Client`
+/// and routes all `generic-oidc` provider entries through
+/// `GenericOidcConnector` / `ConnectorRegistry`.
+pub const DOMAIN_LEVEL_29: DomainVersion = 29;
+
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_29;
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_28;
-pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_28;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_29;
+pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_29;
 pub const DOMAIN_PREVIOUS_TGT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL - 1;
 pub const DOMAIN_TGT_NEXT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL + 1;
 pub const DOMAIN_MIGRATION_FROM_INVALID: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;

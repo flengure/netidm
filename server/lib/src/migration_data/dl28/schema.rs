@@ -11,11 +11,6 @@
 //! Google, Microsoft, LDAP, SAML-upstream, …) extend the set without
 //! needing a schema migration each.
 
-// Re-export schema items needed by tests that reference
-// `migration_data::latest::schema`.
-#[cfg(test)]
-pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
-
 use crate::constants::{
     UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS,
     UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING,

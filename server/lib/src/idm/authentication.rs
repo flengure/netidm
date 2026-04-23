@@ -93,6 +93,18 @@ pub enum AuthExternal {
         provider_uuid: uuid::Uuid,
         email_link_accounts: bool,
     },
+    /// Generic OIDC authorisation code ready for token exchange + JWKS
+    /// id_token verification and/or userinfo fetch. The HTTP loop calls
+    /// the registered `GenericOidcConnector` from `ConnectorRegistry`
+    /// and transitions directly to `AuthState::ProvisioningRequired`
+    /// (PR-CONNECTOR-GENERIC-OIDC).
+    GenericOidcCallbackRequest {
+        code: String,
+        /// PKCE S256 verifier; included in the token exchange POST body.
+        code_verifier: String,
+        provider_uuid: uuid::Uuid,
+        email_link_accounts: bool,
+    },
 }
 
 impl fmt::Debug for AuthExternal {
@@ -105,6 +117,9 @@ impl fmt::Debug for AuthExternal {
             Self::SamlAuthnRequest { .. } => write!(f, "SamlAuthnRequest"),
             Self::GitHubCallbackRequest { provider_uuid, .. } => {
                 write!(f, "GitHubCallbackRequest({})", provider_uuid)
+            }
+            Self::GenericOidcCallbackRequest { provider_uuid, .. } => {
+                write!(f, "GenericOidcCallbackRequest({})", provider_uuid)
             }
         }
     }

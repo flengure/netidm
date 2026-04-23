@@ -84,11 +84,16 @@ pub trait RefreshableConnector: Send + Sync {
     /// Exchange an OAuth2 `code` for user claims by making the full
     /// upstream API call chain. Implemented by connectors that bypass
     /// the OIDC state machine (PR-CONNECTOR-GITHUB, T013). The default
-    /// returns `ConnectorRefreshError::Other` so non-GitHub connectors
-    /// are unaffected.
+    /// returns `ConnectorRefreshError::Other` so connectors that do not
+    /// override this are unaffected.
+    ///
+    /// `code_verifier` is the PKCE S256 verifier string when the
+    /// authorisation request used PKCE (generic-OIDC); `None` for
+    /// providers that do not use PKCE (GitHub).
     async fn fetch_callback_claims(
         &self,
         _code: &str,
+        _code_verifier: Option<&str>,
     ) -> Result<ExternalUserClaims, ConnectorRefreshError> {
         Err(ConnectorRefreshError::Other(
             "fetch_callback_claims not implemented for this connector".to_string(),
@@ -424,6 +429,16 @@ impl RefreshableConnector for TestMockConnector {
             },
             new_session_state: None,
         })
+    }
+
+    async fn fetch_callback_claims(
+        &self,
+        _code: &str,
+        _code_verifier: Option<&str>,
+    ) -> Result<ExternalUserClaims, ConnectorRefreshError> {
+        Err(ConnectorRefreshError::Other(
+            "TestMockConnector does not implement fetch_callback_claims".to_string(),
+        ))
     }
 }
 

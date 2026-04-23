@@ -241,6 +241,19 @@ pub const ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN: &str =
     "oauth2_client_github_preferred_email_domain";
 pub const ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING: &str =
     "oauth2_client_github_allow_jit_provisioning";
+// DL29 — Generic OIDC connector attributes
+pub const ATTR_OAUTH2_CLIENT_OIDC_ENABLE_GROUPS: &str = "oauth2_client_oidc_enable_groups";
+pub const ATTR_OAUTH2_CLIENT_OIDC_GROUPS_KEY: &str = "oauth2_client_oidc_groups_key";
+pub const ATTR_OAUTH2_CLIENT_OIDC_SKIP_EMAIL_VERIFIED: &str =
+    "oauth2_client_oidc_skip_email_verified";
+pub const ATTR_OAUTH2_CLIENT_OIDC_ALLOWED_GROUPS: &str = "oauth2_client_oidc_allowed_groups";
+pub const ATTR_OAUTH2_CLIENT_OIDC_GET_USER_INFO: &str = "oauth2_client_oidc_get_user_info";
+pub const ATTR_OAUTH2_CLIENT_OIDC_USER_ID_KEY: &str = "oauth2_client_oidc_user_id_key";
+pub const ATTR_OAUTH2_CLIENT_OIDC_USER_NAME_KEY: &str = "oauth2_client_oidc_user_name_key";
+pub const ATTR_OAUTH2_CLIENT_OIDC_OVERRIDE_CLAIM_MAPPING: &str =
+    "oauth2_client_oidc_override_claim_mapping";
+pub const ATTR_OAUTH2_CLIENT_OIDC_GROUPS_PREFIX: &str = "oauth2_client_oidc_groups_prefix";
+pub const ATTR_OAUTH2_CLIENT_OIDC_GROUPS_SUFFIX: &str = "oauth2_client_oidc_groups_suffix";
 // DL20 — OAuth2 client logo URI
 pub const ATTR_OAUTH2_CLIENT_LOGO_URI: &str = "oauth2_client_logo_uri";
 // DL21 — Generic OIDC upstream connector

@@ -120,6 +120,10 @@ pub struct GitHubConfig {
     /// linking chain are auto-provisioned (FR-017). Conservative default
     /// is `false`.
     pub allow_jit_provisioning: bool,
+    /// The callback URL registered with the GitHub OAuth App. Included in the
+    /// token exchange so GitHub can validate it matches the authorization
+    /// request (required when redirect_uri was sent in the auth request).
+    pub redirect_uri: Url,
     /// Shared across all outbound calls on this connector instance —
     /// reused connection pool. Built once with the standard GitHub
     /// headers (`Accept`, `User-Agent`, `X-GitHub-Api-Version`) baked
@@ -248,7 +252,10 @@ impl GitHubConfig {
     ///   `OAuth2ClientSecret` absent, or the reqwest client fails to build.
     /// - [`OperationError::InvalidAttribute`] — `OAuth2ClientGithubHost` is
     ///   present but not an absolute `https://` URL.
-    pub fn from_entry(entry: &EntrySealedCommitted) -> Result<GitHubConfig, OperationError> {
+    pub fn from_entry(
+        entry: &EntrySealedCommitted,
+        redirect_uri: Url,
+    ) -> Result<GitHubConfig, OperationError> {
         let entry_uuid = entry.get_uuid();
 
         let client_id = entry
@@ -347,6 +354,7 @@ impl GitHubConfig {
             load_all_groups,
             preferred_email_domain,
             allow_jit_provisioning,
+            redirect_uri,
             http,
         })
     }
@@ -411,11 +419,13 @@ impl GitHubConnector {
             .join("login/oauth/access_token")
             .map_err(|e| ConnectorRefreshError::Other(format!("token URL build error: {e}")))?;
 
+        let redirect_uri_str = self.config.redirect_uri.as_str();
         let form = [
             ("grant_type", "authorization_code"),
             ("code", code),
             ("client_id", self.config.client_id.as_str()),
             ("client_secret", self.config.client_secret.as_str()),
+            ("redirect_uri", redirect_uri_str),
         ];
 
         let resp = self
@@ -850,6 +860,7 @@ impl RefreshableConnector for GitHubConnector {
     async fn fetch_callback_claims(
         &self,
         code: &str,
+        _code_verifier: Option<&str>,
     ) -> Result<ExternalUserClaims, ConnectorRefreshError> {
         self.do_fetch_callback_claims(code).await
     }
@@ -1109,6 +1120,8 @@ mod tests {
             load_all_groups,
             preferred_email_domain: None,
             allow_jit_provisioning: false,
+            redirect_uri: Url::parse("https://idm.example.com/ui/login/oauth2_landing")
+                .expect("test redirect_uri"),
             http,
         })
     }
@@ -1218,6 +1231,8 @@ mod tests {
             load_all_groups: false,
             preferred_email_domain: None,
             allow_jit_provisioning: false,
+            redirect_uri: Url::parse("https://idm.example.com/ui/login/oauth2_landing")
+                .expect("test redirect_uri"),
             http,
         });
 
@@ -1269,6 +1284,8 @@ mod tests {
             load_all_groups: false,
             preferred_email_domain: None,
             allow_jit_provisioning: false,
+            redirect_uri: Url::parse("https://idm.example.com/ui/login/oauth2_landing")
+                .expect("test redirect_uri"),
             http,
         })
     }
@@ -1450,6 +1467,8 @@ mod tests {
             load_all_groups: false,
             preferred_email_domain: None,
             allow_jit_provisioning: false,
+            redirect_uri: Url::parse("https://idm.example.com/ui/login/oauth2_landing")
+                .expect("test redirect_uri"),
             http,
         });
 
@@ -1490,6 +1509,8 @@ mod tests {
             load_all_groups: false,
             preferred_email_domain: None,
             allow_jit_provisioning: false,
+            redirect_uri: Url::parse("https://idm.example.com/ui/login/oauth2_landing")
+                .expect("test redirect_uri"),
             http,
         });
         use crate::idm::oauth2_connector::RefreshableConnector;
@@ -1558,6 +1579,8 @@ mod tests {
             load_all_groups: false,
             preferred_email_domain: None,
             allow_jit_provisioning: false,
+            redirect_uri: Url::parse("https://idm.example.com/ui/login/oauth2_landing")
+                .expect("test redirect_uri"),
             http,
         });
 
@@ -1696,6 +1719,8 @@ mod tests {
                 load_all_groups: false,
                 preferred_email_domain: None,
                 allow_jit_provisioning: false,
+                redirect_uri: Url::parse("https://idm.example.com/ui/login/oauth2_landing")
+                    .expect("test redirect_uri"),
                 http: reqwest::Client::builder()
                     .build()
                     .unwrap_or_else(|_| unreachable!()),
@@ -1833,6 +1858,8 @@ mod tests {
             load_all_groups: false,
             preferred_email_domain: None,
             allow_jit_provisioning: false,
+            redirect_uri: Url::parse("https://idm.example.com/ui/login/oauth2_landing")
+                .expect("test redirect_uri"),
             http: reqwest::Client::builder()
                 .build()
                 .unwrap_or_else(|_| unreachable!()),

@@ -50,8 +50,8 @@ impl QueryServer {
             // in the above.
             debug_assert!(domain_target_level <= DOMAIN_MAX_LEVEL);
 
-            const { assert!(DOMAIN_MIN_CREATION_LEVEL == DOMAIN_LEVEL_28) };
-            write_txn.bootstrap_dl28()?;
+            const { assert!(DOMAIN_MIN_CREATION_LEVEL == DOMAIN_LEVEL_29) };
+            write_txn.bootstrap_dl29()?;
 
             write_txn
                 .internal_apply_domain_migration(domain_target_level)
@@ -489,6 +489,77 @@ impl QueryServerWriteTransaction<'_> {
 
         // Delegate to DL26's backfill (SAML session indices). DL28
         // adds no further backfill of its own.
+        self.backfill_saml_session_indices()?;
+
+        Ok(())
+    }
+
+    /// DL29 bootstrap — schema-only migration for the generic-OIDC connector
+    /// (PR-CONNECTOR-GENERIC-OIDC). Adds ten OIDC-specific config attributes on
+    /// `EntryClass::OAuth2Client` and extends the ACP to cover them. All new
+    /// attributes are optional so pre-DL29 entries decode unchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`OperationError::MG0004DomainLevelInDevelopment`] if this level
+    /// is not yet enabled, or any error from the underlying phase batches.
+    pub(crate) fn bootstrap_dl29(&mut self) -> Result<(), OperationError> {
+        if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_29 {
+            error!("Unable to raise domain level from 28 to 29.");
+            return Err(OperationError::MG0004DomainLevelInDevelopment);
+        }
+
+        self.internal_migrate_or_create_batch(
+            &format!("phase 1 - schema attrs target {}", DOMAIN_TGT_LEVEL),
+            migration_data::dl29::phase_1_schema_attrs(),
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 2 - schema classes",
+            migration_data::dl29::phase_2_schema_classes(),
+        )?;
+
+        self.reload()?;
+        self.reindex(false)?;
+        self.set_phase(ServerPhase::SchemaReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 3 - key provider",
+            migration_data::dl29::phase_3_key_provider(),
+        )?;
+
+        self.reload()?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 4 - dl29 system entries",
+            migration_data::dl29::phase_4_system_entries(),
+        )?;
+
+        self.reload()?;
+        self.set_phase(ServerPhase::DomainInfoReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 5 - builtin admin entries",
+            migration_data::dl29::phase_5_builtin_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 6 - builtin not admin entries",
+            migration_data::dl29::phase_6_builtin_non_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 7 - builtin access control profiles",
+            migration_data::dl29::phase_7_builtin_access_control_profiles(),
+        )?;
+
+        self.internal_delete_batch(
+            "phase 8 - delete UUIDs",
+            migration_data::dl29::phase_8_delete_uuids(),
+        )?;
+
+        self.reload()?;
+
         self.backfill_saml_session_indices()?;
 
         Ok(())

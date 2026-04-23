@@ -395,7 +395,10 @@ impl IdmServerProxyWriteTransaction<'_> {
             if !is_github {
                 continue;
             }
-            match crate::idm::github_connector::GitHubConfig::from_entry(provider_entry) {
+            match crate::idm::github_connector::GitHubConfig::from_entry(
+                provider_entry,
+                client_redirect_uri.clone(),
+            ) {
                 Ok(config) => {
                     let connector = std::sync::Arc::new(
                         crate::idm::github_connector::GitHubConnector::new(config),
@@ -408,6 +411,37 @@ impl IdmServerProxyWriteTransaction<'_> {
                         ?entry_uuid,
                         ?e,
                         "Failed to build GitHub connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register generic-OIDC connectors with the ConnectorRegistry.
+        for provider_entry in &oauth2_client_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_oidc = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| s == "generic-oidc")
+                .unwrap_or(true); // absence defaults to generic-oidc
+            if !is_oidc {
+                continue;
+            }
+            match crate::idm::generic_oidc_connector::GenericOidcConfig::from_entry(
+                provider_entry,
+                client_redirect_uri.clone(),
+            ) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::generic_oidc_connector::GenericOidcConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered generic-OIDC connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build generic-OIDC connector config; skipping this provider"
                     );
                 }
             }

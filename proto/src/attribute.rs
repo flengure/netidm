@@ -283,6 +283,28 @@ pub enum Attribute {
     OAuth2ClientGithubPreferredEmailDomain,
     #[strum(serialize = "oauth2_client_github_allow_jit_provisioning")]
     OAuth2ClientGithubAllowJitProvisioning,
+    // DL29 — Generic OIDC upstream connector config attributes.
+    // All optional on `EntryClass::OAuth2Client`; absent = default shown in spec.
+    #[strum(serialize = "oauth2_client_oidc_enable_groups")]
+    OAuth2ClientOidcEnableGroups,
+    #[strum(serialize = "oauth2_client_oidc_groups_key")]
+    OAuth2ClientOidcGroupsKey,
+    #[strum(serialize = "oauth2_client_oidc_skip_email_verified")]
+    OAuth2ClientOidcSkipEmailVerified,
+    #[strum(serialize = "oauth2_client_oidc_allowed_groups")]
+    OAuth2ClientOidcAllowedGroups,
+    #[strum(serialize = "oauth2_client_oidc_get_user_info")]
+    OAuth2ClientOidcGetUserInfo,
+    #[strum(serialize = "oauth2_client_oidc_user_id_key")]
+    OAuth2ClientOidcUserIdKey,
+    #[strum(serialize = "oauth2_client_oidc_user_name_key")]
+    OAuth2ClientOidcUserNameKey,
+    #[strum(serialize = "oauth2_client_oidc_override_claim_mapping")]
+    OAuth2ClientOidcOverrideClaimMapping,
+    #[strum(serialize = "oauth2_client_oidc_groups_prefix")]
+    OAuth2ClientOidcGroupsPrefix,
+    #[strum(serialize = "oauth2_client_oidc_groups_suffix")]
+    OAuth2ClientOidcGroupsSuffix,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]
@@ -670,6 +692,20 @@ impl Attribute {
             ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING => {
                 Attribute::OAuth2ClientGithubAllowJitProvisioning
             }
+            ATTR_OAUTH2_CLIENT_OIDC_ENABLE_GROUPS => Attribute::OAuth2ClientOidcEnableGroups,
+            ATTR_OAUTH2_CLIENT_OIDC_GROUPS_KEY => Attribute::OAuth2ClientOidcGroupsKey,
+            ATTR_OAUTH2_CLIENT_OIDC_SKIP_EMAIL_VERIFIED => {
+                Attribute::OAuth2ClientOidcSkipEmailVerified
+            }
+            ATTR_OAUTH2_CLIENT_OIDC_ALLOWED_GROUPS => Attribute::OAuth2ClientOidcAllowedGroups,
+            ATTR_OAUTH2_CLIENT_OIDC_GET_USER_INFO => Attribute::OAuth2ClientOidcGetUserInfo,
+            ATTR_OAUTH2_CLIENT_OIDC_USER_ID_KEY => Attribute::OAuth2ClientOidcUserIdKey,
+            ATTR_OAUTH2_CLIENT_OIDC_USER_NAME_KEY => Attribute::OAuth2ClientOidcUserNameKey,
+            ATTR_OAUTH2_CLIENT_OIDC_OVERRIDE_CLAIM_MAPPING => {
+                Attribute::OAuth2ClientOidcOverrideClaimMapping
+            }
+            ATTR_OAUTH2_CLIENT_OIDC_GROUPS_PREFIX => Attribute::OAuth2ClientOidcGroupsPrefix,
+            ATTR_OAUTH2_CLIENT_OIDC_GROUPS_SUFFIX => Attribute::OAuth2ClientOidcGroupsSuffix,
             ATTR_OBJECTCLASS => Attribute::ObjectClass,
             ATTR_OTHER_NO_INDEX => Attribute::OtherNoIndex,
             ATTR_PASSKEYS => Attribute::PassKeys,

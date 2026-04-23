@@ -161,24 +161,29 @@ impl CredHandlerOAuth2Client {
     }
 
     fn validate_authorisation_response(&self, code: &str, state: Option<&str>) -> CredState {
-        // DL28 connector dispatch (FR-016): providers whose entry carries
-        // `oauth2_client_provider_kind = "github"` bypass the OIDC code-
-        // exchange / userinfo / JWKS path entirely. Absence of the attribute,
-        // or `"generic-oidc"`, resolves to `ProviderKind::GenericOidc` in
-        // `reload_oauth2_client_providers` and falls through to the pre-DL28
-        // path below — byte-identical to DL27.
+        // DL28+ connector dispatch (FR-016): route by provider_kind to the
+        // registered connector in ConnectorRegistry, bypassing the legacy
+        // multi-step OIDC state machine entirely.
         if self.provider_kind == ProviderKind::Github {
-            // Validate CSRF state before dispatching (same check as the OIDC
-            // path below; must not be skipped for GitHub).
             let csrf_valid = state.map(|s| s == self.csrf_state).unwrap_or_default();
             if !csrf_valid {
                 return CredState::Denied(BAD_OAUTH2_CSRF_STATE_MSG);
             }
-            // Hand the code to the HTTP loop which calls GitHubConnector::fetch_callback_claims
-            // (PR-CONNECTOR-GITHUB, T013). The loop transitions to ProvisioningRequired once
-            // claims are available.
             return CredState::External(AuthExternal::GitHubCallbackRequest {
                 code: code.to_string(),
+                provider_uuid: self.provider_id,
+                email_link_accounts: self.email_link_accounts,
+            });
+        }
+
+        if self.provider_kind == ProviderKind::GenericOidc {
+            let csrf_valid = state.map(|s| s == self.csrf_state).unwrap_or_default();
+            if !csrf_valid {
+                return CredState::Denied(BAD_OAUTH2_CSRF_STATE_MSG);
+            }
+            return CredState::External(AuthExternal::GenericOidcCallbackRequest {
+                code: code.to_string(),
+                code_verifier: self.pkce_secret.verifier().to_string(),
                 provider_uuid: self.provider_id,
                 email_link_accounts: self.email_link_accounts,
             });

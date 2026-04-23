@@ -18,9 +18,6 @@ pub(crate) mod access;
 pub(crate) mod schema;
 
 #[cfg(test)]
-pub(crate) use super::dl25::accounts;
-
-#[cfg(test)]
 #[allow(unused_imports)]
 pub(crate) use self::schema::SCHEMA_ATTR_OAUTH2_CLIENT_PROVIDER_KIND_DL28;
 

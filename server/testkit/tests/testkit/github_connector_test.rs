@@ -53,6 +53,8 @@ fn make_test_config(mock_base: &Url) -> GitHubConfig {
         load_all_groups: false,
         preferred_email_domain: None,
         allow_jit_provisioning: false,
+        redirect_uri: Url::parse("https://idm.example.com/ui/login/oauth2_landing")
+            .expect("test redirect_uri"),
         http,
     }
 }
@@ -107,7 +109,7 @@ async fn test_github_fetch_callback_claims_email_and_groups() {
     let connector = Arc::new(GitHubConnector::new(config));
 
     let claims = connector
-        .fetch_callback_claims(&code)
+        .fetch_callback_claims(&code, None)
         .await
         .expect("fetch_callback_claims");
 
@@ -158,7 +160,7 @@ async fn test_github_fetch_callback_claims_load_all_groups() {
     let connector = Arc::new(GitHubConnector::new(config));
 
     let claims = connector
-        .fetch_callback_claims(&code)
+        .fetch_callback_claims(&code, None)
         .await
         .expect("fetch_callback_claims");
 
@@ -202,7 +204,7 @@ async fn test_github_fetch_callback_claims_org_filter() {
     let connector = Arc::new(GitHubConnector::new(config));
 
     let claims = connector
-        .fetch_callback_claims(&code)
+        .fetch_callback_claims(&code, None)
         .await
         .expect("fetch_callback_claims");
 
@@ -246,7 +248,7 @@ async fn test_github_enterprise_host_routing() {
     let connector = Arc::new(GitHubConnector::new(config));
 
     let claims = connector
-        .fetch_callback_claims(&code)
+        .fetch_callback_claims(&code, None)
         .await
         .expect("GHE login");
 
@@ -296,7 +298,7 @@ async fn test_github_login_rejected_by_team_access_gate() {
     config.allowed_teams.insert("acme:eng".to_string());
     let connector = Arc::new(GitHubConnector::new(config));
 
-    let result = connector.fetch_callback_claims(&code).await;
+    let result = connector.fetch_callback_claims(&code, None).await;
     assert!(
         matches!(
             result,
@@ -335,7 +337,7 @@ async fn test_github_login_allowed_after_adding_to_allowed_team() {
     let connector = Arc::new(GitHubConnector::new(config));
 
     let claims = connector
-        .fetch_callback_claims(&code)
+        .fetch_callback_claims(&code, None)
         .await
         .expect("fetch_callback_claims should succeed for allowed team");
 
@@ -379,7 +381,7 @@ async fn test_github_org_filter_narrows_group_mapping_without_rejecting_login() 
     let connector = Arc::new(GitHubConnector::new(config));
 
     let claims = connector
-        .fetch_callback_claims(&code)
+        .fetch_callback_claims(&code, None)
         .await
         .expect("login must succeed even with org_filter");
 
@@ -418,7 +420,7 @@ async fn test_github_org_filter_empty_match_login_succeeds_no_groups() {
     let connector = Arc::new(GitHubConnector::new(config));
 
     let claims = connector
-        .fetch_callback_claims(&code)
+        .fetch_callback_claims(&code, None)
         .await
         .expect("login must succeed: org_filter is not an access gate");
 
@@ -465,7 +467,7 @@ async fn test_github_refresh_reflects_upstream_team_mutation() {
 
     // Simulate a login: exchange the code to get claims + access token.
     let initial_claims = connector
-        .fetch_callback_claims(&code)
+        .fetch_callback_claims(&code, None)
         .await
         .expect("initial login");
 
@@ -793,7 +795,7 @@ async fn test_github_jit_provisioning_toggle_respects_admin_flag() {
     let connector_off = Arc::new(GitHubConnector::new(config_off));
 
     let claims_off = connector_off
-        .fetch_callback_claims(&code_jit_off)
+        .fetch_callback_claims(&code_jit_off, None)
         .await
         .expect("fetch_callback_claims should not fail on JIT-off path");
 
@@ -813,7 +815,7 @@ async fn test_github_jit_provisioning_toggle_respects_admin_flag() {
     let connector_on = Arc::new(GitHubConnector::new(config_on));
 
     let claims_on = connector_on
-        .fetch_callback_claims(&code_jit_on)
+        .fetch_callback_claims(&code_jit_on, None)
         .await
         .expect("fetch_callback_claims should succeed on JIT-on path");
 

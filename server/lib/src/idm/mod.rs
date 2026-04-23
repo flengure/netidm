@@ -13,6 +13,7 @@ pub mod authsession;
 pub mod credupdatesession;
 pub mod delayed;
 pub mod event;
+pub mod generic_oidc_connector;
 pub mod github_connector;
 pub mod group;
 pub mod group_mapping;
