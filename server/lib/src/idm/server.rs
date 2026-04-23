@@ -2584,6 +2584,25 @@ impl IdmServerProxyWriteTransaction<'_> {
         self.find_and_link_account(provider_uuid, claims)
     }
 
+    /// Run the 4-step GitHub linking chain (T014 / FR-013a).
+    ///
+    /// Delegates to [`crate::idm::github_connector::github_link_or_provision_chain`]
+    /// with the raw `QueryServerWriteTransaction`. See that function for
+    /// the full step-by-step semantics.
+    pub fn github_link_or_provision_chain(
+        &mut self,
+        provider_uuid: Uuid,
+        claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        allow_jit_provisioning: bool,
+    ) -> Result<Option<Uuid>, OperationError> {
+        crate::idm::github_connector::github_link_or_provision_chain(
+            &mut self.qs_write,
+            provider_uuid,
+            claims,
+            allow_jit_provisioning,
+        )
+    }
+
     /// Reconcile upstream-asserted group memberships for a person against
     /// the named OAuth2 upstream connector's mapping (DL25+).
     ///

@@ -1958,6 +1958,51 @@ impl QueryServerWriteV1 {
         idms_prox_write.commit().map(|_| person_uuid)
     }
 
+    /// Run the 4-step GitHub account linking chain (T014 / FR-013a).
+    ///
+    /// Reads `allow_jit_provisioning` from the registered connector, then
+    /// delegates to `IdmServerProxyWriteTransaction::github_link_or_provision_chain`.
+    /// Returns `Ok(Some(uuid))` when the account is linked or provisioned,
+    /// `Ok(None)` when no match exists and JIT provisioning is disabled.
+    pub async fn handle_github_link_or_provision(
+        &self,
+        provider_uuid: Uuid,
+        claims: netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        eventid: Uuid,
+        _client_auth_info: ClientAuthInfo,
+    ) -> Result<Option<Uuid>, OperationError> {
+        let _ = eventid;
+        let allow_jit = self
+            .idms
+            .connector_registry()
+            .get(provider_uuid)
+            .map(|c| c.allow_jit_provisioning())
+            .unwrap_or(false);
+
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self.idms.proxy_write(ct).await?;
+
+        let maybe_uuid =
+            idms_prox_write.github_link_or_provision_chain(provider_uuid, &claims, allow_jit)?;
+
+        if let Some(person_uuid) = maybe_uuid {
+            if let Err(e) = idms_prox_write.reconcile_upstream_memberships_for_provider(
+                person_uuid,
+                provider_uuid,
+                &claims.groups,
+            ) {
+                warn!(
+                    ?e,
+                    ?provider_uuid,
+                    ?person_uuid,
+                    "reconcile_upstream_memberships failed during GitHub link/provision; proceeding"
+                );
+            }
+        }
+
+        idms_prox_write.commit().map(|_| maybe_uuid)
+    }
+
     /// Attempt to link an existing Person account to an OAuth2 provider by verified email.
     /// Returns `Ok(Some(uuid))` if a match was found and linked, `Ok(None)` if no match.
     pub async fn handle_link_account_by_email(

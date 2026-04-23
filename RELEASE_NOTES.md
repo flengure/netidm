@@ -14,6 +14,69 @@ We value your feedback! First, please see our [code of conduct]. If you have que
 
 ## Release Notes
 
+### 2026-04-23 - Netidm 0.1.12 (fork)
+
+Third feature drop of the netidm fork — GitHub OAuth connector lands as a
+first-class external connector type. This release is additive; there are no
+incompatible changes from 0.1.11 beyond the new DL28 schema attributes, which
+migrate forward automatically at startup.
+
+#### 0.1.12 Important Changes
+
+- Domain Level bumped to DL28 (DL27 was an internal step added by the
+  PR-REFRESH-CLAIMS work; DL28 adds GitHub-specific schema). Upgrade from
+  DL27 or DL26 runs automatically on first boot. There is no downgrade path
+  from DL28.
+- New **GitHub OAuth connector** (`OAuth2ClientProviderKind::GitHub`). When
+  configured against a GitHub OAuth app (or a GitHub Enterprise Server host),
+  netidm can authenticate users via GitHub, gate access by organisation
+  membership or team membership, map GitHub org/team names onto netidm groups,
+  and optionally JIT-provision new accounts on first login.
+- **4-step account linking chain**: on a new GitHub login, netidm attempts to
+  link to an existing account in order — (1) verified e-mail match, (2)
+  numeric GitHub ID match, (3) login-string match — before falling back to
+  (4) JIT provisioning if the `allow_jit_provisioning` flag is set. Existing
+  accounts are updated with the GitHub numeric ID and login string on first
+  link so subsequent logins are ID-stable.
+- **Org / team access gate**: optional `required_org` and `required_team`
+  fields on the connector config prevent login unless the GitHub account
+  belongs to the named org or team at the time of authentication.
+- **Token refresh re-fetch**: when a GitHub Fine-Grained or GitHub App access
+  token expires, the refresh path fetches a new access token (using the
+  stored refresh token) and re-queries the GitHub APIs before returning the
+  updated claims. The new tokens are written back into the session state so
+  the next refresh does not need to re-authenticate.
+- **GitHub Enterprise Server support**: set the `github_enterprise_host`
+  field on the connector config to point at a GHE instance; all API calls
+  and OAuth redirects route to that host instead of `github.com`.
+- New admin CLI / SDK verbs: `github-connector-create`,
+  `github-connector-update`, `github-connector-get`,
+  `github-connector-delete` for full CRUD lifecycle of GitHub connector
+  entries.
+
+#### 0.1.12 Release Highlights
+
+- DL28 schema: new `OAuth2ClientProviderKind` discriminator attribute (single-
+  value UTF-8 enum stored on `EntryClass::OAuth2Client`); seven new
+  GitHub-specific attributes (`GithubAppClientId`,
+  `GithubAppClientSecret`, `GithubRequiredOrg`, `GithubRequiredTeam`,
+  `GithubAllowJitProvisioning`, `GithubEnterpriseHost`,
+  `GithubOrgGroupMapping`); ACP entries for admin management of the new
+  attributes.
+- Upstream group mapping (from PR-GROUPS-PIPELINE, DL25) is leveraged by the
+  GitHub connector: `GithubOrgGroupMapping` entries are resolved via the
+  existing `reconcile_upstream_memberships` helper, so group membership
+  updates are applied at every login and at every refresh cycle.
+- `RefreshableConnector` trait (from PR-REFRESH-CLAIMS, DL27) is implemented
+  by `GitHubConnector`: the connector deserialises its opaque session-state
+  blob, contacts the GitHub APIs with the stored access token, and returns
+  updated `ExternalUserClaims` — or returns `ConnectorRefreshError::TokenRevoked`
+  if the token has been revoked so the session can be invalidated upstream.
+- Full unit and integration test coverage: 16 `#[idm_test]` / `#[tokio::test]`
+  unit tests covering the linking chain, access gate, group mapping, refresh
+  paths, and error branches; 11 testkit integration tests driving the connector
+  end-to-end against an inline mock GitHub server.
+
 ### 2026-04-21 - Netidm 0.1.11 (fork)
 
 Second feature drop of the netidm fork — two back-to-back dex-parity PRs land
