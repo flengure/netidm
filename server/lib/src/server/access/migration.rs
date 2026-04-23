@@ -20,6 +20,7 @@ pub static MIGRATION_ENTRY_CLASSES: LazyLock<BTreeSet<String>> = LazyLock::new(|
         EntryClass::AccountPolicy,
         EntryClass::PosixGroup,
         EntryClass::ServiceAccount,
+        EntryClass::OAuth2Client,
     ];
 
     BTreeSet::from_iter(classes.into_iter().map(|ec| ec.into()))
@@ -112,6 +113,36 @@ pub fn migration_entry_attrs(
             Attribute::LimitSearchMaxResults,
             Attribute::LimitSearchMaxFilterTest,
             Attribute::AllowPrimaryCredFallback,
+        ]);
+    }
+
+    if classes.contains(EntryClass::OAuth2Client.into()) {
+        allow_cls.clear();
+        allow_cls.extend([EntryClass::OAuth2Client.as_ref()]);
+        allow_attrs.extend([
+            Attribute::Name,
+            Attribute::DisplayName,
+            Attribute::OAuth2ClientId,
+            Attribute::OAuth2ClientSecret,
+            Attribute::OAuth2AuthorisationEndpoint,
+            Attribute::OAuth2TokenEndpoint,
+            Attribute::OAuth2UserinfoEndpoint,
+            Attribute::OAuth2RequestScopes,
+            Attribute::OAuth2JitProvisioning,
+            Attribute::OAuth2EmailLinkAccounts,
+            Attribute::OAuth2ClientLogoUri,
+            Attribute::OAuth2Issuer,
+            Attribute::OAuth2JwksUri,
+            Attribute::OAuth2LinkBy,
+            Attribute::OAuth2GroupMapping,
+            Attribute::OAuth2ClientProviderKind,
+            Attribute::OAuth2ClientGithubHost,
+            Attribute::OAuth2ClientGithubOrgFilter,
+            Attribute::OAuth2ClientGithubAllowedTeams,
+            Attribute::OAuth2ClientGithubTeamNameField,
+            Attribute::OAuth2ClientGithubLoadAllGroups,
+            Attribute::OAuth2ClientGithubPreferredEmailDomain,
+            Attribute::OAuth2ClientGithubAllowJitProvisioning,
         ]);
     }
 
