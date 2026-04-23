@@ -20,7 +20,7 @@
 	<span class="mx-2 text-muted small">or</span>
 	<hr class="flex-grow-1"/>
 </div>
-<button type="button" class="btn btn-link p-0 mb-3" onclick="document.getElementById('internal-auth').classList.toggle('d-none')">Use internal authentication</button>
+<button type="button" id="toggle-internal-auth" class="btn btn-link p-0 mb-3">Use internal authentication</button>
 (% endif %)
 
 <div id="internal-auth" (% if !display_ctx.available_sso_providers.is_empty() && !show_internal_first %)class="d-none"(% endif %)>

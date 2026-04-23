@@ -17,3 +17,12 @@ updateColourScheme();
 window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", updateColourScheme);
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateColourScheme);
 document.body.addEventListener("htmx:afterOnLoad", updateColourScheme);
+
+document.addEventListener("DOMContentLoaded", function () {
+    const btn = document.getElementById("toggle-internal-auth");
+    if (btn) {
+        btn.addEventListener("click", function () {
+            document.getElementById("internal-auth").classList.toggle("d-none");
+        });
+    }
+});
