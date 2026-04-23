@@ -16,6 +16,9 @@ const ALLOWED_ATTRIBUTES: &[&str] = &[
     "log_level",
     "ldap",
     "with_test_env",
+    "forward_auth_allowed_email_domains",
+    "forward_auth_allowed_groups",
+    "forward_auth_inject_request_headers",
 ];
 
 #[derive(Default)]

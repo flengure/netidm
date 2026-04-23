@@ -1,5 +1,6 @@
 mod apidocs;
 mod domain;
+mod forward_auth_test;
 mod github_connector_test;
 mod github_mock;
 mod group;
@@ -12,7 +13,6 @@ mod ip_addr_extractors;
 mod ldap_basic;
 mod logout_test;
 mod oauth2_client_test;
-mod oauth2_proxy_test;
 mod oauth2_test;
 mod person;
 mod proto_v1_test;

@@ -1577,11 +1577,8 @@ async fn view_login_step(
                                 "GitHub account linked/provisioned — issuing session"
                             );
                             let token_str = token.to_string();
-                            let mut bearer_cookie = cookies::make_unsigned(
-                                &state,
-                                COOKIE_BEARER_TOKEN,
-                                token_str,
-                            );
+                            let mut bearer_cookie =
+                                cookies::make_unsigned(&state, COOKIE_BEARER_TOKEN, token_str);
                             bearer_cookie.make_permanent();
                             jar = jar.add(bearer_cookie);
                             jar = jar.add(cookies::make_unsigned(

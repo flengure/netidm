@@ -404,6 +404,15 @@ pub struct ServerConfigV2 {
     #[serde(rename = "replication")]
     repl_config: Option<ReplicationConfiguration>,
     otel_grpc_url: Option<String>,
+    /// See [`Configuration::forward_auth_allowed_email_domains`].
+    #[serde(default)]
+    forward_auth_allowed_email_domains: Vec<String>,
+    /// See [`Configuration::forward_auth_allowed_groups`].
+    #[serde(default)]
+    forward_auth_allowed_groups: Vec<String>,
+    /// See [`Configuration::forward_auth_inject_request_headers`].
+    #[serde(default)]
+    forward_auth_inject_request_headers: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -460,6 +469,17 @@ pub struct Configuration {
     /// validation and receive `200 OK` immediately. Rules with invalid regexes
     /// are logged and skipped; they never cause a server startup failure.
     pub skip_auth_routes: Vec<String>,
+    /// Restrict the forward auth gate to users whose email domain is in this
+    /// list. Empty (default) = no restriction. Example: `["acme.com"]`.
+    pub forward_auth_allowed_email_domains: Vec<String>,
+    /// Restrict the forward auth gate to users who are members of at least one
+    /// of these groups (short names, without domain suffix). Empty (default) =
+    /// no restriction.
+    pub forward_auth_allowed_groups: Vec<String>,
+    /// Inject arbitrary user entry attributes as additional upstream request
+    /// headers. Each entry has the form `"Header-Name: attribute_name"`.
+    /// Example: `["X-User-Department: department"]`.
+    pub forward_auth_inject_request_headers: Vec<String>,
 }
 
 impl Configuration {
@@ -492,6 +512,9 @@ impl Configuration {
             role: None,
             repl_config: None,
             otel_grpc_url: None,
+            forward_auth_allowed_email_domains: Vec::new(),
+            forward_auth_allowed_groups: Vec::new(),
+            forward_auth_inject_request_headers: Vec::new(),
         }
     }
 
@@ -521,6 +544,9 @@ impl Configuration {
             integration_repl_config: None,
             otel_grpc_url: None,
             skip_auth_routes: Vec::new(),
+            forward_auth_allowed_email_domains: Vec::new(),
+            forward_auth_allowed_groups: Vec::new(),
+            forward_auth_inject_request_headers: Vec::new(),
         }
     }
 }
@@ -632,6 +658,9 @@ pub struct ConfigurationBuilder {
     log_level: Option<LogLevel>,
     repl_config: Option<ReplicationConfiguration>,
     otel_grpc_url: Option<String>,
+    forward_auth_allowed_email_domains: Vec<String>,
+    forward_auth_allowed_groups: Vec<String>,
+    forward_auth_inject_request_headers: Vec<String>,
 }
 
 impl ConfigurationBuilder {
@@ -962,6 +991,18 @@ impl ConfigurationBuilder {
             self.otel_grpc_url = config.otel_grpc_url;
         }
 
+        if !config.forward_auth_allowed_email_domains.is_empty() {
+            self.forward_auth_allowed_email_domains = config.forward_auth_allowed_email_domains;
+        }
+
+        if !config.forward_auth_allowed_groups.is_empty() {
+            self.forward_auth_allowed_groups = config.forward_auth_allowed_groups;
+        }
+
+        if !config.forward_auth_inject_request_headers.is_empty() {
+            self.forward_auth_inject_request_headers = config.forward_auth_inject_request_headers;
+        }
+
         self
     }
 
@@ -996,6 +1037,9 @@ impl ConfigurationBuilder {
             log_level,
             repl_config,
             otel_grpc_url,
+            forward_auth_allowed_email_domains,
+            forward_auth_allowed_groups,
+            forward_auth_inject_request_headers,
         } = self;
 
         let tls_config = match (tls_key, tls_chain, tls_client_ca) {
@@ -1064,6 +1108,9 @@ impl ConfigurationBuilder {
             integration_repl_config: None,
             integration_test_config: None,
             skip_auth_routes: Vec::new(),
+            forward_auth_allowed_email_domains,
+            forward_auth_allowed_groups,
+            forward_auth_inject_request_headers,
         })
     }
 }

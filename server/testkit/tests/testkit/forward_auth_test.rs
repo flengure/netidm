@@ -1,4 +1,4 @@
-//! Integration tests for the oauth2-proxy compatibility endpoints.
+//! Integration tests for the forward auth gate.
 //!
 //! Covers [`/oauth2/auth`], [`/oauth2/proxy/userinfo`], and [`/oauth2/sign_out`].
 //! Each test spins up a real netidmd instance via the testkit framework.
@@ -24,7 +24,7 @@ fn anon_client() -> reqwest::Client {
 // /oauth2/auth — forward auth gate
 // ---------------------------------------------------------------------------
 
-/// Unauthenticated request → 401 HTML redirect to /ui/login.
+/// Unauthenticated request → redirect to /ui/login.
 #[netidmd_testkit::test]
 async fn test_oauth2_auth_unauthenticated_redirects_to_login(rsclient: &NetidmClient) {
     let client = anon_client();
@@ -34,15 +34,19 @@ async fn test_oauth2_auth_unauthenticated_redirects_to_login(rsclient: &NetidmCl
         .await
         .expect("Request failed");
 
-    assert_eq!(resp.status(), 401);
+    assert!(
+        resp.status().is_redirection(),
+        "Expected a redirect, got: {}",
+        resp.status()
+    );
     let location = resp
         .headers()
         .get("location")
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
     assert!(
-        location.starts_with("/ui/login"),
-        "Expected Location to start with /ui/login, got: {location}"
+        location.contains("ui/login"),
+        "Expected Location to contain ui/login, got: {location}"
     );
 }
 
@@ -458,5 +462,278 @@ async fn test_oauth2_sign_out_clears_bearer_cookie(rsclient: &NetidmClient) {
     assert!(
         bearer_cleared,
         "Expected bearer cookie to be cleared, Set-Cookie headers: {cookies:?}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// /oauth2/auth — access token passthrough
+// ---------------------------------------------------------------------------
+
+/// 202 response always includes `X-Auth-Request-Access-Token` for authenticated requests.
+#[netidmd_testkit::test]
+async fn test_oauth2_auth_access_token_header_present(rsclient: &NetidmClient) {
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("Admin login failed");
+    let token = rsclient.get_token().await.expect("No bearer token");
+
+    let client = anon_client();
+    let resp = client
+        .get(rsclient.make_url("/oauth2/auth"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .expect("Request failed");
+
+    assert_eq!(resp.status(), 202);
+    assert!(
+        resp.headers().get("x-auth-request-access-token").is_some(),
+        "X-Auth-Request-Access-Token must be present in 202 response"
+    );
+    // The header value must be non-empty and contain at least two dots (JWT format).
+    let token_val = resp
+        .headers()
+        .get("x-auth-request-access-token")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert!(
+        token_val.contains('.'),
+        "X-Auth-Request-Access-Token should look like a JWT, got: {token_val}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// /oauth2/auth — email domain allowlist
+// ---------------------------------------------------------------------------
+
+/// Email domain matches allowlist → 202 allowed through.
+#[netidmd_testkit::test(forward_auth_allowed_email_domains = vec!["example.com".to_string()])]
+async fn test_oauth2_auth_email_domain_allow(rsclient: &NetidmClient) {
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("Admin login failed");
+
+    let username = "email_domain_allow_user";
+    let password = "ahZ8gooN5ae2sha1Ahth";
+    rsclient
+        .idm_person_account_create(username, username)
+        .await
+        .expect("Failed to create user");
+    rsclient
+        .idm_person_account_primary_credential_set_password(username, password)
+        .await
+        .expect("Failed to set password");
+    rsclient
+        .idm_person_account_set_attr(username, "mail", &["alice@example.com"])
+        .await
+        .expect("Failed to set email");
+
+    let user_client = rsclient.new_session().expect("new_session failed");
+    user_client
+        .auth_simple_password(username, password)
+        .await
+        .expect("Login failed");
+    let token = user_client.get_token().await.expect("No token");
+
+    let client = anon_client();
+    let resp = client
+        .get(rsclient.make_url("/oauth2/auth"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .expect("Request failed");
+    assert_eq!(
+        resp.status(),
+        202,
+        "User with allowed email domain should get 202"
+    );
+}
+
+/// Email domain does NOT match allowlist → 401.
+#[netidmd_testkit::test(forward_auth_allowed_email_domains = vec!["allowed.com".to_string()])]
+async fn test_oauth2_auth_email_domain_deny(rsclient: &NetidmClient) {
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("Admin login failed");
+
+    let username = "email_domain_deny_user";
+    let password = "ahZ8gooN5ae2sha1Bhth";
+    rsclient
+        .idm_person_account_create(username, username)
+        .await
+        .expect("Failed to create user");
+    rsclient
+        .idm_person_account_primary_credential_set_password(username, password)
+        .await
+        .expect("Failed to set password");
+    rsclient
+        .idm_person_account_set_attr(username, "mail", &["alice@wrong.com"])
+        .await
+        .expect("Failed to set email");
+
+    let user_client = rsclient.new_session().expect("new_session failed");
+    user_client
+        .auth_simple_password(username, password)
+        .await
+        .expect("Login failed");
+    let token = user_client.get_token().await.expect("No token");
+
+    let client = anon_client();
+    let resp = client
+        .get(rsclient.make_url("/oauth2/auth"))
+        .bearer_auth(&token)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .expect("Request failed");
+    assert_eq!(
+        resp.status(),
+        401,
+        "User with non-allowed email domain should get 401"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// /oauth2/auth — group allowlist
+// ---------------------------------------------------------------------------
+
+/// User is a member of an allowed group → 202.
+#[netidmd_testkit::test(forward_auth_allowed_groups = vec!["gateway_allowed".to_string()])]
+async fn test_oauth2_auth_group_allow(rsclient: &NetidmClient) {
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("Admin login failed");
+
+    let username = "group_allow_user";
+    let password = "ahZ8gooN5ae2sha1Chth";
+    let group_name = "gateway_allowed";
+    rsclient
+        .idm_person_account_create(username, username)
+        .await
+        .expect("Failed to create user");
+    rsclient
+        .idm_person_account_primary_credential_set_password(username, password)
+        .await
+        .expect("Failed to set password");
+    rsclient
+        .idm_group_create(group_name, None)
+        .await
+        .expect("Failed to create group");
+    rsclient
+        .idm_group_add_members(group_name, &[username])
+        .await
+        .expect("Failed to add user to group");
+
+    let user_client = rsclient.new_session().expect("new_session failed");
+    user_client
+        .auth_simple_password(username, password)
+        .await
+        .expect("Login failed");
+    let token = user_client.get_token().await.expect("No token");
+
+    let client = anon_client();
+    let resp = client
+        .get(rsclient.make_url("/oauth2/auth"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .expect("Request failed");
+    assert_eq!(resp.status(), 202, "User in allowed group should get 202");
+}
+
+/// User is NOT a member of any allowed group → 401.
+#[netidmd_testkit::test(forward_auth_allowed_groups = vec!["required_group".to_string()])]
+async fn test_oauth2_auth_group_deny(rsclient: &NetidmClient) {
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("Admin login failed");
+
+    let username = "group_deny_user";
+    let password = "ahZ8gooN5ae2sha1Dhth";
+    rsclient
+        .idm_person_account_create(username, username)
+        .await
+        .expect("Failed to create user");
+    rsclient
+        .idm_person_account_primary_credential_set_password(username, password)
+        .await
+        .expect("Failed to set password");
+    // User is NOT added to "required_group"
+
+    let user_client = rsclient.new_session().expect("new_session failed");
+    user_client
+        .auth_simple_password(username, password)
+        .await
+        .expect("Login failed");
+    let token = user_client.get_token().await.expect("No token");
+
+    let client = anon_client();
+    let resp = client
+        .get(rsclient.make_url("/oauth2/auth"))
+        .bearer_auth(&token)
+        .header("Accept", "application/json")
+        .send()
+        .await
+        .expect("Request failed");
+    assert_eq!(
+        resp.status(),
+        401,
+        "User not in any allowed group should get 401"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// /oauth2/auth — custom header injection
+// ---------------------------------------------------------------------------
+
+/// Configured attribute injection: `displayname` value appears as a custom header.
+#[netidmd_testkit::test(forward_auth_inject_request_headers = vec!["X-User-Display: displayname".to_string()])]
+async fn test_oauth2_auth_inject_header_from_attr(rsclient: &NetidmClient) {
+    rsclient
+        .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
+        .await
+        .expect("Admin login failed");
+
+    let username = "inject_header_user";
+    let password = "ahZ8gooN5ae2sha1Ehth";
+    let display_name = "Inject Test User";
+    rsclient
+        .idm_person_account_create(username, display_name)
+        .await
+        .expect("Failed to create user");
+    rsclient
+        .idm_person_account_primary_credential_set_password(username, password)
+        .await
+        .expect("Failed to set password");
+
+    let user_client = rsclient.new_session().expect("new_session failed");
+    user_client
+        .auth_simple_password(username, password)
+        .await
+        .expect("Login failed");
+    let token = user_client.get_token().await.expect("No token");
+
+    let client = anon_client();
+    let resp = client
+        .get(rsclient.make_url("/oauth2/auth"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .expect("Request failed");
+
+    assert_eq!(resp.status(), 202);
+    let injected = resp
+        .headers()
+        .get("x-user-display")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("");
+    assert_eq!(
+        injected, display_name,
+        "Injected header X-User-Display should contain the displayname"
     );
 }

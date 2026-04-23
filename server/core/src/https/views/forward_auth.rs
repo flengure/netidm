@@ -1,18 +1,18 @@
-//! Forward auth and proxy auth handlers — oauth2-proxy compatibility layer.
+//! Forward auth gate — lets reverse proxies delegate authentication to netidm.
 //!
-//! Exposes three endpoints that reverse proxies call to delegate authentication
-//! to netidm for applications that do not speak OIDC natively:
+//! Exposes three endpoints that reverse proxies call to protect upstream
+//! applications that do not speak OIDC natively:
 //!
 //! - [`view_oauth2_auth_get`] — `GET /oauth2/auth` — forward auth gate
 //! - [`view_oauth2_proxy_userinfo_get`] — `GET /oauth2/proxy/userinfo` — identity JSON
 //! - [`view_oauth2_sign_out_get`] — `GET /oauth2/sign_out` — session clear + redirect
 //!
-//! # Reference
+//! # Compatibility
 //!
-//! Endpoint names, status codes, and header names follow the
-//! [oauth2-proxy](https://github.com/oauth2-proxy/oauth2-proxy) conventions so
-//! that operators can swap oauth2-proxy for netidm with minimal proxy
-//! reconfiguration.
+//! Endpoint paths, status codes, and header names are compatible with the
+//! oauth2-proxy convention so existing reverse-proxy configs work without
+//! modification. This is a wire compatibility commitment, not an implementation
+//! dependency — the internal logic is entirely netidm's own.
 //!
 //! # Route namespace
 //!
@@ -152,13 +152,20 @@ fn group_names_from_entry(entry: &netidm_proto::v1::Entry) -> Vec<String> {
         .unwrap_or_default()
 }
 
-/// Return a `401 Unauthorized` response.
+/// Return an unauthenticated response.
 ///
-/// When `Accept: application/json` is present the response body is JSON
-/// `{"error":"unauthenticated"}`. Otherwise a redirect to the login page is
-/// returned with an optional `next` URL reconstructed from the
-/// `X-Forwarded-*` headers.
-fn unauthenticated_response(headers: &HeaderMap, next_url: Option<String>) -> Response {
+/// For JSON clients (`Accept: application/json`): `401 Unauthorized` with
+/// `{"error":"unauthenticated"}` and `WWW-Authenticate: Bearer`.
+///
+/// For browser clients: `302 Found` redirecting to the netidm login page.
+/// The Location is an absolute URL (`{origin}/ui/login?next=<url>`) so that
+/// Traefik forwardAuth correctly redirects the browser to netidm regardless
+/// of which upstream host initiated the forward-auth check.
+fn unauthenticated_response(
+    headers: &HeaderMap,
+    next_url: Option<String>,
+    origin: &url::Url,
+) -> Response {
     let wants_json = headers
         .get(header::ACCEPT)
         .and_then(|v| v.to_str().ok())
@@ -168,27 +175,30 @@ fn unauthenticated_response(headers: &HeaderMap, next_url: Option<String>) -> Re
     if wants_json {
         (
             StatusCode::UNAUTHORIZED,
+            [(
+                header::WWW_AUTHENTICATE,
+                HeaderValue::from_static(r#"Bearer realm="netidm""#),
+            )],
             Json(serde_json::json!({"error": "unauthenticated"})),
         )
             .into_response()
     } else {
-        let location = next_url
-            .map(|url| format!("/ui/login?next={}", percent_encode(url.as_bytes())))
-            .unwrap_or_else(|| "/ui/login".to_string());
+        let login_path = next_url
+            .map(|url| format!("ui/login?next={}", percent_encode(url.as_bytes())))
+            .unwrap_or_else(|| "ui/login".to_string());
+
+        let location = origin
+            .join(&login_path)
+            .map(|u| u.to_string())
+            .unwrap_or_else(|_| format!("{}ui/login", origin));
 
         (
-            StatusCode::UNAUTHORIZED,
-            [
-                (
-                    header::LOCATION,
-                    HeaderValue::from_str(&location)
-                        .unwrap_or_else(|_| HeaderValue::from_static("/ui/login")),
-                ),
-                (
-                    header::WWW_AUTHENTICATE,
-                    HeaderValue::from_static(r#"Bearer realm="netidm""#),
-                ),
-            ],
+            StatusCode::FOUND,
+            [(
+                header::LOCATION,
+                HeaderValue::from_str(&location)
+                    .unwrap_or_else(|_| HeaderValue::from_static("/ui/login")),
+            )],
         )
             .into_response()
     }
@@ -239,9 +249,13 @@ fn percent_encode(input: &[u8]) -> String {
 /// | `X-Auth-Request-Email` | Primary email (omitted if not set) |
 /// | `X-Auth-Request-Groups` | Comma-separated group short names (omitted if none) |
 /// | `X-Auth-Request-Preferred-Username` | Display name |
+/// | `X-Auth-Request-Access-Token` | Netidm bearer token (always set) |
 /// | `X-Forwarded-User` | Same as `X-Auth-Request-User` |
 /// | `X-Forwarded-Email` | Same as `X-Auth-Request-Email` |
 /// | `X-Forwarded-Groups` | Same as `X-Auth-Request-Groups` |
+///
+/// Additional headers may be injected from user entry attributes via
+/// `forward_auth_inject_request_headers` in the server config.
 ///
 /// # Errors
 ///
@@ -297,8 +311,11 @@ pub async fn view_oauth2_auth_get(
         // we build the `next` URL from headers that are only meaningful when
         // the proxy is trusted.
         let next_url = reconstruct_original_url(&headers);
-        return unauthenticated_response(&headers, next_url);
+        return unauthenticated_response(&headers, next_url, &state.origin);
     }
+
+    // Capture the bearer token string before client_auth_info is moved into handle_whoami.
+    let bearer_token_str = client_auth_info.bearer_token().map(|t| t.to_string());
 
     // Full validation + group lookup in a single DB transaction.
     // `handle_whoami` calls `validate_client_auth_info_to_ident` (checks the
@@ -311,7 +328,7 @@ pub async fn view_oauth2_auth_get(
     {
         Err(_) => {
             let next_url = reconstruct_original_url(&headers);
-            unauthenticated_response(&headers, next_url)
+            unauthenticated_response(&headers, next_url, &state.origin)
         }
         Ok(whoami) => {
             let entry = &whoami.youare;
@@ -339,6 +356,37 @@ pub async fn view_oauth2_auth_get(
             let email = entry.attrs.get("mail").and_then(|v| v.first()).cloned();
 
             let groups = group_names_from_entry(entry);
+
+            // Email domain allowlist check.
+            if !state.forward_auth_allowed_email_domains.is_empty() {
+                let domain_ok = email
+                    .as_deref()
+                    .and_then(|e| e.rsplit_once('@').map(|(_, d)| d))
+                    .map(|d| {
+                        state
+                            .forward_auth_allowed_email_domains
+                            .iter()
+                            .any(|allowed| allowed.eq_ignore_ascii_case(d))
+                    })
+                    .unwrap_or(false);
+                if !domain_ok {
+                    return unauthenticated_response(&headers, None, &state.origin);
+                }
+            }
+
+            // Group allowlist check.
+            if !state.forward_auth_allowed_groups.is_empty() {
+                let has_group = groups.iter().any(|g| {
+                    state
+                        .forward_auth_allowed_groups
+                        .iter()
+                        .any(|allowed| allowed == g)
+                });
+                if !has_group {
+                    return unauthenticated_response(&headers, None, &state.origin);
+                }
+            }
+
             let groups_csv = if groups.is_empty() {
                 None
             } else {
@@ -374,6 +422,26 @@ pub async fn view_oauth2_auth_get(
                     resp.headers_mut().insert(hname, hvalue);
                 }
             }
+
+            // Pass the netidm bearer token through so upstream services can call
+            // netidm APIs on behalf of the authenticated user.
+            if let Some(ref token_str) = bearer_token_str {
+                if let Ok(v) = HeaderValue::from_str(token_str) {
+                    resp.headers_mut().insert("x-auth-request-access-token", v);
+                }
+            }
+
+            // Inject custom headers from configured entry attribute mappings.
+            for (header_name, attr_name) in state.forward_auth_inject_headers.as_ref() {
+                if let Some(values) = entry.attrs.get(attr_name.as_str()) {
+                    if let Some(val) = values.first() {
+                        if let Ok(hvalue) = HeaderValue::from_str(val) {
+                            resp.headers_mut().insert(header_name.clone(), hvalue);
+                        }
+                    }
+                }
+            }
+
             resp
         }
     }
@@ -688,30 +756,45 @@ mod tests {
 
     // --- unauthenticated_response ---
 
+    fn test_origin() -> url::Url {
+        url::Url::parse("https://idm.example.com").unwrap()
+    }
+
     #[tokio::test]
     async fn test_unauthenticated_response_html_redirect_with_next() {
         let h = headers_with(&[]);
-        let resp = unauthenticated_response(&h, Some("https://app.example.com/path".to_string()));
-        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        let origin = test_origin();
+        let resp = unauthenticated_response(
+            &h,
+            Some("https://app.example.com/path".to_string()),
+            &origin,
+        );
+        assert!(resp.status().is_redirection());
         let location = resp.headers().get(header::LOCATION).unwrap();
         let loc_str = location.to_str().unwrap();
-        assert!(loc_str.contains("/ui/login"));
+        assert!(loc_str.contains("ui/login"));
         assert!(loc_str.contains("next="));
     }
 
     #[tokio::test]
     async fn test_unauthenticated_response_html_no_next() {
         let h = headers_with(&[]);
-        let resp = unauthenticated_response(&h, None);
-        assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
+        let origin = test_origin();
+        let resp = unauthenticated_response(&h, None, &origin);
+        assert!(resp.status().is_redirection());
         let location = resp.headers().get(header::LOCATION).unwrap();
-        assert_eq!(location.to_str().unwrap(), "/ui/login");
+        assert!(location.to_str().unwrap().contains("ui/login"));
     }
 
     #[tokio::test]
     async fn test_unauthenticated_response_json_when_accept_json() {
         let h = headers_with(&[(header::ACCEPT.as_str(), "application/json")]);
-        let resp = unauthenticated_response(&h, Some("https://app.example.com/path".to_string()));
+        let origin = test_origin();
+        let resp = unauthenticated_response(
+            &h,
+            Some("https://app.example.com/path".to_string()),
+            &origin,
+        );
         assert_eq!(resp.status(), StatusCode::UNAUTHORIZED);
         // JSON response has no Location header
         assert!(resp.headers().get(header::LOCATION).is_none());

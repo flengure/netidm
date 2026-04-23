@@ -116,7 +116,13 @@ pub struct ServerState {
     pub(crate) wg_manager: Arc<netidmd_wg::WgManager>,
     /// Compiled skip-auth rules evaluated by the forward auth gate before any
     /// session check. An empty vec means every request is authenticated normally.
-    pub(crate) skip_auth_rules: Arc<Vec<views::oauth2_proxy::SkipAuthRule>>,
+    pub(crate) skip_auth_rules: Arc<Vec<views::forward_auth::SkipAuthRule>>,
+    /// Gateway-level email domain allowlist. Empty = no restriction.
+    pub(crate) forward_auth_allowed_email_domains: Arc<Vec<String>>,
+    /// Gateway-level group allowlist (short names). Empty = no restriction.
+    pub(crate) forward_auth_allowed_groups: Arc<Vec<String>>,
+    /// Compiled inject-header mappings: `(HeaderName, attribute_name)`.
+    pub(crate) forward_auth_inject_headers: Arc<Vec<(axum::http::HeaderName, String)>>,
     /// In-flight SAML SP-initiated SSO requests, keyed by relay_state.
     /// Entries are evicted after 5 minutes on lookup.
     #[allow(dead_code)]
@@ -318,11 +324,28 @@ pub async fn create_https_server(
         .handle_skip_auth_routes_get(uuid::Uuid::new_v4())
         .await
         .unwrap_or_default();
-    let skip_auth_rules: Vec<views::oauth2_proxy::SkipAuthRule> = config
+    let skip_auth_rules: Vec<views::forward_auth::SkipAuthRule> = config
         .skip_auth_routes
         .iter()
         .chain(db_skip_auth_routes.iter())
-        .filter_map(|rule| views::oauth2_proxy::SkipAuthRule::parse(rule))
+        .filter_map(|rule| views::forward_auth::SkipAuthRule::parse(rule))
+        .collect();
+
+    let forward_auth_inject_headers: Vec<(axum::http::HeaderName, String)> = config
+        .forward_auth_inject_request_headers
+        .iter()
+        .filter_map(|entry| {
+            let (header_part, attr_part) = entry.split_once(':')?;
+            let header_name = axum::http::HeaderName::from_bytes(header_part.trim().as_bytes())
+                .map_err(|e| {
+                    warn!(
+                        ?e,
+                        "forward_auth_inject_request_headers: invalid header name {header_part:?}, skipping"
+                    )
+                })
+                .ok()?;
+            Some((header_name, attr_part.trim().to_string()))
+        })
         .collect();
 
     let state = ServerState {
@@ -339,6 +362,11 @@ pub async fn create_https_server(
         logging_pipeline,
         wg_manager,
         skip_auth_rules: Arc::new(skip_auth_rules),
+        forward_auth_allowed_email_domains: Arc::new(
+            config.forward_auth_allowed_email_domains.clone(),
+        ),
+        forward_auth_allowed_groups: Arc::new(config.forward_auth_allowed_groups.clone()),
+        forward_auth_inject_headers: Arc::new(forward_auth_inject_headers),
         saml_pending_requests: Arc::new(Mutex::new(HashMap::new())),
     };
 
@@ -358,15 +386,15 @@ pub async fn create_https_server(
                 // reach them without a /ui prefix.
                 .route(
                     netidm_proto::constants::uri::OAUTH2_PROXY_AUTH,
-                    get(views::oauth2_proxy::view_oauth2_auth_get),
+                    get(views::forward_auth::view_oauth2_auth_get),
                 )
                 .route(
                     netidm_proto::constants::uri::OAUTH2_PROXY_USERINFO,
-                    get(views::oauth2_proxy::view_oauth2_proxy_userinfo_get),
+                    get(views::forward_auth::view_oauth2_proxy_userinfo_get),
                 )
                 .route(
                     netidm_proto::constants::uri::OAUTH2_PROXY_SIGN_OUT,
-                    get(views::oauth2_proxy::view_oauth2_sign_out_get),
+                    get(views::forward_auth::view_oauth2_sign_out_get),
                 )
                 .nest("/ui", views::view_router(state.clone()))
             // Can't compress on anything that changes
