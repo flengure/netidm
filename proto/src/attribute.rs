@@ -967,6 +967,7 @@ impl Attribute {
             ATTR_WG_TOKEN_USES_LEFT => Attribute::WgTokenUsesLeft,
             ATTR_WG_TOKEN_EXPIRY => Attribute::WgTokenExpiry,
             ATTR_WG_TOKEN_PRINCIPAL_REF => Attribute::WgTokenPrincipalRef,
+            "wg" => Attribute::WgInlinePeer,
             "saml_idp_sso_url" => Attribute::SamlIdpSsoUrl,
             "saml_idp_certificate" => Attribute::SamlIdpCertificate,
             "saml_entity_id" => Attribute::SamlEntityId,
