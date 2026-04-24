@@ -1195,6 +1195,10 @@ pub enum SessionExtMetadata {
         access_token: String,
         refresh_token: Option<String>,
     },
+    Saml {
+        provider_uuid: Uuid,
+        cached_state: Vec<u8>,
+    },
 }
 
 impl fmt::Debug for SessionExtMetadata {
@@ -1206,6 +1210,10 @@ impl fmt::Debug for SessionExtMetadata {
             } => f
                 .debug_struct("SessionExtMetadata::OAuth2")
                 .field("access_expires_at", access_expires_at)
+                .finish(),
+            Self::Saml { provider_uuid, .. } => f
+                .debug_struct("SessionExtMetadata::Saml")
+                .field("provider_uuid", provider_uuid)
                 .finish(),
         }
     }

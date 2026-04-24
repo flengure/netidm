@@ -370,10 +370,8 @@ impl QueryServerWriteTransaction<'_> {
                     match serde_json::from_value::<Vec<WgInlinePeerSpec>>(wg_json) {
                         Ok(peers) => {
                             for peer in peers {
-                                let Some(tunnel_uuid) = self
-                                    .txn_name_to_uuid()
-                                    .get(&peer.tunnel)
-                                    .copied()
+                                let Some(tunnel_uuid) =
+                                    self.txn_name_to_uuid().get(&peer.tunnel).copied()
                                 else {
                                     warn!(
                                         tunnel = %peer.tunnel,

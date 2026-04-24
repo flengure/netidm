@@ -98,6 +98,13 @@ impl ValueSetSession {
                         access_token: access_token.clone(),
                         refresh_token: refresh_token.clone(),
                     },
+                    SessionExtMetadata::Saml {
+                        provider_uuid,
+                        cached_state,
+                    } => DbValueSessionExtMetadataV1::Saml {
+                        provider_uuid: *provider_uuid,
+                        cached_state: cached_state.clone(),
+                    },
                 },
             })
             .collect()
@@ -199,6 +206,13 @@ impl ValueSetSession {
                                 access_expires_at: *access_expires_at,
                                 access_token: access_token.clone(),
                                 refresh_token: refresh_token.clone(),
+                            },
+                            DbValueSessionExtMetadataV1::Saml {
+                                provider_uuid,
+                                cached_state,
+                            } => SessionExtMetadata::Saml {
+                                provider_uuid: *provider_uuid,
+                                cached_state: cached_state.clone(),
                             },
                         };
 

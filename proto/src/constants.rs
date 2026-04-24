@@ -322,6 +322,12 @@ pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS: &str =
     "oauth2_client_ldap_group_search_user_matchers";
 pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_NAME_ATTR: &str =
     "oauth2_client_ldap_group_search_name_attr";
+// DL33 — SAML connector dex-parity additions (PR-CONNECTOR-SAML)
+pub const ATTR_SAML_SSO_ISSUER: &str = "saml_sso_issuer";
+pub const ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION: &str = "saml_insecure_skip_sig_validation";
+pub const ATTR_SAML_GROUPS_DELIM: &str = "saml_groups_delim";
+pub const ATTR_SAML_ALLOWED_GROUPS: &str = "saml_allowed_groups";
+pub const ATTR_SAML_FILTER_GROUPS: &str = "saml_filter_groups";
 // DL20 — OAuth2 client logo URI
 pub const ATTR_OAUTH2_CLIENT_LOGO_URI: &str = "oauth2_client_logo_uri";
 // DL21 — Generic OIDC upstream connector

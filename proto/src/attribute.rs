@@ -513,6 +513,12 @@ pub enum Attribute {
     SamlAttrMapDisplayname,
     SamlAttrMapGroups,
     SamlJitProvisioning,
+    // DL33 — SAML connector dex-parity additions (PR-CONNECTOR-SAML)
+    SamlSsoIssuer,
+    SamlInsecureSkipSigValidation,
+    SamlGroupsDelim,
+    SamlAllowedGroups,
+    SamlFilterGroups,
 
     #[cfg(any(debug_assertions, test, feature = "test"))]
     #[strum(serialize = "non-exist")]
@@ -970,6 +976,11 @@ impl Attribute {
             "saml_attr_map_displayname" => Attribute::SamlAttrMapDisplayname,
             "saml_attr_map_groups" => Attribute::SamlAttrMapGroups,
             "saml_jit_provisioning" => Attribute::SamlJitProvisioning,
+            ATTR_SAML_SSO_ISSUER => Attribute::SamlSsoIssuer,
+            ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION => Attribute::SamlInsecureSkipSigValidation,
+            ATTR_SAML_GROUPS_DELIM => Attribute::SamlGroupsDelim,
+            ATTR_SAML_ALLOWED_GROUPS => Attribute::SamlAllowedGroups,
+            ATTR_SAML_FILTER_GROUPS => Attribute::SamlFilterGroups,
 
             #[cfg(any(debug_assertions, test, feature = "test"))]
             TEST_ATTR_NON_EXIST => Attribute::NonExist,

@@ -583,6 +583,10 @@ pub enum DbValueSessionExtMetadataV1 {
         access_token: String,
         refresh_token: Option<String>,
     },
+    Saml {
+        provider_uuid: Uuid,
+        cached_state: Vec<u8>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone)]

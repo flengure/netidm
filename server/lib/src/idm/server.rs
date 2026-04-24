@@ -2994,7 +2994,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         use crate::value::AuthType;
         use compact_jwt::Jws;
 
-        let claims =
+        let (claims, cached_state) =
             handler_saml_client::validate_saml_response(provider, encoded_response, request_id)?;
 
         // Find or provision the account.
@@ -3030,6 +3030,11 @@ impl IdmServerProxyWriteTransaction<'_> {
             .to_userauthtoken(session_id, scope, ct, &account_policy)
             .ok_or(OperationError::AU0004UserAuthTokenInvalid)?;
 
+        // Serialize the SAML cached state for the refresh connector path.
+        let cached_bytes = cached_state
+            .to_bytes()
+            .map_err(|_| OperationError::InvalidState)?;
+
         // Record the session in the DB so future token validations succeed.
         self.process_authsessionrecord(&AuthSessionRecord {
             target_uuid: account.uuid,
@@ -3041,7 +3046,10 @@ impl IdmServerProxyWriteTransaction<'_> {
             issued_by: IdentityId::User(account.uuid),
             scope,
             type_: AuthType::SamlFederated,
-            ext_metadata: Default::default(),
+            ext_metadata: crate::value::SessionExtMetadata::Saml {
+                provider_uuid: provider.uuid,
+                cached_state: cached_bytes,
+            },
         })?;
 
         // Sign and return the token.

@@ -74,10 +74,19 @@ pub const DOMAIN_LEVEL_31: DomainVersion = 31;
 /// connection/TLS settings, user search config, and group search config.
 pub const DOMAIN_LEVEL_32: DomainVersion = 32;
 
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_32;
+/// DL33 — SAML connector dex-parity additions (PR-CONNECTOR-SAML).
+/// Adds five new optional config attributes on `EntryClass::SamlClient`:
+/// `SamlSsoIssuer` (response issuer validation), `SamlInsecureSkipSigValidation`
+/// (bypass XML signature check), `SamlGroupsDelim` (delimiter-separated groups),
+/// `SamlAllowedGroups` (access gate), and `SamlFilterGroups` (filter output to
+/// allowed set). Also fixes the NameIDPolicyFormat pass-through bug and implements
+/// `RefreshableConnector` for SAML (cache-based, mirroring dex's `Refresh()`).
+pub const DOMAIN_LEVEL_33: DomainVersion = 33;
+
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_33;
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_32;
-pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_32;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_33;
+pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_33;
 pub const DOMAIN_PREVIOUS_TGT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL - 1;
 pub const DOMAIN_TGT_NEXT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL + 1;
 pub const DOMAIN_MIGRATION_FROM_INVALID: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;

@@ -1,6 +1,7 @@
 use crate::idm::server::{IdmServerProxyReadTransaction, IdmServerProxyWriteTransaction};
 use crate::prelude::*;
 use std::fmt;
+use std::sync::Arc;
 
 #[derive(Clone)]
 #[allow(dead_code)]
@@ -31,6 +32,17 @@ pub struct SamlClientProvider {
     /// login time by
     /// [`crate::idm::group_mapping::reconcile_upstream_memberships`].
     pub(crate) group_mapping: Vec<crate::idm::group_mapping::GroupMapping>,
+    // DL33 additions — PR-CONNECTOR-SAML
+    /// Expected issuer string in SAML responses; absent = no validation.
+    pub(crate) sso_issuer: Option<String>,
+    /// When true, XML signature validation on responses is skipped.
+    pub(crate) insecure_skip_sig_validation: bool,
+    /// Delimiter for splitting a single group attribute value into multiple groups.
+    pub(crate) groups_delim: Option<String>,
+    /// Allowlist of group names; empty = permit all.
+    pub(crate) allowed_groups: Vec<String>,
+    /// When true and allowed_groups is set, trim group claims to the allowed set.
+    pub(crate) filter_groups: bool,
 }
 
 impl fmt::Debug for SamlClientProvider {
@@ -126,6 +138,28 @@ impl IdmServerProxyWriteTransaction<'_> {
                 }
             }
 
+            let sso_issuer = entry
+                .get_ava_single_utf8(Attribute::SamlSsoIssuer)
+                .map(str::to_string);
+
+            let insecure_skip_sig_validation = entry
+                .get_ava_single_bool(Attribute::SamlInsecureSkipSigValidation)
+                .unwrap_or(false);
+
+            let groups_delim = entry
+                .get_ava_single_utf8(Attribute::SamlGroupsDelim)
+                .map(str::to_string);
+
+            let allowed_groups = entry
+                .get_ava_set(Attribute::SamlAllowedGroups)
+                .and_then(|vs| vs.as_utf8_iter())
+                .map(|iter| iter.map(str::to_string).collect::<Vec<_>>())
+                .unwrap_or_default();
+
+            let filter_groups = entry
+                .get_ava_single_bool(Attribute::SamlFilterGroups)
+                .unwrap_or(false);
+
             providers.push((
                 uuid,
                 SamlClientProvider {
@@ -142,12 +176,26 @@ impl IdmServerProxyWriteTransaction<'_> {
                     attr_map_groups,
                     jit_provisioning,
                     group_mapping,
+                    sso_issuer,
+                    insecure_skip_sig_validation,
+                    groups_delim,
+                    allowed_groups,
+                    filter_groups,
                 },
             ));
         }
 
         self.saml_client_providers.clear();
-        self.saml_client_providers.extend(providers);
+        self.saml_client_providers.extend(providers.iter().cloned());
+
+        // Register each SAML provider as a RefreshableConnector (dex SAML parity).
+        for (uuid, provider) in &providers {
+            let connector = Arc::new(crate::idm::saml_connector::SamlConnector {
+                provider_uuid: *uuid,
+                jit_provisioning: provider.jit_provisioning,
+            });
+            self.connector_registry.register(*uuid, connector);
+        }
 
         Ok(())
     }

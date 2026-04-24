@@ -1527,6 +1527,29 @@ impl IdmServerProxyWriteTransaction<'_> {
         let account_uuid = code_xchg.account_uuid;
         let nonce = code_xchg.nonce;
 
+        // Detect SAML-federated parent session and carry the upstream binding
+        // forward onto the new Oauth2Session (PR-CONNECTOR-SAML, DL33).
+        let saml_upstream_binding: Option<(Uuid, Vec<u8>)> = self
+            .qs_write
+            .internal_search_uuid(account_uuid)
+            .ok()
+            .and_then(|entry| {
+                entry
+                    .get_ava_as_session_map(Attribute::UserAuthTokenSession)
+                    .and_then(|m| m.get(&parent_session_id))
+                    .and_then(|session| {
+                        if let crate::value::SessionExtMetadata::Saml {
+                            provider_uuid,
+                            cached_state,
+                        } = &session.ext_metadata
+                        {
+                            Some((*provider_uuid, cached_state.clone()))
+                        } else {
+                            None
+                        }
+                    })
+            });
+
         self.generate_access_token_response(
             o2rs,
             ct,
@@ -1535,10 +1558,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             parent_session_id,
             session_id,
             nonce,
-            // Initial code-flow mint — no connector binding yet;
-            // later connector PRs wire this when the caller is a
-            // provider-initiated login.
-            None,
+            saml_upstream_binding.as_ref(),
         )
     }
 
