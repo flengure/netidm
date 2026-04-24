@@ -1839,6 +1839,18 @@ impl IdmServerProxyReadTransaction<'_> {
         providers
     }
 
+    /// Look up an OAuth2 client provider by its short name and return the provider kind
+    /// and UUID. Used by the SSO initiation handler to detect LDAP (password) connectors.
+    pub fn get_oauth2_provider_info_by_name(
+        &self,
+        name: &str,
+    ) -> Option<(crate::idm::oauth2_client::ProviderKind, uuid::Uuid, String)> {
+        self.oauth2_client_providers
+            .values()
+            .find(|p| p.name == name)
+            .map(|p| (p.provider_kind, p.uuid, p.display_name.clone()))
+    }
+
     pub fn jws_public_jwk(&mut self, key_id: &str) -> Result<Jwk, OperationError> {
         self.qs_read
             .get_key_providers()

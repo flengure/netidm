@@ -280,6 +280,48 @@ pub const ATTR_OAUTH2_CLIENT_MICROSOFT_PREFERRED_USERNAME_FIELD: &str =
     "oauth2_client_microsoft_preferred_username_field";
 pub const ATTR_OAUTH2_CLIENT_MICROSOFT_ALLOW_JIT_PROVISIONING: &str =
     "oauth2_client_microsoft_allow_jit_provisioning";
+// DL32 — Inbound LDAP federation connector (PR-CONNECTOR-LDAP)
+// Connection / TLS
+pub const ATTR_OAUTH2_CLIENT_LDAP_HOST: &str = "oauth2_client_ldap_host";
+pub const ATTR_OAUTH2_CLIENT_LDAP_INSECURE_NO_SSL: &str = "oauth2_client_ldap_insecure_no_ssl";
+pub const ATTR_OAUTH2_CLIENT_LDAP_INSECURE_SKIP_VERIFY: &str =
+    "oauth2_client_ldap_insecure_skip_verify";
+pub const ATTR_OAUTH2_CLIENT_LDAP_START_TLS: &str = "oauth2_client_ldap_start_tls";
+pub const ATTR_OAUTH2_CLIENT_LDAP_ROOT_CA_DATA: &str = "oauth2_client_ldap_root_ca_data";
+pub const ATTR_OAUTH2_CLIENT_LDAP_CLIENT_CERT: &str = "oauth2_client_ldap_client_cert";
+pub const ATTR_OAUTH2_CLIENT_LDAP_CLIENT_KEY: &str = "oauth2_client_ldap_client_key";
+pub const ATTR_OAUTH2_CLIENT_LDAP_BIND_DN: &str = "oauth2_client_ldap_bind_dn";
+pub const ATTR_OAUTH2_CLIENT_LDAP_BIND_PW: &str = "oauth2_client_ldap_bind_pw";
+pub const ATTR_OAUTH2_CLIENT_LDAP_USERNAME_PROMPT: &str = "oauth2_client_ldap_username_prompt";
+// UserSearch
+pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_BASE_DN: &str =
+    "oauth2_client_ldap_user_search_base_dn";
+pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_FILTER: &str =
+    "oauth2_client_ldap_user_search_filter";
+pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME: &str =
+    "oauth2_client_ldap_user_search_username";
+pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_SCOPE: &str = "oauth2_client_ldap_user_search_scope";
+pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_ID_ATTR: &str =
+    "oauth2_client_ldap_user_search_id_attr";
+pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_ATTR: &str =
+    "oauth2_client_ldap_user_search_email_attr";
+pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_NAME_ATTR: &str =
+    "oauth2_client_ldap_user_search_name_attr";
+pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_PREFERRED_USERNAME_ATTR: &str =
+    "oauth2_client_ldap_user_search_preferred_username_attr";
+pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_SUFFIX: &str =
+    "oauth2_client_ldap_user_search_email_suffix";
+// GroupSearch
+pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_BASE_DN: &str =
+    "oauth2_client_ldap_group_search_base_dn";
+pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_FILTER: &str =
+    "oauth2_client_ldap_group_search_filter";
+pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_SCOPE: &str =
+    "oauth2_client_ldap_group_search_scope";
+pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS: &str =
+    "oauth2_client_ldap_group_search_user_matchers";
+pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_NAME_ATTR: &str =
+    "oauth2_client_ldap_group_search_name_attr";
 // DL20 — OAuth2 client logo URI
 pub const ATTR_OAUTH2_CLIENT_LOGO_URI: &str = "oauth2_client_logo_uri";
 // DL21 — Generic OIDC upstream connector

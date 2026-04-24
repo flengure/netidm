@@ -46,6 +46,7 @@ itertools = { workspace = true }
 netidm_proto = { workspace = true }
 netidm_lib_crypto = { workspace = true }
 ldap3_proto = { workspace = true }
+ldap3_client = { workspace = true }
 # libsqlite3-sys = { workspace = true }
 num_enum = { workspace = true }
 rand = { workspace = true }

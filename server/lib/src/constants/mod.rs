@@ -69,10 +69,15 @@ pub const DOMAIN_LEVEL_30: DomainVersion = 30;
 /// custom scopes, preferred-username field, and JIT provisioning toggle.
 pub const DOMAIN_LEVEL_31: DomainVersion = 31;
 
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_31;
+/// DL32 — Inbound LDAP federation connector (PR-CONNECTOR-LDAP).
+/// Adds twenty-four LDAP-specific config attributes on `EntryClass::OAuth2Client`:
+/// connection/TLS settings, user search config, and group search config.
+pub const DOMAIN_LEVEL_32: DomainVersion = 32;
+
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_32;
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_31;
-pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_31;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_32;
+pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_32;
 pub const DOMAIN_PREVIOUS_TGT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL - 1;
 pub const DOMAIN_TGT_NEXT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL + 1;
 pub const DOMAIN_MIGRATION_FROM_INVALID: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;

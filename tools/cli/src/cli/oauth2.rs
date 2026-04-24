@@ -898,6 +898,201 @@ impl Oauth2Opt {
                     handle_client_error(e, opt.output_mode);
                 }
             }
+
+            // ── LDAP inbound connector (DL32) ──────────────────────────────────
+            Oauth2Opt::CreateLdap { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client.idm_oauth2_client_create_ldap(name.as_str()).await {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::LdapSetHost { name, host } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_host(name.as_str(), host.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapEnableNoSsl { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_insecure_no_ssl(name.as_str(), true)
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapDisableNoSsl { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_insecure_no_ssl(name.as_str(), false)
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapEnableInsecureSkipVerify { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_insecure_skip_verify(name.as_str(), true)
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapDisableInsecureSkipVerify { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_insecure_skip_verify(name.as_str(), false)
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetBindDn { name, bind_dn } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_bind_dn(name.as_str(), bind_dn.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetBindPw { name, bind_pw } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_bind_pw(name.as_str(), bind_pw.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetUserSearchBaseDn { name, base_dn } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_user_search_base_dn(name.as_str(), base_dn.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetUserSearchFilter { name, filter } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_user_search_filter(name.as_str(), filter.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapAddUserSearchUsername { name, attr } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_add_user_search_username(name.as_str(), attr.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapRemoveUserSearchUsername { name, attr } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_remove_user_search_username(
+                        name.as_str(),
+                        attr.as_str(),
+                    )
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetUserIdAttr { name, attr } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_user_id_attr(name.as_str(), attr.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetUserEmailAttr { name, attr } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_user_email_attr(name.as_str(), attr.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetUserNameAttr { name, attr } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_user_name_attr(name.as_str(), attr.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetUserEmailSuffix { name, suffix } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_user_email_suffix(name.as_str(), suffix.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetGroupSearchBaseDn { name, base_dn } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_group_search_base_dn(
+                        name.as_str(),
+                        base_dn.as_str(),
+                    )
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetGroupSearchFilter { name, filter } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_group_search_filter(name.as_str(), filter.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapSetGroupNameAttr { name, attr } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_set_group_name_attr(name.as_str(), attr.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapAddUserMatcher { name, matcher } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_add_user_matcher(name.as_str(), matcher.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            Oauth2Opt::LdapRemoveUserMatcher { name, matcher } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_oauth2_client_ldap_remove_user_matcher(name.as_str(), matcher.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
         }
     }
 }

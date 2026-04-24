@@ -4955,6 +4955,7 @@ dependencies = [
  "image",
  "ipnet",
  "itertools 0.14.0",
+ "ldap3_client",
  "ldap3_proto",
  "lodepng",
  "mimalloc",

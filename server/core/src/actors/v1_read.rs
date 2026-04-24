@@ -1702,6 +1702,18 @@ impl QueryServerReadV1 {
         Ok(idms_prox_read.list_sso_providers())
     }
 
+    pub async fn handle_get_oauth2_provider_info_by_name(
+        &self,
+        name: &str,
+    ) -> Option<(
+        netidmd_lib::idm::oauth2_client::ProviderKind,
+        uuid::Uuid,
+        String,
+    )> {
+        let idms_prox_read = self.idms.proxy_read().await.ok()?;
+        idms_prox_read.get_oauth2_provider_info_by_name(name)
+    }
+
     #[allow(dead_code)]
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
     pub async fn handle_saml_authn_request(

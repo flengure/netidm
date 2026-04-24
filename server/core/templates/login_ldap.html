@@ -1,0 +1,38 @@
+(% extends "login_base.html" %)
+
+(% block logincontainer %)
+<h5 class="mb-3">(( provider_display_name ))</h5>
+(% if let Some(err) = error_message %)
+<div class="alert alert-danger" role="alert">
+	(( err ))
+</div>
+(% endif %)
+<form id="ldap-login" action="/ui/sso/(( provider_name ))" method="post">
+	<div class="input-group mb-3">
+		<input
+			autofocus=true
+			class="autofocus form-control"
+			id="username"
+			name="username"
+			type="text"
+			autocomplete="username"
+			placeholder="(( username_prompt ))"
+			required=true
+		/>
+	</div>
+	<div class="input-group mb-3">
+		<input
+			class="form-control"
+			id="password"
+			name="password"
+			type="password"
+			autocomplete="current-password"
+			placeholder="Password"
+			required=true
+		/>
+	</div>
+	<div class="input-group mb-3 justify-content-md-center">
+		<button type="submit" class="btn btn-primary">Sign In</button>
+	</div>
+</form>
+(% endblock %)

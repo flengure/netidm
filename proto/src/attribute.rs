@@ -343,6 +343,59 @@ pub enum Attribute {
     OAuth2ClientMicrosoftPreferredUsernameField,
     #[strum(serialize = "oauth2_client_microsoft_allow_jit_provisioning")]
     OAuth2ClientMicrosoftAllowJitProvisioning,
+    // DL32 — Inbound LDAP federation connector config attributes.
+    // All optional on `EntryClass::OAuth2Client`.
+    // Connection / TLS
+    #[strum(serialize = "oauth2_client_ldap_host")]
+    OAuth2ClientLdapHost,
+    #[strum(serialize = "oauth2_client_ldap_insecure_no_ssl")]
+    OAuth2ClientLdapInsecureNoSsl,
+    #[strum(serialize = "oauth2_client_ldap_insecure_skip_verify")]
+    OAuth2ClientLdapInsecureSkipVerify,
+    #[strum(serialize = "oauth2_client_ldap_start_tls")]
+    OAuth2ClientLdapStartTls,
+    #[strum(serialize = "oauth2_client_ldap_root_ca_data")]
+    OAuth2ClientLdapRootCaData,
+    #[strum(serialize = "oauth2_client_ldap_client_cert")]
+    OAuth2ClientLdapClientCert,
+    #[strum(serialize = "oauth2_client_ldap_client_key")]
+    OAuth2ClientLdapClientKey,
+    #[strum(serialize = "oauth2_client_ldap_bind_dn")]
+    OAuth2ClientLdapBindDn,
+    #[strum(serialize = "oauth2_client_ldap_bind_pw")]
+    OAuth2ClientLdapBindPw,
+    #[strum(serialize = "oauth2_client_ldap_username_prompt")]
+    OAuth2ClientLdapUsernamePrompt,
+    // UserSearch
+    #[strum(serialize = "oauth2_client_ldap_user_search_base_dn")]
+    OAuth2ClientLdapUserSearchBaseDn,
+    #[strum(serialize = "oauth2_client_ldap_user_search_filter")]
+    OAuth2ClientLdapUserSearchFilter,
+    #[strum(serialize = "oauth2_client_ldap_user_search_username")]
+    OAuth2ClientLdapUserSearchUsername,
+    #[strum(serialize = "oauth2_client_ldap_user_search_scope")]
+    OAuth2ClientLdapUserSearchScope,
+    #[strum(serialize = "oauth2_client_ldap_user_search_id_attr")]
+    OAuth2ClientLdapUserSearchIdAttr,
+    #[strum(serialize = "oauth2_client_ldap_user_search_email_attr")]
+    OAuth2ClientLdapUserSearchEmailAttr,
+    #[strum(serialize = "oauth2_client_ldap_user_search_name_attr")]
+    OAuth2ClientLdapUserSearchNameAttr,
+    #[strum(serialize = "oauth2_client_ldap_user_search_preferred_username_attr")]
+    OAuth2ClientLdapUserSearchPreferredUsernameAttr,
+    #[strum(serialize = "oauth2_client_ldap_user_search_email_suffix")]
+    OAuth2ClientLdapUserSearchEmailSuffix,
+    // GroupSearch
+    #[strum(serialize = "oauth2_client_ldap_group_search_base_dn")]
+    OAuth2ClientLdapGroupSearchBaseDn,
+    #[strum(serialize = "oauth2_client_ldap_group_search_filter")]
+    OAuth2ClientLdapGroupSearchFilter,
+    #[strum(serialize = "oauth2_client_ldap_group_search_scope")]
+    OAuth2ClientLdapGroupSearchScope,
+    #[strum(serialize = "oauth2_client_ldap_group_search_user_matchers")]
+    OAuth2ClientLdapGroupSearchUserMatchers,
+    #[strum(serialize = "oauth2_client_ldap_group_search_name_attr")]
+    OAuth2ClientLdapGroupSearchNameAttr,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]
@@ -774,6 +827,58 @@ impl Attribute {
             }
             ATTR_OAUTH2_CLIENT_MICROSOFT_ALLOW_JIT_PROVISIONING => {
                 Attribute::OAuth2ClientMicrosoftAllowJitProvisioning
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_HOST => Attribute::OAuth2ClientLdapHost,
+            ATTR_OAUTH2_CLIENT_LDAP_INSECURE_NO_SSL => Attribute::OAuth2ClientLdapInsecureNoSsl,
+            ATTR_OAUTH2_CLIENT_LDAP_INSECURE_SKIP_VERIFY => {
+                Attribute::OAuth2ClientLdapInsecureSkipVerify
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_START_TLS => Attribute::OAuth2ClientLdapStartTls,
+            ATTR_OAUTH2_CLIENT_LDAP_ROOT_CA_DATA => Attribute::OAuth2ClientLdapRootCaData,
+            ATTR_OAUTH2_CLIENT_LDAP_CLIENT_CERT => Attribute::OAuth2ClientLdapClientCert,
+            ATTR_OAUTH2_CLIENT_LDAP_CLIENT_KEY => Attribute::OAuth2ClientLdapClientKey,
+            ATTR_OAUTH2_CLIENT_LDAP_BIND_DN => Attribute::OAuth2ClientLdapBindDn,
+            ATTR_OAUTH2_CLIENT_LDAP_BIND_PW => Attribute::OAuth2ClientLdapBindPw,
+            ATTR_OAUTH2_CLIENT_LDAP_USERNAME_PROMPT => Attribute::OAuth2ClientLdapUsernamePrompt,
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_BASE_DN => {
+                Attribute::OAuth2ClientLdapUserSearchBaseDn
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_FILTER => {
+                Attribute::OAuth2ClientLdapUserSearchFilter
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME => {
+                Attribute::OAuth2ClientLdapUserSearchUsername
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_SCOPE => Attribute::OAuth2ClientLdapUserSearchScope,
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_ID_ATTR => {
+                Attribute::OAuth2ClientLdapUserSearchIdAttr
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_ATTR => {
+                Attribute::OAuth2ClientLdapUserSearchEmailAttr
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_NAME_ATTR => {
+                Attribute::OAuth2ClientLdapUserSearchNameAttr
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_PREFERRED_USERNAME_ATTR => {
+                Attribute::OAuth2ClientLdapUserSearchPreferredUsernameAttr
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_SUFFIX => {
+                Attribute::OAuth2ClientLdapUserSearchEmailSuffix
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_BASE_DN => {
+                Attribute::OAuth2ClientLdapGroupSearchBaseDn
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_FILTER => {
+                Attribute::OAuth2ClientLdapGroupSearchFilter
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_SCOPE => {
+                Attribute::OAuth2ClientLdapGroupSearchScope
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS => {
+                Attribute::OAuth2ClientLdapGroupSearchUserMatchers
+            }
+            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_NAME_ATTR => {
+                Attribute::OAuth2ClientLdapGroupSearchNameAttr
             }
             ATTR_OBJECTCLASS => Attribute::ObjectClass,
             ATTR_OTHER_NO_INDEX => Attribute::OtherNoIndex,

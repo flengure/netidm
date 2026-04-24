@@ -9,7 +9,16 @@ use netidm_proto::constants::{
     ATTR_OAUTH2_CLIENT_GITHUB_HOST, ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS,
     ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER, ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN,
     ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD, ATTR_OAUTH2_CLIENT_ID,
-    ATTR_OAUTH2_CLIENT_PROVIDER_KIND, ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
+    ATTR_OAUTH2_CLIENT_LDAP_BIND_DN, ATTR_OAUTH2_CLIENT_LDAP_BIND_PW,
+    ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_BASE_DN, ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_FILTER,
+    ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_NAME_ATTR,
+    ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS, ATTR_OAUTH2_CLIENT_LDAP_HOST,
+    ATTR_OAUTH2_CLIENT_LDAP_INSECURE_NO_SSL, ATTR_OAUTH2_CLIENT_LDAP_INSECURE_SKIP_VERIFY,
+    ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_BASE_DN, ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_ATTR,
+    ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_SUFFIX, ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_FILTER,
+    ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_ID_ATTR, ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_NAME_ATTR,
+    ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME, ATTR_OAUTH2_CLIENT_PROVIDER_KIND,
+    ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
     ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS,
     ATTR_OAUTH2_GROUP_MAPPING, ATTR_OAUTH2_ISSUER, ATTR_OAUTH2_JIT_PROVISIONING,
     ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE, ATTR_OAUTH2_LINK_BY,
@@ -1282,6 +1291,355 @@ impl NetidmClient {
         entry.attrs.insert(
             ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING.to_string(),
             vec![enable.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    // ── LDAP inbound connector methods (DL32) ─────────────────────────────────
+
+    pub async fn idm_oauth2_client_create_ldap(&self, name: &str) -> Result<(), ClientError> {
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_PROVIDER_KIND.to_string(),
+            vec!["ldap".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_host(
+        &self,
+        id: &str,
+        host: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_HOST.to_string(),
+            vec![host.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_insecure_no_ssl(
+        &self,
+        id: &str,
+        enable: bool,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_INSECURE_NO_SSL.to_string(),
+            vec![enable.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_insecure_skip_verify(
+        &self,
+        id: &str,
+        enable: bool,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_INSECURE_SKIP_VERIFY.to_string(),
+            vec![enable.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_bind_dn(
+        &self,
+        id: &str,
+        bind_dn: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_BIND_DN.to_string(),
+            vec![bind_dn.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_bind_pw(
+        &self,
+        id: &str,
+        bind_pw: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_BIND_PW.to_string(),
+            vec![bind_pw.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_user_search_base_dn(
+        &self,
+        id: &str,
+        base_dn: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_BASE_DN.to_string(),
+            vec![base_dn.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_user_search_filter(
+        &self,
+        id: &str,
+        filter: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_FILTER.to_string(),
+            vec![filter.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_add_user_search_username(
+        &self,
+        id: &str,
+        attr: &str,
+    ) -> Result<(), ClientError> {
+        let mut current: Vec<String> = self
+            .idm_oauth2_client_get(id)
+            .await?
+            .and_then(|e| {
+                e.attrs
+                    .get(ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME)
+                    .cloned()
+            })
+            .unwrap_or_default();
+        if !current.contains(&attr.to_string()) {
+            current.push(attr.to_string());
+        }
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME.to_string(),
+            current,
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_remove_user_search_username(
+        &self,
+        id: &str,
+        attr: &str,
+    ) -> Result<(), ClientError> {
+        let current: Vec<String> = self
+            .idm_oauth2_client_get(id)
+            .await?
+            .and_then(|e| {
+                e.attrs
+                    .get(ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME)
+                    .cloned()
+            })
+            .unwrap_or_default();
+        let updated: Vec<String> = current.into_iter().filter(|a| a != attr).collect();
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME.to_string(),
+            updated,
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_user_id_attr(
+        &self,
+        id: &str,
+        attr: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_ID_ATTR.to_string(),
+            vec![attr.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_user_email_attr(
+        &self,
+        id: &str,
+        attr: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_ATTR.to_string(),
+            vec![attr.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_user_name_attr(
+        &self,
+        id: &str,
+        attr: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_NAME_ATTR.to_string(),
+            vec![attr.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_user_email_suffix(
+        &self,
+        id: &str,
+        suffix: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_SUFFIX.to_string(),
+            vec![suffix.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_group_search_base_dn(
+        &self,
+        id: &str,
+        base_dn: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_BASE_DN.to_string(),
+            vec![base_dn.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_group_search_filter(
+        &self,
+        id: &str,
+        filter: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_FILTER.to_string(),
+            vec![filter.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_set_group_name_attr(
+        &self,
+        id: &str,
+        attr: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_NAME_ATTR.to_string(),
+            vec![attr.to_string()],
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_add_user_matcher(
+        &self,
+        id: &str,
+        matcher: &str,
+    ) -> Result<(), ClientError> {
+        let mut current: Vec<String> = self
+            .idm_oauth2_client_get(id)
+            .await?
+            .and_then(|e| {
+                e.attrs
+                    .get(ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS)
+                    .cloned()
+            })
+            .unwrap_or_default();
+        if !current.contains(&matcher.to_string()) {
+            current.push(matcher.to_string());
+        }
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS.to_string(),
+            current,
+        );
+        self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
+            .await
+    }
+
+    pub async fn idm_oauth2_client_ldap_remove_user_matcher(
+        &self,
+        id: &str,
+        matcher: &str,
+    ) -> Result<(), ClientError> {
+        let current: Vec<String> = self
+            .idm_oauth2_client_get(id)
+            .await?
+            .and_then(|e| {
+                e.attrs
+                    .get(ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS)
+                    .cloned()
+            })
+            .unwrap_or_default();
+        let updated: Vec<String> = current.into_iter().filter(|m| m != matcher).collect();
+        let mut entry = Entry {
+            attrs: BTreeMap::new(),
+        };
+        entry.attrs.insert(
+            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS.to_string(),
+            updated,
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await

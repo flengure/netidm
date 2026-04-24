@@ -415,16 +415,63 @@ pub struct SsoInitiateQuery {
 ///
 /// # Errors
 /// Returns 404 if the provider name is not found. Returns a redirect on success.
+// ── LDAP password-connector login form ────────────────────────────────────────
+
+#[derive(Template, WebTemplate)]
+#[template(path = "login_ldap.html")]
+struct LdapLoginView {
+    display_ctx: LoginDisplayCtx,
+    provider_name: String,
+    provider_display_name: String,
+    username_prompt: String,
+    error_message: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LdapLoginForm {
+    pub username: String,
+    pub password: String,
+}
+
+// ── view_sso_initiate_get ─────────────────────────────────────────────────────
+
 pub async fn view_sso_initiate_get(
     State(state): State<ServerState>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Extension(kopid): Extension<KOpId>,
     Path(provider_name): Path<String>,
     Query(query): Query<SsoInitiateQuery>,
+    DomainInfo(domain_info): DomainInfo,
     jar: CookieJar,
 ) -> Response {
     use axum::http::StatusCode;
     use netidm_proto::v1::AuthIssueSession;
+    use netidmd_lib::idm::oauth2_client::ProviderKind;
+
+    // For LDAP providers, skip the OAuth2 redirect and render a login form instead.
+    if let Some((ProviderKind::Ldap, _provider_uuid, display_name)) = state
+        .qe_r_ref
+        .handle_get_oauth2_provider_info_by_name(&provider_name)
+        .await
+    {
+        let display_ctx = LoginDisplayCtx {
+            domain_info,
+            oauth2: None,
+            reauth: None,
+            error: None,
+            available_sso_providers: Vec::new(),
+        };
+        return LdapLoginView {
+            display_ctx,
+            provider_display_name: display_name,
+            provider_name,
+            username_prompt: "Username".to_string(),
+            error_message: None,
+        }
+        .into_response();
+    }
+
+    drop(domain_info);
 
     let auth_result = state
         .qe_r_ref
@@ -482,6 +529,126 @@ pub async fn view_sso_initiate_get(
             (jar, Redirect::to(authorisation_url.as_str())).into_response()
         }
         Ok(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+    }
+}
+
+/// `POST /ui/sso/:provider_name`
+///
+/// Handles username/password submission for LDAP password connectors.
+/// Non-LDAP providers should never POST here; they redirect to the provider
+/// after the GET. Returns a 404 if the provider is not LDAP.
+pub async fn view_ldap_login_post(
+    State(state): State<ServerState>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Extension(kopid): Extension<KOpId>,
+    Path(provider_name): Path<String>,
+    DomainInfo(domain_info): DomainInfo,
+    jar: CookieJar,
+    Form(form): Form<LdapLoginForm>,
+) -> Response {
+    use axum::http::StatusCode;
+    use netidmd_lib::idm::oauth2_client::ProviderKind;
+    use netidmd_lib::idm::oauth2_connector::ConnectorRefreshError;
+
+    let Some((ProviderKind::Ldap, provider_uuid, provider_display_name)) = state
+        .qe_r_ref
+        .handle_get_oauth2_provider_info_by_name(&provider_name)
+        .await
+    else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+
+    let make_form_response = |error_message: Option<String>| {
+        let display_ctx = LoginDisplayCtx {
+            domain_info: domain_info.clone(),
+            oauth2: None,
+            reauth: None,
+            error: None,
+            available_sso_providers: Vec::new(),
+        };
+        LdapLoginView {
+            display_ctx,
+            provider_name: provider_name.clone(),
+            provider_display_name: provider_display_name.clone(),
+            username_prompt: "Username".to_string(),
+            error_message,
+        }
+        .into_response()
+    };
+
+    let connector = state.qe_r_ref.idms.connector_registry().get(provider_uuid);
+
+    let Some(connector) = connector else {
+        error!(
+            ?provider_uuid,
+            "LDAP connector not found in registry — provider may not have been loaded at startup"
+        );
+        return make_form_response(Some(
+            "Provider not available. Please contact support.".to_string(),
+        ));
+    };
+
+    let claims_result = connector
+        .authenticate_password(&form.username, &form.password)
+        .await;
+
+    let claims = match claims_result {
+        Ok(Some(c)) => c,
+        Ok(None) => {
+            return make_form_response(Some("Invalid username or password.".to_string()));
+        }
+        Err(ConnectorRefreshError::Network(msg)) => {
+            warn!(
+                ?provider_uuid,
+                msg, "LDAP authenticate_password: network error"
+            );
+            return make_form_response(Some(
+                "Unable to reach the directory service. Please try again later.".to_string(),
+            ));
+        }
+        Err(e) => {
+            warn!(?provider_uuid, ?e, "LDAP authenticate_password failed");
+            return make_form_response(Some(
+                "Authentication failed. Please try again.".to_string(),
+            ));
+        }
+    };
+
+    match state
+        .qe_w_ref
+        .handle_github_link_or_provision(
+            provider_uuid,
+            claims.clone(),
+            kopid.eventid,
+            client_auth_info,
+        )
+        .await
+    {
+        Ok(Some(token)) => {
+            security_info!(%provider_uuid, "LDAP account linked/provisioned — issuing session");
+            let token_str = token.to_string();
+            let mut bearer_cookie = cookies::make_unsigned(&state, COOKIE_BEARER_TOKEN, token_str);
+            bearer_cookie.make_permanent();
+            let jar = jar.add(bearer_cookie);
+            let jar = jar.add(cookies::make_unsigned(
+                &state,
+                COOKIE_AUTH_METHOD_PREF,
+                "sso".to_string(),
+            ));
+            let dest = if jar.get(COOKIE_OAUTH2_REQ).is_some() {
+                super::constants::Urls::Oauth2Resume.as_ref().to_string()
+            } else {
+                super::constants::Urls::Apps.as_ref().to_string()
+            };
+            (jar, Redirect::to(&dest)).into_response()
+        }
+        Ok(None) => make_form_response(Some(
+            "No matching account found and provisioning is disabled.".to_string(),
+        )),
+        Err(e) => {
+            warn!(?e, "LDAP account-link/provision failed");
+            make_form_response(Some("Authentication failed. Please try again.".to_string()))
+        }
     }
 }
 

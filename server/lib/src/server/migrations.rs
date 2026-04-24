@@ -50,8 +50,8 @@ impl QueryServer {
             // in the above.
             debug_assert!(domain_target_level <= DOMAIN_MAX_LEVEL);
 
-            const { assert!(DOMAIN_MIN_CREATION_LEVEL == DOMAIN_LEVEL_31) };
-            write_txn.bootstrap_dl31()?;
+            const { assert!(DOMAIN_MIN_CREATION_LEVEL == DOMAIN_LEVEL_32) };
+            write_txn.bootstrap_dl32()?;
 
             write_txn
                 .internal_apply_domain_migration(domain_target_level)
@@ -688,6 +688,66 @@ impl QueryServerWriteTransaction<'_> {
         self.internal_delete_batch(
             "phase 8 - delete UUIDs",
             migration_data::dl31::phase_8_delete_uuids(),
+        )?;
+
+        self.reload()?;
+
+        Ok(())
+    }
+
+    pub(crate) fn bootstrap_dl32(&mut self) -> Result<(), OperationError> {
+        if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_32 {
+            error!("Unable to raise domain level from 31 to 32.");
+            return Err(OperationError::MG0004DomainLevelInDevelopment);
+        }
+
+        self.internal_migrate_or_create_batch(
+            &format!("phase 1 - schema attrs target {}", DOMAIN_TGT_LEVEL),
+            migration_data::dl32::phase_1_schema_attrs(),
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 2 - schema classes",
+            migration_data::dl32::phase_2_schema_classes(),
+        )?;
+
+        self.reload()?;
+        self.reindex(false)?;
+        self.set_phase(ServerPhase::SchemaReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 3 - key provider",
+            migration_data::dl32::phase_3_key_provider(),
+        )?;
+
+        self.reload()?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 4 - dl32 system entries",
+            migration_data::dl32::phase_4_system_entries(),
+        )?;
+
+        self.reload()?;
+        self.set_phase(ServerPhase::DomainInfoReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 5 - builtin admin entries",
+            migration_data::dl32::phase_5_builtin_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 6 - builtin not admin entries",
+            migration_data::dl32::phase_6_builtin_non_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 7 - builtin access control profiles",
+            migration_data::dl32::phase_7_builtin_access_control_profiles(),
+        )?;
+
+        self.internal_delete_batch(
+            "phase 8 - delete UUIDs",
+            migration_data::dl32::phase_8_delete_uuids(),
         )?;
 
         self.reload()?;

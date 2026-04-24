@@ -4,9 +4,6 @@
 //! All are optional with documented defaults so pre-DL31 `OAuth2Client` entries
 //! decode unchanged.
 
-#[cfg(test)]
-pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
-
 use crate::constants::{
     UUID_SCHEMA_ATTR_OAUTH2_CLIENT_MICROSOFT_ALLOW_JIT_PROVISIONING,
     UUID_SCHEMA_ATTR_OAUTH2_CLIENT_MICROSOFT_API_URL,

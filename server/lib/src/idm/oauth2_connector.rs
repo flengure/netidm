@@ -107,6 +107,24 @@ pub trait RefreshableConnector: Send + Sync {
     fn allow_jit_provisioning(&self) -> bool {
         false
     }
+
+    /// Authenticate a user by username and password against this connector.
+    /// Returns `Ok(Some(claims))` on success, `Ok(None)` for invalid
+    /// credentials (wrong password, user not found), and `Err` for
+    /// connector-level failures (network, misconfiguration).
+    ///
+    /// Only password connectors (currently `LdapConnector`) override this.
+    /// All OAuth2/OIDC redirect connectors inherit the default, which
+    /// always returns an error so the call site can detect misconfiguration.
+    async fn authenticate_password(
+        &self,
+        _username: &str,
+        _password: &str,
+    ) -> Result<Option<ExternalUserClaims>, ConnectorRefreshError> {
+        Err(ConnectorRefreshError::Other(
+            "authenticate_password not implemented for this connector".to_string(),
+        ))
+    }
 }
 
 /// Successful outcome of [`RefreshableConnector::refresh`]. Carries

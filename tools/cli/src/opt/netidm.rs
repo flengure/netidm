@@ -1350,6 +1350,139 @@ pub enum Oauth2Opt {
         /// OAuth2 client name.
         name: String,
     },
+
+    // ── LDAP inbound connector (DL32) ─────────────────────────────────────────
+
+    /// Create an inbound LDAP federation connector.
+    #[clap(name = "create-ldap")]
+    CreateLdap {
+        /// Short name for the connector (used in /ui/sso/<name>).
+        name: String,
+    },
+    /// Set the LDAP server host (e.g. ldap.example.com:636 or ldaps://ldap.example.com).
+    #[clap(name = "ldap-set-host")]
+    LdapSetHost {
+        name: String,
+        #[clap(name = "host")]
+        host: String,
+    },
+    /// Enable insecure plain-text LDAP (no TLS). Use only in development.
+    #[clap(name = "ldap-enable-no-ssl")]
+    LdapEnableNoSsl { name: String },
+    /// Disable insecure plain-text LDAP (re-enable TLS).
+    #[clap(name = "ldap-disable-no-ssl")]
+    LdapDisableNoSsl { name: String },
+    /// Enable skipping TLS certificate verification. Use only in development.
+    #[clap(name = "ldap-enable-insecure-skip-verify")]
+    LdapEnableInsecureSkipVerify { name: String },
+    /// Disable skipping TLS certificate verification.
+    #[clap(name = "ldap-disable-insecure-skip-verify")]
+    LdapDisableInsecureSkipVerify { name: String },
+    /// Set the service account bind DN.
+    #[clap(name = "ldap-set-bind-dn")]
+    LdapSetBindDn {
+        name: String,
+        #[clap(name = "bind-dn")]
+        bind_dn: String,
+    },
+    /// Set the service account bind password.
+    #[clap(name = "ldap-set-bind-pw")]
+    LdapSetBindPw {
+        name: String,
+        #[clap(name = "bind-pw")]
+        bind_pw: String,
+    },
+    /// Set the user search base DN (required).
+    #[clap(name = "ldap-set-user-search-base-dn")]
+    LdapSetUserSearchBaseDn {
+        name: String,
+        #[clap(name = "base-dn")]
+        base_dn: String,
+    },
+    /// Set the user search LDAP filter (e.g. "(objectClass=person)").
+    #[clap(name = "ldap-set-user-search-filter")]
+    LdapSetUserSearchFilter {
+        name: String,
+        #[clap(name = "filter")]
+        filter: String,
+    },
+    /// Add an attribute name to match against the typed username (multi-value).
+    #[clap(name = "ldap-add-user-search-username")]
+    LdapAddUserSearchUsername {
+        name: String,
+        #[clap(name = "attr")]
+        attr: String,
+    },
+    /// Remove an attribute from the username search list.
+    #[clap(name = "ldap-remove-user-search-username")]
+    LdapRemoveUserSearchUsername {
+        name: String,
+        #[clap(name = "attr")]
+        attr: String,
+    },
+    /// Set the attribute used as the stable user ID (`sub` claim). Default: uid.
+    #[clap(name = "ldap-set-user-id-attr")]
+    LdapSetUserIdAttr {
+        name: String,
+        #[clap(name = "attr")]
+        attr: String,
+    },
+    /// Set the LDAP attribute supplying the user email. Default: mail.
+    #[clap(name = "ldap-set-user-email-attr")]
+    LdapSetUserEmailAttr {
+        name: String,
+        #[clap(name = "attr")]
+        attr: String,
+    },
+    /// Set the LDAP attribute supplying the user display name.
+    #[clap(name = "ldap-set-user-name-attr")]
+    LdapSetUserNameAttr {
+        name: String,
+        #[clap(name = "attr")]
+        attr: String,
+    },
+    /// Set the email suffix appended to the ID attribute when no email attr is configured.
+    #[clap(name = "ldap-set-user-email-suffix")]
+    LdapSetUserEmailSuffix {
+        name: String,
+        #[clap(name = "suffix")]
+        suffix: String,
+    },
+    /// Set the group search base DN (enables group sync).
+    #[clap(name = "ldap-set-group-search-base-dn")]
+    LdapSetGroupSearchBaseDn {
+        name: String,
+        #[clap(name = "base-dn")]
+        base_dn: String,
+    },
+    /// Set the group search LDAP filter.
+    #[clap(name = "ldap-set-group-search-filter")]
+    LdapSetGroupSearchFilter {
+        name: String,
+        #[clap(name = "filter")]
+        filter: String,
+    },
+    /// Set the attribute holding the group name in search results. Default: cn.
+    #[clap(name = "ldap-set-group-name-attr")]
+    LdapSetGroupNameAttr {
+        name: String,
+        #[clap(name = "attr")]
+        attr: String,
+    },
+    /// Add a user→group matcher (format: user_attr:group_attr or user_attr:group_attr:recursion_attr).
+    #[clap(name = "ldap-add-user-matcher")]
+    LdapAddUserMatcher {
+        name: String,
+        #[clap(name = "matcher")]
+        matcher: String,
+    },
+    /// Remove a user→group matcher.
+    #[clap(name = "ldap-remove-user-matcher")]
+    LdapRemoveUserMatcher {
+        name: String,
+        #[clap(name = "matcher")]
+        matcher: String,
+    },
 }
 
 #[derive(Args, Debug, Clone)]

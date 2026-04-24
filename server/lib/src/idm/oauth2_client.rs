@@ -74,6 +74,8 @@ pub enum ProviderKind {
     Google,
     /// Microsoft Azure AD / Entra ID (OAuth2 + Microsoft Graph) — PR-CONNECTOR-MICROSOFT.
     Microsoft,
+    /// Inbound LDAP / Active Directory password connector — PR-CONNECTOR-LDAP.
+    Ldap,
 }
 
 impl ProviderKind {
@@ -86,6 +88,7 @@ impl ProviderKind {
             ProviderKind::Github => "github",
             ProviderKind::Google => "google",
             ProviderKind::Microsoft => "microsoft",
+            ProviderKind::Ldap => "ldap",
         }
     }
 
@@ -98,6 +101,7 @@ impl ProviderKind {
             "github" => ProviderKind::Github,
             "google" => ProviderKind::Google,
             "microsoft" => ProviderKind::Microsoft,
+            "ldap" => ProviderKind::Ldap,
             _ => ProviderKind::GenericOidc,
         }
     }
@@ -481,6 +485,33 @@ impl IdmServerProxyWriteTransaction<'_> {
                         ?entry_uuid,
                         ?e,
                         "Failed to build Microsoft connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register LDAP connectors with the ConnectorRegistry.
+        for provider_entry in &oauth2_client_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_ldap = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| s == "ldap")
+                .unwrap_or(false);
+            if !is_ldap {
+                continue;
+            }
+            match crate::idm::ldap_connector::LdapConfig::from_entry(provider_entry) {
+                Ok(config) => {
+                    let connector =
+                        std::sync::Arc::new(crate::idm::ldap_connector::LdapConnector::new(config));
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered LDAP connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build LDAP connector config; skipping this provider"
                     );
                 }
             }
