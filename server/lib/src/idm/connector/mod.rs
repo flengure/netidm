@@ -1,3 +1,4 @@
+pub mod atlassian_crowd;
 pub mod authproxy;
 pub mod bitbucket;
 pub mod generic_oidc;
@@ -5,6 +6,7 @@ pub mod gitea;
 pub mod github;
 pub mod gitlab;
 pub mod google;
+pub mod keystone;
 pub mod ldap;
 pub mod linkedin;
 pub mod microsoft;
@@ -102,6 +104,10 @@ pub enum ProviderKind {
     Gitea,
     /// Authproxy direct-identity connector (header-trust) — DL38.
     AuthProxy,
+    /// OpenStack Keystone v3 password connector — DL39.
+    Keystone,
+    /// Atlassian Crowd REST v2 password connector — DL40.
+    Crowd,
 }
 
 impl ProviderKind {
@@ -121,6 +127,8 @@ impl ProviderKind {
             ProviderKind::Bitbucket => "bitbucket",
             ProviderKind::Gitea => "gitea",
             ProviderKind::AuthProxy => "authproxy",
+            ProviderKind::Keystone => "keystone",
+            ProviderKind::Crowd => "crowd",
         }
     }
 
@@ -140,6 +148,8 @@ impl ProviderKind {
             "bitbucket" => ProviderKind::Bitbucket,
             "gitea" => ProviderKind::Gitea,
             "authproxy" => ProviderKind::AuthProxy,
+            "keystone" => ProviderKind::Keystone,
+            "crowd" => ProviderKind::Crowd,
             _ => ProviderKind::GenericOidc,
         }
     }
@@ -731,6 +741,62 @@ impl IdmServerProxyWriteTransaction<'_> {
                         ?entry_uuid,
                         ?e,
                         "Failed to build authproxy connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register Keystone connectors with the ConnectorRegistry.
+        for provider_entry in &connector_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_keystone = provider_entry
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
+                .map(|s| s == "keystone")
+                .unwrap_or(false);
+            if !is_keystone {
+                continue;
+            }
+            match crate::idm::connector::keystone::KeystoneConfig::from_entry(provider_entry) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::connector::keystone::KeystoneConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered Keystone connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build Keystone connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register Crowd connectors with the ConnectorRegistry.
+        for provider_entry in &connector_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_crowd = provider_entry
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
+                .map(|s| s == "crowd")
+                .unwrap_or(false);
+            if !is_crowd {
+                continue;
+            }
+            match crate::idm::connector::atlassian_crowd::CrowdConfig::from_entry(provider_entry) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::connector::atlassian_crowd::CrowdConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered Crowd connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build Crowd connector config; skipping this provider"
                     );
                 }
             }

@@ -1,145 +1,71 @@
-//! Schema entries for DL38: authproxy + gitea connector attrs.
+//! Schema entries for DL40: Atlassian Crowd connector attrs.
 //!
-//! Authproxy: three optional header-name attrs on `EntryClass::Connector`
-//! (`ConnectorAuthproxyUserHeader`, `ConnectorAuthproxyEmailHeader`,
-//! `ConnectorAuthproxyGroupsHeader`).
-//!
-//! Gitea: six optional attrs on `EntryClass::Connector`
-//! (`ConnectorGiteaBaseUrl`, `ConnectorGiteaGroups`,
-//! `ConnectorGiteaInsecureCa`, `ConnectorGiteaRootCa`,
-//! `ConnectorGiteaLoadAllGroups`, `ConnectorGiteaUseLoginAsId`).
+//! Four optional attrs on `EntryClass::Connector`:
+//! (`ConnectorCrowdBaseUrl`, `ConnectorCrowdClientName`,
+//! `ConnectorCrowdClientSecret`, `ConnectorCrowdGroups`).
 
 #[cfg(test)]
 #[allow(unused_imports)]
 pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
 
 use crate::constants::{
-    UUID_SCHEMA_ATTR_CONNECTOR_AUTHPROXY_EMAIL_HEADER,
-    UUID_SCHEMA_ATTR_CONNECTOR_AUTHPROXY_GROUPS_HEADER,
-    UUID_SCHEMA_ATTR_CONNECTOR_AUTHPROXY_USER_HEADER, UUID_SCHEMA_ATTR_CONNECTOR_GITEA_BASE_URL,
-    UUID_SCHEMA_ATTR_CONNECTOR_GITEA_GROUPS, UUID_SCHEMA_ATTR_CONNECTOR_GITEA_INSECURE_CA,
-    UUID_SCHEMA_ATTR_CONNECTOR_GITEA_LOAD_ALL_GROUPS, UUID_SCHEMA_ATTR_CONNECTOR_GITEA_ROOT_CA,
-    UUID_SCHEMA_ATTR_CONNECTOR_GITEA_USE_LOGIN_AS_ID, UUID_SCHEMA_CLASS_CONNECTOR,
+    UUID_SCHEMA_ATTR_CONNECTOR_CROWD_BASE_URL, UUID_SCHEMA_ATTR_CONNECTOR_CROWD_CLIENT_NAME,
+    UUID_SCHEMA_ATTR_CONNECTOR_CROWD_CLIENT_SECRET, UUID_SCHEMA_ATTR_CONNECTOR_CROWD_GROUPS,
+    UUID_SCHEMA_CLASS_CONNECTOR,
 };
 use crate::prelude::*;
 
-// ─── authproxy attrs ─────────────────────────────────────────────────────────
+// ─── crowd attrs ─────────────────────────────────────────────────────────────
 
-pub static SCHEMA_ATTR_CONNECTOR_AUTHPROXY_USER_HEADER_DL38: LazyLock<SchemaAttribute> =
+pub static SCHEMA_ATTR_CONNECTOR_CROWD_BASE_URL_DL40: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_CONNECTOR_AUTHPROXY_USER_HEADER,
-        name: Attribute::ConnectorAuthproxyUserHeader,
-        description: "Name of the HTTP request header carrying the authenticated username \
-                      (e.g. X-Remote-User). Required for authproxy connectors."
+        uuid: UUID_SCHEMA_ATTR_CONNECTOR_CROWD_BASE_URL,
+        name: Attribute::ConnectorCrowdBaseUrl,
+        description: "Atlassian Crowd REST base URL (e.g. https://crowd.example.com). Required."
             .to_string(),
         multivalue: false,
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });
 
-pub static SCHEMA_ATTR_CONNECTOR_AUTHPROXY_EMAIL_HEADER_DL38: LazyLock<SchemaAttribute> =
+pub static SCHEMA_ATTR_CONNECTOR_CROWD_CLIENT_NAME_DL40: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_CONNECTOR_AUTHPROXY_EMAIL_HEADER,
-        name: Attribute::ConnectorAuthproxyEmailHeader,
-        description:
-            "Name of the HTTP request header carrying the user's email address (optional)."
-                .to_string(),
+        uuid: UUID_SCHEMA_ATTR_CONNECTOR_CROWD_CLIENT_NAME,
+        name: Attribute::ConnectorCrowdClientName,
+        description: "Crowd application name used for HTTP Basic auth. Required.".to_string(),
         multivalue: false,
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });
 
-pub static SCHEMA_ATTR_CONNECTOR_AUTHPROXY_GROUPS_HEADER_DL38: LazyLock<SchemaAttribute> =
+pub static SCHEMA_ATTR_CONNECTOR_CROWD_CLIENT_SECRET_DL40: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_CONNECTOR_AUTHPROXY_GROUPS_HEADER,
-        name: Attribute::ConnectorAuthproxyGroupsHeader,
-        description: "Name of the HTTP request header carrying a comma-separated list of \
-                      group names (optional)."
-            .to_string(),
+        uuid: UUID_SCHEMA_ATTR_CONNECTOR_CROWD_CLIENT_SECRET,
+        name: Attribute::ConnectorCrowdClientSecret,
+        description: "Crowd application password used for HTTP Basic auth. Required.".to_string(),
         multivalue: false,
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });
 
-// ─── gitea attrs ─────────────────────────────────────────────────────────────
-
-pub static SCHEMA_ATTR_CONNECTOR_GITEA_BASE_URL_DL38: LazyLock<SchemaAttribute> =
+pub static SCHEMA_ATTR_CONNECTOR_CROWD_GROUPS_DL40: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_CONNECTOR_GITEA_BASE_URL,
-        name: Attribute::ConnectorGiteaBaseUrl,
-        description: "Base URL of the Gitea instance (e.g. https://gitea.example.com). Required."
-            .to_string(),
-        multivalue: false,
-        syntax: SyntaxType::Utf8String,
-        ..Default::default()
-    });
-
-pub static SCHEMA_ATTR_CONNECTOR_GITEA_GROUPS_DL38: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_CONNECTOR_GITEA_GROUPS,
-        name: Attribute::ConnectorGiteaGroups,
-        description: "Gitea organization names the user must belong to (access gate). \
-                      Empty = allow any authenticated Gitea user."
+        uuid: UUID_SCHEMA_ATTR_CONNECTOR_CROWD_GROUPS,
+        name: Attribute::ConnectorCrowdGroups,
+        description: "Required Crowd group names (access gate). \
+                      Empty = allow any authenticated Crowd user."
             .to_string(),
         multivalue: true,
         syntax: SyntaxType::Utf8StringInsensitive,
         ..Default::default()
     });
 
-pub static SCHEMA_ATTR_CONNECTOR_GITEA_INSECURE_CA_DL38: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_CONNECTOR_GITEA_INSECURE_CA,
-        name: Attribute::ConnectorGiteaInsecureCa,
-        description: "Skip TLS certificate verification for Gitea API calls. \
-                      Use only in development environments."
-            .to_string(),
-        multivalue: false,
-        syntax: SyntaxType::Boolean,
-        ..Default::default()
-    });
-
-pub static SCHEMA_ATTR_CONNECTOR_GITEA_ROOT_CA_DL38: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_CONNECTOR_GITEA_ROOT_CA,
-        name: Attribute::ConnectorGiteaRootCa,
-        description: "PEM-encoded root CA certificate to trust for Gitea TLS connections."
-            .to_string(),
-        multivalue: false,
-        syntax: SyntaxType::Utf8String,
-        ..Default::default()
-    });
-
-pub static SCHEMA_ATTR_CONNECTOR_GITEA_LOAD_ALL_GROUPS_DL38: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_CONNECTOR_GITEA_LOAD_ALL_GROUPS,
-        name: Attribute::ConnectorGiteaLoadAllGroups,
-        description:
-            "When true, load all Gitea organizations the user belongs to as group claims, \
-                      not only those listed in connector_gitea_groups."
-                .to_string(),
-        multivalue: false,
-        syntax: SyntaxType::Boolean,
-        ..Default::default()
-    });
-
-pub static SCHEMA_ATTR_CONNECTOR_GITEA_USE_LOGIN_AS_ID_DL38: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_CONNECTOR_GITEA_USE_LOGIN_AS_ID,
-        name: Attribute::ConnectorGiteaUseLoginAsId,
-        description: "Use the Gitea login name as the identity subject instead of the \
-                      numeric user ID."
-            .to_string(),
-        multivalue: false,
-        syntax: SyntaxType::Boolean,
-        ..Default::default()
-    });
-
 // ─── updated Connector class ─────────────────────────────────────────────────
 
-pub static SCHEMA_CLASS_CONNECTOR_DL38: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+pub static SCHEMA_CLASS_CONNECTOR_DL40: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
     uuid: UUID_SCHEMA_CLASS_CONNECTOR,
     name: EntryClass::Connector.into(),
-    description: "OAuth2 upstream client connector (DL38).".to_string(),
+    description: "OAuth2 upstream client connector (DL40).".to_string(),
     systemmust: vec![
         Attribute::Class,
         Attribute::Uuid,
@@ -255,6 +181,16 @@ pub static SCHEMA_CLASS_CONNECTOR_DL38: LazyLock<SchemaClass> = LazyLock::new(||
         Attribute::ConnectorGiteaRootCa,
         Attribute::ConnectorGiteaLoadAllGroups,
         Attribute::ConnectorGiteaUseLoginAsId,
+        // DL39 — keystone
+        Attribute::ConnectorKeystoneHost,
+        Attribute::ConnectorKeystoneDomain,
+        Attribute::ConnectorKeystoneGroups,
+        Attribute::ConnectorKeystoneInsecureCa,
+        // DL40 — atlassian crowd
+        Attribute::ConnectorCrowdBaseUrl,
+        Attribute::ConnectorCrowdClientName,
+        Attribute::ConnectorCrowdClientSecret,
+        Attribute::ConnectorCrowdGroups,
     ],
     ..Default::default()
 });

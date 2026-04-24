@@ -356,6 +356,16 @@ pub const ATTR_CONNECTOR_GITEA_INSECURE_CA: &str = "connector_gitea_insecure_ca"
 pub const ATTR_CONNECTOR_GITEA_ROOT_CA: &str = "connector_gitea_root_ca";
 pub const ATTR_CONNECTOR_GITEA_LOAD_ALL_GROUPS: &str = "connector_gitea_load_all_groups";
 pub const ATTR_CONNECTOR_GITEA_USE_LOGIN_AS_ID: &str = "connector_gitea_use_login_as_id";
+// DL39 — OpenStack Keystone connector attrs
+pub const ATTR_CONNECTOR_KEYSTONE_HOST: &str = "connector_keystone_host";
+pub const ATTR_CONNECTOR_KEYSTONE_DOMAIN: &str = "connector_keystone_domain";
+pub const ATTR_CONNECTOR_KEYSTONE_GROUPS: &str = "connector_keystone_groups";
+pub const ATTR_CONNECTOR_KEYSTONE_INSECURE_CA: &str = "connector_keystone_insecure_ca";
+// DL40 — Atlassian Crowd connector attrs
+pub const ATTR_CONNECTOR_CROWD_BASE_URL: &str = "connector_crowd_base_url";
+pub const ATTR_CONNECTOR_CROWD_CLIENT_NAME: &str = "connector_crowd_client_name";
+pub const ATTR_CONNECTOR_CROWD_CLIENT_SECRET: &str = "connector_crowd_client_secret";
+pub const ATTR_CONNECTOR_CROWD_GROUPS: &str = "connector_crowd_groups";
 // DL33 — SAML connector dex-parity additions (PR-CONNECTOR-SAML)
 pub const ATTR_SAML_SSO_ISSUER: &str = "saml_sso_issuer";
 pub const ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION: &str = "saml_insecure_skip_sig_validation";

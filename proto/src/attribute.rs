@@ -470,6 +470,24 @@ pub enum Attribute {
     ConnectorGiteaLoadAllGroups,
     #[strum(serialize = "connector_gitea_use_login_as_id")]
     ConnectorGiteaUseLoginAsId,
+    // DL39 — keystone connector attrs
+    #[strum(serialize = "connector_keystone_host")]
+    ConnectorKeystoneHost,
+    #[strum(serialize = "connector_keystone_domain")]
+    ConnectorKeystoneDomain,
+    #[strum(serialize = "connector_keystone_groups")]
+    ConnectorKeystoneGroups,
+    #[strum(serialize = "connector_keystone_insecure_ca")]
+    ConnectorKeystoneInsecureCa,
+    // DL40 — atlassian crowd connector attrs
+    #[strum(serialize = "connector_crowd_base_url")]
+    ConnectorCrowdBaseUrl,
+    #[strum(serialize = "connector_crowd_client_name")]
+    ConnectorCrowdClientName,
+    #[strum(serialize = "connector_crowd_client_secret")]
+    ConnectorCrowdClientSecret,
+    #[strum(serialize = "connector_crowd_groups")]
+    ConnectorCrowdGroups,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]
@@ -1074,6 +1092,14 @@ impl Attribute {
             ATTR_CONNECTOR_GITEA_ROOT_CA => Attribute::ConnectorGiteaRootCa,
             ATTR_CONNECTOR_GITEA_LOAD_ALL_GROUPS => Attribute::ConnectorGiteaLoadAllGroups,
             ATTR_CONNECTOR_GITEA_USE_LOGIN_AS_ID => Attribute::ConnectorGiteaUseLoginAsId,
+            ATTR_CONNECTOR_KEYSTONE_HOST => Attribute::ConnectorKeystoneHost,
+            ATTR_CONNECTOR_KEYSTONE_DOMAIN => Attribute::ConnectorKeystoneDomain,
+            ATTR_CONNECTOR_KEYSTONE_GROUPS => Attribute::ConnectorKeystoneGroups,
+            ATTR_CONNECTOR_KEYSTONE_INSECURE_CA => Attribute::ConnectorKeystoneInsecureCa,
+            ATTR_CONNECTOR_CROWD_BASE_URL => Attribute::ConnectorCrowdBaseUrl,
+            ATTR_CONNECTOR_CROWD_CLIENT_NAME => Attribute::ConnectorCrowdClientName,
+            ATTR_CONNECTOR_CROWD_CLIENT_SECRET => Attribute::ConnectorCrowdClientSecret,
+            ATTR_CONNECTOR_CROWD_GROUPS => Attribute::ConnectorCrowdGroups,
             ATTR_SAML_SSO_ISSUER => Attribute::SamlSsoIssuer,
             ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION => Attribute::SamlInsecureSkipSigValidation,
             ATTR_SAML_GROUPS_DELIM => Attribute::SamlGroupsDelim,

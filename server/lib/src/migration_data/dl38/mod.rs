@@ -13,6 +13,7 @@ pub(crate) mod access;
 pub(crate) mod schema;
 
 #[cfg(test)]
+#[allow(unused_imports)]
 pub(crate) use super::dl25::accounts;
 
 use self::schema::*;
