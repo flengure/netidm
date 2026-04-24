@@ -21,6 +21,7 @@ pub mod group_mapping;
 pub mod identityverification;
 pub mod ldap;
 pub mod ldap_connector;
+pub mod linkedin_connector;
 pub mod logout;
 pub mod logout_delivery;
 pub mod microsoft_connector;

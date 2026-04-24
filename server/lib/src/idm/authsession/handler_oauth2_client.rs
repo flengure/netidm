@@ -164,7 +164,10 @@ impl CredHandlerOAuth2Client {
         // DL28+ connector dispatch (FR-016): route by provider_kind to the
         // registered connector in ConnectorRegistry, bypassing the legacy
         // multi-step OIDC state machine entirely.
-        if self.provider_kind == ProviderKind::Github {
+        if matches!(
+            self.provider_kind,
+            ProviderKind::Github | ProviderKind::LinkedIn
+        ) {
             let csrf_valid = state.map(|s| s == self.csrf_state).unwrap_or_default();
             if !csrf_valid {
                 return CredState::Denied(BAD_OAUTH2_CSRF_STATE_MSG);
