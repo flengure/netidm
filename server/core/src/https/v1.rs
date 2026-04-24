@@ -3296,14 +3296,10 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             "/v1/oauth2/_public",
             post(super::v1_oauth2::oauth2_public_post),
         )
-        .route(
-            "/v1/oauth2/_client",
-            post(super::v1_oauth2::connector_post),
-        )
+        .route("/v1/oauth2/_client", post(super::v1_oauth2::connector_post))
         .route(
             "/v1/oauth2/_client/{name}",
-            get(super::v1_oauth2::connector_id_get)
-                .patch(super::v1_oauth2::connector_id_patch),
+            get(super::v1_oauth2::connector_id_get).patch(super::v1_oauth2::connector_id_patch),
         )
         .route(
             "/v1/oauth2/_client/{name}/_group_mapping/{upstream}",

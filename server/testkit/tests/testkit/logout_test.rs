@@ -1124,10 +1124,7 @@ async fn test_logout_deliveries_admin_list_show_with_mix(rsclient: &NetidmClient
         .await
         .expect("admin re-auth");
     rsclient
-        .idm_connector_set_backchannel_logout_uri(
-            TEST_INTEGRATION_RS_ID,
-            "http://127.0.0.1:1/bcl",
-        )
+        .idm_connector_set_backchannel_logout_uri(TEST_INTEGRATION_RS_ID, "http://127.0.0.1:1/bcl")
         .await
         .expect("set unreachable backchannel URL");
 

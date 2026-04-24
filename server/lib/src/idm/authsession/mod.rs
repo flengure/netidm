@@ -10,10 +10,10 @@ use crate::idm::account::Account;
 use crate::idm::accountpolicy::ResolvedAccountPolicy;
 use crate::idm::audit::AuditEvent;
 use crate::idm::authentication::{AuthCredential, AuthExternal, AuthState};
+use crate::idm::connector::ConnectorProvider;
 use crate::idm::delayed::{
     AuthSessionRecord, BackupCodeRemoval, DelayedAction, PasswordUpgrade, WebauthnCounterIncrement,
 };
-use crate::idm::connector::ConnectorProvider;
 use crate::prelude::*;
 use crate::server::keys::KeyObject;
 use crate::value::{AuthType, Session, SessionExtMetadata, SessionState};
@@ -1225,10 +1225,8 @@ impl AuthSession {
 
                 if let Some(connector_provider) = asd.connector_provider {
                     if let Some(trust_user) = asd.account.connector_provider() {
-                        let handler = Arc::new(CredHandlerConnector::new(
-                            connector_provider,
-                            trust_user,
-                        ));
+                        let handler =
+                            Arc::new(CredHandlerConnector::new(connector_provider, trust_user));
                         handlers.push(CredHandler::OAuth2Trust { handler })
                     }
                 };
@@ -1790,8 +1788,8 @@ mod tests {
         AuthSession, AuthSessionData, BAD_AUTH_TYPE_MSG, BAD_BACKUPCODE_MSG, BAD_PASSWORD_MSG,
         BAD_TOTP_MSG, BAD_WEBAUTHN_MSG, PW_BADLIST_MSG,
     };
-    use crate::idm::delayed::DelayedAction;
     use crate::idm::connector::ConnectorProvider;
+    use crate::idm::delayed::DelayedAction;
     use crate::migration_data::{BUILTIN_ACCOUNT_ANONYMOUS, BUILTIN_ACCOUNT_TEST_PERSON};
     use crate::prelude::*;
     use crate::server::keys::KeyObjectInternal;

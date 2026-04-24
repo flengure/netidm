@@ -314,9 +314,9 @@ dependencies = [
 
 [[package]]
 name = "async-compression"
-version = "0.4.41"
+version = "0.4.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d0f9ee0f6e02ffd7ad5816e9464499fba7b3effd01123b515c41d1697c43dad1"
+checksum = "e79b3f8a79cccc2898f31920fc69f304859b3bd567490f75ebf51ae1c792a9ac"
 dependencies = [
  "compression-codecs",
  "compression-core",
@@ -660,27 +660,12 @@ dependencies = [
 
 [[package]]
 name = "bit-set"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0700ddab506f33b20a03b13996eccd309a48e5ff77d0d95926aa0210fb4e95f1"
-dependencies = [
- "bit-vec 0.6.3",
-]
-
-[[package]]
-name = "bit-set"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08807e080ed7f9d5433fa9b275196cfc35414f66a0c79d864dc51a0d825231a3"
 dependencies = [
- "bit-vec 0.8.0",
+ "bit-vec",
 ]
-
-[[package]]
-name = "bit-vec"
-version = "0.6.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "349f9b6a179ed607305526ca489b34ad0a41aed5f7980fa90eb03160b69598fb"
 
 [[package]]
 name = "bit-vec"
@@ -874,9 +859,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.60"
+version = "1.2.61"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43c5703da9466b66a946814e1adf53ea2c90f10063b86290cc9eb67ce3478a20"
+checksum = "d16d90359e986641506914ba71350897565610e87ce0ad9e6f28569db3dd5c6d"
 dependencies = [
  "find-msvc-tools",
  "jobserver",
@@ -1118,9 +1103,9 @@ dependencies = [
 
 [[package]]
 name = "compression-codecs"
-version = "0.4.37"
+version = "0.4.38"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb7b51a7d9c967fc26773061ba86150f19c50c0d65c887cb1fbe295fd16619b7"
+checksum = "ce2548391e9c1929c21bf6aa2680af86fe4c1b33e6cea9ac1cfeec0bd11218cf"
 dependencies = [
  "compression-core",
  "flate2",
@@ -1129,9 +1114,9 @@ dependencies = [
 
 [[package]]
 name = "compression-core"
-version = "0.4.31"
+version = "0.4.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75984efb6ed102a0d42db99afb6c1948f0380d1d91808d5529916e6c08b49d8d"
+checksum = "cc14f565cf027a105f7a44ccf9e5b424348421a1d8952a8fc9d499d313107789"
 
 [[package]]
 name = "concread"
@@ -1486,7 +1471,7 @@ dependencies = [
 
 [[package]]
 name = "daemon"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "clap",
  "clap_complete",
@@ -1596,9 +1581,9 @@ dependencies = [
 
 [[package]]
 name = "data-encoding"
-version = "2.10.0"
+version = "2.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7a1e2f27636f116493b8b860f5546edb47c8d8f8ea73e1d2a20be88e28d1fea"
+checksum = "a4ae5f15dda3c708c0ade84bfee31ccab44a3da4f88015ed22f63732abe300c8"
 
 [[package]]
 name = "der"
@@ -1982,22 +1967,22 @@ checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
 
 [[package]]
 name = "fancy-regex"
-version = "0.13.0"
+version = "0.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "531e46835a22af56d1e3b66f04844bed63158bc094a628bec1d321d9b4c44bf2"
+checksum = "72cf461f865c862bb7dc573f643dd6a2b6842f7c30b07882b56bd148cc2761b8"
 dependencies = [
- "bit-set 0.5.3",
+ "bit-set",
  "regex-automata",
  "regex-syntax",
 ]
 
 [[package]]
 name = "fancy-regex"
-version = "0.17.0"
+version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72cf461f865c862bb7dc573f643dd6a2b6842f7c30b07882b56bd148cc2761b8"
+checksum = "e1e1dacd0d2082dfcf1351c4bdd566bbe89a2b263235a2b50058f1e130a47277"
 dependencies = [
- "bit-set 0.8.0",
+ "bit-set",
  "regex-automata",
  "regex-syntax",
 ]
@@ -3479,9 +3464,9 @@ checksum = "df3b46402a9d5adb4c86a0cf463f42e19994e3ee891101b1841f30a545cb49a9"
 
 [[package]]
 name = "hybrid-array"
-version = "0.4.10"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3944cf8cf766b40e2a1a333ee5e9b563f854d5fa49d6a8ca2764e97c6eddb214"
+checksum = "08d46837a0ed51fe95bd3b05de33cd64a1ee88fc797477ca48446872504507c5"
 dependencies = [
  "serde",
  "typenum",
@@ -4575,7 +4560,7 @@ dependencies = [
 
 [[package]]
 name = "netidm-ipa-sync"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "chrono",
  "clap",
@@ -4601,7 +4586,7 @@ dependencies = [
 
 [[package]]
 name = "netidm-ldap-sync"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "chrono",
  "clap",
@@ -4628,7 +4613,7 @@ dependencies = [
 
 [[package]]
 name = "netidm-mail-sender"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "chrono",
  "clap",
@@ -4652,7 +4637,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_build_profiles"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "base64 0.22.1",
  "gix",
@@ -4663,7 +4648,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_client"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "compact_jwt",
  "http",
@@ -4686,7 +4671,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_device_flow"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "anyhow",
  "netidm_proto",
@@ -4699,7 +4684,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_lib_crypto"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "base64 0.22.1",
  "base64urlsafedata 0.6.0-dev",
@@ -4721,14 +4706,14 @@ dependencies = [
 
 [[package]]
 name = "netidm_lib_file_permissions"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "netidm_utils_users",
 ]
 
 [[package]]
 name = "netidm_proto"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "base32",
  "base64 0.22.1",
@@ -4758,7 +4743,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_tools"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "anyhow",
  "clap",
@@ -4788,7 +4773,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_unix_common"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "bytes",
  "csv",
@@ -4812,7 +4797,7 @@ dependencies = [
 
 [[package]]
 name = "netidm_unix_int"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "async-trait",
  "clap",
@@ -4854,14 +4839,14 @@ dependencies = [
 
 [[package]]
 name = "netidm_utils_users"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "libc",
 ]
 
 [[package]]
 name = "netidmd_core"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "askama",
  "askama_web",
@@ -4926,7 +4911,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_lib"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "async-trait",
  "axum",
@@ -4987,7 +4972,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_lib_macros"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4996,7 +4981,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_testkit"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "axum",
  "base64 0.22.1",
@@ -5033,7 +5018,7 @@ dependencies = [
 
 [[package]]
 name = "netidmd_wg"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -5297,7 +5282,7 @@ dependencies = [
 
 [[package]]
 name = "nss_netidm"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "cc",
  "libc",
@@ -5700,7 +5685,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "orca"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "async-trait",
  "chrono",
@@ -5769,7 +5754,7 @@ dependencies = [
 
 [[package]]
 name = "pam_netidm"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "libc",
  "netidm_unix_common",
@@ -6886,9 +6871,9 @@ dependencies = [
 
 [[package]]
 name = "rustls-pki-types"
-version = "1.14.0"
+version = "1.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be040f8b0a225e40375822a563fa9524378b9d63112f53e19ffff34df5d33fdd"
+checksum = "30a7197ae7eb376e574fe940d068c30fe0462554a3ddbe4eca7838e049c937a9"
 dependencies = [
  "web-time",
  "zeroize",
@@ -7033,7 +7018,7 @@ dependencies = [
 
 [[package]]
 name = "scim_proto"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "base64urlsafedata 0.6.0-dev",
  "peg",
@@ -7431,7 +7416,7 @@ checksum = "b2aa850e253778c88a04c3d7323b043aeda9d3e30d5971937c1855769763678e"
 
 [[package]]
 name = "sketching"
-version = "0.1.23-dev"
+version = "0.1.24"
 dependencies = [
  "gethostname",
  "num_enum",
@@ -9467,14 +9452,14 @@ dependencies = [
 
 [[package]]
 name = "zxcvbn"
-version = "3.1.0"
+version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad76e35b00ad53688d6b90c431cabe3cbf51f7a4a154739e04b63004ab1c736c"
+checksum = "f9eaee90f4a795d1eb4ba6c51e1c1721d4784d550e8efa7b2600f29c867365e0"
 dependencies = [
  "chrono",
  "derive_builder",
- "fancy-regex 0.13.0",
- "itertools 0.13.0",
+ "fancy-regex 0.18.0",
+ "itertools 0.14.0",
  "lazy_static",
  "regex",
  "time",

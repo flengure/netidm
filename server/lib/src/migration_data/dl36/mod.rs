@@ -13,6 +13,7 @@ pub(crate) mod access;
 pub(crate) mod schema;
 
 #[cfg(test)]
+#[allow(unused_imports)]
 pub(crate) use super::dl25::accounts;
 
 use self::schema::*;
@@ -20,11 +21,7 @@ use crate::prelude::*;
 
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl35::phase_1_schema_attrs();
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_BITBUCKET_TEAMS_DL36
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_BITBUCKET_TEAMS_DL36.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_BITBUCKET_GET_WORKSPACE_PERMISSIONS_DL36
             .clone()

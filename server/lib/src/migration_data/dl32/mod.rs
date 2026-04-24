@@ -28,21 +28,9 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
             .into(),
     );
     attrs.push(SCHEMA_ATTR_CONNECTOR_LDAP_START_TLS_DL32.clone().into());
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_LDAP_ROOT_CA_DATA_DL32
-            .clone()
-            .into(),
-    );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_LDAP_CLIENT_CERT_DL32
-            .clone()
-            .into(),
-    );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_LDAP_CLIENT_KEY_DL32
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_LDAP_ROOT_CA_DATA_DL32.clone().into());
+    attrs.push(SCHEMA_ATTR_CONNECTOR_LDAP_CLIENT_CERT_DL32.clone().into());
+    attrs.push(SCHEMA_ATTR_CONNECTOR_LDAP_CLIENT_KEY_DL32.clone().into());
     attrs.push(SCHEMA_ATTR_CONNECTOR_LDAP_BIND_DN_DL32.clone().into());
     attrs.push(SCHEMA_ATTR_CONNECTOR_LDAP_BIND_PW_DL32.clone().into());
     attrs.push(

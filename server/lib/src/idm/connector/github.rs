@@ -12,8 +12,9 @@
 
 use crate::idm::authsession::handler_connector::ExternalUserClaims;
 use crate::idm::connector::traits::{
-    CallbackConnector, CallbackParams, ConnectorError, ConnectorIdentity, ConnectorRefreshError,
-    Connector as ConnectorTrait, RefreshConnector, RefreshOutcome, RefreshableConnector, Scopes,
+    CallbackConnector, CallbackParams, Connector as ConnectorTrait, ConnectorError,
+    ConnectorIdentity, ConnectorRefreshError, RefreshConnector, RefreshOutcome,
+    RefreshableConnector, Scopes,
 };
 use crate::prelude::*;
 use async_trait::async_trait;
@@ -157,7 +158,8 @@ pub struct ConnectorData {
     #[serde(
         rename = "accessTokenExpiresAt",
         skip_serializing_if = "Option::is_none",
-        with = "optional_offset_dt"
+        with = "optional_offset_dt",
+        default
     )]
     pub access_token_expires_at: Option<OffsetDateTime>,
     /// Stable numeric GitHub user ID. Netidm extension for refresh sub-consistency check.
@@ -183,7 +185,9 @@ mod optional_offset_dt {
         }
     }
 
-    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Option<OffsetDateTime>, D::Error> {
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        d: D,
+    ) -> Result<Option<OffsetDateTime>, D::Error> {
         let ts = i64::deserialize(d)?;
         OffsetDateTime::from_unix_timestamp(ts)
             .map(Some)
@@ -342,10 +346,8 @@ impl Config {
         // Build dex-style orgs from legacy schema attrs.
         // org_filter → Org { name, teams: [] } (any team counts)
         // allowed_teams → Org { name, teams: [..] } (specific teams)
-        let mut org_map: std::collections::BTreeMap<String, Vec<String>> = org_filter
-            .iter()
-            .map(|o| (o.clone(), Vec::new()))
-            .collect();
+        let mut org_map: std::collections::BTreeMap<String, Vec<String>> =
+            org_filter.iter().map(|o| (o.clone(), Vec::new())).collect();
         for team_str in &allowed_teams {
             if let Some((org, team)) = team_str.split_once(':') {
                 org_map
@@ -588,10 +590,7 @@ impl Conn {
 
     /// Exchange an authorization code for tokens.
     async fn post_token(&self, code: &str) -> Result<TokenResponse, ConnectorError> {
-        let token_url = format!(
-            "{}login/oauth/access_token",
-            self.config.host.as_str()
-        );
+        let token_url = format!("{}login/oauth/access_token", self.config.host.as_str());
         let form = [
             ("grant_type", "authorization_code"),
             ("code", code),
@@ -627,10 +626,7 @@ impl Conn {
         &self,
         refresh_token: &str,
     ) -> Result<TokenResponse, ConnectorRefreshError> {
-        let token_url = format!(
-            "{}login/oauth/access_token",
-            self.config.host.as_str()
-        );
+        let token_url = format!("{}login/oauth/access_token", self.config.host.as_str());
         let form = [
             ("grant_type", "refresh_token"),
             ("refresh_token", refresh_token),
@@ -728,9 +724,7 @@ impl Conn {
                     primary_email = Some(email.clone());
                 }
 
-                if self.config.preferred_email_domain.is_some()
-                    && email.verified
-                {
+                if self.config.preferred_email_domain.is_some() && email.verified {
                     if let Some((_, domain_part)) = email.email.split_once('@') {
                         if self.is_preferred_email_domain(domain_part) {
                             preferred_emails.push(email);
@@ -1006,7 +1000,10 @@ impl Conn {
                 return (Some(e.email.as_str()), Some(true));
             }
         }
-        verified.first().map(|e| (Some(e.email.as_str()), Some(true))).unwrap_or((None, None))
+        verified
+            .first()
+            .map(|e| (Some(e.email.as_str()), Some(true)))
+            .unwrap_or((None, None))
     }
 
     /// Render group name strings from team list and org list, applying
@@ -1036,7 +1033,8 @@ impl Conn {
         if self.config.load_all_groups {
             for org in orgs {
                 let org_lower = org.login.to_lowercase();
-                if self.config.org_filter.is_empty() || self.config.org_filter.contains(&org_lower) {
+                if self.config.org_filter.is_empty() || self.config.org_filter.contains(&org_lower)
+                {
                     names.push(org_lower);
                 }
             }
@@ -1054,15 +1052,12 @@ impl Conn {
         }
         let user_teams: HashSet<String> = teams
             .iter()
-            .map(|t| {
-                format!(
-                    "{}:{}",
-                    t.org.login.to_lowercase(),
-                    t.slug.to_lowercase()
-                )
-            })
+            .map(|t| format!("{}:{}", t.org.login.to_lowercase(), t.slug.to_lowercase()))
             .collect();
-        if user_teams.iter().any(|t| self.config.allowed_teams.contains(t)) {
+        if user_teams
+            .iter()
+            .any(|t| self.config.allowed_teams.contains(t))
+        {
             return Ok(());
         }
         info!(
@@ -1326,7 +1321,9 @@ impl CallbackConnector for Conn {
         };
 
         if self.groups_required(s.groups) {
-            identity.groups = self.get_groups(token, s.groups, &user_profile.login).await?;
+            identity.groups = self
+                .get_groups(token, s.groups, &user_profile.login)
+                .await?;
         }
 
         if s.offline_access {
@@ -1342,10 +1339,7 @@ impl CallbackConnector for Conn {
                 github_login: Some(user_profile.login),
                 format_version: FORMAT_VERSION,
             };
-            identity.connector_data = data
-                .to_bytes()
-                .map(Some)
-                .unwrap_or(None);
+            identity.connector_data = data.to_bytes().map(Some).unwrap_or(None);
         }
 
         Ok(identity)
@@ -1376,15 +1370,17 @@ impl RefreshConnector for Conn {
         {
             let now = OffsetDateTime::UNIX_EPOCH + crate::time::duration_from_epoch_now();
             if now > expires_at {
-                let rotated = self.post_refresh_token(rt).await
+                let rotated = self
+                    .post_refresh_token(rt)
+                    .await
                     .map_err(|e| ConnectorError::Other(e.to_string()))?;
                 data.access_token = rotated.access_token;
                 if let Some(new_rt) = rotated.refresh_token {
                     data.refresh_token = Some(new_rt);
                 }
-                data.access_token_expires_at = rotated.expires_in.map(|secs| {
-                    now + TimeDuration::seconds(secs as i64)
-                });
+                data.access_token_expires_at = rotated
+                    .expires_in
+                    .map(|secs| now + TimeDuration::seconds(secs as i64));
             }
         }
 
@@ -1402,7 +1398,9 @@ impl RefreshConnector for Conn {
         identity.email = user_profile.email.clone();
 
         if self.groups_required(s.groups) {
-            identity.groups = self.get_groups(token, s.groups, &user_profile.login).await?;
+            identity.groups = self
+                .get_groups(token, s.groups, &user_profile.login)
+                .await?;
         }
 
         data.github_login = Some(user_profile.login);
@@ -1459,15 +1457,23 @@ impl RefreshableConnector for Conn {
 
         let groups = self.render_team_names(&teams, &orgs);
         let new_claims = ExternalUserClaims {
-            sub: state.github_id.map(|id| id.to_string()).unwrap_or_else(|| previous_claims.sub.clone()),
+            sub: state
+                .github_id
+                .map(|id| id.to_string())
+                .unwrap_or_else(|| previous_claims.sub.clone()),
             email: previous_claims.email.clone(),
             email_verified: previous_claims.email_verified,
             display_name: previous_claims.display_name.clone(),
-            username_hint: state.github_login.clone().or_else(|| previous_claims.username_hint.clone()),
+            username_hint: state
+                .github_login
+                .clone()
+                .or_else(|| previous_claims.username_hint.clone()),
             groups,
         };
 
-        state.github_login = state.github_login.or_else(|| previous_claims.username_hint.clone());
+        state.github_login = state
+            .github_login
+            .or_else(|| previous_claims.username_hint.clone());
         let new_blob = state.to_bytes()?;
 
         Ok(RefreshOutcome {
@@ -1875,8 +1881,7 @@ mod tests {
                     .unwrap_or_else(|_| unreachable!())
             )
         );
-        let hdr_last_only =
-            r#"<https://api.github.com/user/teams?per_page=2&page=5>; rel="last""#;
+        let hdr_last_only = r#"<https://api.github.com/user/teams?per_page=2&page=5>; rel="last""#;
         assert_eq!(parse_next_link(hdr_last_only), None);
     }
 
@@ -2189,8 +2194,7 @@ mod tests {
         let blob = make_session_state(42, "alice", "gho_does_not_matter", None, None);
         let prev = make_previous_claims(42, "alice@example.com");
 
-        let outcome = connector
-            .refresh(&blob, &prev)
+        let outcome = RefreshableConnector::refresh(&connector, &blob, &prev)
             .await
             .expect("refresh should succeed");
 
@@ -2229,7 +2233,7 @@ mod tests {
         });
         use crate::idm::connector::traits::RefreshableConnector;
         let prev = make_previous_claims(1, "x@example.com");
-        let result = connector.refresh(b"not-valid-json", &prev).await;
+        let result = RefreshableConnector::refresh(&connector, b"not-valid-json", &prev).await;
         assert!(
             matches!(
                 result,
@@ -2301,7 +2305,7 @@ mod tests {
         let blob = make_session_state(99, "former-employee", "gho_any_token", None, None);
         let prev = make_previous_claims(99, "user@example.com");
 
-        let result = connector.refresh(&blob, &prev).await;
+        let result = RefreshableConnector::refresh(&connector, &blob, &prev).await;
         assert!(
             matches!(
                 result,
@@ -2384,8 +2388,7 @@ mod tests {
         );
         let prev = make_previous_claims(7, "bob@example.com");
 
-        let outcome = connector
-            .refresh(&blob, &prev)
+        let outcome = RefreshableConnector::refresh(&connector, &blob, &prev)
             .await
             .expect("refresh should succeed");
 
@@ -2405,7 +2408,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_refresh_error_variants() {
-        use crate::idm::connector::traits::ConnectorRefreshError;
+        use crate::idm::connector::traits::{ConnectorRefreshError, RefreshableConnector};
         use axum::routing::get;
 
         let make_conn = |addr: std::net::SocketAddr| -> Conn {
@@ -2453,7 +2456,7 @@ mod tests {
                 )
                 .await;
             });
-            let result = make_conn(addr).refresh(&blob, &prev).await;
+            let result = RefreshableConnector::refresh(&make_conn(addr), &blob, &prev).await;
             assert!(
                 matches!(result, Err(ConnectorRefreshError::UpstreamRejected(401))),
                 "401 from orgs should be UpstreamRejected(401), got {result:?}"
@@ -2475,14 +2478,12 @@ mod tests {
                         )
                         .route(
                             "/api/v3/user/teams",
-                            get(|| async {
-                                (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "")
-                            }),
+                            get(|| async { (axum::http::StatusCode::INTERNAL_SERVER_ERROR, "") }),
                         ),
                 )
                 .await;
             });
-            let result = make_conn(addr).refresh(&blob, &prev).await;
+            let result = RefreshableConnector::refresh(&make_conn(addr), &blob, &prev).await;
             assert!(
                 matches!(result, Err(ConnectorRefreshError::UpstreamRejected(500))),
                 "500 from teams should be UpstreamRejected(500), got {result:?}"
@@ -2502,7 +2503,7 @@ mod tests {
                 )
                 .await;
             });
-            let result = make_conn(addr).refresh(&blob, &prev).await;
+            let result = RefreshableConnector::refresh(&make_conn(addr), &blob, &prev).await;
             assert!(
                 matches!(result, Err(ConnectorRefreshError::Other(_))),
                 "malformed JSON should be Other, got {result:?}"
@@ -2546,9 +2547,8 @@ mod tests {
             groups: vec![],
         };
         let mut pw = idms.proxy_write(ct).await.expect("proxy_write");
-        let result =
-            link_or_provision_chain(&mut pw.qs_write, provider_uuid, &claims, false)
-                .expect("chain should not error");
+        let result = link_or_provision_chain(&mut pw.qs_write, provider_uuid, &claims, false)
+            .expect("chain should not error");
 
         assert_eq!(
             result,
@@ -2588,11 +2588,13 @@ mod tests {
         };
 
         let mut pw = idms.proxy_write(ct).await.expect("proxy_write");
-        let result =
-            link_or_provision_chain(&mut pw.qs_write, provider_uuid, &claims, false)
-                .expect("chain should not error");
+        let result = link_or_provision_chain(&mut pw.qs_write, provider_uuid, &claims, false)
+            .expect("chain should not error");
 
-        assert_eq!(result, None, "JIT disabled and no match should return Ok(None)");
+        assert_eq!(
+            result, None,
+            "JIT disabled and no match should return Ok(None)"
+        );
         pw.commit().expect("commit");
     }
 }

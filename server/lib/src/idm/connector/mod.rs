@@ -244,8 +244,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         )))?;
 
         // Preprocess
-        let mut connector_provider_structs =
-            Vec::with_capacity(connector_provider_entries.len());
+        let mut connector_provider_structs = Vec::with_capacity(connector_provider_entries.len());
 
         let mut client_redirect_uri = self.origin.clone();
         client_redirect_uri.set_path(OAUTH2_CLIENT_AUTHORISATION_RESPONSE_PATH);
@@ -418,8 +417,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         self.connector_providers.clear();
 
         // Add them all
-        self.connector_providers
-            .extend(connector_provider_structs);
+        self.connector_providers.extend(connector_provider_structs);
 
         // T017: register GitHub connectors with the ConnectorRegistry.
         // Iterate all GitHub-kind entries a second time (list is already
@@ -440,9 +438,8 @@ impl IdmServerProxyWriteTransaction<'_> {
                 client_redirect_uri.clone(),
             ) {
                 Ok(config) => {
-                    let connector = std::sync::Arc::new(
-                        crate::idm::connector::github::Conn::new(config),
-                    );
+                    let connector =
+                        std::sync::Arc::new(crate::idm::connector::github::Conn::new(config));
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered GitHub connector");
                 }
@@ -530,8 +527,9 @@ impl IdmServerProxyWriteTransaction<'_> {
             }
             match crate::idm::connector::ldap::LdapConfig::from_entry(provider_entry) {
                 Ok(config) => {
-                    let connector =
-                        std::sync::Arc::new(crate::idm::connector::ldap::LdapConnector::new(config));
+                    let connector = std::sync::Arc::new(
+                        crate::idm::connector::ldap::LdapConnector::new(config),
+                    );
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered LDAP connector");
                 }

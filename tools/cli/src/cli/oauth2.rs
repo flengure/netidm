@@ -862,10 +862,7 @@ impl Oauth2Opt {
             Oauth2Opt::GithubSetPreferredEmailDomain { name, domain } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_connector_github_set_preferred_email_domain(
-                        name.as_str(),
-                        domain.as_str(),
-                    )
+                    .idm_connector_github_set_preferred_email_domain(name.as_str(), domain.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -1000,10 +997,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapRemoveUserSearchUsername { name, attr } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_connector_ldap_remove_user_search_username(
-                        name.as_str(),
-                        attr.as_str(),
-                    )
+                    .idm_connector_ldap_remove_user_search_username(name.as_str(), attr.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -1048,10 +1042,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetGroupSearchBaseDn { name, base_dn } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_connector_ldap_set_group_search_base_dn(
-                        name.as_str(),
-                        base_dn.as_str(),
-                    )
+                    .idm_connector_ldap_set_group_search_base_dn(name.as_str(), base_dn.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);

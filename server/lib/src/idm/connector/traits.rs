@@ -89,7 +89,10 @@ pub enum ConnectorError {
     /// The user authenticated successfully but is not a member of any
     /// of the connector's required groups. The server must respond with
     /// HTTP 403 rather than 500. Mirrors dex `UserNotInRequiredGroupsError`.
-    UserNotInRequiredGroups { user_id: String, groups: Vec<String> },
+    UserNotInRequiredGroups {
+        user_id: String,
+        groups: Vec<String>,
+    },
     /// Transport-level failure (TCP, TLS, DNS, timeout).
     Network(String),
     /// Upstream responded with a non-2xx HTTP status.
@@ -173,11 +176,7 @@ pub trait PasswordConnector: Connector {
 pub trait SAMLConnector: Connector {
     /// Return the SSO URL and encoded SAML request for the POST form.
     /// Mirrors dex `POSTData`.
-    fn post_data(
-        &self,
-        s: &Scopes,
-        request_id: &str,
-    ) -> Result<(String, String), ConnectorError>;
+    fn post_data(&self, s: &Scopes, request_id: &str) -> Result<(String, String), ConnectorError>;
 
     /// Decode, verify, and map attributes from the SAML response.
     /// Mirrors dex `HandlePOST`.
@@ -432,7 +431,9 @@ impl From<ConnectorRefreshError> for ConnectorError {
             ConnectorRefreshError::UpstreamRejected(s) => ConnectorError::UpstreamRejected(s),
             ConnectorRefreshError::Serialization(msg) => ConnectorError::Parse(msg),
             ConnectorRefreshError::Other(msg) => ConnectorError::Other(msg),
-            ConnectorRefreshError::TokenRevoked => ConnectorError::Other("upstream token revoked".into()),
+            ConnectorRefreshError::TokenRevoked => {
+                ConnectorError::Other("upstream token revoked".into())
+            }
             ConnectorRefreshError::AccessDenied => ConnectorError::UserNotInRequiredGroups {
                 user_id: String::new(),
                 groups: Vec::new(),

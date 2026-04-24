@@ -18,11 +18,7 @@ use crate::prelude::*;
 
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl34::phase_1_schema_attrs();
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_GITLAB_BASE_URL_DL35
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_GITLAB_BASE_URL_DL35.clone().into());
     attrs.push(SCHEMA_ATTR_CONNECTOR_GITLAB_GROUPS_DL35.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_GITLAB_USE_LOGIN_AS_ID_DL35

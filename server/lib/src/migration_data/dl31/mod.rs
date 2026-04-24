@@ -17,21 +17,13 @@ use crate::prelude::*;
 
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl30::phase_1_schema_attrs();
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_MICROSOFT_TENANT_DL31
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_MICROSOFT_TENANT_DL31.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_MICROSOFT_ONLY_SECURITY_GROUPS_DL31
             .clone()
             .into(),
     );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_MICROSOFT_GROUPS_DL31
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_MICROSOFT_GROUPS_DL31.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_MICROSOFT_GROUP_NAME_FORMAT_DL31
             .clone()
@@ -47,11 +39,7 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
             .clone()
             .into(),
     );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_MICROSOFT_API_URL_DL31
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_MICROSOFT_API_URL_DL31.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_MICROSOFT_GRAPH_URL_DL31
             .clone()
@@ -67,11 +55,7 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
             .clone()
             .into(),
     );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_MICROSOFT_SCOPES_DL31
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_MICROSOFT_SCOPES_DL31.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_MICROSOFT_PREFERRED_USERNAME_FIELD_DL31
             .clone()

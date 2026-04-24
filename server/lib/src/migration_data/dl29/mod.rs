@@ -22,16 +22,8 @@ use crate::prelude::*;
 
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl28::phase_1_schema_attrs();
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_OIDC_ENABLE_GROUPS_DL29
-            .clone()
-            .into(),
-    );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_OIDC_GROUPS_KEY_DL29
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_OIDC_ENABLE_GROUPS_DL29.clone().into());
+    attrs.push(SCHEMA_ATTR_CONNECTOR_OIDC_GROUPS_KEY_DL29.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_OIDC_SKIP_EMAIL_VERIFIED_DL29
             .clone()
@@ -42,36 +34,16 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
             .clone()
             .into(),
     );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_OIDC_GET_USER_INFO_DL29
-            .clone()
-            .into(),
-    );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_OIDC_USER_ID_KEY_DL29
-            .clone()
-            .into(),
-    );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_OIDC_USER_NAME_KEY_DL29
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_OIDC_GET_USER_INFO_DL29.clone().into());
+    attrs.push(SCHEMA_ATTR_CONNECTOR_OIDC_USER_ID_KEY_DL29.clone().into());
+    attrs.push(SCHEMA_ATTR_CONNECTOR_OIDC_USER_NAME_KEY_DL29.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_OIDC_OVERRIDE_CLAIM_MAPPING_DL29
             .clone()
             .into(),
     );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_OIDC_GROUPS_PREFIX_DL29
-            .clone()
-            .into(),
-    );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_OIDC_GROUPS_SUFFIX_DL29
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_OIDC_GROUPS_PREFIX_DL29.clone().into());
+    attrs.push(SCHEMA_ATTR_CONNECTOR_OIDC_GROUPS_SUFFIX_DL29.clone().into());
     attrs
 }
 

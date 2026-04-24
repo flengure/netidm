@@ -17,26 +17,14 @@ use crate::prelude::*;
 
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl33::phase_1_schema_attrs();
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_OPENSHIFT_ISSUER_DL34
-            .clone()
-            .into(),
-    );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_OPENSHIFT_GROUPS_DL34
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_OPENSHIFT_ISSUER_DL34.clone().into());
+    attrs.push(SCHEMA_ATTR_CONNECTOR_OPENSHIFT_GROUPS_DL34.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_OPENSHIFT_INSECURE_CA_DL34
             .clone()
             .into(),
     );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_OPENSHIFT_ROOT_CA_DL34
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_OPENSHIFT_ROOT_CA_DL34.clone().into());
     attrs
 }
 

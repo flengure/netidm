@@ -50,8 +50,8 @@ impl QueryServer {
             // in the above.
             debug_assert!(domain_target_level <= DOMAIN_MAX_LEVEL);
 
-            const { assert!(DOMAIN_MIN_CREATION_LEVEL == DOMAIN_LEVEL_36) };
-            write_txn.bootstrap_dl36()?;
+            const { assert!(DOMAIN_MIN_CREATION_LEVEL == DOMAIN_LEVEL_37) };
+            write_txn.bootstrap_dl37()?;
 
             write_txn
                 .internal_apply_domain_migration(domain_target_level)
@@ -995,6 +995,66 @@ impl QueryServerWriteTransaction<'_> {
         Ok(())
     }
 
+    pub(crate) fn bootstrap_dl37(&mut self) -> Result<(), OperationError> {
+        if !cfg!(test) && DOMAIN_TGT_LEVEL < DOMAIN_LEVEL_37 {
+            error!("Unable to raise domain level from 36 to 37.");
+            return Err(OperationError::MG0004DomainLevelInDevelopment);
+        }
+
+        self.internal_migrate_or_create_batch(
+            &format!("phase 1 - schema attrs target {}", DOMAIN_TGT_LEVEL),
+            migration_data::dl37::phase_1_schema_attrs(),
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 2 - schema classes",
+            migration_data::dl37::phase_2_schema_classes(),
+        )?;
+
+        self.reload()?;
+        self.reindex(false)?;
+        self.set_phase(ServerPhase::SchemaReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 3 - key provider",
+            migration_data::dl37::phase_3_key_provider(),
+        )?;
+
+        self.reload()?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 4 - dl37 system entries",
+            migration_data::dl37::phase_4_system_entries(),
+        )?;
+
+        self.reload()?;
+        self.set_phase(ServerPhase::DomainInfoReady);
+
+        self.internal_migrate_or_create_batch(
+            "phase 5 - builtin admin entries",
+            migration_data::dl37::phase_5_builtin_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 6 - builtin not admin entries",
+            migration_data::dl37::phase_6_builtin_non_admin_entries()?,
+        )?;
+
+        self.internal_migrate_or_create_batch(
+            "phase 7 - builtin access control profiles",
+            migration_data::dl37::phase_7_builtin_access_control_profiles(),
+        )?;
+
+        self.internal_delete_batch(
+            "phase 8 - delete UUIDs",
+            migration_data::dl37::phase_8_delete_uuids(),
+        )?;
+
+        self.reload()?;
+
+        Ok(())
+    }
+
     /// DL26 backfill step for the SAML `<SessionIndex>` migration.
     ///
     /// Pre-DL26 SAML assertions did not carry `<SessionIndex>`, so any
@@ -1301,10 +1361,7 @@ mod tests {
                 (Attribute::Name, Value::new_iname("test_github_connector")),
                 (Attribute::Uuid, Value::Uuid(client_uuid)),
                 (Attribute::DisplayName, Value::new_utf8s("Test GitHub")),
-                (
-                    Attribute::ConnectorId,
-                    Value::new_utf8s("github-client-id")
-                ),
+                (Attribute::ConnectorId, Value::new_utf8s("github-client-id")),
                 (
                     Attribute::ConnectorSecret,
                     Value::new_utf8s("github-client-secret")
@@ -1323,10 +1380,7 @@ mod tests {
                     Attribute::OAuth2RequestScopes,
                     Value::new_oauthscope("read_user").expect("valid oauth scope")
                 ),
-                (
-                    Attribute::ConnectorProviderKind,
-                    Value::new_iutf8("github")
-                ),
+                (Attribute::ConnectorProviderKind, Value::new_iutf8("github")),
                 (
                     Attribute::ConnectorGithubHost,
                     Value::new_url_s("https://github.acme.internal").expect("valid url")
@@ -1347,10 +1401,7 @@ mod tests {
                     Attribute::ConnectorGithubTeamNameField,
                     Value::new_iutf8("slug")
                 ),
-                (
-                    Attribute::ConnectorGithubLoadAllGroups,
-                    Value::Bool(true)
-                ),
+                (Attribute::ConnectorGithubLoadAllGroups, Value::Bool(true)),
                 (
                     Attribute::ConnectorGithubPreferredEmailDomain,
                     Value::new_iutf8("acme.com")

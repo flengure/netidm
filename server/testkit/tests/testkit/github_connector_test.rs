@@ -443,9 +443,7 @@ async fn test_github_org_filter_empty_match_login_succeeds_no_groups() {
 /// updated groups, not the ones from the initial login.
 #[tokio::test]
 async fn test_github_refresh_reflects_upstream_team_mutation() {
-    use netidmd_lib::idm::connector::github::{
-        ConnectorData, FORMAT_VERSION,
-    };
+    use netidmd_lib::idm::connector::github::{ConnectorData, FORMAT_VERSION};
 
     let mock = spawn_mock_github_server().await;
 
@@ -532,7 +530,7 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
     // which contain colons and fail server scope validation.  Create the entry manually
     // with a valid placeholder scope so we can exercise the GitHub-specific PATCH verbs.
     use netidm_proto::constants::{
-        ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_CONNECTOR_ID, ATTR_CONNECTOR_SECRET,
+        ATTR_CONNECTOR_ID, ATTR_CONNECTOR_SECRET, ATTR_OAUTH2_AUTHORISATION_ENDPOINT,
         ATTR_OAUTH2_REQUEST_SCOPES, ATTR_OAUTH2_TOKEN_ENDPOINT,
     };
     use netidm_proto::v1::Entry as ProtoEntry;
@@ -680,10 +678,7 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
         .expect("get")
         .expect("present");
     assert_eq!(
-        entry
-            .attrs
-            .get("connector_github_team_name_field")
-            .cloned(),
+        entry.attrs.get("connector_github_team_name_field").cloned(),
         Some(vec!["name".to_string()]),
         "team name field"
     );
@@ -700,10 +695,7 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
         .expect("get")
         .expect("present");
     assert_eq!(
-        entry
-            .attrs
-            .get("connector_github_load_all_groups")
-            .cloned(),
+        entry.attrs.get("connector_github_load_all_groups").cloned(),
         Some(vec!["true".to_string()]),
         "load all groups"
     );

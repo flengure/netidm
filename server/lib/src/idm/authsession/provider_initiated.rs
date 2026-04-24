@@ -7,8 +7,8 @@
 
 use crate::idm::authentication::{AuthCredential, AuthExternal, AuthState};
 use crate::idm::authsession::handler_connector::ExternalUserClaims;
-use crate::idm::oauth2::PkceS256Secret;
 use crate::idm::connector::{ConnectorProvider, ProviderKind};
+use crate::idm::oauth2::PkceS256Secret;
 use crate::prelude::*;
 use crate::utils;
 use netidm_proto::oauth2::{

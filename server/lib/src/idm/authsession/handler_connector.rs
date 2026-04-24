@@ -1,8 +1,8 @@
 use super::{CredState, BAD_AUTH_TYPE_MSG, BAD_OAUTH2_CSRF_STATE_MSG};
 use crate::idm::account::OAuth2AccountCredential;
 use crate::idm::authentication::{AuthCredential, AuthExternal};
-use crate::idm::oauth2::PkceS256Secret;
 use crate::idm::connector::{ConnectorProvider, ProviderKind};
+use crate::idm::oauth2::PkceS256Secret;
 use crate::prelude::*;
 use crate::utils;
 use crate::value::{AuthType, SessionExtMetadata};

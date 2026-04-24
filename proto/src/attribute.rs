@@ -422,6 +422,34 @@ pub enum Attribute {
     ConnectorBitbucketGetWorkspacePermissions,
     #[strum(serialize = "connector_bitbucket_include_team_groups")]
     ConnectorBitbucketIncludeTeamGroups,
+    // DL37 — ProviderIdentity class attributes (per-user per-connector identity record)
+    #[strum(serialize = "provider_identity_user_uuid")]
+    ProviderIdentityUserUuid,
+    #[strum(serialize = "provider_identity_connector_id")]
+    ProviderIdentityConnectorId,
+    #[strum(serialize = "provider_identity_claims_user_id")]
+    ProviderIdentityClaimsUserId,
+    #[strum(serialize = "provider_identity_claims_username")]
+    ProviderIdentityClaimsUsername,
+    #[strum(serialize = "provider_identity_claims_email")]
+    ProviderIdentityClaimsEmail,
+    #[strum(serialize = "provider_identity_claims_email_verified")]
+    ProviderIdentityClaimsEmailVerified,
+    #[strum(serialize = "provider_identity_claims_groups")]
+    ProviderIdentityClaimsGroups,
+    #[strum(serialize = "provider_identity_consents")]
+    ProviderIdentityConsents,
+    #[strum(serialize = "provider_identity_created_at")]
+    ProviderIdentityCreatedAt,
+    #[strum(serialize = "provider_identity_last_login")]
+    ProviderIdentityLastLogin,
+    #[strum(serialize = "provider_identity_blocked_until")]
+    ProviderIdentityBlockedUntil,
+    // DL37 — OAuth2ResourceServer cross-client trust/connector-restriction attrs
+    #[strum(serialize = "oauth2_rs_trusted_peers")]
+    Oauth2RsTrustedPeers,
+    #[strum(serialize = "oauth2_rs_allowed_connectors")]
+    Oauth2RsAllowedConnectors,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]
@@ -822,9 +850,7 @@ impl Attribute {
             ATTR_CONNECTOR_GITHUB_USE_LOGIN_AS_ID => Attribute::ConnectorGithubUseLoginAsId,
             ATTR_CONNECTOR_OIDC_ENABLE_GROUPS => Attribute::ConnectorOidcEnableGroups,
             ATTR_CONNECTOR_OIDC_GROUPS_KEY => Attribute::ConnectorOidcGroupsKey,
-            ATTR_CONNECTOR_OIDC_SKIP_EMAIL_VERIFIED => {
-                Attribute::ConnectorOidcSkipEmailVerified
-            }
+            ATTR_CONNECTOR_OIDC_SKIP_EMAIL_VERIFIED => Attribute::ConnectorOidcSkipEmailVerified,
             ATTR_CONNECTOR_OIDC_ALLOWED_GROUPS => Attribute::ConnectorOidcAllowedGroups,
             ATTR_CONNECTOR_OIDC_GET_USER_INFO => Attribute::ConnectorOidcGetUserInfo,
             ATTR_CONNECTOR_OIDC_USER_ID_KEY => Attribute::ConnectorOidcUserIdKey,
@@ -867,9 +893,7 @@ impl Attribute {
             }
             ATTR_CONNECTOR_LDAP_HOST => Attribute::ConnectorLdapHost,
             ATTR_CONNECTOR_LDAP_INSECURE_NO_SSL => Attribute::ConnectorLdapInsecureNoSsl,
-            ATTR_CONNECTOR_LDAP_INSECURE_SKIP_VERIFY => {
-                Attribute::ConnectorLdapInsecureSkipVerify
-            }
+            ATTR_CONNECTOR_LDAP_INSECURE_SKIP_VERIFY => Attribute::ConnectorLdapInsecureSkipVerify,
             ATTR_CONNECTOR_LDAP_START_TLS => Attribute::ConnectorLdapStartTls,
             ATTR_CONNECTOR_LDAP_ROOT_CA_DATA => Attribute::ConnectorLdapRootCaData,
             ATTR_CONNECTOR_LDAP_CLIENT_CERT => Attribute::ConnectorLdapClientCert,
@@ -877,40 +901,24 @@ impl Attribute {
             ATTR_CONNECTOR_LDAP_BIND_DN => Attribute::ConnectorLdapBindDn,
             ATTR_CONNECTOR_LDAP_BIND_PW => Attribute::ConnectorLdapBindPw,
             ATTR_CONNECTOR_LDAP_USERNAME_PROMPT => Attribute::ConnectorLdapUsernamePrompt,
-            ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN => {
-                Attribute::ConnectorLdapUserSearchBaseDn
-            }
-            ATTR_CONNECTOR_LDAP_USER_SEARCH_FILTER => {
-                Attribute::ConnectorLdapUserSearchFilter
-            }
-            ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME => {
-                Attribute::ConnectorLdapUserSearchUsername
-            }
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN => Attribute::ConnectorLdapUserSearchBaseDn,
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_FILTER => Attribute::ConnectorLdapUserSearchFilter,
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME => Attribute::ConnectorLdapUserSearchUsername,
             ATTR_CONNECTOR_LDAP_USER_SEARCH_SCOPE => Attribute::ConnectorLdapUserSearchScope,
-            ATTR_CONNECTOR_LDAP_USER_SEARCH_ID_ATTR => {
-                Attribute::ConnectorLdapUserSearchIdAttr
-            }
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_ID_ATTR => Attribute::ConnectorLdapUserSearchIdAttr,
             ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_ATTR => {
                 Attribute::ConnectorLdapUserSearchEmailAttr
             }
-            ATTR_CONNECTOR_LDAP_USER_SEARCH_NAME_ATTR => {
-                Attribute::ConnectorLdapUserSearchNameAttr
-            }
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_NAME_ATTR => Attribute::ConnectorLdapUserSearchNameAttr,
             ATTR_CONNECTOR_LDAP_USER_SEARCH_PREFERRED_USERNAME_ATTR => {
                 Attribute::ConnectorLdapUserSearchPreferredUsernameAttr
             }
             ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_SUFFIX => {
                 Attribute::ConnectorLdapUserSearchEmailSuffix
             }
-            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN => {
-                Attribute::ConnectorLdapGroupSearchBaseDn
-            }
-            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER => {
-                Attribute::ConnectorLdapGroupSearchFilter
-            }
-            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_SCOPE => {
-                Attribute::ConnectorLdapGroupSearchScope
-            }
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN => Attribute::ConnectorLdapGroupSearchBaseDn,
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER => Attribute::ConnectorLdapGroupSearchFilter,
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_SCOPE => Attribute::ConnectorLdapGroupSearchScope,
             ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS => {
                 Attribute::ConnectorLdapGroupSearchUserMatchers
             }
@@ -1022,6 +1030,21 @@ impl Attribute {
             ATTR_CONNECTOR_BITBUCKET_INCLUDE_TEAM_GROUPS => {
                 Attribute::ConnectorBitbucketIncludeTeamGroups
             }
+            ATTR_PROVIDER_IDENTITY_USER_UUID => Attribute::ProviderIdentityUserUuid,
+            ATTR_PROVIDER_IDENTITY_CONNECTOR_ID => Attribute::ProviderIdentityConnectorId,
+            ATTR_PROVIDER_IDENTITY_CLAIMS_USER_ID => Attribute::ProviderIdentityClaimsUserId,
+            ATTR_PROVIDER_IDENTITY_CLAIMS_USERNAME => Attribute::ProviderIdentityClaimsUsername,
+            ATTR_PROVIDER_IDENTITY_CLAIMS_EMAIL => Attribute::ProviderIdentityClaimsEmail,
+            ATTR_PROVIDER_IDENTITY_CLAIMS_EMAIL_VERIFIED => {
+                Attribute::ProviderIdentityClaimsEmailVerified
+            }
+            ATTR_PROVIDER_IDENTITY_CLAIMS_GROUPS => Attribute::ProviderIdentityClaimsGroups,
+            ATTR_PROVIDER_IDENTITY_CONSENTS => Attribute::ProviderIdentityConsents,
+            ATTR_PROVIDER_IDENTITY_CREATED_AT => Attribute::ProviderIdentityCreatedAt,
+            ATTR_PROVIDER_IDENTITY_LAST_LOGIN => Attribute::ProviderIdentityLastLogin,
+            ATTR_PROVIDER_IDENTITY_BLOCKED_UNTIL => Attribute::ProviderIdentityBlockedUntil,
+            ATTR_OAUTH2_RS_TRUSTED_PEERS => Attribute::Oauth2RsTrustedPeers,
+            ATTR_OAUTH2_RS_ALLOWED_CONNECTORS => Attribute::Oauth2RsAllowedConnectors,
             ATTR_SAML_SSO_ISSUER => Attribute::SamlSsoIssuer,
             ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION => Attribute::SamlInsecureSkipSigValidation,
             ATTR_SAML_GROUPS_DELIM => Attribute::SamlGroupsDelim,

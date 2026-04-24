@@ -28,11 +28,7 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl26::phase_1_schema_attrs();
     attrs.push(SCHEMA_ATTR_CONNECTOR_PROVIDER_KIND_DL28.clone().into());
     attrs.push(SCHEMA_ATTR_CONNECTOR_GITHUB_HOST_DL28.clone().into());
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_GITHUB_ORG_FILTER_DL28
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_GITHUB_ORG_FILTER_DL28.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS_DL28
             .clone()

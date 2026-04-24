@@ -245,8 +245,7 @@ pub const ATTR_CONNECTOR_GITHUB_USE_LOGIN_AS_ID: &str = "connector_github_use_lo
 // DL29 — Generic OIDC connector attributes
 pub const ATTR_CONNECTOR_OIDC_ENABLE_GROUPS: &str = "connector_oidc_enable_groups";
 pub const ATTR_CONNECTOR_OIDC_GROUPS_KEY: &str = "connector_oidc_groups_key";
-pub const ATTR_CONNECTOR_OIDC_SKIP_EMAIL_VERIFIED: &str =
-    "connector_oidc_skip_email_verified";
+pub const ATTR_CONNECTOR_OIDC_SKIP_EMAIL_VERIFIED: &str = "connector_oidc_skip_email_verified";
 pub const ATTR_CONNECTOR_OIDC_ALLOWED_GROUPS: &str = "connector_oidc_allowed_groups";
 pub const ATTR_CONNECTOR_OIDC_GET_USER_INFO: &str = "connector_oidc_get_user_info";
 pub const ATTR_CONNECTOR_OIDC_USER_ID_KEY: &str = "connector_oidc_user_id_key";
@@ -285,8 +284,7 @@ pub const ATTR_CONNECTOR_MICROSOFT_ALLOW_JIT_PROVISIONING: &str =
 // Connection / TLS
 pub const ATTR_CONNECTOR_LDAP_HOST: &str = "connector_ldap_host";
 pub const ATTR_CONNECTOR_LDAP_INSECURE_NO_SSL: &str = "connector_ldap_insecure_no_ssl";
-pub const ATTR_CONNECTOR_LDAP_INSECURE_SKIP_VERIFY: &str =
-    "connector_ldap_insecure_skip_verify";
+pub const ATTR_CONNECTOR_LDAP_INSECURE_SKIP_VERIFY: &str = "connector_ldap_insecure_skip_verify";
 pub const ATTR_CONNECTOR_LDAP_START_TLS: &str = "connector_ldap_start_tls";
 pub const ATTR_CONNECTOR_LDAP_ROOT_CA_DATA: &str = "connector_ldap_root_ca_data";
 pub const ATTR_CONNECTOR_LDAP_CLIENT_CERT: &str = "connector_ldap_client_cert";
@@ -295,30 +293,22 @@ pub const ATTR_CONNECTOR_LDAP_BIND_DN: &str = "connector_ldap_bind_dn";
 pub const ATTR_CONNECTOR_LDAP_BIND_PW: &str = "connector_ldap_bind_pw";
 pub const ATTR_CONNECTOR_LDAP_USERNAME_PROMPT: &str = "connector_ldap_username_prompt";
 // UserSearch
-pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN: &str =
-    "connector_ldap_user_search_base_dn";
-pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_FILTER: &str =
-    "connector_ldap_user_search_filter";
-pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME: &str =
-    "connector_ldap_user_search_username";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN: &str = "connector_ldap_user_search_base_dn";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_FILTER: &str = "connector_ldap_user_search_filter";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME: &str = "connector_ldap_user_search_username";
 pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_SCOPE: &str = "connector_ldap_user_search_scope";
-pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_ID_ATTR: &str =
-    "connector_ldap_user_search_id_attr";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_ID_ATTR: &str = "connector_ldap_user_search_id_attr";
 pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_ATTR: &str =
     "connector_ldap_user_search_email_attr";
-pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_NAME_ATTR: &str =
-    "connector_ldap_user_search_name_attr";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_NAME_ATTR: &str = "connector_ldap_user_search_name_attr";
 pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_PREFERRED_USERNAME_ATTR: &str =
     "connector_ldap_user_search_preferred_username_attr";
 pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_SUFFIX: &str =
     "connector_ldap_user_search_email_suffix";
 // GroupSearch
-pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN: &str =
-    "connector_ldap_group_search_base_dn";
-pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER: &str =
-    "connector_ldap_group_search_filter";
-pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_SCOPE: &str =
-    "connector_ldap_group_search_scope";
+pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN: &str = "connector_ldap_group_search_base_dn";
+pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER: &str = "connector_ldap_group_search_filter";
+pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_SCOPE: &str = "connector_ldap_group_search_scope";
 pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS: &str =
     "connector_ldap_group_search_user_matchers";
 pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_NAME_ATTR: &str =
@@ -341,6 +331,21 @@ pub const ATTR_CONNECTOR_BITBUCKET_GET_WORKSPACE_PERMISSIONS: &str =
     "connector_bitbucket_get_workspace_permissions";
 pub const ATTR_CONNECTOR_BITBUCKET_INCLUDE_TEAM_GROUPS: &str =
     "connector_bitbucket_include_team_groups";
+// DL37 — ProviderIdentity attrs + OAuth2ResourceServer cross-client attrs
+pub const ATTR_PROVIDER_IDENTITY_USER_UUID: &str = "provider_identity_user_uuid";
+pub const ATTR_PROVIDER_IDENTITY_CONNECTOR_ID: &str = "provider_identity_connector_id";
+pub const ATTR_PROVIDER_IDENTITY_CLAIMS_USER_ID: &str = "provider_identity_claims_user_id";
+pub const ATTR_PROVIDER_IDENTITY_CLAIMS_USERNAME: &str = "provider_identity_claims_username";
+pub const ATTR_PROVIDER_IDENTITY_CLAIMS_EMAIL: &str = "provider_identity_claims_email";
+pub const ATTR_PROVIDER_IDENTITY_CLAIMS_EMAIL_VERIFIED: &str =
+    "provider_identity_claims_email_verified";
+pub const ATTR_PROVIDER_IDENTITY_CLAIMS_GROUPS: &str = "provider_identity_claims_groups";
+pub const ATTR_PROVIDER_IDENTITY_CONSENTS: &str = "provider_identity_consents";
+pub const ATTR_PROVIDER_IDENTITY_CREATED_AT: &str = "provider_identity_created_at";
+pub const ATTR_PROVIDER_IDENTITY_LAST_LOGIN: &str = "provider_identity_last_login";
+pub const ATTR_PROVIDER_IDENTITY_BLOCKED_UNTIL: &str = "provider_identity_blocked_until";
+pub const ATTR_OAUTH2_RS_TRUSTED_PEERS: &str = "oauth2_rs_trusted_peers";
+pub const ATTR_OAUTH2_RS_ALLOWED_CONNECTORS: &str = "oauth2_rs_allowed_connectors";
 // DL33 — SAML connector dex-parity additions (PR-CONNECTOR-SAML)
 pub const ATTR_SAML_SSO_ISSUER: &str = "saml_sso_issuer";
 pub const ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION: &str = "saml_insecure_skip_sig_validation";
@@ -560,3 +565,5 @@ pub const ENTRYCLASS_KEY_OBJECT_JWT_HS256: &str = "key_object_jwt_hs256";
 pub const ENTRYCLASS_KEY_OBJECT_JWT_RS256: &str = "key_object_jwt_rs256";
 pub const ENTRYCLASS_KEY_OBJECT_JWE_A128GCM: &str = "key_object_jwe_a128gcm";
 pub const ENTRYCLASS_KEY_OBJECT_INTERNAL: &str = "key_object_internal";
+// DL37 — per-user per-connector identity record (upstream provider identity parity)
+pub const ENTRYCLASS_PROVIDER_IDENTITY: &str = "provider_identity";

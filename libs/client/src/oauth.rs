@@ -1,24 +1,22 @@
 use crate::{ClientError, NetidmClient};
 use netidm_proto::attribute::Attribute;
 use netidm_proto::constants::{
-    ATTR_DISPLAYNAME, ATTR_KEY_ACTION_REVOKE, ATTR_KEY_ACTION_ROTATE, ATTR_NAME,
-    ATTR_OAUTH2_ALLOW_INSECURE_CLIENT_DISABLE_PKCE, ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT,
-    ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
-    ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME,
     ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS, ATTR_CONNECTOR_GITHUB_ALLOW_JIT_PROVISIONING,
     ATTR_CONNECTOR_GITHUB_HOST, ATTR_CONNECTOR_GITHUB_LOAD_ALL_GROUPS,
     ATTR_CONNECTOR_GITHUB_ORG_FILTER, ATTR_CONNECTOR_GITHUB_PREFERRED_EMAIL_DOMAIN,
-    ATTR_CONNECTOR_GITHUB_TEAM_NAME_FIELD, ATTR_CONNECTOR_ID,
-    ATTR_CONNECTOR_LDAP_BIND_DN, ATTR_CONNECTOR_LDAP_BIND_PW,
-    ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN, ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER,
-    ATTR_CONNECTOR_LDAP_GROUP_SEARCH_NAME_ATTR,
+    ATTR_CONNECTOR_GITHUB_TEAM_NAME_FIELD, ATTR_CONNECTOR_ID, ATTR_CONNECTOR_LDAP_BIND_DN,
+    ATTR_CONNECTOR_LDAP_BIND_PW, ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN,
+    ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER, ATTR_CONNECTOR_LDAP_GROUP_SEARCH_NAME_ATTR,
     ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS, ATTR_CONNECTOR_LDAP_HOST,
     ATTR_CONNECTOR_LDAP_INSECURE_NO_SSL, ATTR_CONNECTOR_LDAP_INSECURE_SKIP_VERIFY,
     ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN, ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_ATTR,
     ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_SUFFIX, ATTR_CONNECTOR_LDAP_USER_SEARCH_FILTER,
     ATTR_CONNECTOR_LDAP_USER_SEARCH_ID_ATTR, ATTR_CONNECTOR_LDAP_USER_SEARCH_NAME_ATTR,
-    ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME, ATTR_CONNECTOR_PROVIDER_KIND,
-    ATTR_CONNECTOR_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
+    ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME, ATTR_CONNECTOR_PROVIDER_KIND, ATTR_CONNECTOR_SECRET,
+    ATTR_DISPLAYNAME, ATTR_KEY_ACTION_REVOKE, ATTR_KEY_ACTION_ROTATE, ATTR_NAME,
+    ATTR_OAUTH2_ALLOW_INSECURE_CLIENT_DISABLE_PKCE, ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT,
+    ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
+    ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
     ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS,
     ATTR_OAUTH2_GROUP_MAPPING, ATTR_OAUTH2_ISSUER, ATTR_OAUTH2_JIT_PROVISIONING,
     ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE, ATTR_OAUTH2_LINK_BY,
@@ -554,10 +552,9 @@ impl NetidmClient {
         entry
             .attrs
             .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
-        entry.attrs.insert(
-            ATTR_CONNECTOR_ID.to_string(),
-            vec![client_id.to_string()],
-        );
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![client_id.to_string()]);
         entry.attrs.insert(
             ATTR_CONNECTOR_SECRET.to_string(),
             vec![client_secret.to_string()],
@@ -594,10 +591,9 @@ impl NetidmClient {
         entry
             .attrs
             .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
-        entry.attrs.insert(
-            ATTR_CONNECTOR_ID.to_string(),
-            vec![client_id.to_string()],
-        );
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![client_id.to_string()]);
         entry.attrs.insert(
             ATTR_CONNECTOR_SECRET.to_string(),
             vec![client_secret.to_string()],
@@ -682,10 +678,9 @@ impl NetidmClient {
         entry
             .attrs
             .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
-        entry.attrs.insert(
-            ATTR_CONNECTOR_ID.to_string(),
-            vec![client_id.to_string()],
-        );
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![client_id.to_string()]);
         entry.attrs.insert(
             ATTR_CONNECTOR_SECRET.to_string(),
             vec![client_secret.to_string()],
@@ -723,10 +718,7 @@ impl NetidmClient {
         self.perform_post_request("/v1/oauth2/_client", entry).await
     }
 
-    pub async fn idm_connector_enable_jit_provisioning(
-        &self,
-        id: &str,
-    ) -> Result<(), ClientError> {
+    pub async fn idm_connector_enable_jit_provisioning(&self, id: &str) -> Result<(), ClientError> {
         let mut entry = Entry {
             attrs: BTreeMap::new(),
         };
@@ -1132,11 +1124,7 @@ impl NetidmClient {
         let mut current: Vec<String> = self
             .idm_connector_get(id)
             .await?
-            .and_then(|e| {
-                e.attrs
-                    .get(ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS)
-                    .cloned()
-            })
+            .and_then(|e| e.attrs.get(ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS).cloned())
             .unwrap_or_default();
         if !current.contains(&team.to_string()) {
             current.push(team.to_string());
@@ -1165,11 +1153,7 @@ impl NetidmClient {
         let current: Vec<String> = self
             .idm_connector_get(id)
             .await?
-            .and_then(|e| {
-                e.attrs
-                    .get(ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS)
-                    .cloned()
-            })
+            .and_then(|e| e.attrs.get(ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS).cloned())
             .unwrap_or_default();
         let updated: Vec<String> = current.into_iter().filter(|v| v != team).collect();
         let mut entry = Entry {
@@ -1321,10 +1305,9 @@ impl NetidmClient {
         let mut entry = Entry {
             attrs: BTreeMap::new(),
         };
-        entry.attrs.insert(
-            ATTR_CONNECTOR_LDAP_HOST.to_string(),
-            vec![host.to_string()],
-        );
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_LDAP_HOST.to_string(), vec![host.to_string()]);
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }

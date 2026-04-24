@@ -6,8 +6,7 @@
 
 use crate::constants::{
     UUID_SCHEMA_ATTR_CONNECTOR_LDAP_BIND_DN, UUID_SCHEMA_ATTR_CONNECTOR_LDAP_BIND_PW,
-    UUID_SCHEMA_ATTR_CONNECTOR_LDAP_CLIENT_CERT,
-    UUID_SCHEMA_ATTR_CONNECTOR_LDAP_CLIENT_KEY,
+    UUID_SCHEMA_ATTR_CONNECTOR_LDAP_CLIENT_CERT, UUID_SCHEMA_ATTR_CONNECTOR_LDAP_CLIENT_KEY,
     UUID_SCHEMA_ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN,
     UUID_SCHEMA_ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER,
     UUID_SCHEMA_ATTR_CONNECTOR_LDAP_GROUP_SEARCH_NAME_ATTR,
@@ -15,8 +14,7 @@ use crate::constants::{
     UUID_SCHEMA_ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS,
     UUID_SCHEMA_ATTR_CONNECTOR_LDAP_HOST, UUID_SCHEMA_ATTR_CONNECTOR_LDAP_INSECURE_NO_SSL,
     UUID_SCHEMA_ATTR_CONNECTOR_LDAP_INSECURE_SKIP_VERIFY,
-    UUID_SCHEMA_ATTR_CONNECTOR_LDAP_ROOT_CA_DATA,
-    UUID_SCHEMA_ATTR_CONNECTOR_LDAP_START_TLS,
+    UUID_SCHEMA_ATTR_CONNECTOR_LDAP_ROOT_CA_DATA, UUID_SCHEMA_ATTR_CONNECTOR_LDAP_START_TLS,
     UUID_SCHEMA_ATTR_CONNECTOR_LDAP_USERNAME_PROMPT,
     UUID_SCHEMA_ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN,
     UUID_SCHEMA_ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_ATTR,
@@ -316,19 +314,18 @@ pub static SCHEMA_ATTR_CONNECTOR_LDAP_GROUP_SEARCH_SCOPE_DL32: LazyLock<SchemaAt
 /// User-to-group attribute matchers. Multi-value; each value encodes one matcher as
 /// `userAttr:groupAttr` or `userAttr:groupAttr:recursionGroupAttr`.
 /// Example: `DN:member` (by DN) or `uid:memberUid` (by uid) or `DN:member:member` (recursive).
-pub static SCHEMA_ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS_DL32: LazyLock<
-    SchemaAttribute,
-> = LazyLock::new(|| SchemaAttribute {
-    uuid: UUID_SCHEMA_ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS,
-    name: Attribute::ConnectorLdapGroupSearchUserMatchers,
-    description: "User-to-group attribute matchers. Multi-value; each value is \
+pub static SCHEMA_ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS_DL32: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS,
+        name: Attribute::ConnectorLdapGroupSearchUserMatchers,
+        description: "User-to-group attribute matchers. Multi-value; each value is \
                   \"userAttr:groupAttr\" or \"userAttr:groupAttr:recursionGroupAttr\". \
                   E.g. \"DN:member\" or \"uid:memberUid\" or \"DN:member:member\" (recursive)."
-        .to_string(),
-    multivalue: true,
-    syntax: SyntaxType::Utf8String,
-    ..Default::default()
-});
+            .to_string(),
+        multivalue: true,
+        syntax: SyntaxType::Utf8String,
+        ..Default::default()
+    });
 
 /// LDAP attribute on group entries that holds the group name. Required when group_search_base_dn is set.
 pub static SCHEMA_ATTR_CONNECTOR_LDAP_GROUP_SEARCH_NAME_ATTR_DL32: LazyLock<SchemaAttribute> =

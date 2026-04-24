@@ -748,12 +748,7 @@ pub(crate) async fn oauth2_id_backchannel_logout_uri_post(
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_connector_backchannel_logout_uri_set(
-            client_auth_info,
-            rs_name,
-            uri,
-            kopid.eventid,
-        )
+        .handle_connector_backchannel_logout_uri_set(client_auth_info, rs_name, uri, kopid.eventid)
         .await
         .map(Json::from)
         .map_err(WebError::from)

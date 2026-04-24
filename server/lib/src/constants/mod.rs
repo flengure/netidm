@@ -97,11 +97,15 @@ pub const DOMAIN_LEVEL_35: DomainVersion = 35;
 /// Adds `connector_bitbucket_teams`, `connector_bitbucket_get_workspace_permissions`,
 /// `connector_bitbucket_include_team_groups`.
 pub const DOMAIN_LEVEL_36: DomainVersion = 36;
+/// DL37: GitHub `use_login_as_id` attr registration; `ProviderIdentity` entry class
+/// for per-user per-connector identity records;
+/// `oauth2_rs_trusted_peers` and `oauth2_rs_allowed_connectors` on `OAuth2ResourceServer`.
+pub const DOMAIN_LEVEL_37: DomainVersion = 37;
 
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_36;
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_37;
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_36;
-pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_36;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_37;
+pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_37;
 pub const DOMAIN_PREVIOUS_TGT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL - 1;
 pub const DOMAIN_TGT_NEXT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL + 1;
 pub const DOMAIN_MIGRATION_FROM_INVALID: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;

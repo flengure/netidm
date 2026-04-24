@@ -30,11 +30,7 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
             .clone()
             .into(),
     );
-    attrs.push(
-        SCHEMA_ATTR_CONNECTOR_GOOGLE_ADMIN_EMAIL_DL30
-            .clone()
-            .into(),
-    );
+    attrs.push(SCHEMA_ATTR_CONNECTOR_GOOGLE_ADMIN_EMAIL_DL30.clone().into());
     attrs.push(
         SCHEMA_ATTR_CONNECTOR_GOOGLE_FETCH_GROUPS_DL30
             .clone()

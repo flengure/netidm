@@ -547,8 +547,8 @@ pub async fn view_ldap_login_post(
     Form(form): Form<LdapLoginForm>,
 ) -> Response {
     use axum::http::StatusCode;
-    use netidmd_lib::idm::connector::ProviderKind;
     use netidmd_lib::idm::connector::traits::ConnectorRefreshError;
+    use netidmd_lib::idm::connector::ProviderKind;
 
     let Some((ProviderKind::Ldap, provider_uuid, provider_display_name)) = state
         .qe_r_ref

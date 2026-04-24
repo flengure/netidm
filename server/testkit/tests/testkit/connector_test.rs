@@ -104,9 +104,7 @@ async fn tk_test_idm_connector_create_oidc_success(rsclient: &netidm_client::Net
 
 /// (b) Discovery URL returns 404 → error returned, no entry created.
 #[test]
-async fn tk_test_idm_connector_create_oidc_discovery_404(
-    rsclient: &netidm_client::NetidmClient,
-) {
+async fn tk_test_idm_connector_create_oidc_discovery_404(rsclient: &netidm_client::NetidmClient) {
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await
@@ -155,9 +153,7 @@ async fn tk_test_idm_connector_create_oidc_missing_auth_endpoint(
 
 /// (d) Discovery doc `issuer` field does not match requested issuer → error returned.
 #[test]
-async fn tk_test_idm_connector_create_oidc_issuer_mismatch(
-    rsclient: &netidm_client::NetidmClient,
-) {
+async fn tk_test_idm_connector_create_oidc_issuer_mismatch(rsclient: &netidm_client::NetidmClient) {
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await

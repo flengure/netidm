@@ -65,10 +65,7 @@ impl LinkedInConfig {
         let client_id = entry
             .get_ava_single_utf8(Attribute::ConnectorId)
             .ok_or_else(|| {
-                error!(
-                    ?entry_uuid,
-                    "LinkedIn connector entry missing connector_id"
-                );
+                error!(?entry_uuid, "LinkedIn connector entry missing connector_id");
                 OperationError::InvalidEntryState
             })?
             .to_string();

@@ -8,6 +8,7 @@ use crate::idm::audit::AuditEvent;
 use crate::idm::authentication::{AuthState, PreValidatedTokenStatus};
 use crate::idm::authsession::provider_initiated::ProviderInitiatedSession;
 use crate::idm::authsession::{AuthSession, AuthSessionData};
+use crate::idm::connector::ConnectorProvider;
 use crate::idm::credupdatesession::CredentialUpdateSessionMutex;
 use crate::idm::delayed::{
     AuthSessionRecord, BackupCodeRemoval, DelayedAction, PasswordUpgrade, UnixPasswordUpgrade,
@@ -23,7 +24,6 @@ use crate::idm::oauth2::{
     Oauth2ResourceServers, Oauth2ResourceServersReadTransaction,
     Oauth2ResourceServersWriteTransaction,
 };
-use crate::idm::connector::ConnectorProvider;
 use crate::idm::radius::RadiusAccount;
 use crate::idm::saml_client::SamlClientProvider;
 use crate::idm::scim::SyncAccount;
@@ -1321,12 +1321,11 @@ impl IdmServerAuthTransaction<'_> {
                         });
 
                 // Does the account have any auth trusts?
-                let connector_provider =
-                    account.connector_provider().and_then(|trust_provider| {
-                        debug!(?trust_provider);
-                        // Now get the provider, if it'still linked and exists.
-                        self.connector_providers.get(&trust_provider.provider)
-                    });
+                let connector_provider = account.connector_provider().and_then(|trust_provider| {
+                    debug!(?trust_provider);
+                    // Now get the provider, if it'still linked and exists.
+                    self.connector_providers.get(&trust_provider.provider)
+                });
 
                 debug!(?connector_provider);
 

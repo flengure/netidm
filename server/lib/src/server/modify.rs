@@ -251,8 +251,7 @@ impl QueryServerWriteTransaction<'_> {
                 .zip(pre_candidates.iter().map(|e| e.as_ref()))
                 .any(|(post, pre)| {
                     post.attribute_equality(Attribute::Class, &EntryClass::Connector.into())
-                        || pre
-                            .attribute_equality(Attribute::Class, &EntryClass::Connector.into())
+                        || pre.attribute_equality(Attribute::Class, &EntryClass::Connector.into())
                 })
         {
             self.changed_flags.insert(ChangeFlag::OAUTH2_CLIENT)

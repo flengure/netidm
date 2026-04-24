@@ -6,19 +6,15 @@
 
 use crate::constants::{
     UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_ALLOW_JIT_PROVISIONING,
-    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_API_URL,
-    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_DOMAIN_HINT,
+    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_API_URL, UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_DOMAIN_HINT,
     UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_EMAIL_TO_LOWERCASE,
-    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_GRAPH_URL,
-    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_GROUPS,
+    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_GRAPH_URL, UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_GROUPS,
     UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_GROUP_NAME_FORMAT,
     UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_ONLY_SECURITY_GROUPS,
     UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_PREFERRED_USERNAME_FIELD,
-    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_PROMPT_TYPE,
-    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_SCOPES,
+    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_PROMPT_TYPE, UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_SCOPES,
     UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_TENANT,
-    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_USE_GROUPS_AS_WHITELIST,
-    UUID_SCHEMA_CLASS_CONNECTOR,
+    UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_USE_GROUPS_AS_WHITELIST, UUID_SCHEMA_CLASS_CONNECTOR,
 };
 use crate::prelude::*;
 
@@ -41,18 +37,17 @@ pub static SCHEMA_ATTR_CONNECTOR_MICROSOFT_TENANT_DL31: LazyLock<SchemaAttribute
 
 /// Restrict `getMemberGroups` to security groups only. When true, passes
 /// `securityEnabledOnly: true` to the Microsoft Graph API. Default: false.
-pub static SCHEMA_ATTR_CONNECTOR_MICROSOFT_ONLY_SECURITY_GROUPS_DL31: LazyLock<
-    SchemaAttribute,
-> = LazyLock::new(|| SchemaAttribute {
-    uuid: UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_ONLY_SECURITY_GROUPS,
-    name: Attribute::ConnectorMicrosoftOnlySecurityGroups,
-    description: "When true, only security groups are returned from getMemberGroups \
+pub static SCHEMA_ATTR_CONNECTOR_MICROSOFT_ONLY_SECURITY_GROUPS_DL31: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_ONLY_SECURITY_GROUPS,
+        name: Attribute::ConnectorMicrosoftOnlySecurityGroups,
+        description: "When true, only security groups are returned from getMemberGroups \
                       (securityEnabledOnly: true). Default: false."
-        .to_string(),
-    multivalue: false,
-    syntax: SyntaxType::Boolean,
-    ..Default::default()
-});
+            .to_string(),
+        multivalue: false,
+        syntax: SyntaxType::Boolean,
+        ..Default::default()
+    });
 
 /// Required-group allowlist. When set, users must be a member of at least one
 /// of these groups (after resolution) to be permitted. Also used as a whitelist
@@ -87,19 +82,18 @@ pub static SCHEMA_ATTR_CONNECTOR_MICROSOFT_GROUP_NAME_FORMAT_DL31: LazyLock<Sche
 /// When true and `groups` is also set, emit only the intersection of the user's
 /// groups and the configured allowlist in the downstream token. When false (default),
 /// all groups are emitted and the allowlist is used only as an access gate.
-pub static SCHEMA_ATTR_CONNECTOR_MICROSOFT_USE_GROUPS_AS_WHITELIST_DL31: LazyLock<
-    SchemaAttribute,
-> = LazyLock::new(|| SchemaAttribute {
-    uuid: UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_USE_GROUPS_AS_WHITELIST,
-    name: Attribute::ConnectorMicrosoftUseGroupsAsWhitelist,
-    description: "When true, only groups from the allowlist are emitted in the token. \
+pub static SCHEMA_ATTR_CONNECTOR_MICROSOFT_USE_GROUPS_AS_WHITELIST_DL31: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_USE_GROUPS_AS_WHITELIST,
+        name: Attribute::ConnectorMicrosoftUseGroupsAsWhitelist,
+        description: "When true, only groups from the allowlist are emitted in the token. \
                       When false (default), all groups are emitted and the allowlist is an \
                       access gate only."
-        .to_string(),
-    multivalue: false,
-    syntax: SyntaxType::Boolean,
-    ..Default::default()
-});
+            .to_string(),
+        multivalue: false,
+        syntax: SyntaxType::Boolean,
+        ..Default::default()
+    });
 
 /// When true, lowercase the user's `userPrincipalName` before storing it as the
 /// email claim. Matches dex emailToLowercase. Default: false.
@@ -208,18 +202,17 @@ pub static SCHEMA_ATTR_CONNECTOR_MICROSOFT_PREFERRED_USERNAME_FIELD_DL31: LazyLo
 
 /// When true, first-time users (no existing Person matching the link key) are
 /// automatically provisioned as a new Person entry on login. Default: false.
-pub static SCHEMA_ATTR_CONNECTOR_MICROSOFT_ALLOW_JIT_PROVISIONING_DL31: LazyLock<
-    SchemaAttribute,
-> = LazyLock::new(|| SchemaAttribute {
-    uuid: UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_ALLOW_JIT_PROVISIONING,
-    name: Attribute::ConnectorMicrosoftAllowJitProvisioning,
-    description: "When true, first-time users are automatically provisioned as a new \
+pub static SCHEMA_ATTR_CONNECTOR_MICROSOFT_ALLOW_JIT_PROVISIONING_DL31: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_CONNECTOR_MICROSOFT_ALLOW_JIT_PROVISIONING,
+        name: Attribute::ConnectorMicrosoftAllowJitProvisioning,
+        description: "When true, first-time users are automatically provisioned as a new \
                       Person entry on login. Default: false."
-        .to_string(),
-    multivalue: false,
-    syntax: SyntaxType::Boolean,
-    ..Default::default()
-});
+            .to_string(),
+        multivalue: false,
+        syntax: SyntaxType::Boolean,
+        ..Default::default()
+    });
 
 /// OAuth2 client class updated for DL31: adds the thirteen Microsoft-specific config
 /// attributes to `systemmay`. Carries forward all DL30 `systemmay` entries.
