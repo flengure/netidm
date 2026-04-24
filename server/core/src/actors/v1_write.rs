@@ -2457,8 +2457,13 @@ impl QueryServerWriteV1 {
         eventid: Uuid,
     ) -> Result<(), OperationError> {
         let _ = eventid;
-        handle_saml_attr_clear(&self.idms, client_auth_info, client_name, Attribute::SamlSsoIssuer)
-            .await
+        handle_saml_attr_clear(
+            &self.idms,
+            client_auth_info,
+            client_name,
+            Attribute::SamlSsoIssuer,
+        )
+        .await
     }
 
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]

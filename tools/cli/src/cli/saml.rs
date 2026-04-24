@@ -203,7 +203,10 @@ impl SamlClientOpt {
             }
             SamlClientOpt::ClearGroupsDelim { name } => {
                 let client = opt.to_client(OpType::Write).await;
-                if let Err(e) = client.idm_saml_client_clear_groups_delim(name.as_str()).await {
+                if let Err(e) = client
+                    .idm_saml_client_clear_groups_delim(name.as_str())
+                    .await
+                {
                     handle_client_error(e, opt.output_mode);
                 }
             }

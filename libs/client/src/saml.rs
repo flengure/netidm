@@ -251,10 +251,7 @@ impl NetidmClient {
         .await
     }
 
-    pub async fn idm_saml_client_clear_groups_delim(
-        &self,
-        name: &str,
-    ) -> Result<(), ClientError> {
+    pub async fn idm_saml_client_clear_groups_delim(&self, name: &str) -> Result<(), ClientError> {
         self.perform_delete_request(format!("/v1/saml_client/{name}/_groups_delim").as_str())
             .await
     }

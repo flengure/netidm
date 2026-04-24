@@ -4,6 +4,9 @@
 //! `SamlSsoIssuer`, `SamlInsecureSkipSigValidation`, `SamlGroupsDelim`,
 //! `SamlAllowedGroups`, and `SamlFilterGroups`.
 
+#[cfg(test)]
+pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
+
 use crate::constants::{
     UUID_SCHEMA_ATTR_SAML_ALLOWED_GROUPS, UUID_SCHEMA_ATTR_SAML_FILTER_GROUPS,
     UUID_SCHEMA_ATTR_SAML_GROUPS_DELIM, UUID_SCHEMA_ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION,
