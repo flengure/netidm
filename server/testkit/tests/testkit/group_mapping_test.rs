@@ -290,6 +290,10 @@ async fn setup_saml_client(
         displayname_attr: None,
         groups_attr: None,
         jit_provisioning: false,
+        sso_issuer: None,
+        groups_delim: None,
+        insecure_skip_sig_validation: false,
+        filter_groups: false,
     };
     rsclient.idm_saml_client_create(cfg).await
 }
