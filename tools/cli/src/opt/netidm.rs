@@ -1483,6 +1483,178 @@ pub enum Oauth2Opt {
         #[clap(name = "matcher")]
         matcher: String,
     },
+
+    // ── Connector list / delete ───────────────────────────────────────────────
+
+    /// List all configured upstream identity provider connectors.
+    #[clap(name = "connector-list")]
+    ConnectorList,
+
+    /// Delete an upstream identity provider connector by name.
+    /// ⚠  This is irreversible. Any active sessions using this connector will
+    /// be invalidated at their next refresh.
+    #[clap(name = "connector-delete")]
+    ConnectorDelete {
+        /// Connector name to delete.
+        name: String,
+    },
+
+    // ── OpenShift connector (DL34) ────────────────────────────────────────────
+
+    /// Create an OpenShift OAuth2 upstream identity provider connector.
+    /// Endpoints are auto-derived from the issuer URL; use
+    /// `set-provider-kind` / `connector-id_patch` to add optional attrs
+    /// (groups, TLS settings) after creation.
+    #[clap(name = "create-openshift")]
+    CreateOpenShift {
+        /// Short name for the connector (used in /ui/sso/<name>).
+        name: String,
+        /// OpenShift OAuth2 issuer URL (e.g. https://api.mycluster.example.com:6443).
+        #[clap(long)]
+        issuer: String,
+        /// OAuth2 client ID registered in OpenShift.
+        #[clap(name = "client-id")]
+        client_id: String,
+        /// OAuth2 client secret registered in OpenShift.
+        #[clap(name = "client-secret")]
+        client_secret: String,
+    },
+
+    // ── GitLab connector (DL35) ───────────────────────────────────────────────
+
+    /// Create a GitLab OAuth2 upstream identity provider connector.
+    /// Defaults to gitlab.com. Use `patch /v1/oauth2/_client/<name>` or
+    /// the raw API to set `connector_gitlab_base_url` for self-hosted instances.
+    #[clap(name = "create-gitlab")]
+    CreateGitlab {
+        /// Short name for the connector.
+        name: String,
+        /// OAuth2 client ID (Application ID in GitLab).
+        #[clap(name = "client-id")]
+        client_id: String,
+        /// OAuth2 client secret.
+        #[clap(name = "client-secret")]
+        client_secret: String,
+    },
+
+    // ── Bitbucket Cloud connector (DL36) ─────────────────────────────────────
+
+    /// Create a Bitbucket Cloud OAuth2 upstream identity provider connector.
+    #[clap(name = "create-bitbucket")]
+    CreateBitbucket {
+        /// Short name for the connector.
+        name: String,
+        /// OAuth2 client key (consumer key in Bitbucket).
+        #[clap(name = "client-id")]
+        client_id: String,
+        /// OAuth2 client secret (consumer secret in Bitbucket).
+        #[clap(name = "client-secret")]
+        client_secret: String,
+    },
+
+    // ── Microsoft / Entra connector (DL31) ───────────────────────────────────
+
+    /// Create a Microsoft / Entra ID OAuth2 upstream identity provider connector.
+    #[clap(name = "create-microsoft")]
+    CreateMicrosoft {
+        /// Short name for the connector.
+        name: String,
+        /// Azure / Entra tenant ID or "common" for multi-tenant.
+        #[clap(long)]
+        tenant: String,
+        /// OAuth2 client (application) ID.
+        #[clap(name = "client-id")]
+        client_id: String,
+        /// OAuth2 client secret.
+        #[clap(name = "client-secret")]
+        client_secret: String,
+    },
+
+    // ── LinkedIn connector ────────────────────────────────────────────────────
+
+    /// Create a LinkedIn OAuth2 upstream identity provider connector.
+    #[clap(name = "create-linkedin")]
+    CreateLinkedIn {
+        /// Short name for the connector.
+        name: String,
+        /// LinkedIn application client ID.
+        #[clap(name = "client-id")]
+        client_id: String,
+        /// LinkedIn application client secret.
+        #[clap(name = "client-secret")]
+        client_secret: String,
+    },
+
+    // ── Auth proxy connector (DL38) ───────────────────────────────────────────
+
+    /// Create an authproxy connector that trusts a reverse-proxy authentication header.
+    ///
+    /// This is a direct-identity connector — there is no OAuth2 redirect flow.
+    /// The reverse proxy (nginx, Traefik, oauth2-proxy, Vouch, etc.) is responsible
+    /// for authenticating the user before forwarding the request to netidm.
+    #[clap(name = "create-authproxy")]
+    CreateAuthProxy {
+        /// Short name for the connector.
+        name: String,
+        /// Name of the HTTP request header carrying the authenticated username
+        /// (e.g. X-Remote-User, X-Auth-Request-User).
+        #[clap(long = "user-header")]
+        user_header: String,
+    },
+
+    // ── Gitea connector (DL38) ────────────────────────────────────────────────
+
+    /// Create a Gitea OAuth2 upstream identity provider connector.
+    #[clap(name = "create-gitea")]
+    CreateGitea {
+        /// Short name for the connector.
+        name: String,
+        /// Base URL of the Gitea instance (e.g. https://gitea.example.com).
+        #[clap(long = "base-url")]
+        base_url: String,
+        /// OAuth2 client ID registered in Gitea.
+        #[clap(name = "client-id")]
+        client_id: String,
+        /// OAuth2 client secret registered in Gitea.
+        #[clap(name = "client-secret")]
+        client_secret: String,
+    },
+
+    // ── OpenStack Keystone connector (DL39) ───────────────────────────────────
+
+    /// Create an OpenStack Keystone upstream identity provider connector.
+    ///
+    /// This is a password-based connector — users authenticate with their
+    /// Keystone username and password. No OAuth2 redirect flow.
+    #[clap(name = "create-keystone")]
+    CreateKeystone {
+        /// Short name for the connector.
+        name: String,
+        /// Keystone v3 endpoint URL (e.g. https://keystone.example.com:5000).
+        #[clap(long)]
+        host: String,
+    },
+
+    // ── Atlassian Crowd connector (DL40) ──────────────────────────────────────
+
+    /// Create an Atlassian Crowd upstream identity provider connector.
+    ///
+    /// This is a password-based connector — users authenticate with their
+    /// Crowd username and password via the Crowd REST API. No OAuth2 redirect flow.
+    #[clap(name = "create-crowd")]
+    CreateCrowd {
+        /// Short name for the connector.
+        name: String,
+        /// Crowd REST API base URL (e.g. https://crowd.example.com).
+        #[clap(long = "base-url")]
+        base_url: String,
+        /// Crowd application name (registered in Crowd as an "application").
+        #[clap(long = "client-name")]
+        client_name: String,
+        /// Crowd application password.
+        #[clap(long = "client-secret")]
+        client_secret: String,
+    },
 }
 
 #[derive(Args, Debug, Clone)]

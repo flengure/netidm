@@ -1084,6 +1084,187 @@ impl Oauth2Opt {
                     handle_client_error(e, opt.output_mode);
                 }
             }
+
+            // ── Connector list / delete ───────────────────────────────────────
+            Oauth2Opt::ConnectorList => {
+                let client = opt.to_client(OpType::Read).await;
+                match client.idm_connector_list().await {
+                    Ok(r) => match opt.output_mode {
+                        OutputMode::Json => {
+                            let r_attrs: Vec<_> = r.iter().map(|entry| &entry.attrs).collect();
+                            println!(
+                                "{}",
+                                serde_json::to_string(&r_attrs).expect("Failed to serialise json")
+                            );
+                        }
+                        OutputMode::Text => r.iter().for_each(|ent| println!("{ent}")),
+                    },
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::ConnectorDelete { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client.idm_connector_delete(name.as_str()).await {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+
+            // ── New connector create commands ────────────────────────────────
+            Oauth2Opt::CreateOpenShift {
+                name,
+                issuer,
+                client_id,
+                client_secret,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_connector_create_openshift(
+                        name.as_str(),
+                        issuer.as_str(),
+                        client_id.as_str(),
+                        client_secret.as_str(),
+                    )
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::CreateGitlab {
+                name,
+                client_id,
+                client_secret,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_connector_create_gitlab(
+                        name.as_str(),
+                        client_id.as_str(),
+                        client_secret.as_str(),
+                    )
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::CreateBitbucket {
+                name,
+                client_id,
+                client_secret,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_connector_create_bitbucket(
+                        name.as_str(),
+                        client_id.as_str(),
+                        client_secret.as_str(),
+                    )
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::CreateMicrosoft {
+                name,
+                tenant,
+                client_id,
+                client_secret,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_connector_create_microsoft(
+                        name.as_str(),
+                        tenant.as_str(),
+                        client_id.as_str(),
+                        client_secret.as_str(),
+                    )
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::CreateLinkedIn {
+                name,
+                client_id,
+                client_secret,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_connector_create_linkedin(
+                        name.as_str(),
+                        client_id.as_str(),
+                        client_secret.as_str(),
+                    )
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::CreateAuthProxy { name, user_header } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_connector_create_authproxy(name.as_str(), user_header.as_str())
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::CreateGitea {
+                name,
+                base_url,
+                client_id,
+                client_secret,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_connector_create_gitea(
+                        name.as_str(),
+                        base_url.as_str(),
+                        client_id.as_str(),
+                        client_secret.as_str(),
+                    )
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::CreateKeystone { name, host } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_connector_create_keystone(name.as_str(), host.as_str())
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            Oauth2Opt::CreateCrowd {
+                name,
+                base_url,
+                client_name,
+                client_secret,
+            } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_connector_create_crowd(
+                        name.as_str(),
+                        base_url.as_str(),
+                        client_name.as_str(),
+                        client_secret.as_str(),
+                    )
+                    .await
+                {
+                    Ok(_) => opt.output_mode.print_message("Success"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
         }
     }
 }

@@ -571,17 +571,38 @@ pub(crate) async fn oauth2_id_image_post(
 }
 
 #[utoipa::path(
-    post,
+    get,
     path = "/v1/oauth2/_client",
-    request_body=ProtoEntry,
     responses(
-        DefaultApiResponse,
+        (status = 200, content_type=APPLICATION_JSON, body=Vec<ProtoEntry>),
+        ApiResponseWithout200,
     ),
     security(("token_jwt" = [])),
     tag = "oauth2",
-    operation_id = "connector_post"
+    operation_id = "connector_list"
 )]
-/// Get the details of a given OAuth2 Client Provider.
+/// List all OAuth2 upstream Client Provider (Connector) entries.
+pub(crate) async fn connector_list(
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<Vec<ProtoEntry>>, WebError> {
+    let filter = filter_all!(f_eq(Attribute::Class, EntryClass::Connector.into()));
+    json_rest_event_get(state, None, filter, kopid, client_auth_info).await
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/oauth2/_client/{name}",
+    responses(
+        (status = 200, content_type=APPLICATION_JSON, body=ProtoEntry),
+        ApiResponseWithout200,
+    ),
+    security(("token_jwt" = [])),
+    tag = "oauth2",
+    operation_id = "connector_id_get"
+)]
+/// Get the details of a given OAuth2 Client Provider (Connector) entry by name.
 pub(crate) async fn connector_id_get(
     State(state): State<ServerState>,
     Path(name): Path<String>,
@@ -601,6 +622,17 @@ pub(crate) async fn connector_id_get(
         .map_err(WebError::from)
 }
 
+#[utoipa::path(
+    post,
+    path = "/v1/oauth2/_client",
+    request_body=ProtoEntry,
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "oauth2",
+    operation_id = "connector_post"
+)]
 /// Create a new OAuth2 Client Provider (Netidm acts as the OAuth2 client to an external provider).
 pub(crate) async fn connector_post(
     State(state): State<ServerState>,
@@ -650,6 +682,32 @@ pub(crate) async fn connector_id_patch(
     state
         .qe_w_ref
         .handle_internalpatch(client_auth_info, filter, obj, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+#[utoipa::path(
+    delete,
+    path = "/v1/oauth2/_client/{name}",
+    responses(
+        DefaultApiResponse,
+    ),
+    security(("token_jwt" = [])),
+    tag = "oauth2",
+    operation_id = "connector_id_delete"
+)]
+/// Delete an OAuth2 upstream Client Provider (Connector) entry by name.
+pub(crate) async fn connector_id_delete(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<()>, WebError> {
+    let filter = connector_filter(&name);
+    state
+        .qe_w_ref
+        .handle_internaldelete(client_auth_info, filter, kopid.eventid)
         .await
         .map(Json::from)
         .map_err(WebError::from)

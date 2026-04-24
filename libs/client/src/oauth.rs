@@ -1,10 +1,13 @@
 use crate::{ClientError, NetidmClient};
 use netidm_proto::attribute::Attribute;
 use netidm_proto::constants::{
-    ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS, ATTR_CONNECTOR_GITHUB_ALLOW_JIT_PROVISIONING,
-    ATTR_CONNECTOR_GITHUB_HOST, ATTR_CONNECTOR_GITHUB_LOAD_ALL_GROUPS,
-    ATTR_CONNECTOR_GITHUB_ORG_FILTER, ATTR_CONNECTOR_GITHUB_PREFERRED_EMAIL_DOMAIN,
-    ATTR_CONNECTOR_GITHUB_TEAM_NAME_FIELD, ATTR_CONNECTOR_ID, ATTR_CONNECTOR_LDAP_BIND_DN,
+    ATTR_CONNECTOR_AUTHPROXY_USER_HEADER, ATTR_CONNECTOR_CROWD_BASE_URL,
+    ATTR_CONNECTOR_CROWD_CLIENT_NAME, ATTR_CONNECTOR_CROWD_CLIENT_SECRET,
+    ATTR_CONNECTOR_GITEA_BASE_URL, ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS,
+    ATTR_CONNECTOR_GITHUB_ALLOW_JIT_PROVISIONING, ATTR_CONNECTOR_GITHUB_HOST,
+    ATTR_CONNECTOR_GITHUB_LOAD_ALL_GROUPS, ATTR_CONNECTOR_GITHUB_ORG_FILTER,
+    ATTR_CONNECTOR_GITHUB_PREFERRED_EMAIL_DOMAIN, ATTR_CONNECTOR_GITHUB_TEAM_NAME_FIELD,
+    ATTR_CONNECTOR_ID, ATTR_CONNECTOR_KEYSTONE_HOST, ATTR_CONNECTOR_LDAP_BIND_DN,
     ATTR_CONNECTOR_LDAP_BIND_PW, ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN,
     ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER, ATTR_CONNECTOR_LDAP_GROUP_SEARCH_NAME_ATTR,
     ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS, ATTR_CONNECTOR_LDAP_HOST,
@@ -12,7 +15,8 @@ use netidm_proto::constants::{
     ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN, ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_ATTR,
     ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_SUFFIX, ATTR_CONNECTOR_LDAP_USER_SEARCH_FILTER,
     ATTR_CONNECTOR_LDAP_USER_SEARCH_ID_ATTR, ATTR_CONNECTOR_LDAP_USER_SEARCH_NAME_ATTR,
-    ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME, ATTR_CONNECTOR_PROVIDER_KIND, ATTR_CONNECTOR_SECRET,
+    ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME, ATTR_CONNECTOR_MICROSOFT_TENANT,
+    ATTR_CONNECTOR_OPENSHIFT_ISSUER, ATTR_CONNECTOR_PROVIDER_KIND, ATTR_CONNECTOR_SECRET,
     ATTR_DISPLAYNAME, ATTR_KEY_ACTION_REVOKE, ATTR_KEY_ACTION_ROTATE, ATTR_NAME,
     ATTR_OAUTH2_ALLOW_INSECURE_CLIENT_DISABLE_PKCE, ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT,
     ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
@@ -1626,5 +1630,460 @@ impl NetidmClient {
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
+    }
+
+    // ── Connector list / delete ───────────────────────────────────────────────
+
+    pub async fn idm_connector_list(&self) -> Result<Vec<Entry>, ClientError> {
+        self.perform_get_request("/v1/oauth2/_client").await
+    }
+
+    pub async fn idm_connector_delete(&self, name: &str) -> Result<(), ClientError> {
+        self.perform_delete_request(&format!("/v1/oauth2/_client/{name}"))
+            .await
+    }
+
+    // ── OpenShift connector ───────────────────────────────────────────────────
+
+    pub async fn idm_connector_create_openshift(
+        &self,
+        name: &str,
+        issuer: &str,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<(), ClientError> {
+        let issuer = issuer.trim_end_matches('/');
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![client_id.to_string()]);
+        entry.attrs.insert(
+            ATTR_CONNECTOR_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec![format!("{issuer}/oauth/authorize")],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec![format!("{issuer}/oauth/token")],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec!["user:info".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_OPENSHIFT_ISSUER.to_string(),
+            vec![issuer.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
+            vec!["openshift".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    // ── GitLab connector ──────────────────────────────────────────────────────
+
+    pub async fn idm_connector_create_gitlab(
+        &self,
+        name: &str,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<(), ClientError> {
+        let base = "https://gitlab.com";
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![client_id.to_string()]);
+        entry.attrs.insert(
+            ATTR_CONNECTOR_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec![format!("{base}/oauth/authorize")],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec![format!("{base}/oauth/token")],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_USERINFO_ENDPOINT.to_string(),
+            vec![format!("{base}/oauth/userinfo")],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec![
+                "openid".to_string(),
+                "email".to_string(),
+                "profile".to_string(),
+            ],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
+            vec!["gitlab".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    // ── Bitbucket Cloud connector ─────────────────────────────────────────────
+
+    pub async fn idm_connector_create_bitbucket(
+        &self,
+        name: &str,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![client_id.to_string()]);
+        entry.attrs.insert(
+            ATTR_CONNECTOR_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec!["https://bitbucket.org/site/oauth2/authorize".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec!["https://bitbucket.org/site/oauth2/access_token".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec!["account".to_string(), "team".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
+            vec!["bitbucket".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    // ── Microsoft / Entra connector ───────────────────────────────────────────
+
+    pub async fn idm_connector_create_microsoft(
+        &self,
+        name: &str,
+        tenant: &str,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<(), ClientError> {
+        let base = format!("https://login.microsoftonline.com/{tenant}/oauth2/v2.0");
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![client_id.to_string()]);
+        entry.attrs.insert(
+            ATTR_CONNECTOR_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec![format!("{base}/authorize")],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec![format!("{base}/token")],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec![
+                "openid".to_string(),
+                "profile".to_string(),
+                "email".to_string(),
+                "offline_access".to_string(),
+            ],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_MICROSOFT_TENANT.to_string(),
+            vec![tenant.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
+            vec!["microsoft".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    // ── LinkedIn connector ────────────────────────────────────────────────────
+
+    pub async fn idm_connector_create_linkedin(
+        &self,
+        name: &str,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![client_id.to_string()]);
+        entry.attrs.insert(
+            ATTR_CONNECTOR_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec!["https://www.linkedin.com/oauth/v2/authorization".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec!["https://www.linkedin.com/oauth/v2/accessToken".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_USERINFO_ENDPOINT.to_string(),
+            vec!["https://api.linkedin.com/v2/userinfo".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec![
+                "openid".to_string(),
+                "profile".to_string(),
+                "email".to_string(),
+            ],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
+            vec!["linkedin".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    // ── Authproxy connector ───────────────────────────────────────────────────
+
+    /// Create an authproxy connector that trusts a header set by a reverse proxy.
+    ///
+    /// `user_header` is the HTTP request header name carrying the authenticated
+    /// username (e.g. `X-Remote-User`). There is no OAuth2 redirect flow.
+    pub async fn idm_connector_create_authproxy(
+        &self,
+        name: &str,
+        user_header: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        // connector_id and connector_secret are schema-required but unused by authproxy.
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![name.to_string()]);
+        entry.attrs.insert(
+            ATTR_CONNECTOR_SECRET.to_string(),
+            vec!["placeholder".to_string()],
+        );
+        // OAuth2 endpoints are schema-required but unused by authproxy (direct-identity connector).
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec!["http://localhost".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec!["http://localhost".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec!["openid".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_AUTHPROXY_USER_HEADER.to_string(),
+            vec![user_header.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
+            vec!["authproxy".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    // ── Gitea connector ───────────────────────────────────────────────────────
+
+    pub async fn idm_connector_create_gitea(
+        &self,
+        name: &str,
+        base_url: &str,
+        client_id: &str,
+        client_secret: &str,
+    ) -> Result<(), ClientError> {
+        let base = base_url.trim_end_matches('/');
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![client_id.to_string()]);
+        entry.attrs.insert(
+            ATTR_CONNECTOR_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec![format!("{base}/login/oauth/authorize")],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec![format!("{base}/login/oauth/access_token")],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_USERINFO_ENDPOINT.to_string(),
+            vec![format!("{base}/api/v1/user")],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec!["read:user".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_GITEA_BASE_URL.to_string(),
+            vec![base.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
+            vec!["gitea".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    // ── OpenStack Keystone connector ──────────────────────────────────────────
+
+    /// Create a Keystone connector (password-based; no OAuth2 redirect).
+    pub async fn idm_connector_create_keystone(
+        &self,
+        name: &str,
+        host: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        // connector_id and connector_secret are schema-required but unused by Keystone.
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![name.to_string()]);
+        entry.attrs.insert(
+            ATTR_CONNECTOR_SECRET.to_string(),
+            vec!["placeholder".to_string()],
+        );
+        // OAuth2 endpoints are schema-required but unused by Keystone (password connector).
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec!["http://localhost".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec!["http://localhost".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec!["openid".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_KEYSTONE_HOST.to_string(),
+            vec![host.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
+            vec!["keystone".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
+    }
+
+    // ── Atlassian Crowd connector ─────────────────────────────────────────────
+
+    /// Create an Atlassian Crowd connector (password-based; no OAuth2 redirect).
+    pub async fn idm_connector_create_crowd(
+        &self,
+        name: &str,
+        base_url: &str,
+        client_name: &str,
+        client_secret: &str,
+    ) -> Result<(), ClientError> {
+        let mut entry = Entry::default();
+        entry
+            .attrs
+            .insert(ATTR_NAME.to_string(), vec![name.to_string()]);
+        entry
+            .attrs
+            .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
+        // connector_id and connector_secret are schema-required; use Crowd credentials.
+        entry
+            .attrs
+            .insert(ATTR_CONNECTOR_ID.to_string(), vec![client_name.to_string()]);
+        entry.attrs.insert(
+            ATTR_CONNECTOR_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
+        // OAuth2 endpoints are schema-required but unused by Crowd (password connector).
+        entry.attrs.insert(
+            ATTR_OAUTH2_AUTHORISATION_ENDPOINT.to_string(),
+            vec!["http://localhost".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_TOKEN_ENDPOINT.to_string(),
+            vec!["http://localhost".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_OAUTH2_REQUEST_SCOPES.to_string(),
+            vec!["openid".to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_CROWD_BASE_URL.to_string(),
+            vec![base_url.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_CROWD_CLIENT_NAME.to_string(),
+            vec![client_name.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_CROWD_CLIENT_SECRET.to_string(),
+            vec![client_secret.to_string()],
+        );
+        entry.attrs.insert(
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
+            vec!["crowd".to_string()],
+        );
+        self.perform_post_request("/v1/oauth2/_client", entry).await
     }
 }

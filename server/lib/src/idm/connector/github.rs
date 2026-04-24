@@ -225,14 +225,18 @@ impl ConnectorData {
 // HTTP API response types (private — mirrors dex's unexported structs)
 // ---------------------------------------------------------------------------
 
+fn null_to_empty_string<'de, D: serde::Deserializer<'de>>(d: D) -> Result<String, D::Error> {
+    Ok(Option::<String>::deserialize(d)?.unwrap_or_default())
+}
+
 /// `GET /user` response. Dex: `user` struct.
 #[derive(Deserialize, Debug, Clone)]
 struct User {
     id: i64,
     login: String,
     name: Option<String>,
-    /// Public profile email — may be empty; `user_email()` fills this in.
-    #[serde(default)]
+    /// Public profile email — may be null (no public email set); `user_email()` fills this in.
+    #[serde(default, deserialize_with = "null_to_empty_string")]
     email: String,
 }
 
