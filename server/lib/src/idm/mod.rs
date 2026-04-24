@@ -10,6 +10,7 @@ pub(crate) mod applinks;
 pub mod audit;
 pub mod authentication;
 pub mod authsession;
+pub mod bitbucket_connector;
 pub mod credupdatesession;
 pub mod delayed;
 pub mod event;

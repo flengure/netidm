@@ -93,11 +93,15 @@ pub const DOMAIN_LEVEL_34: DomainVersion = 34;
 /// `oauth2_client_gitlab_use_login_as_id`, `oauth2_client_gitlab_get_groups_permission`,
 /// `oauth2_client_gitlab_root_ca`.
 pub const DOMAIN_LEVEL_35: DomainVersion = 35;
+/// DL36: Bitbucket Cloud connector dex-parity additions (PR-CONNECTOR-BITBUCKET).
+/// Adds `oauth2_client_bitbucket_teams`, `oauth2_client_bitbucket_get_workspace_permissions`,
+/// `oauth2_client_bitbucket_include_team_groups`.
+pub const DOMAIN_LEVEL_36: DomainVersion = 36;
 
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_35;
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_36;
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_35;
-pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_35;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_36;
+pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_36;
 pub const DOMAIN_PREVIOUS_TGT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL - 1;
 pub const DOMAIN_TGT_NEXT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL + 1;
 pub const DOMAIN_MIGRATION_FROM_INVALID: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;

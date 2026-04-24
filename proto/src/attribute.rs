@@ -414,6 +414,12 @@ pub enum Attribute {
     OAuth2ClientGitlabGetGroupsPermission,
     #[strum(serialize = "oauth2_client_gitlab_root_ca")]
     OAuth2ClientGitlabRootCa,
+    #[strum(serialize = "oauth2_client_bitbucket_teams")]
+    OAuth2ClientBitbucketTeams,
+    #[strum(serialize = "oauth2_client_bitbucket_get_workspace_permissions")]
+    OAuth2ClientBitbucketGetWorkspacePermissions,
+    #[strum(serialize = "oauth2_client_bitbucket_include_team_groups")]
+    OAuth2ClientBitbucketIncludeTeamGroups,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]
@@ -1006,6 +1012,13 @@ impl Attribute {
                 Attribute::OAuth2ClientGitlabGetGroupsPermission
             }
             ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA => Attribute::OAuth2ClientGitlabRootCa,
+            ATTR_OAUTH2_CLIENT_BITBUCKET_TEAMS => Attribute::OAuth2ClientBitbucketTeams,
+            ATTR_OAUTH2_CLIENT_BITBUCKET_GET_WORKSPACE_PERMISSIONS => {
+                Attribute::OAuth2ClientBitbucketGetWorkspacePermissions
+            }
+            ATTR_OAUTH2_CLIENT_BITBUCKET_INCLUDE_TEAM_GROUPS => {
+                Attribute::OAuth2ClientBitbucketIncludeTeamGroups
+            }
             ATTR_SAML_SSO_ISSUER => Attribute::SamlSsoIssuer,
             ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION => Attribute::SamlInsecureSkipSigValidation,
             ATTR_SAML_GROUPS_DELIM => Attribute::SamlGroupsDelim,

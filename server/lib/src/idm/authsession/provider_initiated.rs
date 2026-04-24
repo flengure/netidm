@@ -92,6 +92,7 @@ impl ProviderInitiatedSession {
                 | ProviderKind::LinkedIn
                 | ProviderKind::OpenShift
                 | ProviderKind::GitLab
+                | ProviderKind::Bitbucket
         ) {
             None
         } else {

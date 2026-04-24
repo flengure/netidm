@@ -170,6 +170,7 @@ impl CredHandlerOAuth2Client {
                 | ProviderKind::LinkedIn
                 | ProviderKind::OpenShift
                 | ProviderKind::GitLab
+                | ProviderKind::Bitbucket
         ) {
             let csrf_valid = state.map(|s| s == self.csrf_state).unwrap_or_default();
             if !csrf_valid {

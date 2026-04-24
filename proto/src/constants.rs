@@ -334,6 +334,12 @@ pub const ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID: &str = "oauth2_client_gitla
 pub const ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION: &str =
     "oauth2_client_gitlab_get_groups_permission";
 pub const ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA: &str = "oauth2_client_gitlab_root_ca";
+// DL36 — Bitbucket Cloud connector dex-parity additions (PR-CONNECTOR-BITBUCKET)
+pub const ATTR_OAUTH2_CLIENT_BITBUCKET_TEAMS: &str = "oauth2_client_bitbucket_teams";
+pub const ATTR_OAUTH2_CLIENT_BITBUCKET_GET_WORKSPACE_PERMISSIONS: &str =
+    "oauth2_client_bitbucket_get_workspace_permissions";
+pub const ATTR_OAUTH2_CLIENT_BITBUCKET_INCLUDE_TEAM_GROUPS: &str =
+    "oauth2_client_bitbucket_include_team_groups";
 // DL33 — SAML connector dex-parity additions (PR-CONNECTOR-SAML)
 pub const ATTR_SAML_SSO_ISSUER: &str = "saml_sso_issuer";
 pub const ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION: &str = "saml_insecure_skip_sig_validation";
