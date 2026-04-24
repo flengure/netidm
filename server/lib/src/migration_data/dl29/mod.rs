@@ -1,11 +1,11 @@
 //! DL29 migration phases.
 //!
 //! DL29 introduces the generic-OIDC upstream connector (PR-CONNECTOR-GENERIC-OIDC):
-//!   * Ten OIDC-specific config attributes on `EntryClass::OAuth2Client`
+//!   * Ten OIDC-specific config attributes on `EntryClass::Connector`
 //!     (enable_groups, groups_key, skip_email_verified, allowed_groups,
 //!     get_user_info, user_id_key, user_name_key, override_claim_mapping,
 //!     groups_prefix, groups_suffix).
-//!   * An extended `idm_acp_oauth2_client_admin` covering the new attrs.
+//!   * An extended `idm_acp_connector_admin` covering the new attrs.
 //!
 //! No new entry class. No new ACP class. All new attributes are optional.
 //! Every other phase delegates to DL28.
@@ -23,52 +23,52 @@ use crate::prelude::*;
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl28::phase_1_schema_attrs();
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OIDC_ENABLE_GROUPS_DL29
+        SCHEMA_ATTR_CONNECTOR_OIDC_ENABLE_GROUPS_DL29
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OIDC_GROUPS_KEY_DL29
+        SCHEMA_ATTR_CONNECTOR_OIDC_GROUPS_KEY_DL29
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OIDC_SKIP_EMAIL_VERIFIED_DL29
+        SCHEMA_ATTR_CONNECTOR_OIDC_SKIP_EMAIL_VERIFIED_DL29
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OIDC_ALLOWED_GROUPS_DL29
+        SCHEMA_ATTR_CONNECTOR_OIDC_ALLOWED_GROUPS_DL29
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OIDC_GET_USER_INFO_DL29
+        SCHEMA_ATTR_CONNECTOR_OIDC_GET_USER_INFO_DL29
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OIDC_USER_ID_KEY_DL29
+        SCHEMA_ATTR_CONNECTOR_OIDC_USER_ID_KEY_DL29
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OIDC_USER_NAME_KEY_DL29
+        SCHEMA_ATTR_CONNECTOR_OIDC_USER_NAME_KEY_DL29
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OIDC_OVERRIDE_CLAIM_MAPPING_DL29
+        SCHEMA_ATTR_CONNECTOR_OIDC_OVERRIDE_CLAIM_MAPPING_DL29
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OIDC_GROUPS_PREFIX_DL29
+        SCHEMA_ATTR_CONNECTOR_OIDC_GROUPS_PREFIX_DL29
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OIDC_GROUPS_SUFFIX_DL29
+        SCHEMA_ATTR_CONNECTOR_OIDC_GROUPS_SUFFIX_DL29
             .clone()
             .into(),
     );

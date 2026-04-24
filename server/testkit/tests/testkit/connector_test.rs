@@ -2,7 +2,7 @@
 //! Integration tests for the OIDC upstream provider creation via discovery URL (US1).
 //!
 //! These tests spin up a tiny in-process axum HTTP server to serve mock discovery documents,
-//! then exercise `idm_oauth2_client_create_oidc` against a real netidmd instance.
+//! then exercise `idm_connector_create_oidc` against a real netidmd instance.
 
 use axum::{http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 
@@ -57,7 +57,7 @@ fn serve_404(listener: tokio::net::TcpListener) -> tokio::task::JoinHandle<()> {
 
 /// (a) Valid discovery document → provider entry is created with the correct fields.
 #[test]
-async fn tk_test_idm_oauth2_client_create_oidc_success(rsclient: &netidm_client::NetidmClient) {
+async fn tk_test_idm_connector_create_oidc_success(rsclient: &netidm_client::NetidmClient) {
     rsclient
         .auth_simple_password(ADMIN_TEST_USER, ADMIN_TEST_PASSWORD)
         .await
@@ -74,12 +74,12 @@ async fn tk_test_idm_oauth2_client_create_oidc_success(rsclient: &netidm_client:
     let _srv = serve_discovery(listener, doc);
 
     rsclient
-        .idm_oauth2_client_create_oidc("test-oidc-ok", &base, "test-client-id", "test-secret")
+        .idm_connector_create_oidc("test-oidc-ok", &base, "test-client-id", "test-secret")
         .await
         .expect("Failed to create OIDC provider");
 
     let entry = rsclient
-        .idm_oauth2_client_get("test-oidc-ok")
+        .idm_connector_get("test-oidc-ok")
         .await
         .expect("Failed to get provider entry")
         .expect("Provider entry not found");
@@ -104,7 +104,7 @@ async fn tk_test_idm_oauth2_client_create_oidc_success(rsclient: &netidm_client:
 
 /// (b) Discovery URL returns 404 → error returned, no entry created.
 #[test]
-async fn tk_test_idm_oauth2_client_create_oidc_discovery_404(
+async fn tk_test_idm_connector_create_oidc_discovery_404(
     rsclient: &netidm_client::NetidmClient,
 ) {
     rsclient
@@ -116,7 +116,7 @@ async fn tk_test_idm_oauth2_client_create_oidc_discovery_404(
     let _srv = serve_404(listener);
 
     let result = rsclient
-        .idm_oauth2_client_create_oidc("test-oidc-404", &base, "client-id", "client-secret")
+        .idm_connector_create_oidc("test-oidc-404", &base, "client-id", "client-secret")
         .await;
 
     assert!(
@@ -127,7 +127,7 @@ async fn tk_test_idm_oauth2_client_create_oidc_discovery_404(
 
 /// (c) Discovery doc missing `authorization_endpoint` → error returned.
 #[test]
-async fn tk_test_idm_oauth2_client_create_oidc_missing_auth_endpoint(
+async fn tk_test_idm_connector_create_oidc_missing_auth_endpoint(
     rsclient: &netidm_client::NetidmClient,
 ) {
     rsclient
@@ -144,7 +144,7 @@ async fn tk_test_idm_oauth2_client_create_oidc_missing_auth_endpoint(
     let _srv = serve_discovery(listener, doc);
 
     let result = rsclient
-        .idm_oauth2_client_create_oidc("test-oidc-no-ep", &base, "client-id", "client-secret")
+        .idm_connector_create_oidc("test-oidc-no-ep", &base, "client-id", "client-secret")
         .await;
 
     assert!(
@@ -155,7 +155,7 @@ async fn tk_test_idm_oauth2_client_create_oidc_missing_auth_endpoint(
 
 /// (d) Discovery doc `issuer` field does not match requested issuer → error returned.
 #[test]
-async fn tk_test_idm_oauth2_client_create_oidc_issuer_mismatch(
+async fn tk_test_idm_connector_create_oidc_issuer_mismatch(
     rsclient: &netidm_client::NetidmClient,
 ) {
     rsclient
@@ -173,7 +173,7 @@ async fn tk_test_idm_oauth2_client_create_oidc_issuer_mismatch(
     let _srv = serve_discovery(listener, doc);
 
     let result = rsclient
-        .idm_oauth2_client_create_oidc("test-oidc-mismatch", &base, "client-id", "client-secret")
+        .idm_connector_create_oidc("test-oidc-mismatch", &base, "client-id", "client-secret")
         .await;
 
     assert!(

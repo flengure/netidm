@@ -1,3 +1,15 @@
+pub mod bitbucket;
+pub mod generic_oidc;
+pub mod github;
+pub mod gitlab;
+pub mod google;
+pub mod ldap;
+pub mod linkedin;
+pub mod microsoft;
+pub mod openshift;
+pub mod saml;
+pub mod traits;
+
 use crate::idm::server::IdmServerProxyWriteTransaction;
 use crate::prelude::*;
 use std::collections::{BTreeMap, BTreeSet};
@@ -55,13 +67,13 @@ impl LinkBy {
 }
 
 /// Discriminator selecting the concrete upstream connector implementation that
-/// handles an `OAuth2Client` entry (DL28+).
+/// handles an `Connector` entry (DL28+).
 ///
-/// Backed by the `oauth2_client_provider_kind` attribute. Absence — and the
+/// Backed by the `connector_provider_kind` attribute. Absence — and the
 /// case-insensitive `"generic-oidc"` — both map to [`ProviderKind::GenericOidc`],
 /// which is the pre-DL28 behaviour (byte-identical per FR-016). Connector-
 /// specific branches (currently only [`ProviderKind::Github`]) route the auth
-/// flow to a non-OIDC callback handler in `idm::github_connector` — the
+/// flow to a non-OIDC callback handler in `idm::connector::github` — the
 /// generic OIDC code-exchange / userinfo / JWKS path is bypassed entirely.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum ProviderKind {
@@ -87,7 +99,7 @@ pub enum ProviderKind {
 }
 
 impl ProviderKind {
-    /// Canonical string form for storage in the `oauth2_client_provider_kind`
+    /// Canonical string form for storage in the `connector_provider_kind`
     /// attribute. Echoed back by the admin CLI.
     #[allow(dead_code)]
     pub fn as_str(self) -> &'static str {
@@ -124,7 +136,7 @@ impl ProviderKind {
 }
 
 #[derive(Clone)]
-pub struct OAuth2ClientProvider {
+pub struct ConnectorProvider {
     pub(crate) name: String,
     /// Human-readable button label. Falls back to `name` when no DisplayName is set.
     pub(crate) display_name: String,
@@ -164,9 +176,9 @@ pub struct OAuth2ClientProvider {
     pub(crate) provider_kind: ProviderKind,
 }
 
-impl fmt::Debug for OAuth2ClientProvider {
+impl fmt::Debug for ConnectorProvider {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("OAuth2ClientProvider")
+        f.debug_struct("ConnectorProvider")
             .field("provider_id", &self.name)
             .field("display_name", &self.display_name)
             .field("provider_name", &self.uuid)
@@ -175,7 +187,7 @@ impl fmt::Debug for OAuth2ClientProvider {
     }
 }
 
-impl OAuth2ClientProvider {
+impl ConnectorProvider {
     #[cfg(test)]
     pub fn new_test<'a, I: IntoIterator<Item = &'a str>>(
         client_id: &str,
@@ -225,15 +237,15 @@ impl OAuth2ClientProvider {
 
 impl IdmServerProxyWriteTransaction<'_> {
     #[instrument(level = "debug", skip_all)]
-    pub(crate) fn reload_oauth2_client_providers(&mut self) -> Result<(), OperationError> {
-        let oauth2_client_provider_entries = self.qs_write.internal_search(filter!(f_eq(
+    pub(crate) fn reload_connector_providers(&mut self) -> Result<(), OperationError> {
+        let connector_provider_entries = self.qs_write.internal_search(filter!(f_eq(
             Attribute::Class,
-            EntryClass::OAuth2Client.into(),
+            EntryClass::Connector.into(),
         )))?;
 
         // Preprocess
-        let mut oauth2_client_provider_structs =
-            Vec::with_capacity(oauth2_client_provider_entries.len());
+        let mut connector_provider_structs =
+            Vec::with_capacity(connector_provider_entries.len());
 
         let mut client_redirect_uri = self.origin.clone();
         client_redirect_uri.set_path(OAUTH2_CLIENT_AUTHORISATION_RESPONSE_PATH);
@@ -245,7 +257,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             .and_then(|e| e.get_ava_single_bool(Attribute::OAuth2DomainEmailLinkAccounts))
             .unwrap_or(false);
 
-        for provider_entry in &oauth2_client_provider_entries {
+        for provider_entry in &connector_provider_entries {
             let uuid = provider_entry.get_uuid();
             trace!(?uuid, "Checking OAuth2 Provider configuration");
 
@@ -260,12 +272,12 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .unwrap_or_else(|| name.clone());
 
             let client_id = provider_entry
-                .get_ava_single_utf8(Attribute::OAuth2ClientId)
+                .get_ava_single_utf8(Attribute::ConnectorId)
                 .map(str::to_string)
                 .ok_or(OperationError::InvalidValueState)?;
 
             let client_basic_secret = provider_entry
-                .get_ava_single_utf8(Attribute::OAuth2ClientSecret)
+                .get_ava_single_utf8(Attribute::ConnectorSecret)
                 .map(str::to_string)
                 .ok_or(OperationError::InvalidValueState)?;
 
@@ -313,7 +325,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .unwrap_or_default();
 
             let logo_uri = provider_entry
-                .get_ava_single_url(Attribute::OAuth2ClientLogoUri)
+                .get_ava_single_url(Attribute::ConnectorLogoUri)
                 .cloned();
 
             let issuer = provider_entry
@@ -362,14 +374,14 @@ impl IdmServerProxyWriteTransaction<'_> {
             }
 
             let provider_kind = provider_entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| {
                     let kind = ProviderKind::from_str_or_default(s);
                     if !matches!(s, "generic-oidc" | "github" | "google" | "microsoft") {
                         warn!(
                             ?uuid,
                             value = %s,
-                            "OAuth2 provider has an unrecognised oauth2_client_provider_kind \
+                            "OAuth2 provider has an unrecognised connector_provider_kind \
                              value; falling back to ProviderKind::GenericOidc"
                         );
                     }
@@ -377,7 +389,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 })
                 .unwrap_or_default();
 
-            let provider = OAuth2ClientProvider {
+            let provider = ConnectorProvider {
                 name,
                 display_name,
                 uuid,
@@ -399,37 +411,37 @@ impl IdmServerProxyWriteTransaction<'_> {
                 provider_kind,
             };
 
-            oauth2_client_provider_structs.push((uuid, provider));
+            connector_provider_structs.push((uuid, provider));
         }
 
         // Clear the existing set.
-        self.oauth2_client_providers.clear();
+        self.connector_providers.clear();
 
         // Add them all
-        self.oauth2_client_providers
-            .extend(oauth2_client_provider_structs);
+        self.connector_providers
+            .extend(connector_provider_structs);
 
         // T017: register GitHub connectors with the ConnectorRegistry.
         // Iterate all GitHub-kind entries a second time (list is already
         // resolved above; connector build may be slightly expensive so we
         // keep it separate from the main loop). Failures are logged at error
         // but MUST NOT prevent netidmd from starting.
-        for provider_entry in &oauth2_client_provider_entries {
+        for provider_entry in &connector_provider_entries {
             let entry_uuid = provider_entry.get_uuid();
             let is_github = provider_entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| s == "github")
                 .unwrap_or(false);
             if !is_github {
                 continue;
             }
-            match crate::idm::github_connector::GitHubConfig::from_entry(
+            match crate::idm::connector::github::Config::from_entry(
                 provider_entry,
                 client_redirect_uri.clone(),
             ) {
                 Ok(config) => {
                     let connector = std::sync::Arc::new(
-                        crate::idm::github_connector::GitHubConnector::new(config),
+                        crate::idm::connector::github::Conn::new(config),
                     );
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered GitHub connector");
@@ -445,22 +457,22 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
 
         // Register Google connectors with the ConnectorRegistry.
-        for provider_entry in &oauth2_client_provider_entries {
+        for provider_entry in &connector_provider_entries {
             let entry_uuid = provider_entry.get_uuid();
             let is_google = provider_entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| s == "google")
                 .unwrap_or(false);
             if !is_google {
                 continue;
             }
-            match crate::idm::google_connector::GoogleConfig::from_entry(
+            match crate::idm::connector::google::GoogleConfig::from_entry(
                 provider_entry,
                 client_redirect_uri.clone(),
             ) {
                 Ok(config) => {
                     let connector = std::sync::Arc::new(
-                        crate::idm::google_connector::GoogleConnector::new(config),
+                        crate::idm::connector::google::GoogleConnector::new(config),
                     );
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered Google connector");
@@ -476,22 +488,22 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
 
         // Register Microsoft connectors with the ConnectorRegistry.
-        for provider_entry in &oauth2_client_provider_entries {
+        for provider_entry in &connector_provider_entries {
             let entry_uuid = provider_entry.get_uuid();
             let is_microsoft = provider_entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| s == "microsoft")
                 .unwrap_or(false);
             if !is_microsoft {
                 continue;
             }
-            match crate::idm::microsoft_connector::MicrosoftConfig::from_entry(
+            match crate::idm::connector::microsoft::MicrosoftConfig::from_entry(
                 provider_entry,
                 client_redirect_uri.clone(),
             ) {
                 Ok(config) => {
                     let connector = std::sync::Arc::new(
-                        crate::idm::microsoft_connector::MicrosoftConnector::new(config),
+                        crate::idm::connector::microsoft::MicrosoftConnector::new(config),
                     );
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered Microsoft connector");
@@ -507,19 +519,19 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
 
         // Register LDAP connectors with the ConnectorRegistry.
-        for provider_entry in &oauth2_client_provider_entries {
+        for provider_entry in &connector_provider_entries {
             let entry_uuid = provider_entry.get_uuid();
             let is_ldap = provider_entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| s == "ldap")
                 .unwrap_or(false);
             if !is_ldap {
                 continue;
             }
-            match crate::idm::ldap_connector::LdapConfig::from_entry(provider_entry) {
+            match crate::idm::connector::ldap::LdapConfig::from_entry(provider_entry) {
                 Ok(config) => {
                     let connector =
-                        std::sync::Arc::new(crate::idm::ldap_connector::LdapConnector::new(config));
+                        std::sync::Arc::new(crate::idm::connector::ldap::LdapConnector::new(config));
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered LDAP connector");
                 }
@@ -534,22 +546,22 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
 
         // Register LinkedIn connectors with the ConnectorRegistry.
-        for provider_entry in &oauth2_client_provider_entries {
+        for provider_entry in &connector_provider_entries {
             let entry_uuid = provider_entry.get_uuid();
             let is_linkedin = provider_entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| s == "linkedin")
                 .unwrap_or(false);
             if !is_linkedin {
                 continue;
             }
-            match crate::idm::linkedin_connector::LinkedInConfig::from_entry(
+            match crate::idm::connector::linkedin::LinkedInConfig::from_entry(
                 provider_entry,
                 client_redirect_uri.clone(),
             ) {
                 Ok(config) => {
                     let connector = std::sync::Arc::new(
-                        crate::idm::linkedin_connector::LinkedInConnector::new(config),
+                        crate::idm::connector::linkedin::LinkedInConnector::new(config),
                     );
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered LinkedIn connector");
@@ -565,22 +577,22 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
 
         // Register OpenShift connectors with the ConnectorRegistry.
-        for provider_entry in &oauth2_client_provider_entries {
+        for provider_entry in &connector_provider_entries {
             let entry_uuid = provider_entry.get_uuid();
             let is_openshift = provider_entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| s == "openshift")
                 .unwrap_or(false);
             if !is_openshift {
                 continue;
             }
-            match crate::idm::openshift_connector::OpenShiftConfig::from_entry(
+            match crate::idm::connector::openshift::OpenShiftConfig::from_entry(
                 provider_entry,
                 client_redirect_uri.clone(),
             ) {
                 Ok(config) => {
                     let connector = std::sync::Arc::new(
-                        crate::idm::openshift_connector::OpenShiftConnector::new(config),
+                        crate::idm::connector::openshift::OpenShiftConnector::new(config),
                     );
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered OpenShift connector");
@@ -596,22 +608,22 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
 
         // Register GitLab connectors with the ConnectorRegistry.
-        for provider_entry in &oauth2_client_provider_entries {
+        for provider_entry in &connector_provider_entries {
             let entry_uuid = provider_entry.get_uuid();
             let is_gitlab = provider_entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| s == "gitlab")
                 .unwrap_or(false);
             if !is_gitlab {
                 continue;
             }
-            match crate::idm::gitlab_connector::GitLabConfig::from_entry(
+            match crate::idm::connector::gitlab::GitLabConfig::from_entry(
                 provider_entry,
                 client_redirect_uri.clone(),
             ) {
                 Ok(config) => {
                     let connector = std::sync::Arc::new(
-                        crate::idm::gitlab_connector::GitLabConnector::new(config),
+                        crate::idm::connector::gitlab::GitLabConnector::new(config),
                     );
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered GitLab connector");
@@ -627,22 +639,22 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
 
         // Register Bitbucket Cloud connectors with the ConnectorRegistry.
-        for provider_entry in &oauth2_client_provider_entries {
+        for provider_entry in &connector_provider_entries {
             let entry_uuid = provider_entry.get_uuid();
             let is_bitbucket = provider_entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| s == "bitbucket")
                 .unwrap_or(false);
             if !is_bitbucket {
                 continue;
             }
-            match crate::idm::bitbucket_connector::BitbucketConfig::from_entry(
+            match crate::idm::connector::bitbucket::BitbucketConfig::from_entry(
                 provider_entry,
                 client_redirect_uri.clone(),
             ) {
                 Ok(config) => {
                     let connector = std::sync::Arc::new(
-                        crate::idm::bitbucket_connector::BitbucketConnector::new(config),
+                        crate::idm::connector::bitbucket::BitbucketConnector::new(config),
                     );
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered Bitbucket connector");
@@ -658,22 +670,22 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
 
         // Register generic-OIDC connectors with the ConnectorRegistry.
-        for provider_entry in &oauth2_client_provider_entries {
+        for provider_entry in &connector_provider_entries {
             let entry_uuid = provider_entry.get_uuid();
             let is_oidc = provider_entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| s == "generic-oidc")
                 .unwrap_or(true); // absence defaults to generic-oidc
             if !is_oidc {
                 continue;
             }
-            match crate::idm::generic_oidc_connector::GenericOidcConfig::from_entry(
+            match crate::idm::connector::generic_oidc::GenericOidcConfig::from_entry(
                 provider_entry,
                 client_redirect_uri.clone(),
             ) {
                 Ok(config) => {
                     let connector = std::sync::Arc::new(
-                        crate::idm::generic_oidc_connector::GenericOidcConnector::new(config),
+                        crate::idm::connector::generic_oidc::GenericOidcConnector::new(config),
                     );
                     self.connector_registry.register(entry_uuid, connector);
                     trace!(?entry_uuid, "registered generic-OIDC connector");

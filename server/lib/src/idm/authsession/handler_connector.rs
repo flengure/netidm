@@ -2,7 +2,7 @@ use super::{CredState, BAD_AUTH_TYPE_MSG, BAD_OAUTH2_CSRF_STATE_MSG};
 use crate::idm::account::OAuth2AccountCredential;
 use crate::idm::authentication::{AuthCredential, AuthExternal};
 use crate::idm::oauth2::PkceS256Secret;
-use crate::idm::oauth2_client::{OAuth2ClientProvider, ProviderKind};
+use crate::idm::connector::{ConnectorProvider, ProviderKind};
 use crate::prelude::*;
 use crate::utils;
 use crate::value::{AuthType, SessionExtMetadata};
@@ -35,7 +35,7 @@ pub struct ExternalUserClaims {
     pub groups: Vec<String>,
 }
 
-pub struct CredHandlerOAuth2Client {
+pub struct CredHandlerConnector {
     // For logging - this is the trust provider we are using.
     provider_id: Uuid,
     provider_name: String,
@@ -72,7 +72,7 @@ pub struct CredHandlerOAuth2Client {
     provider_kind: ProviderKind,
 }
 
-impl fmt::Debug for CredHandlerOAuth2Client {
+impl fmt::Debug for CredHandlerConnector {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("CredHandlerOauth2Trust")
             .field("provider_id", &self.provider_id)
@@ -86,15 +86,15 @@ impl fmt::Debug for CredHandlerOAuth2Client {
     }
 }
 
-impl CredHandlerOAuth2Client {
+impl CredHandlerConnector {
     pub fn new(
-        client_provider: &OAuth2ClientProvider,
+        client_provider: &ConnectorProvider,
         client_user_cred: &OAuth2AccountCredential,
     ) -> Self {
         let pkce_secret = PkceS256Secret::default();
         let csrf_state = utils::password_from_random();
 
-        CredHandlerOAuth2Client {
+        CredHandlerConnector {
             provider_id: client_provider.uuid,
             provider_name: client_provider.name.clone(),
             request_scopes: client_provider.request_scopes.clone(),

@@ -1,7 +1,7 @@
 //! Schema entries for DL25: upstream-to-netidm group mapping plumbing.
 //!
 //! Adds three multi-value `Utf8String` attributes:
-//!   * `OAuth2GroupMapping` on `EntryClass::OAuth2Client` — per-connector list of
+//!   * `OAuth2GroupMapping` on `EntryClass::Connector` — per-connector list of
 //!     `<upstream-name>:<netidm-group-uuid>` values. Split on the *last* `:` when
 //!     parsing so upstream names may contain colons.
 //!   * `SamlGroupMapping` on `EntryClass::SamlClient` — same format, same semantics.
@@ -20,7 +20,7 @@ pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
 
 use crate::constants::{
     UUID_SCHEMA_ATTR_OAUTH2_GROUP_MAPPING, UUID_SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP,
-    UUID_SCHEMA_ATTR_SAML_GROUP_MAPPING, UUID_SCHEMA_CLASS_OAUTH2_CLIENT, UUID_SCHEMA_CLASS_PERSON,
+    UUID_SCHEMA_ATTR_SAML_GROUP_MAPPING, UUID_SCHEMA_CLASS_CONNECTOR, UUID_SCHEMA_CLASS_PERSON,
     UUID_SCHEMA_CLASS_SAML_CLIENT,
 };
 use crate::prelude::*;
@@ -76,15 +76,15 @@ pub static SCHEMA_ATTR_OAUTH2_UPSTREAM_SYNCED_GROUP_DL25: LazyLock<SchemaAttribu
 
 /// OAuth2 client class updated for DL25: adds `OAuth2GroupMapping` to `systemmay`.
 pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL25: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
-    uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
-    name: EntryClass::OAuth2Client.into(),
+    uuid: UUID_SCHEMA_CLASS_CONNECTOR,
+    name: EntryClass::Connector.into(),
     description: "The class representing a configured OAuth2 Confidential Client acting as \
                       an authentication source."
         .to_string(),
     systemmust: vec![
         Attribute::Name,
-        Attribute::OAuth2ClientId,
-        Attribute::OAuth2ClientSecret,
+        Attribute::ConnectorId,
+        Attribute::ConnectorSecret,
         Attribute::OAuth2AuthorisationEndpoint,
         Attribute::OAuth2TokenEndpoint,
         Attribute::OAuth2RequestScopes,
@@ -97,7 +97,7 @@ pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL25: LazyLock<SchemaClass> = LazyLock::ne
         Attribute::OAuth2ClaimMapDisplayname,
         Attribute::OAuth2ClaimMapEmail,
         Attribute::OAuth2EmailLinkAccounts,
-        Attribute::OAuth2ClientLogoUri,
+        Attribute::ConnectorLogoUri,
         Attribute::OAuth2Issuer,
         Attribute::OAuth2JwksUri,
         Attribute::OAuth2LinkBy,

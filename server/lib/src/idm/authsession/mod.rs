@@ -3,7 +3,7 @@
 //! factor to assert that the user is legitimate. This also contains some
 //! support code for asynchronous task execution.
 pub(crate) mod provider_initiated;
-use self::handler_oauth2_client::CredHandlerOAuth2Client;
+use self::handler_connector::CredHandlerConnector;
 use crate::credential::totp::Totp;
 use crate::credential::{BackupCodes, Credential, CredentialType, Password};
 use crate::idm::account::Account;
@@ -13,7 +13,7 @@ use crate::idm::authentication::{AuthCredential, AuthExternal, AuthState};
 use crate::idm::delayed::{
     AuthSessionRecord, BackupCodeRemoval, DelayedAction, PasswordUpgrade, WebauthnCounterIncrement,
 };
-use crate::idm::oauth2_client::OAuth2ClientProvider;
+use crate::idm::connector::ConnectorProvider;
 use crate::prelude::*;
 use crate::server::keys::KeyObject;
 use crate::value::{AuthType, Session, SessionExtMetadata, SessionState};
@@ -34,7 +34,7 @@ use webauthn_rs::prelude::{
     SecurityKeyAuthentication, Webauthn,
 };
 
-pub mod handler_oauth2_client;
+pub mod handler_connector;
 pub mod handler_saml_client;
 
 // Each CredHandler takes one or more credentials and determines if the
@@ -79,7 +79,7 @@ pub(super) enum CredState {
     Denied(&'static str),
     ProvisioningRequired {
         provider_uuid: Uuid,
-        claims: crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: crate::idm::authsession::handler_connector::ExternalUserClaims,
         email_link_accounts: bool,
     },
 }
@@ -173,7 +173,7 @@ enum CredHandler {
         creds: BTreeMap<AttestedPasskeyV4, Uuid>,
     },
     OAuth2Trust {
-        handler: Arc<CredHandlerOAuth2Client>,
+        handler: Arc<CredHandlerConnector>,
     },
 }
 
@@ -1099,7 +1099,7 @@ pub(crate) struct AuthSessionData<'a> {
     pub(crate) ct: Duration,
     pub(crate) client_auth_info: ClientAuthInfo,
 
-    pub(crate) oauth2_client_provider: Option<&'a OAuth2ClientProvider>,
+    pub(crate) connector_provider: Option<&'a ConnectorProvider>,
 }
 
 #[derive(Clone)]
@@ -1223,10 +1223,10 @@ impl AuthSession {
                     }
                 };
 
-                if let Some(oauth2_client_provider) = asd.oauth2_client_provider {
-                    if let Some(trust_user) = asd.account.oauth2_client_provider() {
-                        let handler = Arc::new(CredHandlerOAuth2Client::new(
-                            oauth2_client_provider,
+                if let Some(connector_provider) = asd.connector_provider {
+                    if let Some(trust_user) = asd.account.connector_provider() {
+                        let handler = Arc::new(CredHandlerConnector::new(
+                            connector_provider,
                             trust_user,
                         ));
                         handlers.push(CredHandler::OAuth2Trust { handler })
@@ -1791,7 +1791,7 @@ mod tests {
         BAD_TOTP_MSG, BAD_WEBAUTHN_MSG, PW_BADLIST_MSG,
     };
     use crate::idm::delayed::DelayedAction;
-    use crate::idm::oauth2_client::OAuth2ClientProvider;
+    use crate::idm::connector::ConnectorProvider;
     use crate::migration_data::{BUILTIN_ACCOUNT_ANONYMOUS, BUILTIN_ACCOUNT_TEST_PERSON};
     use crate::prelude::*;
     use crate::server::keys::KeyObjectInternal;
@@ -1838,7 +1838,7 @@ mod tests {
             webauthn: &webauthn,
             ct: duration_from_epoch_now(),
             client_auth_info: Source::Internal.into(),
-            oauth2_client_provider: None,
+            connector_provider: None,
         };
 
         let key_object = KeyObjectInternal::new_test();
@@ -1877,7 +1877,7 @@ mod tests {
                 webauthn: $webauthn,
                 ct: duration_from_epoch_now(),
                 client_auth_info: Source::Internal.into(),
-                oauth2_client_provider: None,
+                connector_provider: None,
             };
             let key_object = KeyObjectInternal::new_test();
             let (session, state) = AuthSession::new(asd, $privileged, key_object);
@@ -2060,7 +2060,7 @@ mod tests {
             webauthn,
             ct: duration_from_epoch_now(),
             client_auth_info: Source::Internal.into(),
-            oauth2_client_provider: None,
+            connector_provider: None,
         };
         let key_object = KeyObjectInternal::new_test();
         let (session, state) = AuthSession::new(asd, false, key_object);
@@ -2101,7 +2101,7 @@ mod tests {
             webauthn,
             ct: duration_from_epoch_now(),
             client_auth_info: Source::Internal.into(),
-            oauth2_client_provider: None,
+            connector_provider: None,
         };
         let key_object = KeyObjectInternal::new_test();
         let (session, state) = AuthSession::new(asd, false, key_object);
@@ -2147,7 +2147,7 @@ mod tests {
             webauthn,
             ct: duration_from_epoch_now(),
             client_auth_info: Source::Internal.into(),
-            oauth2_client_provider: None,
+            connector_provider: None,
         };
         let key_object = KeyObjectInternal::new_test();
         let (session, state) = AuthSession::new(asd, false, key_object);
@@ -2440,7 +2440,7 @@ mod tests {
                 webauthn: $webauthn,
                 ct: duration_from_epoch_now(),
                 client_auth_info: Source::Internal.into(),
-                oauth2_client_provider: None,
+                connector_provider: None,
             };
             let key_object = KeyObjectInternal::new_test();
             let (session, state) = AuthSession::new(asd, false, key_object);
@@ -3474,12 +3474,12 @@ mod tests {
         let privileged = false;
 
         // create the trust provider
-        let oauth2_client_provider =
-            OAuth2ClientProvider::new_test("test_trust_client", "https://localhost", ["openid"]);
+        let connector_provider =
+            ConnectorProvider::new_test("test_trust_client", "https://localhost", ["openid"]);
 
         // Configure the account to use it.
         let mut account: Account = BUILTIN_ACCOUNT_TEST_PERSON.clone().into();
-        account.setup_oauth2_client_provider(&oauth2_client_provider);
+        account.setup_connector_provider(&connector_provider);
 
         // Start an auth session.
         let asd = AuthSessionData {
@@ -3489,7 +3489,7 @@ mod tests {
             webauthn: &webauthn,
             ct: current_time,
             client_auth_info: Source::Internal.into(),
-            oauth2_client_provider: Some(&oauth2_client_provider),
+            connector_provider: Some(&connector_provider),
         };
         let key_object = KeyObjectInternal::new_test();
 
@@ -3559,7 +3559,7 @@ mod tests {
         };
 
         assert_eq!(code, "abcdefg1234");
-        assert_eq!(provider_uuid, oauth2_client_provider.uuid);
+        assert_eq!(provider_uuid, connector_provider.uuid);
 
         drop(async_tx);
         assert!(async_rx.blocking_recv().is_none());

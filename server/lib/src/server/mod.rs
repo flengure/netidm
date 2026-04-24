@@ -3651,7 +3651,7 @@ mod tests {
     }
 
     #[qs_test]
-    async fn test_dl21_oauth2_client_admin_acp_has_create_attrs(server: &QueryServer) {
+    async fn test_dl21_connector_admin_acp_has_create_attrs(server: &QueryServer) {
         use crate::constants::UUID_IDM_ACP_OAUTH2_CLIENT_ADMIN;
         let mut server_txn = server.read().await.unwrap();
         let entry = server_txn

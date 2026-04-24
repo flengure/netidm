@@ -6,7 +6,7 @@ pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
 
 use crate::constants::{
     UUID_SCHEMA_ATTR_OAUTH2_ISSUER, UUID_SCHEMA_ATTR_OAUTH2_JWKS_URI,
-    UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
+    UUID_SCHEMA_CLASS_CONNECTOR,
 };
 use crate::prelude::*;
 
@@ -39,15 +39,15 @@ pub static SCHEMA_ATTR_OAUTH2_JWKS_URI_DL21: LazyLock<SchemaAttribute> =
 /// OAuth2 client class updated for DL21: adds `OAuth2Issuer` and `OAuth2JwksUri` to `systemmay`.
 pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL21: LazyLock<SchemaClass> = LazyLock::new(|| {
     SchemaClass {
-    uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
-    name: EntryClass::OAuth2Client.into(),
+    uuid: UUID_SCHEMA_CLASS_CONNECTOR,
+    name: EntryClass::Connector.into(),
     description:
         "The class representing a configured OAuth2 Confidential Client acting as an authentication source."
             .to_string(),
     systemmust: vec![
         Attribute::Name,
-        Attribute::OAuth2ClientId,
-        Attribute::OAuth2ClientSecret,
+        Attribute::ConnectorId,
+        Attribute::ConnectorSecret,
         Attribute::OAuth2AuthorisationEndpoint,
         Attribute::OAuth2TokenEndpoint,
         Attribute::OAuth2RequestScopes,
@@ -60,7 +60,7 @@ pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL21: LazyLock<SchemaClass> = LazyLock::ne
         Attribute::OAuth2ClaimMapDisplayname,
         Attribute::OAuth2ClaimMapEmail,
         Attribute::OAuth2EmailLinkAccounts,
-        Attribute::OAuth2ClientLogoUri,
+        Attribute::ConnectorLogoUri,
         Attribute::OAuth2Issuer,
         Attribute::OAuth2JwksUri,
     ],

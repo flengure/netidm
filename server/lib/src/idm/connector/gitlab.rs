@@ -1,8 +1,8 @@
 //! GitLab upstream connector (PR-CONNECTOR-GITLAB).
 //!
 //! Exact-parity port of `connector/gitlab/gitlab.go` from dex.
-//! Providers whose `OAuth2Client` entry carries
-//! `oauth2_client_provider_kind = "gitlab"` are dispatched here.
+//! Providers whose `Connector` entry carries
+//! `connector_provider_kind = "gitlab"` are dispatched here.
 //!
 //! Supports both gitlab.com and self-hosted GitLab via `base_url`.
 //! Groups are fetched from `GET {base_url}/oauth/userinfo` using the `openid`
@@ -11,8 +11,8 @@
 //! `:owner`/`:maintainer`/`:developer` role suffixes to group paths.
 //! Session state carries both an access token and a refresh token.
 
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
-use crate::idm::oauth2_connector::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
+use crate::idm::connector::traits::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
 use crate::prelude::*;
 use async_trait::async_trait;
 use hashbrown::HashSet;
@@ -67,49 +67,49 @@ impl GitLabConfig {
         let entry_uuid = entry.get_uuid();
 
         let client_id = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientId)
+            .get_ava_single_utf8(Attribute::ConnectorId)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "GitLab connector entry missing oauth2_client_id"
+                    "GitLab connector entry missing connector_id"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let client_secret = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientSecret)
+            .get_ava_single_utf8(Attribute::ConnectorSecret)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "GitLab connector entry missing oauth2_client_secret"
+                    "GitLab connector entry missing connector_secret"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let base_url = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientGitlabBaseUrl)
+            .get_ava_single_iutf8(Attribute::ConnectorGitlabBaseUrl)
             .unwrap_or(GITLAB_DEFAULT_BASE_URL)
             .trim_end_matches('/')
             .to_string();
 
         let groups: HashSet<String> = entry
-            .get_ava_set(Attribute::OAuth2ClientGitlabGroups)
+            .get_ava_set(Attribute::ConnectorGitlabGroups)
             .and_then(|vs| vs.as_utf8_iter())
             .map(|iter| iter.map(str::to_string).collect())
             .unwrap_or_default();
 
         let use_login_as_id = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientGitlabUseLoginAsId)
+            .get_ava_single_bool(Attribute::ConnectorGitlabUseLoginAsId)
             .unwrap_or(false);
 
         let get_groups_permission = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientGitlabGetGroupsPermission)
+            .get_ava_single_bool(Attribute::ConnectorGitlabGetGroupsPermission)
             .unwrap_or(false);
 
         let root_ca_pem = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientGitlabRootCa)
+            .get_ava_single_utf8(Attribute::ConnectorGitlabRootCa)
             .map(str::to_string);
 
         let mut client_builder =

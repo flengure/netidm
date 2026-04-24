@@ -55,7 +55,7 @@ use netidm_proto::internal::OperationError;
 use netidm_proto::scim_v1::client::ScimAssertGeneric;
 use netidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
 use netidmd_lib::idm::ldap::LdapServer;
-use netidmd_lib::idm::oauth2_connector::ConnectorRegistry;
+use netidmd_lib::idm::connector::traits::ConnectorRegistry;
 use netidmd_lib::idm::server::IdmServer;
 use netidmd_lib::prelude::*;
 use netidmd_lib::schema::Schema;

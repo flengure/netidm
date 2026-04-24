@@ -174,12 +174,12 @@ pub enum Attribute {
     OAuth2AllowLocalhostRedirect,
     #[strum(serialize = "oauth2_authorisation_endpoint")]
     OAuth2AuthorisationEndpoint,
-    #[strum(serialize = "oauth2_client_id")]
-    OAuth2ClientId,
-    #[strum(serialize = "oauth2_client_logo_uri")]
-    OAuth2ClientLogoUri,
-    #[strum(serialize = "oauth2_client_secret")]
-    OAuth2ClientSecret,
+    #[strum(serialize = "connector_id")]
+    ConnectorId,
+    #[strum(serialize = "connector_logo_uri")]
+    ConnectorLogoUri,
+    #[strum(serialize = "connector_secret")]
+    ConnectorSecret,
     #[strum(serialize = "oauth2_consent_scope_map")]
     OAuth2ConsentScopeMap,
     #[strum(serialize = "oauth2_device_flow_enable")]
@@ -265,161 +265,163 @@ pub enum Attribute {
     SamlSessionUatUuid,
     SamlSessionCreated,
     // PR-CONNECTOR-GITHUB (DL28) — per-connector config attributes on
-    // `EntryClass::OAuth2Client`. All optional with documented defaults.
+    // `EntryClass::Connector`. All optional with documented defaults.
     // See `specs/012-github-connector/data-model.md`.
-    #[strum(serialize = "oauth2_client_provider_kind")]
-    OAuth2ClientProviderKind,
-    #[strum(serialize = "oauth2_client_github_host")]
-    OAuth2ClientGithubHost,
-    #[strum(serialize = "oauth2_client_github_org_filter")]
-    OAuth2ClientGithubOrgFilter,
-    #[strum(serialize = "oauth2_client_github_allowed_teams")]
-    OAuth2ClientGithubAllowedTeams,
-    #[strum(serialize = "oauth2_client_github_team_name_field")]
-    OAuth2ClientGithubTeamNameField,
-    #[strum(serialize = "oauth2_client_github_load_all_groups")]
-    OAuth2ClientGithubLoadAllGroups,
-    #[strum(serialize = "oauth2_client_github_preferred_email_domain")]
-    OAuth2ClientGithubPreferredEmailDomain,
-    #[strum(serialize = "oauth2_client_github_allow_jit_provisioning")]
-    OAuth2ClientGithubAllowJitProvisioning,
+    #[strum(serialize = "connector_provider_kind")]
+    ConnectorProviderKind,
+    #[strum(serialize = "connector_github_host")]
+    ConnectorGithubHost,
+    #[strum(serialize = "connector_github_org_filter")]
+    ConnectorGithubOrgFilter,
+    #[strum(serialize = "connector_github_allowed_teams")]
+    ConnectorGithubAllowedTeams,
+    #[strum(serialize = "connector_github_team_name_field")]
+    ConnectorGithubTeamNameField,
+    #[strum(serialize = "connector_github_load_all_groups")]
+    ConnectorGithubLoadAllGroups,
+    #[strum(serialize = "connector_github_preferred_email_domain")]
+    ConnectorGithubPreferredEmailDomain,
+    #[strum(serialize = "connector_github_allow_jit_provisioning")]
+    ConnectorGithubAllowJitProvisioning,
+    #[strum(serialize = "connector_github_use_login_as_id")]
+    ConnectorGithubUseLoginAsId,
     // DL29 — Generic OIDC upstream connector config attributes.
-    // All optional on `EntryClass::OAuth2Client`; absent = default shown in spec.
-    #[strum(serialize = "oauth2_client_oidc_enable_groups")]
-    OAuth2ClientOidcEnableGroups,
-    #[strum(serialize = "oauth2_client_oidc_groups_key")]
-    OAuth2ClientOidcGroupsKey,
-    #[strum(serialize = "oauth2_client_oidc_skip_email_verified")]
-    OAuth2ClientOidcSkipEmailVerified,
-    #[strum(serialize = "oauth2_client_oidc_allowed_groups")]
-    OAuth2ClientOidcAllowedGroups,
-    #[strum(serialize = "oauth2_client_oidc_get_user_info")]
-    OAuth2ClientOidcGetUserInfo,
-    #[strum(serialize = "oauth2_client_oidc_user_id_key")]
-    OAuth2ClientOidcUserIdKey,
-    #[strum(serialize = "oauth2_client_oidc_user_name_key")]
-    OAuth2ClientOidcUserNameKey,
-    #[strum(serialize = "oauth2_client_oidc_override_claim_mapping")]
-    OAuth2ClientOidcOverrideClaimMapping,
-    #[strum(serialize = "oauth2_client_oidc_groups_prefix")]
-    OAuth2ClientOidcGroupsPrefix,
-    #[strum(serialize = "oauth2_client_oidc_groups_suffix")]
-    OAuth2ClientOidcGroupsSuffix,
+    // All optional on `EntryClass::Connector`; absent = default shown in spec.
+    #[strum(serialize = "connector_oidc_enable_groups")]
+    ConnectorOidcEnableGroups,
+    #[strum(serialize = "connector_oidc_groups_key")]
+    ConnectorOidcGroupsKey,
+    #[strum(serialize = "connector_oidc_skip_email_verified")]
+    ConnectorOidcSkipEmailVerified,
+    #[strum(serialize = "connector_oidc_allowed_groups")]
+    ConnectorOidcAllowedGroups,
+    #[strum(serialize = "connector_oidc_get_user_info")]
+    ConnectorOidcGetUserInfo,
+    #[strum(serialize = "connector_oidc_user_id_key")]
+    ConnectorOidcUserIdKey,
+    #[strum(serialize = "connector_oidc_user_name_key")]
+    ConnectorOidcUserNameKey,
+    #[strum(serialize = "connector_oidc_override_claim_mapping")]
+    ConnectorOidcOverrideClaimMapping,
+    #[strum(serialize = "connector_oidc_groups_prefix")]
+    ConnectorOidcGroupsPrefix,
+    #[strum(serialize = "connector_oidc_groups_suffix")]
+    ConnectorOidcGroupsSuffix,
     // DL30 — Google upstream connector config attributes.
-    // All optional on `EntryClass::OAuth2Client`.
-    #[strum(serialize = "oauth2_client_google_hosted_domain")]
-    OAuth2ClientGoogleHostedDomain,
-    #[strum(serialize = "oauth2_client_google_service_account_json")]
-    OAuth2ClientGoogleServiceAccountJson,
-    #[strum(serialize = "oauth2_client_google_admin_email")]
-    OAuth2ClientGoogleAdminEmail,
-    #[strum(serialize = "oauth2_client_google_fetch_groups")]
-    OAuth2ClientGoogleFetchGroups,
+    // All optional on `EntryClass::Connector`.
+    #[strum(serialize = "connector_google_hosted_domain")]
+    ConnectorGoogleHostedDomain,
+    #[strum(serialize = "connector_google_service_account_json")]
+    ConnectorGoogleServiceAccountJson,
+    #[strum(serialize = "connector_google_admin_email")]
+    ConnectorGoogleAdminEmail,
+    #[strum(serialize = "connector_google_fetch_groups")]
+    ConnectorGoogleFetchGroups,
     // DL31 — Microsoft Azure AD upstream connector config attributes.
-    // All optional on `EntryClass::OAuth2Client`.
-    #[strum(serialize = "oauth2_client_microsoft_tenant")]
-    OAuth2ClientMicrosoftTenant,
-    #[strum(serialize = "oauth2_client_microsoft_only_security_groups")]
-    OAuth2ClientMicrosoftOnlySecurityGroups,
-    #[strum(serialize = "oauth2_client_microsoft_groups")]
-    OAuth2ClientMicrosoftGroups,
-    #[strum(serialize = "oauth2_client_microsoft_group_name_format")]
-    OAuth2ClientMicrosoftGroupNameFormat,
-    #[strum(serialize = "oauth2_client_microsoft_use_groups_as_whitelist")]
-    OAuth2ClientMicrosoftUseGroupsAsWhitelist,
-    #[strum(serialize = "oauth2_client_microsoft_email_to_lowercase")]
-    OAuth2ClientMicrosoftEmailToLowercase,
-    #[strum(serialize = "oauth2_client_microsoft_api_url")]
-    OAuth2ClientMicrosoftApiUrl,
-    #[strum(serialize = "oauth2_client_microsoft_graph_url")]
-    OAuth2ClientMicrosoftGraphUrl,
-    #[strum(serialize = "oauth2_client_microsoft_prompt_type")]
-    OAuth2ClientMicrosoftPromptType,
-    #[strum(serialize = "oauth2_client_microsoft_domain_hint")]
-    OAuth2ClientMicrosoftDomainHint,
-    #[strum(serialize = "oauth2_client_microsoft_scopes")]
-    OAuth2ClientMicrosoftScopes,
-    #[strum(serialize = "oauth2_client_microsoft_preferred_username_field")]
-    OAuth2ClientMicrosoftPreferredUsernameField,
-    #[strum(serialize = "oauth2_client_microsoft_allow_jit_provisioning")]
-    OAuth2ClientMicrosoftAllowJitProvisioning,
+    // All optional on `EntryClass::Connector`.
+    #[strum(serialize = "connector_microsoft_tenant")]
+    ConnectorMicrosoftTenant,
+    #[strum(serialize = "connector_microsoft_only_security_groups")]
+    ConnectorMicrosoftOnlySecurityGroups,
+    #[strum(serialize = "connector_microsoft_groups")]
+    ConnectorMicrosoftGroups,
+    #[strum(serialize = "connector_microsoft_group_name_format")]
+    ConnectorMicrosoftGroupNameFormat,
+    #[strum(serialize = "connector_microsoft_use_groups_as_whitelist")]
+    ConnectorMicrosoftUseGroupsAsWhitelist,
+    #[strum(serialize = "connector_microsoft_email_to_lowercase")]
+    ConnectorMicrosoftEmailToLowercase,
+    #[strum(serialize = "connector_microsoft_api_url")]
+    ConnectorMicrosoftApiUrl,
+    #[strum(serialize = "connector_microsoft_graph_url")]
+    ConnectorMicrosoftGraphUrl,
+    #[strum(serialize = "connector_microsoft_prompt_type")]
+    ConnectorMicrosoftPromptType,
+    #[strum(serialize = "connector_microsoft_domain_hint")]
+    ConnectorMicrosoftDomainHint,
+    #[strum(serialize = "connector_microsoft_scopes")]
+    ConnectorMicrosoftScopes,
+    #[strum(serialize = "connector_microsoft_preferred_username_field")]
+    ConnectorMicrosoftPreferredUsernameField,
+    #[strum(serialize = "connector_microsoft_allow_jit_provisioning")]
+    ConnectorMicrosoftAllowJitProvisioning,
     // DL32 — Inbound LDAP federation connector config attributes.
-    // All optional on `EntryClass::OAuth2Client`.
+    // All optional on `EntryClass::Connector`.
     // Connection / TLS
-    #[strum(serialize = "oauth2_client_ldap_host")]
-    OAuth2ClientLdapHost,
-    #[strum(serialize = "oauth2_client_ldap_insecure_no_ssl")]
-    OAuth2ClientLdapInsecureNoSsl,
-    #[strum(serialize = "oauth2_client_ldap_insecure_skip_verify")]
-    OAuth2ClientLdapInsecureSkipVerify,
-    #[strum(serialize = "oauth2_client_ldap_start_tls")]
-    OAuth2ClientLdapStartTls,
-    #[strum(serialize = "oauth2_client_ldap_root_ca_data")]
-    OAuth2ClientLdapRootCaData,
-    #[strum(serialize = "oauth2_client_ldap_client_cert")]
-    OAuth2ClientLdapClientCert,
-    #[strum(serialize = "oauth2_client_ldap_client_key")]
-    OAuth2ClientLdapClientKey,
-    #[strum(serialize = "oauth2_client_ldap_bind_dn")]
-    OAuth2ClientLdapBindDn,
-    #[strum(serialize = "oauth2_client_ldap_bind_pw")]
-    OAuth2ClientLdapBindPw,
-    #[strum(serialize = "oauth2_client_ldap_username_prompt")]
-    OAuth2ClientLdapUsernamePrompt,
+    #[strum(serialize = "connector_ldap_host")]
+    ConnectorLdapHost,
+    #[strum(serialize = "connector_ldap_insecure_no_ssl")]
+    ConnectorLdapInsecureNoSsl,
+    #[strum(serialize = "connector_ldap_insecure_skip_verify")]
+    ConnectorLdapInsecureSkipVerify,
+    #[strum(serialize = "connector_ldap_start_tls")]
+    ConnectorLdapStartTls,
+    #[strum(serialize = "connector_ldap_root_ca_data")]
+    ConnectorLdapRootCaData,
+    #[strum(serialize = "connector_ldap_client_cert")]
+    ConnectorLdapClientCert,
+    #[strum(serialize = "connector_ldap_client_key")]
+    ConnectorLdapClientKey,
+    #[strum(serialize = "connector_ldap_bind_dn")]
+    ConnectorLdapBindDn,
+    #[strum(serialize = "connector_ldap_bind_pw")]
+    ConnectorLdapBindPw,
+    #[strum(serialize = "connector_ldap_username_prompt")]
+    ConnectorLdapUsernamePrompt,
     // UserSearch
-    #[strum(serialize = "oauth2_client_ldap_user_search_base_dn")]
-    OAuth2ClientLdapUserSearchBaseDn,
-    #[strum(serialize = "oauth2_client_ldap_user_search_filter")]
-    OAuth2ClientLdapUserSearchFilter,
-    #[strum(serialize = "oauth2_client_ldap_user_search_username")]
-    OAuth2ClientLdapUserSearchUsername,
-    #[strum(serialize = "oauth2_client_ldap_user_search_scope")]
-    OAuth2ClientLdapUserSearchScope,
-    #[strum(serialize = "oauth2_client_ldap_user_search_id_attr")]
-    OAuth2ClientLdapUserSearchIdAttr,
-    #[strum(serialize = "oauth2_client_ldap_user_search_email_attr")]
-    OAuth2ClientLdapUserSearchEmailAttr,
-    #[strum(serialize = "oauth2_client_ldap_user_search_name_attr")]
-    OAuth2ClientLdapUserSearchNameAttr,
-    #[strum(serialize = "oauth2_client_ldap_user_search_preferred_username_attr")]
-    OAuth2ClientLdapUserSearchPreferredUsernameAttr,
-    #[strum(serialize = "oauth2_client_ldap_user_search_email_suffix")]
-    OAuth2ClientLdapUserSearchEmailSuffix,
+    #[strum(serialize = "connector_ldap_user_search_base_dn")]
+    ConnectorLdapUserSearchBaseDn,
+    #[strum(serialize = "connector_ldap_user_search_filter")]
+    ConnectorLdapUserSearchFilter,
+    #[strum(serialize = "connector_ldap_user_search_username")]
+    ConnectorLdapUserSearchUsername,
+    #[strum(serialize = "connector_ldap_user_search_scope")]
+    ConnectorLdapUserSearchScope,
+    #[strum(serialize = "connector_ldap_user_search_id_attr")]
+    ConnectorLdapUserSearchIdAttr,
+    #[strum(serialize = "connector_ldap_user_search_email_attr")]
+    ConnectorLdapUserSearchEmailAttr,
+    #[strum(serialize = "connector_ldap_user_search_name_attr")]
+    ConnectorLdapUserSearchNameAttr,
+    #[strum(serialize = "connector_ldap_user_search_preferred_username_attr")]
+    ConnectorLdapUserSearchPreferredUsernameAttr,
+    #[strum(serialize = "connector_ldap_user_search_email_suffix")]
+    ConnectorLdapUserSearchEmailSuffix,
     // GroupSearch
-    #[strum(serialize = "oauth2_client_ldap_group_search_base_dn")]
-    OAuth2ClientLdapGroupSearchBaseDn,
-    #[strum(serialize = "oauth2_client_ldap_group_search_filter")]
-    OAuth2ClientLdapGroupSearchFilter,
-    #[strum(serialize = "oauth2_client_ldap_group_search_scope")]
-    OAuth2ClientLdapGroupSearchScope,
-    #[strum(serialize = "oauth2_client_ldap_group_search_user_matchers")]
-    OAuth2ClientLdapGroupSearchUserMatchers,
-    #[strum(serialize = "oauth2_client_ldap_group_search_name_attr")]
-    OAuth2ClientLdapGroupSearchNameAttr,
-    #[strum(serialize = "oauth2_client_openshift_issuer")]
-    OAuth2ClientOpenshiftIssuer,
-    #[strum(serialize = "oauth2_client_openshift_groups")]
-    OAuth2ClientOpenshiftGroups,
-    #[strum(serialize = "oauth2_client_openshift_insecure_ca")]
-    OAuth2ClientOpenshiftInsecureCa,
-    #[strum(serialize = "oauth2_client_openshift_root_ca")]
-    OAuth2ClientOpenshiftRootCa,
-    #[strum(serialize = "oauth2_client_gitlab_base_url")]
-    OAuth2ClientGitlabBaseUrl,
-    #[strum(serialize = "oauth2_client_gitlab_groups")]
-    OAuth2ClientGitlabGroups,
-    #[strum(serialize = "oauth2_client_gitlab_use_login_as_id")]
-    OAuth2ClientGitlabUseLoginAsId,
-    #[strum(serialize = "oauth2_client_gitlab_get_groups_permission")]
-    OAuth2ClientGitlabGetGroupsPermission,
-    #[strum(serialize = "oauth2_client_gitlab_root_ca")]
-    OAuth2ClientGitlabRootCa,
-    #[strum(serialize = "oauth2_client_bitbucket_teams")]
-    OAuth2ClientBitbucketTeams,
-    #[strum(serialize = "oauth2_client_bitbucket_get_workspace_permissions")]
-    OAuth2ClientBitbucketGetWorkspacePermissions,
-    #[strum(serialize = "oauth2_client_bitbucket_include_team_groups")]
-    OAuth2ClientBitbucketIncludeTeamGroups,
+    #[strum(serialize = "connector_ldap_group_search_base_dn")]
+    ConnectorLdapGroupSearchBaseDn,
+    #[strum(serialize = "connector_ldap_group_search_filter")]
+    ConnectorLdapGroupSearchFilter,
+    #[strum(serialize = "connector_ldap_group_search_scope")]
+    ConnectorLdapGroupSearchScope,
+    #[strum(serialize = "connector_ldap_group_search_user_matchers")]
+    ConnectorLdapGroupSearchUserMatchers,
+    #[strum(serialize = "connector_ldap_group_search_name_attr")]
+    ConnectorLdapGroupSearchNameAttr,
+    #[strum(serialize = "connector_openshift_issuer")]
+    ConnectorOpenshiftIssuer,
+    #[strum(serialize = "connector_openshift_groups")]
+    ConnectorOpenshiftGroups,
+    #[strum(serialize = "connector_openshift_insecure_ca")]
+    ConnectorOpenshiftInsecureCa,
+    #[strum(serialize = "connector_openshift_root_ca")]
+    ConnectorOpenshiftRootCa,
+    #[strum(serialize = "connector_gitlab_base_url")]
+    ConnectorGitlabBaseUrl,
+    #[strum(serialize = "connector_gitlab_groups")]
+    ConnectorGitlabGroups,
+    #[strum(serialize = "connector_gitlab_use_login_as_id")]
+    ConnectorGitlabUseLoginAsId,
+    #[strum(serialize = "connector_gitlab_get_groups_permission")]
+    ConnectorGitlabGetGroupsPermission,
+    #[strum(serialize = "connector_gitlab_root_ca")]
+    ConnectorGitlabRootCa,
+    #[strum(serialize = "connector_bitbucket_teams")]
+    ConnectorBitbucketTeams,
+    #[strum(serialize = "connector_bitbucket_get_workspace_permissions")]
+    ConnectorBitbucketGetWorkspacePermissions,
+    #[strum(serialize = "connector_bitbucket_include_team_groups")]
+    ConnectorBitbucketIncludeTeamGroups,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]
@@ -753,9 +755,9 @@ impl Attribute {
             }
             ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT => Attribute::OAuth2AllowLocalhostRedirect,
             ATTR_OAUTH2_AUTHORISATION_ENDPOINT => Attribute::OAuth2AuthorisationEndpoint,
-            ATTR_OAUTH2_CLIENT_ID => Attribute::OAuth2ClientId,
-            ATTR_OAUTH2_CLIENT_LOGO_URI => Attribute::OAuth2ClientLogoUri,
-            ATTR_OAUTH2_CLIENT_SECRET => Attribute::OAuth2ClientSecret,
+            ATTR_CONNECTOR_ID => Attribute::ConnectorId,
+            ATTR_CONNECTOR_LOGO_URI => Attribute::ConnectorLogoUri,
+            ATTR_CONNECTOR_SECRET => Attribute::ConnectorSecret,
             ATTR_OAUTH2_CONSENT_SCOPE_MAP => Attribute::OAuth2ConsentScopeMap,
             ATTR_OAUTH2_DEVICE_FLOW_ENABLE => Attribute::OAuth2DeviceFlowEnable,
             ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE => Attribute::OAuth2JwtLegacyCryptoEnable,
@@ -805,114 +807,115 @@ impl Attribute {
             ATTR_SAML_SESSION_INDEX => Attribute::SamlSessionIndex,
             ATTR_SAML_SESSION_UAT_UUID => Attribute::SamlSessionUatUuid,
             ATTR_SAML_SESSION_CREATED => Attribute::SamlSessionCreated,
-            ATTR_OAUTH2_CLIENT_PROVIDER_KIND => Attribute::OAuth2ClientProviderKind,
-            ATTR_OAUTH2_CLIENT_GITHUB_HOST => Attribute::OAuth2ClientGithubHost,
-            ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER => Attribute::OAuth2ClientGithubOrgFilter,
-            ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS => Attribute::OAuth2ClientGithubAllowedTeams,
-            ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD => Attribute::OAuth2ClientGithubTeamNameField,
-            ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS => Attribute::OAuth2ClientGithubLoadAllGroups,
-            ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN => {
-                Attribute::OAuth2ClientGithubPreferredEmailDomain
+            ATTR_CONNECTOR_PROVIDER_KIND => Attribute::ConnectorProviderKind,
+            ATTR_CONNECTOR_GITHUB_HOST => Attribute::ConnectorGithubHost,
+            ATTR_CONNECTOR_GITHUB_ORG_FILTER => Attribute::ConnectorGithubOrgFilter,
+            ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS => Attribute::ConnectorGithubAllowedTeams,
+            ATTR_CONNECTOR_GITHUB_TEAM_NAME_FIELD => Attribute::ConnectorGithubTeamNameField,
+            ATTR_CONNECTOR_GITHUB_LOAD_ALL_GROUPS => Attribute::ConnectorGithubLoadAllGroups,
+            ATTR_CONNECTOR_GITHUB_PREFERRED_EMAIL_DOMAIN => {
+                Attribute::ConnectorGithubPreferredEmailDomain
             }
-            ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING => {
-                Attribute::OAuth2ClientGithubAllowJitProvisioning
+            ATTR_CONNECTOR_GITHUB_ALLOW_JIT_PROVISIONING => {
+                Attribute::ConnectorGithubAllowJitProvisioning
             }
-            ATTR_OAUTH2_CLIENT_OIDC_ENABLE_GROUPS => Attribute::OAuth2ClientOidcEnableGroups,
-            ATTR_OAUTH2_CLIENT_OIDC_GROUPS_KEY => Attribute::OAuth2ClientOidcGroupsKey,
-            ATTR_OAUTH2_CLIENT_OIDC_SKIP_EMAIL_VERIFIED => {
-                Attribute::OAuth2ClientOidcSkipEmailVerified
+            ATTR_CONNECTOR_GITHUB_USE_LOGIN_AS_ID => Attribute::ConnectorGithubUseLoginAsId,
+            ATTR_CONNECTOR_OIDC_ENABLE_GROUPS => Attribute::ConnectorOidcEnableGroups,
+            ATTR_CONNECTOR_OIDC_GROUPS_KEY => Attribute::ConnectorOidcGroupsKey,
+            ATTR_CONNECTOR_OIDC_SKIP_EMAIL_VERIFIED => {
+                Attribute::ConnectorOidcSkipEmailVerified
             }
-            ATTR_OAUTH2_CLIENT_OIDC_ALLOWED_GROUPS => Attribute::OAuth2ClientOidcAllowedGroups,
-            ATTR_OAUTH2_CLIENT_OIDC_GET_USER_INFO => Attribute::OAuth2ClientOidcGetUserInfo,
-            ATTR_OAUTH2_CLIENT_OIDC_USER_ID_KEY => Attribute::OAuth2ClientOidcUserIdKey,
-            ATTR_OAUTH2_CLIENT_OIDC_USER_NAME_KEY => Attribute::OAuth2ClientOidcUserNameKey,
-            ATTR_OAUTH2_CLIENT_OIDC_OVERRIDE_CLAIM_MAPPING => {
-                Attribute::OAuth2ClientOidcOverrideClaimMapping
+            ATTR_CONNECTOR_OIDC_ALLOWED_GROUPS => Attribute::ConnectorOidcAllowedGroups,
+            ATTR_CONNECTOR_OIDC_GET_USER_INFO => Attribute::ConnectorOidcGetUserInfo,
+            ATTR_CONNECTOR_OIDC_USER_ID_KEY => Attribute::ConnectorOidcUserIdKey,
+            ATTR_CONNECTOR_OIDC_USER_NAME_KEY => Attribute::ConnectorOidcUserNameKey,
+            ATTR_CONNECTOR_OIDC_OVERRIDE_CLAIM_MAPPING => {
+                Attribute::ConnectorOidcOverrideClaimMapping
             }
-            ATTR_OAUTH2_CLIENT_OIDC_GROUPS_PREFIX => Attribute::OAuth2ClientOidcGroupsPrefix,
-            ATTR_OAUTH2_CLIENT_OIDC_GROUPS_SUFFIX => Attribute::OAuth2ClientOidcGroupsSuffix,
-            ATTR_OAUTH2_CLIENT_GOOGLE_HOSTED_DOMAIN => Attribute::OAuth2ClientGoogleHostedDomain,
-            ATTR_OAUTH2_CLIENT_GOOGLE_SERVICE_ACCOUNT_JSON => {
-                Attribute::OAuth2ClientGoogleServiceAccountJson
+            ATTR_CONNECTOR_OIDC_GROUPS_PREFIX => Attribute::ConnectorOidcGroupsPrefix,
+            ATTR_CONNECTOR_OIDC_GROUPS_SUFFIX => Attribute::ConnectorOidcGroupsSuffix,
+            ATTR_CONNECTOR_GOOGLE_HOSTED_DOMAIN => Attribute::ConnectorGoogleHostedDomain,
+            ATTR_CONNECTOR_GOOGLE_SERVICE_ACCOUNT_JSON => {
+                Attribute::ConnectorGoogleServiceAccountJson
             }
-            ATTR_OAUTH2_CLIENT_GOOGLE_ADMIN_EMAIL => Attribute::OAuth2ClientGoogleAdminEmail,
-            ATTR_OAUTH2_CLIENT_GOOGLE_FETCH_GROUPS => Attribute::OAuth2ClientGoogleFetchGroups,
-            ATTR_OAUTH2_CLIENT_MICROSOFT_TENANT => Attribute::OAuth2ClientMicrosoftTenant,
-            ATTR_OAUTH2_CLIENT_MICROSOFT_ONLY_SECURITY_GROUPS => {
-                Attribute::OAuth2ClientMicrosoftOnlySecurityGroups
+            ATTR_CONNECTOR_GOOGLE_ADMIN_EMAIL => Attribute::ConnectorGoogleAdminEmail,
+            ATTR_CONNECTOR_GOOGLE_FETCH_GROUPS => Attribute::ConnectorGoogleFetchGroups,
+            ATTR_CONNECTOR_MICROSOFT_TENANT => Attribute::ConnectorMicrosoftTenant,
+            ATTR_CONNECTOR_MICROSOFT_ONLY_SECURITY_GROUPS => {
+                Attribute::ConnectorMicrosoftOnlySecurityGroups
             }
-            ATTR_OAUTH2_CLIENT_MICROSOFT_GROUPS => Attribute::OAuth2ClientMicrosoftGroups,
-            ATTR_OAUTH2_CLIENT_MICROSOFT_GROUP_NAME_FORMAT => {
-                Attribute::OAuth2ClientMicrosoftGroupNameFormat
+            ATTR_CONNECTOR_MICROSOFT_GROUPS => Attribute::ConnectorMicrosoftGroups,
+            ATTR_CONNECTOR_MICROSOFT_GROUP_NAME_FORMAT => {
+                Attribute::ConnectorMicrosoftGroupNameFormat
             }
-            ATTR_OAUTH2_CLIENT_MICROSOFT_USE_GROUPS_AS_WHITELIST => {
-                Attribute::OAuth2ClientMicrosoftUseGroupsAsWhitelist
+            ATTR_CONNECTOR_MICROSOFT_USE_GROUPS_AS_WHITELIST => {
+                Attribute::ConnectorMicrosoftUseGroupsAsWhitelist
             }
-            ATTR_OAUTH2_CLIENT_MICROSOFT_EMAIL_TO_LOWERCASE => {
-                Attribute::OAuth2ClientMicrosoftEmailToLowercase
+            ATTR_CONNECTOR_MICROSOFT_EMAIL_TO_LOWERCASE => {
+                Attribute::ConnectorMicrosoftEmailToLowercase
             }
-            ATTR_OAUTH2_CLIENT_MICROSOFT_API_URL => Attribute::OAuth2ClientMicrosoftApiUrl,
-            ATTR_OAUTH2_CLIENT_MICROSOFT_GRAPH_URL => Attribute::OAuth2ClientMicrosoftGraphUrl,
-            ATTR_OAUTH2_CLIENT_MICROSOFT_PROMPT_TYPE => Attribute::OAuth2ClientMicrosoftPromptType,
-            ATTR_OAUTH2_CLIENT_MICROSOFT_DOMAIN_HINT => Attribute::OAuth2ClientMicrosoftDomainHint,
-            ATTR_OAUTH2_CLIENT_MICROSOFT_SCOPES => Attribute::OAuth2ClientMicrosoftScopes,
-            ATTR_OAUTH2_CLIENT_MICROSOFT_PREFERRED_USERNAME_FIELD => {
-                Attribute::OAuth2ClientMicrosoftPreferredUsernameField
+            ATTR_CONNECTOR_MICROSOFT_API_URL => Attribute::ConnectorMicrosoftApiUrl,
+            ATTR_CONNECTOR_MICROSOFT_GRAPH_URL => Attribute::ConnectorMicrosoftGraphUrl,
+            ATTR_CONNECTOR_MICROSOFT_PROMPT_TYPE => Attribute::ConnectorMicrosoftPromptType,
+            ATTR_CONNECTOR_MICROSOFT_DOMAIN_HINT => Attribute::ConnectorMicrosoftDomainHint,
+            ATTR_CONNECTOR_MICROSOFT_SCOPES => Attribute::ConnectorMicrosoftScopes,
+            ATTR_CONNECTOR_MICROSOFT_PREFERRED_USERNAME_FIELD => {
+                Attribute::ConnectorMicrosoftPreferredUsernameField
             }
-            ATTR_OAUTH2_CLIENT_MICROSOFT_ALLOW_JIT_PROVISIONING => {
-                Attribute::OAuth2ClientMicrosoftAllowJitProvisioning
+            ATTR_CONNECTOR_MICROSOFT_ALLOW_JIT_PROVISIONING => {
+                Attribute::ConnectorMicrosoftAllowJitProvisioning
             }
-            ATTR_OAUTH2_CLIENT_LDAP_HOST => Attribute::OAuth2ClientLdapHost,
-            ATTR_OAUTH2_CLIENT_LDAP_INSECURE_NO_SSL => Attribute::OAuth2ClientLdapInsecureNoSsl,
-            ATTR_OAUTH2_CLIENT_LDAP_INSECURE_SKIP_VERIFY => {
-                Attribute::OAuth2ClientLdapInsecureSkipVerify
+            ATTR_CONNECTOR_LDAP_HOST => Attribute::ConnectorLdapHost,
+            ATTR_CONNECTOR_LDAP_INSECURE_NO_SSL => Attribute::ConnectorLdapInsecureNoSsl,
+            ATTR_CONNECTOR_LDAP_INSECURE_SKIP_VERIFY => {
+                Attribute::ConnectorLdapInsecureSkipVerify
             }
-            ATTR_OAUTH2_CLIENT_LDAP_START_TLS => Attribute::OAuth2ClientLdapStartTls,
-            ATTR_OAUTH2_CLIENT_LDAP_ROOT_CA_DATA => Attribute::OAuth2ClientLdapRootCaData,
-            ATTR_OAUTH2_CLIENT_LDAP_CLIENT_CERT => Attribute::OAuth2ClientLdapClientCert,
-            ATTR_OAUTH2_CLIENT_LDAP_CLIENT_KEY => Attribute::OAuth2ClientLdapClientKey,
-            ATTR_OAUTH2_CLIENT_LDAP_BIND_DN => Attribute::OAuth2ClientLdapBindDn,
-            ATTR_OAUTH2_CLIENT_LDAP_BIND_PW => Attribute::OAuth2ClientLdapBindPw,
-            ATTR_OAUTH2_CLIENT_LDAP_USERNAME_PROMPT => Attribute::OAuth2ClientLdapUsernamePrompt,
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_BASE_DN => {
-                Attribute::OAuth2ClientLdapUserSearchBaseDn
+            ATTR_CONNECTOR_LDAP_START_TLS => Attribute::ConnectorLdapStartTls,
+            ATTR_CONNECTOR_LDAP_ROOT_CA_DATA => Attribute::ConnectorLdapRootCaData,
+            ATTR_CONNECTOR_LDAP_CLIENT_CERT => Attribute::ConnectorLdapClientCert,
+            ATTR_CONNECTOR_LDAP_CLIENT_KEY => Attribute::ConnectorLdapClientKey,
+            ATTR_CONNECTOR_LDAP_BIND_DN => Attribute::ConnectorLdapBindDn,
+            ATTR_CONNECTOR_LDAP_BIND_PW => Attribute::ConnectorLdapBindPw,
+            ATTR_CONNECTOR_LDAP_USERNAME_PROMPT => Attribute::ConnectorLdapUsernamePrompt,
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN => {
+                Attribute::ConnectorLdapUserSearchBaseDn
             }
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_FILTER => {
-                Attribute::OAuth2ClientLdapUserSearchFilter
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_FILTER => {
+                Attribute::ConnectorLdapUserSearchFilter
             }
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME => {
-                Attribute::OAuth2ClientLdapUserSearchUsername
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME => {
+                Attribute::ConnectorLdapUserSearchUsername
             }
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_SCOPE => Attribute::OAuth2ClientLdapUserSearchScope,
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_ID_ATTR => {
-                Attribute::OAuth2ClientLdapUserSearchIdAttr
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_SCOPE => Attribute::ConnectorLdapUserSearchScope,
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_ID_ATTR => {
+                Attribute::ConnectorLdapUserSearchIdAttr
             }
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_ATTR => {
-                Attribute::OAuth2ClientLdapUserSearchEmailAttr
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_ATTR => {
+                Attribute::ConnectorLdapUserSearchEmailAttr
             }
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_NAME_ATTR => {
-                Attribute::OAuth2ClientLdapUserSearchNameAttr
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_NAME_ATTR => {
+                Attribute::ConnectorLdapUserSearchNameAttr
             }
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_PREFERRED_USERNAME_ATTR => {
-                Attribute::OAuth2ClientLdapUserSearchPreferredUsernameAttr
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_PREFERRED_USERNAME_ATTR => {
+                Attribute::ConnectorLdapUserSearchPreferredUsernameAttr
             }
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_SUFFIX => {
-                Attribute::OAuth2ClientLdapUserSearchEmailSuffix
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_SUFFIX => {
+                Attribute::ConnectorLdapUserSearchEmailSuffix
             }
-            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_BASE_DN => {
-                Attribute::OAuth2ClientLdapGroupSearchBaseDn
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN => {
+                Attribute::ConnectorLdapGroupSearchBaseDn
             }
-            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_FILTER => {
-                Attribute::OAuth2ClientLdapGroupSearchFilter
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER => {
+                Attribute::ConnectorLdapGroupSearchFilter
             }
-            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_SCOPE => {
-                Attribute::OAuth2ClientLdapGroupSearchScope
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_SCOPE => {
+                Attribute::ConnectorLdapGroupSearchScope
             }
-            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS => {
-                Attribute::OAuth2ClientLdapGroupSearchUserMatchers
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS => {
+                Attribute::ConnectorLdapGroupSearchUserMatchers
             }
-            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_NAME_ATTR => {
-                Attribute::OAuth2ClientLdapGroupSearchNameAttr
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_NAME_ATTR => {
+                Attribute::ConnectorLdapGroupSearchNameAttr
             }
             ATTR_OBJECTCLASS => Attribute::ObjectClass,
             ATTR_OTHER_NO_INDEX => Attribute::OtherNoIndex,
@@ -1001,23 +1004,23 @@ impl Attribute {
             "saml_attr_map_displayname" => Attribute::SamlAttrMapDisplayname,
             "saml_attr_map_groups" => Attribute::SamlAttrMapGroups,
             "saml_jit_provisioning" => Attribute::SamlJitProvisioning,
-            ATTR_OAUTH2_CLIENT_OPENSHIFT_ISSUER => Attribute::OAuth2ClientOpenshiftIssuer,
-            ATTR_OAUTH2_CLIENT_OPENSHIFT_GROUPS => Attribute::OAuth2ClientOpenshiftGroups,
-            ATTR_OAUTH2_CLIENT_OPENSHIFT_INSECURE_CA => Attribute::OAuth2ClientOpenshiftInsecureCa,
-            ATTR_OAUTH2_CLIENT_OPENSHIFT_ROOT_CA => Attribute::OAuth2ClientOpenshiftRootCa,
-            ATTR_OAUTH2_CLIENT_GITLAB_BASE_URL => Attribute::OAuth2ClientGitlabBaseUrl,
-            ATTR_OAUTH2_CLIENT_GITLAB_GROUPS => Attribute::OAuth2ClientGitlabGroups,
-            ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID => Attribute::OAuth2ClientGitlabUseLoginAsId,
-            ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION => {
-                Attribute::OAuth2ClientGitlabGetGroupsPermission
+            ATTR_CONNECTOR_OPENSHIFT_ISSUER => Attribute::ConnectorOpenshiftIssuer,
+            ATTR_CONNECTOR_OPENSHIFT_GROUPS => Attribute::ConnectorOpenshiftGroups,
+            ATTR_CONNECTOR_OPENSHIFT_INSECURE_CA => Attribute::ConnectorOpenshiftInsecureCa,
+            ATTR_CONNECTOR_OPENSHIFT_ROOT_CA => Attribute::ConnectorOpenshiftRootCa,
+            ATTR_CONNECTOR_GITLAB_BASE_URL => Attribute::ConnectorGitlabBaseUrl,
+            ATTR_CONNECTOR_GITLAB_GROUPS => Attribute::ConnectorGitlabGroups,
+            ATTR_CONNECTOR_GITLAB_USE_LOGIN_AS_ID => Attribute::ConnectorGitlabUseLoginAsId,
+            ATTR_CONNECTOR_GITLAB_GET_GROUPS_PERMISSION => {
+                Attribute::ConnectorGitlabGetGroupsPermission
             }
-            ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA => Attribute::OAuth2ClientGitlabRootCa,
-            ATTR_OAUTH2_CLIENT_BITBUCKET_TEAMS => Attribute::OAuth2ClientBitbucketTeams,
-            ATTR_OAUTH2_CLIENT_BITBUCKET_GET_WORKSPACE_PERMISSIONS => {
-                Attribute::OAuth2ClientBitbucketGetWorkspacePermissions
+            ATTR_CONNECTOR_GITLAB_ROOT_CA => Attribute::ConnectorGitlabRootCa,
+            ATTR_CONNECTOR_BITBUCKET_TEAMS => Attribute::ConnectorBitbucketTeams,
+            ATTR_CONNECTOR_BITBUCKET_GET_WORKSPACE_PERMISSIONS => {
+                Attribute::ConnectorBitbucketGetWorkspacePermissions
             }
-            ATTR_OAUTH2_CLIENT_BITBUCKET_INCLUDE_TEAM_GROUPS => {
-                Attribute::OAuth2ClientBitbucketIncludeTeamGroups
+            ATTR_CONNECTOR_BITBUCKET_INCLUDE_TEAM_GROUPS => {
+                Attribute::ConnectorBitbucketIncludeTeamGroups
             }
             ATTR_SAML_SSO_ISSUER => Attribute::SamlSsoIssuer,
             ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION => Attribute::SamlInsecureSkipSigValidation,

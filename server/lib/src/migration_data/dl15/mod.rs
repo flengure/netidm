@@ -17,7 +17,7 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
 
 pub fn phase_2_schema_classes() -> Vec<EntryInitNew> {
     let mut classes = super::dl14::phase_2_schema_classes();
-    // Replace OAuth2Client with the DL15 version that has the new systemmay attributes.
+    // Replace Connector with the DL15 version that has the new systemmay attributes.
     classes.push(SCHEMA_CLASS_OAUTH2_CLIENT_DL15.clone().into());
     classes
 }

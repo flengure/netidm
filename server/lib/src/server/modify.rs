@@ -250,9 +250,9 @@ impl QueryServerWriteTransaction<'_> {
                 .iter()
                 .zip(pre_candidates.iter().map(|e| e.as_ref()))
                 .any(|(post, pre)| {
-                    post.attribute_equality(Attribute::Class, &EntryClass::OAuth2Client.into())
+                    post.attribute_equality(Attribute::Class, &EntryClass::Connector.into())
                         || pre
-                            .attribute_equality(Attribute::Class, &EntryClass::OAuth2Client.into())
+                            .attribute_equality(Attribute::Class, &EntryClass::Connector.into())
                 })
         {
             self.changed_flags.insert(ChangeFlag::OAUTH2_CLIENT)
@@ -481,7 +481,7 @@ impl QueryServerWriteTransaction<'_> {
         if !self.changed_flags.contains(ChangeFlag::OAUTH2_CLIENT)
             && norm_cand
                 .iter()
-                .any(|e| e.attribute_equality(Attribute::Class, &EntryClass::OAuth2Client.into()))
+                .any(|e| e.attribute_equality(Attribute::Class, &EntryClass::Connector.into()))
         {
             self.changed_flags.insert(ChangeFlag::OAUTH2_CLIENT)
         }

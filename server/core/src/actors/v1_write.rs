@@ -1926,7 +1926,7 @@ impl QueryServerWriteV1 {
     pub async fn handle_jit_provision_oauth2_account(
         &self,
         provider_uuid: Uuid,
-        claims: netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: netidmd_lib::idm::authsession::handler_connector::ExternalUserClaims,
         desired_name: String,
         eventid: Uuid,
         _client_auth_info: ClientAuthInfo,
@@ -1967,7 +1967,7 @@ impl QueryServerWriteV1 {
     pub async fn handle_github_link_or_provision(
         &self,
         provider_uuid: Uuid,
-        claims: netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: netidmd_lib::idm::authsession::handler_connector::ExternalUserClaims,
         eventid: Uuid,
         _client_auth_info: ClientAuthInfo,
     ) -> Result<Option<compact_jwt::JwsCompact>, OperationError> {
@@ -2012,7 +2012,7 @@ impl QueryServerWriteV1 {
     pub async fn handle_link_account_by_email(
         &self,
         provider_uuid: Uuid,
-        claims: netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: netidmd_lib::idm::authsession::handler_connector::ExternalUserClaims,
         eventid: Uuid,
         _client_auth_info: ClientAuthInfo,
     ) -> Result<Option<Uuid>, OperationError> {
@@ -2043,7 +2043,7 @@ impl QueryServerWriteV1 {
     /// collision resolution (_2…_100 suffix) if the preferred name is taken.
     pub async fn handle_derive_jit_username(
         &self,
-        claims: netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: netidmd_lib::idm::authsession::handler_connector::ExternalUserClaims,
         _client_auth_info: ClientAuthInfo,
     ) -> Result<String, OperationError> {
         let ct = duration_from_epoch_now();
@@ -2206,7 +2206,7 @@ impl QueryServerWriteV1 {
     ///   given `client_name` exists.
     /// * Other `OperationError` variants from the underlying search/modify.
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
-    pub async fn handle_oauth2_client_post_logout_redirect_uri_add(
+    pub async fn handle_connector_post_logout_redirect_uri_add(
         &self,
         client_auth_info: ClientAuthInfo,
         client_name: String,
@@ -2227,7 +2227,7 @@ impl QueryServerWriteV1 {
     ///   given `client_name` exists.
     /// * Other `OperationError` variants from the underlying search/modify.
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
-    pub async fn handle_oauth2_client_post_logout_redirect_uri_remove(
+    pub async fn handle_connector_post_logout_redirect_uri_remove(
         &self,
         client_auth_info: ClientAuthInfo,
         client_name: String,
@@ -2248,7 +2248,7 @@ impl QueryServerWriteV1 {
     ///   given `client_name` exists.
     /// * Other `OperationError` variants from the underlying search/modify.
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
-    pub async fn handle_oauth2_client_backchannel_logout_uri_set(
+    pub async fn handle_connector_backchannel_logout_uri_set(
         &self,
         client_auth_info: ClientAuthInfo,
         client_name: String,
@@ -2268,7 +2268,7 @@ impl QueryServerWriteV1 {
     ///   given `client_name` exists.
     /// * Other `OperationError` variants from the underlying search/modify.
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
-    pub async fn handle_oauth2_client_backchannel_logout_uri_clear(
+    pub async fn handle_connector_backchannel_logout_uri_clear(
         &self,
         client_auth_info: ClientAuthInfo,
         client_name: String,
@@ -2290,7 +2290,7 @@ impl QueryServerWriteV1 {
     ///   the given `client_name` exists.
     /// * Other `OperationError` variants from the underlying search/modify.
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
-    pub async fn handle_oauth2_client_group_mapping_add(
+    pub async fn handle_connector_group_mapping_add(
         &self,
         client_auth_info: ClientAuthInfo,
         client_name: String,
@@ -2301,7 +2301,7 @@ impl QueryServerWriteV1 {
         handle_group_mapping_add(
             &self.idms,
             client_auth_info,
-            EntryClass::OAuth2Client,
+            EntryClass::Connector,
             Attribute::OAuth2GroupMapping,
             client_name,
             upstream,
@@ -2319,7 +2319,7 @@ impl QueryServerWriteV1 {
     ///   the given `client_name` exists.
     /// * Other `OperationError` variants from the underlying search/modify.
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
-    pub async fn handle_oauth2_client_group_mapping_remove(
+    pub async fn handle_connector_group_mapping_remove(
         &self,
         client_auth_info: ClientAuthInfo,
         client_name: String,
@@ -2329,7 +2329,7 @@ impl QueryServerWriteV1 {
         handle_group_mapping_remove(
             &self.idms,
             client_auth_info,
-            EntryClass::OAuth2Client,
+            EntryClass::Connector,
             Attribute::OAuth2GroupMapping,
             client_name,
             upstream,
@@ -2342,7 +2342,7 @@ impl QueryServerWriteV1 {
     /// `upstream` name already exists on the connector (FR-007a).
     ///
     /// # Errors
-    /// Mirrors `handle_oauth2_client_group_mapping_add`.
+    /// Mirrors `handle_connector_group_mapping_add`.
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
     pub async fn handle_saml_client_group_mapping_add(
         &self,
@@ -2369,7 +2369,7 @@ impl QueryServerWriteV1 {
     /// successful no-op (FR-007b).
     ///
     /// # Errors
-    /// Mirrors `handle_oauth2_client_group_mapping_remove`.
+    /// Mirrors `handle_connector_group_mapping_remove`.
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
     pub async fn handle_saml_client_group_mapping_remove(
         &self,
@@ -2558,7 +2558,7 @@ impl QueryServerWriteV1 {
 ///
 /// Encapsulates the identity validation, uniqueness check against the existing
 /// mapping values, and modify-append into one place. The variant is selected
-/// by `class` (`OAuth2Client` vs. `SamlClient`) and `attr`
+/// by `class` (`Connector` vs. `SamlClient`) and `attr`
 /// (`OAuth2GroupMapping` vs. `SamlGroupMapping`).
 /// Append a post-logout redirect URI to the named OAuth2 client's
 /// `OAuth2RsPostLogoutRedirectUri` set. Idempotent: if the URI is already

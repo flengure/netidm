@@ -132,7 +132,7 @@ impl QueryServerWriteTransaction<'_> {
         if !self.changed_flags.contains(ChangeFlag::OAUTH2_CLIENT)
             && commit_cand
                 .iter()
-                .any(|e| e.attribute_equality(Attribute::Class, &EntryClass::OAuth2Client.into()))
+                .any(|e| e.attribute_equality(Attribute::Class, &EntryClass::Connector.into()))
         {
             self.changed_flags.insert(ChangeFlag::OAUTH2_CLIENT)
         }

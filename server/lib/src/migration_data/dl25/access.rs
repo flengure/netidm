@@ -2,7 +2,7 @@
 //!
 //! Adds the new DL25 attributes to the modify / create attribute allowlists
 //! on the OAuth2 upstream and SAML upstream admin ACPs:
-//!   * `OAuth2GroupMapping`, `OAuth2LinkBy` on `idm_acp_oauth2_client_admin`
+//!   * `OAuth2GroupMapping`, `OAuth2LinkBy` on `idm_acp_connector_admin`
 //!     (`OAuth2LinkBy` was added to the schema in DL24 but the ACP was never
 //!     updated, leaving `set-link-by` silently AccessDenied; fixing it here
 //!     alongside the new `OAuth2GroupMapping` keeps both attributes
@@ -40,7 +40,7 @@ pub(crate) static IDM_ACP_OAUTH2_CLIENT_ADMIN_DL25: LazyLock<BuiltinAcp> =
             EntryClass::AccessControlProfile,
             EntryClass::AccessControlSearch,
         ],
-        name: "idm_acp_oauth2_client_admin",
+        name: "idm_acp_connector_admin",
         uuid: UUID_IDM_ACP_OAUTH2_CLIENT_ADMIN,
         description:
             "Builtin IDM Control for granting oauth2 trust provider administration rights.",
@@ -49,7 +49,7 @@ pub(crate) static IDM_ACP_OAUTH2_CLIENT_ADMIN_DL25: LazyLock<BuiltinAcp> =
             UUID_SYSTEM_ADMINS,
         ]),
         target: BuiltinAcpTarget::Filter(ProtoFilter::And(vec![
-            match_class_filter!(EntryClass::OAuth2Client),
+            match_class_filter!(EntryClass::Connector),
             FILTER_ANDNOT_TOMBSTONE_OR_RECYCLED_DL25.clone(),
         ])),
         search_attrs: vec![
@@ -58,15 +58,15 @@ pub(crate) static IDM_ACP_OAUTH2_CLIENT_ADMIN_DL25: LazyLock<BuiltinAcp> =
             Attribute::Name,
             Attribute::DisplayName,
             Attribute::Spn,
-            Attribute::OAuth2ClientId,
-            Attribute::OAuth2ClientSecret,
+            Attribute::ConnectorId,
+            Attribute::ConnectorSecret,
             Attribute::OAuth2AuthorisationEndpoint,
             Attribute::OAuth2TokenEndpoint,
             Attribute::OAuth2UserinfoEndpoint,
             Attribute::OAuth2RequestScopes,
             Attribute::OAuth2JitProvisioning,
             Attribute::OAuth2EmailLinkAccounts,
-            Attribute::OAuth2ClientLogoUri,
+            Attribute::ConnectorLogoUri,
             Attribute::OAuth2Issuer,
             Attribute::OAuth2JwksUri,
             Attribute::OAuth2LinkBy,
@@ -75,15 +75,15 @@ pub(crate) static IDM_ACP_OAUTH2_CLIENT_ADMIN_DL25: LazyLock<BuiltinAcp> =
         modify_present_attrs: vec![
             Attribute::Name,
             Attribute::DisplayName,
-            Attribute::OAuth2ClientId,
-            Attribute::OAuth2ClientSecret,
+            Attribute::ConnectorId,
+            Attribute::ConnectorSecret,
             Attribute::OAuth2AuthorisationEndpoint,
             Attribute::OAuth2TokenEndpoint,
             Attribute::OAuth2UserinfoEndpoint,
             Attribute::OAuth2RequestScopes,
             Attribute::OAuth2JitProvisioning,
             Attribute::OAuth2EmailLinkAccounts,
-            Attribute::OAuth2ClientLogoUri,
+            Attribute::ConnectorLogoUri,
             Attribute::OAuth2Issuer,
             Attribute::OAuth2JwksUri,
             Attribute::OAuth2LinkBy,
@@ -92,15 +92,15 @@ pub(crate) static IDM_ACP_OAUTH2_CLIENT_ADMIN_DL25: LazyLock<BuiltinAcp> =
         modify_removed_attrs: vec![
             Attribute::Name,
             Attribute::DisplayName,
-            Attribute::OAuth2ClientId,
-            Attribute::OAuth2ClientSecret,
+            Attribute::ConnectorId,
+            Attribute::ConnectorSecret,
             Attribute::OAuth2AuthorisationEndpoint,
             Attribute::OAuth2TokenEndpoint,
             Attribute::OAuth2UserinfoEndpoint,
             Attribute::OAuth2RequestScopes,
             Attribute::OAuth2JitProvisioning,
             Attribute::OAuth2EmailLinkAccounts,
-            Attribute::OAuth2ClientLogoUri,
+            Attribute::ConnectorLogoUri,
             Attribute::OAuth2Issuer,
             Attribute::OAuth2JwksUri,
             Attribute::OAuth2LinkBy,
@@ -110,21 +110,21 @@ pub(crate) static IDM_ACP_OAUTH2_CLIENT_ADMIN_DL25: LazyLock<BuiltinAcp> =
             Attribute::Class,
             Attribute::Name,
             Attribute::DisplayName,
-            Attribute::OAuth2ClientId,
-            Attribute::OAuth2ClientSecret,
+            Attribute::ConnectorId,
+            Attribute::ConnectorSecret,
             Attribute::OAuth2AuthorisationEndpoint,
             Attribute::OAuth2TokenEndpoint,
             Attribute::OAuth2UserinfoEndpoint,
             Attribute::OAuth2RequestScopes,
             Attribute::OAuth2JitProvisioning,
             Attribute::OAuth2EmailLinkAccounts,
-            Attribute::OAuth2ClientLogoUri,
+            Attribute::ConnectorLogoUri,
             Attribute::OAuth2Issuer,
             Attribute::OAuth2JwksUri,
             Attribute::OAuth2LinkBy,
             Attribute::OAuth2GroupMapping,
         ],
-        create_classes: vec![EntryClass::Object, EntryClass::OAuth2Client],
+        create_classes: vec![EntryClass::Object, EntryClass::Connector],
         ..Default::default()
     });
 

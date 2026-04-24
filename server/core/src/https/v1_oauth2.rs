@@ -579,17 +579,17 @@ pub(crate) async fn oauth2_id_image_post(
     ),
     security(("token_jwt" = [])),
     tag = "oauth2",
-    operation_id = "oauth2_client_post"
+    operation_id = "connector_post"
 )]
 /// Get the details of a given OAuth2 Client Provider.
-pub(crate) async fn oauth2_client_id_get(
+pub(crate) async fn connector_id_get(
     State(state): State<ServerState>,
     Path(name): Path<String>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
 ) -> Result<Json<Option<ProtoEntry>>, WebError> {
     let filter = filter_all!(f_and!([
-        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Class, EntryClass::Connector.into()),
         f_eq(Attribute::Name, PartialValue::new_iname(&name))
     ]));
     state
@@ -602,23 +602,23 @@ pub(crate) async fn oauth2_client_id_get(
 }
 
 /// Create a new OAuth2 Client Provider (Netidm acts as the OAuth2 client to an external provider).
-pub(crate) async fn oauth2_client_post(
+pub(crate) async fn connector_post(
     State(state): State<ServerState>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Json(obj): Json<ProtoEntry>,
 ) -> Result<Json<()>, WebError> {
     let classes = vec![
-        EntryClass::OAuth2Client.to_string(),
+        EntryClass::Connector.to_string(),
         EntryClass::Object.to_string(),
     ];
     json_rest_event_post(state, classes, obj, kopid, client_auth_info).await
 }
 
 /// Filter for an OAuth2 upstream client entry by its name.
-fn oauth2_client_filter(name: &str) -> Filter<FilterInvalid> {
+fn connector_filter(name: &str) -> Filter<FilterInvalid> {
     filter_all!(f_and!([
-        f_eq(Attribute::Class, EntryClass::OAuth2Client.into()),
+        f_eq(Attribute::Class, EntryClass::Connector.into()),
         f_eq(Attribute::Name, PartialValue::new_iname(name))
     ]))
 }
@@ -632,21 +632,21 @@ fn oauth2_client_filter(name: &str) -> Filter<FilterInvalid> {
     ),
     security(("token_jwt" = [])),
     tag = "oauth2",
-    operation_id = "oauth2_client_id_patch"
+    operation_id = "connector_id_patch"
 )]
 /// Patch an OAuth2 upstream Client Provider entry.
 ///
 /// The PATCH on `/v1/oauth2/{id}` targets Resource Server (downstream) entries;
-/// this route targets the distinct `OAuth2Client` (upstream) class so single-
+/// this route targets the distinct `Connector` (upstream) class so single-
 /// value attribute updates such as `oauth2_link_by` can be applied.
-pub(crate) async fn oauth2_client_id_patch(
+pub(crate) async fn connector_id_patch(
     State(state): State<ServerState>,
     Path(name): Path<String>,
     Extension(kopid): Extension<KOpId>,
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Json(obj): Json<ProtoEntry>,
 ) -> Result<Json<()>, WebError> {
-    let filter = oauth2_client_filter(&name);
+    let filter = connector_filter(&name);
     state
         .qe_w_ref
         .handle_internalpatch(client_auth_info, filter, obj, kopid.eventid)
@@ -679,7 +679,7 @@ pub(crate) async fn oauth2_id_post_logout_redirect_uri_post(
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_oauth2_client_post_logout_redirect_uri_add(
+        .handle_connector_post_logout_redirect_uri_add(
             client_auth_info,
             rs_name,
             uri,
@@ -714,7 +714,7 @@ pub(crate) async fn oauth2_id_post_logout_redirect_uri_delete(
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_oauth2_client_post_logout_redirect_uri_remove(
+        .handle_connector_post_logout_redirect_uri_remove(
             client_auth_info,
             rs_name,
             uri,
@@ -748,7 +748,7 @@ pub(crate) async fn oauth2_id_backchannel_logout_uri_post(
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_oauth2_client_backchannel_logout_uri_set(
+        .handle_connector_backchannel_logout_uri_set(
             client_auth_info,
             rs_name,
             uri,
@@ -779,7 +779,7 @@ pub(crate) async fn oauth2_id_backchannel_logout_uri_delete(
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_oauth2_client_backchannel_logout_uri_clear(client_auth_info, rs_name, kopid.eventid)
+        .handle_connector_backchannel_logout_uri_clear(client_auth_info, rs_name, kopid.eventid)
         .await
         .map(Json::from)
         .map_err(WebError::from)
@@ -794,7 +794,7 @@ pub(crate) async fn oauth2_id_backchannel_logout_uri_delete(
     ),
     security(("token_jwt" = [])),
     tag = "oauth2",
-    operation_id = "oauth2_client_id_group_mapping_post"
+    operation_id = "connector_id_group_mapping_post"
 )]
 /// Add a group mapping to an OAuth2 upstream client.
 ///
@@ -803,7 +803,7 @@ pub(crate) async fn oauth2_id_backchannel_logout_uri_delete(
 /// existing mapping for the same `upstream` name already exists on the
 /// connector (FR-007a). The `upstream` name is taken verbatim from the URL
 /// path and may contain colons.
-pub(crate) async fn oauth2_client_id_group_mapping_post(
+pub(crate) async fn connector_id_group_mapping_post(
     State(state): State<ServerState>,
     Path((name, upstream)): Path<(String, String)>,
     Extension(kopid): Extension<KOpId>,
@@ -812,7 +812,7 @@ pub(crate) async fn oauth2_client_id_group_mapping_post(
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_oauth2_client_group_mapping_add(
+        .handle_connector_group_mapping_add(
             client_auth_info,
             name,
             upstream,
@@ -832,13 +832,13 @@ pub(crate) async fn oauth2_client_id_group_mapping_post(
     ),
     security(("token_jwt" = [])),
     tag = "oauth2",
-    operation_id = "oauth2_client_id_group_mapping_delete"
+    operation_id = "connector_id_group_mapping_delete"
 )]
 /// Remove a group mapping from an OAuth2 upstream client.
 ///
 /// If no mapping for `upstream` exists on the connector the request succeeds
 /// with no side effect (idempotent).
-pub(crate) async fn oauth2_client_id_group_mapping_delete(
+pub(crate) async fn connector_id_group_mapping_delete(
     State(state): State<ServerState>,
     Path((name, upstream)): Path<(String, String)>,
     Extension(kopid): Extension<KOpId>,
@@ -846,7 +846,7 @@ pub(crate) async fn oauth2_client_id_group_mapping_delete(
 ) -> Result<Json<()>, WebError> {
     state
         .qe_w_ref
-        .handle_oauth2_client_group_mapping_remove(client_auth_info, name, upstream, kopid.eventid)
+        .handle_connector_group_mapping_remove(client_auth_info, name, upstream, kopid.eventid)
         .await
         .map(Json::from)
         .map_err(WebError::from)

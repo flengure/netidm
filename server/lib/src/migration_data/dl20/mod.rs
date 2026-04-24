@@ -5,7 +5,7 @@ use crate::prelude::*;
 
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl19::phase_1_schema_attrs();
-    attrs.push(SCHEMA_ATTR_OAUTH2_CLIENT_LOGO_URI_DL20.clone().into());
+    attrs.push(SCHEMA_ATTR_CONNECTOR_LOGO_URI_DL20.clone().into());
     attrs
 }
 

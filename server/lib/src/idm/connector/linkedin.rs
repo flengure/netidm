@@ -1,18 +1,18 @@
 //! LinkedIn upstream connector (PR-CONNECTOR-LINKEDIN).
 //!
 //! Exact-parity port of `connector/linkedin/linkedin.go` from dex.
-//! Providers whose `OAuth2Client` entry carries
-//! `oauth2_client_provider_kind = "linkedin"` are dispatched here.
+//! Providers whose `Connector` entry carries
+//! `connector_provider_kind = "linkedin"` are dispatched here.
 //!
 //! LinkedIn's v2 API exposes only basic profile (ID, name) and primary email
 //! via the `r_liteprofile` / `r_emailaddress` scopes. There is no
 //! group/organisation membership endpoint, so `ExternalUserClaims::groups`
 //! is always empty for this connector.
 //!
-//! [`RefreshableConnector`]: crate::idm::oauth2_connector::RefreshableConnector
+//! [`RefreshableConnector`]: crate::idm::connector::traits::RefreshableConnector
 
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
-use crate::idm::oauth2_connector::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
+use crate::idm::connector::traits::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
 use crate::prelude::*;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -28,10 +28,10 @@ pub static LINKEDIN_EMAIL_ENDPOINT: &str =
 pub const LINKEDIN_SESSION_STATE_FORMAT_VERSION: u8 = 1;
 
 /// Parsed LinkedIn connector configuration. Built once at server start and
-/// registered with the [`crate::idm::oauth2_connector::ConnectorRegistry`].
+/// registered with the [`crate::idm::connector::traits::ConnectorRegistry`].
 ///
 /// LinkedIn requires only the three standard OAuth2 fields (no
-/// connector-specific schema attributes beyond `oauth2_client_provider_kind`).
+/// connector-specific schema attributes beyond `connector_provider_kind`).
 pub struct LinkedInConfig {
     pub entry_uuid: Uuid,
     pub client_id: String,
@@ -63,22 +63,22 @@ impl LinkedInConfig {
         let entry_uuid = entry.get_uuid();
 
         let client_id = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientId)
+            .get_ava_single_utf8(Attribute::ConnectorId)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "LinkedIn connector entry missing oauth2_client_id"
+                    "LinkedIn connector entry missing connector_id"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let client_secret = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientSecret)
+            .get_ava_single_utf8(Attribute::ConnectorSecret)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "LinkedIn connector entry missing oauth2_client_secret"
+                    "LinkedIn connector entry missing connector_secret"
                 );
                 OperationError::InvalidEntryState
             })?

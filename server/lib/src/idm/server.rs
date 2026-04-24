@@ -23,7 +23,7 @@ use crate::idm::oauth2::{
     Oauth2ResourceServers, Oauth2ResourceServersReadTransaction,
     Oauth2ResourceServersWriteTransaction,
 };
-use crate::idm::oauth2_client::OAuth2ClientProvider;
+use crate::idm::connector::ConnectorProvider;
 use crate::idm::radius::RadiusAccount;
 use crate::idm::saml_client::SamlClientProvider;
 use crate::idm::scim::SyncAccount;
@@ -101,9 +101,9 @@ pub struct IdmServer {
     oauth2rs: Arc<Oauth2ResourceServers>,
     applications: Arc<LdapApplications>,
 
-    /// OAuth2ClientProviders
+    /// ConnectorProviders
     origin: Url,
-    oauth2_client_providers: HashMap<Uuid, OAuth2ClientProvider>,
+    connector_providers: HashMap<Uuid, ConnectorProvider>,
     saml_client_providers: HashMap<Uuid, SamlClientProvider>,
 
     /// Wakes the back-channel logout delivery worker when a new
@@ -119,7 +119,7 @@ pub struct IdmServer {
     /// OAuth2 refresh-token path consults this registry when a session
     /// carries `upstream_connector = Some(_)`; a missing lookup
     /// yields `Oauth2Error::InvalidGrant` (FR-003).
-    connector_registry: std::sync::Arc<crate::idm::oauth2_connector::ConnectorRegistry>,
+    connector_registry: std::sync::Arc<crate::idm::connector::traits::ConnectorRegistry>,
 }
 
 /// Contains methods that require writes, but in the context of writing to the idm in memory structures (maybe the query server too). This is things like authentication.
@@ -128,7 +128,7 @@ pub struct IdmServerAuthTransaction<'a> {
     pub(crate) sessions: &'a BptreeMap<Uuid, AuthSessionMutex>,
     pub(crate) provider_sessions: &'a BptreeMap<Uuid, ProviderInitiatedSessionMutex>,
     pub(crate) softlocks: &'a HashMap<Uuid, CredSoftLockMutex>,
-    pub(crate) oauth2_client_providers: HashMapReadTxn<'a, Uuid, OAuth2ClientProvider>,
+    pub(crate) connector_providers: HashMapReadTxn<'a, Uuid, ConnectorProvider>,
     #[allow(dead_code)]
     pub(crate) saml_client_providers: HashMapReadTxn<'a, Uuid, SamlClientProvider>,
 
@@ -154,7 +154,7 @@ pub struct IdmServerCredUpdateTransaction<'a> {
 pub struct IdmServerProxyReadTransaction<'a> {
     pub qs_read: QueryServerReadTransaction<'a>,
     pub(crate) oauth2rs: Oauth2ResourceServersReadTransaction,
-    pub(crate) oauth2_client_providers: HashMapReadTxn<'a, Uuid, OAuth2ClientProvider>,
+    pub(crate) connector_providers: HashMapReadTxn<'a, Uuid, ConnectorProvider>,
     pub(crate) saml_client_providers: HashMapReadTxn<'a, Uuid, SamlClientProvider>,
 }
 
@@ -171,7 +171,7 @@ pub struct IdmServerProxyWriteTransaction<'a> {
     pub(crate) applications: LdapApplicationsWriteTransaction<'a>,
 
     pub(crate) origin: &'a Url,
-    pub(crate) oauth2_client_providers: HashMapWriteTxn<'a, Uuid, OAuth2ClientProvider>,
+    pub(crate) connector_providers: HashMapWriteTxn<'a, Uuid, ConnectorProvider>,
     pub(crate) saml_client_providers: HashMapWriteTxn<'a, Uuid, SamlClientProvider>,
     /// Reference to the shared back-channel logout delivery notify
     /// handle on the owning `IdmServer`. Call `notify_one()` after
@@ -184,7 +184,7 @@ pub struct IdmServerProxyWriteTransaction<'a> {
     /// claims from the connector that minted the session
     /// (PR-REFRESH-CLAIMS, DL27).
     pub(crate) connector_registry:
-        &'a std::sync::Arc<crate::idm::oauth2_connector::ConnectorRegistry>,
+        &'a std::sync::Arc<crate::idm::connector::traits::ConnectorRegistry>,
 }
 
 pub struct IdmServerDelayed {
@@ -204,7 +204,7 @@ impl IdmServer {
     #[must_use]
     pub fn connector_registry(
         &self,
-    ) -> std::sync::Arc<crate::idm::oauth2_connector::ConnectorRegistry> {
+    ) -> std::sync::Arc<crate::idm::connector::traits::ConnectorRegistry> {
         std::sync::Arc::clone(&self.connector_registry)
     }
 
@@ -290,11 +290,11 @@ impl IdmServer {
             oauth2rs: Arc::new(oauth2rs),
             applications: Arc::new(applications),
             origin: origin.clone(),
-            oauth2_client_providers: HashMap::new(),
+            connector_providers: HashMap::new(),
             saml_client_providers: HashMap::new(),
             logout_delivery_notify: std::sync::Arc::new(tokio::sync::Notify::new()),
             connector_registry: std::sync::Arc::new(
-                crate::idm::oauth2_connector::ConnectorRegistry::new_empty(),
+                crate::idm::connector::traits::ConnectorRegistry::new_empty(),
             ),
         };
         let idm_server_delayed = IdmServerDelayed { async_rx };
@@ -304,7 +304,7 @@ impl IdmServer {
 
         idm_write_txn.reload_applications()?;
         idm_write_txn.reload_oauth2()?;
-        idm_write_txn.reload_oauth2_client_providers()?;
+        idm_write_txn.reload_connector_providers()?;
         idm_write_txn.reload_saml_client_providers()?;
 
         idm_write_txn.commit()?;
@@ -331,7 +331,7 @@ impl IdmServer {
             audit_tx: self.audit_tx.clone(),
             webauthn: &self.webauthn,
             applications: self.applications.read(),
-            oauth2_client_providers: self.oauth2_client_providers.read(),
+            connector_providers: self.connector_providers.read(),
             saml_client_providers: self.saml_client_providers.read(),
         })
     }
@@ -351,7 +351,7 @@ impl IdmServer {
         Ok(IdmServerProxyReadTransaction {
             qs_read,
             oauth2rs: self.oauth2rs.read(),
-            oauth2_client_providers: self.oauth2_client_providers.read(),
+            connector_providers: self.connector_providers.read(),
             saml_client_providers: self.saml_client_providers.read(),
             // async_tx: self.async_tx.clone(),
         })
@@ -388,7 +388,7 @@ impl IdmServer {
             oauth2rs: self.oauth2rs.write(),
             applications: self.applications.write(),
             origin: &self.origin,
-            oauth2_client_providers: self.oauth2_client_providers.write(),
+            connector_providers: self.connector_providers.write(),
             saml_client_providers: self.saml_client_providers.write(),
             logout_delivery_notify: &self.logout_delivery_notify,
             connector_registry: &self.connector_registry,
@@ -1321,14 +1321,14 @@ impl IdmServerAuthTransaction<'_> {
                         });
 
                 // Does the account have any auth trusts?
-                let oauth2_client_provider =
-                    account.oauth2_client_provider().and_then(|trust_provider| {
+                let connector_provider =
+                    account.connector_provider().and_then(|trust_provider| {
                         debug!(?trust_provider);
                         // Now get the provider, if it'still linked and exists.
-                        self.oauth2_client_providers.get(&trust_provider.provider)
+                        self.connector_providers.get(&trust_provider.provider)
                     });
 
-                debug!(?oauth2_client_provider);
+                debug!(?connector_provider);
 
                 let asd: AuthSessionData = AuthSessionData {
                     account,
@@ -1337,7 +1337,7 @@ impl IdmServerAuthTransaction<'_> {
                     webauthn: self.webauthn,
                     ct,
                     client_auth_info,
-                    oauth2_client_provider,
+                    connector_provider,
                 };
 
                 let domain_keys = self.qs_read.get_domain_key_object_handle()?;
@@ -1425,7 +1425,7 @@ impl IdmServerAuthTransaction<'_> {
                 let sessionid = uuid_from_duration(ct, self.sid);
 
                 let provider = self
-                    .oauth2_client_providers
+                    .connector_providers
                     .values()
                     .find(|p| p.name == init_provider.provider_name)
                     .ok_or_else(|| {
@@ -1814,7 +1814,7 @@ impl IdmServerProxyReadTransaction<'_> {
     /// Return all configured upstream SSO providers (OAuth2 + SAML), sorted by display name.
     pub fn list_sso_providers(&self) -> Vec<SsoProviderInfo> {
         let mut providers: Vec<SsoProviderInfo> = self
-            .oauth2_client_providers
+            .connector_providers
             .values()
             .map(|p| SsoProviderInfo {
                 name: p.name.clone(),
@@ -1844,8 +1844,8 @@ impl IdmServerProxyReadTransaction<'_> {
     pub fn get_oauth2_provider_info_by_name(
         &self,
         name: &str,
-    ) -> Option<(crate::idm::oauth2_client::ProviderKind, uuid::Uuid, String)> {
-        self.oauth2_client_providers
+    ) -> Option<(crate::idm::connector::ProviderKind, uuid::Uuid, String)> {
+        self.connector_providers
             .values()
             .find(|p| p.name == name)
             .map(|p| (p.provider_kind, p.uuid, p.display_name.clone()))
@@ -2524,7 +2524,7 @@ impl IdmServerProxyWriteTransaction<'_> {
     pub fn jit_provision_oauth2_account(
         &mut self,
         provider_uuid: Uuid,
-        claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: &crate::idm::authsession::handler_connector::ExternalUserClaims,
         desired_name: &str,
     ) -> Result<Uuid, OperationError> {
         if claims.sub.is_empty() {
@@ -2586,28 +2586,28 @@ impl IdmServerProxyWriteTransaction<'_> {
     /// or an error if the write fails.
     ///
     /// Pre-DL24 callers (before the `link_by` attribute existed on the provider entry)
-    /// get the default `LinkBy::Email` behaviour via the `OAuth2ClientProvider` reload
+    /// get the default `LinkBy::Email` behaviour via the `ConnectorProvider` reload
     /// path.
     pub fn find_and_link_account_by_email(
         &mut self,
         provider_uuid: Uuid,
-        claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: &crate::idm::authsession::handler_connector::ExternalUserClaims,
     ) -> Result<Option<Uuid>, OperationError> {
         self.find_and_link_account(provider_uuid, claims)
     }
 
     /// Run the 4-step GitHub linking chain (T014 / FR-013a).
     ///
-    /// Delegates to [`crate::idm::github_connector::github_link_or_provision_chain`]
+    /// Delegates to [`crate::idm::connector::github::link_or_provision_chain`]
     /// with the raw `QueryServerWriteTransaction`. See that function for
     /// the full step-by-step semantics.
     pub fn github_link_or_provision_chain(
         &mut self,
         provider_uuid: Uuid,
-        claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: &crate::idm::authsession::handler_connector::ExternalUserClaims,
         allow_jit_provisioning: bool,
     ) -> Result<Option<Uuid>, OperationError> {
-        crate::idm::github_connector::github_link_or_provision_chain(
+        crate::idm::connector::github::link_or_provision_chain(
             &mut self.qs_write,
             provider_uuid,
             claims,
@@ -2635,7 +2635,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         upstream_group_names: &[String],
     ) -> Result<(), OperationError> {
         let mapping = self
-            .oauth2_client_providers
+            .connector_providers
             .get(&provider_uuid)
             .map(|p| p.group_mapping.clone())
             .unwrap_or_default();
@@ -2654,15 +2654,15 @@ impl IdmServerProxyWriteTransaction<'_> {
     pub fn find_and_link_account(
         &mut self,
         provider_uuid: Uuid,
-        claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: &crate::idm::authsession::handler_connector::ExternalUserClaims,
     ) -> Result<Option<Uuid>, OperationError> {
-        use crate::idm::oauth2_client::LinkBy;
+        use crate::idm::connector::LinkBy;
 
         // Read the connector's cached `link_by`. If the provider isn't loaded (which should
         // not happen in normal flows — this function is called from an authenticated
         // provider-initiated session), fall back to the pre-DL24 email behaviour.
         let link_by = self
-            .oauth2_client_providers
+            .connector_providers
             .get(&provider_uuid)
             .map(|p| p.link_by)
             .unwrap_or(LinkBy::Email);
@@ -2761,7 +2761,7 @@ impl IdmServerProxyWriteTransaction<'_> {
     /// slot is available.
     pub fn derive_jit_username(
         &mut self,
-        claims: &crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: &crate::idm::authsession::handler_connector::ExternalUserClaims,
     ) -> Result<String, OperationError> {
         let base = claims
             .username_hint
@@ -2996,7 +2996,7 @@ impl IdmServerProxyWriteTransaction<'_> {
 
         let (claims, cached_state): (
             handler_saml_client::SamlClaims,
-            crate::idm::saml_connector::SamlCachedState,
+            crate::idm::connector::saml::SamlCachedState,
         ) = handler_saml_client::validate_saml_response(provider, encoded_response, request_id)?;
 
         // Find or provision the account.
@@ -3149,7 +3149,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
 
         if self.qs_write.get_changed_oauth2_client() {
-            self.reload_oauth2_client_providers()?;
+            self.reload_connector_providers()?;
         }
 
         if self.qs_write.get_changed_saml_client() {
@@ -3160,7 +3160,7 @@ impl IdmServerProxyWriteTransaction<'_> {
         self.applications.commit();
         self.oauth2rs.commit();
         self.cred_update_sessions.commit();
-        self.oauth2_client_providers.commit();
+        self.connector_providers.commit();
         self.saml_client_providers.commit();
 
         trace!("cred_update_session.commit");

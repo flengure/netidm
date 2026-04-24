@@ -129,7 +129,7 @@ impl State0 {
 /// (tokio-task-cancels the `axum::serve` future).
 #[allow(dead_code)]
 pub struct MockGithub {
-    /// Base URL to point the connector's `OAuth2ClientGithubHost` at.
+    /// Base URL to point the connector's `ConnectorGithubHost` at.
     /// Mount-point-aware: REST paths live at `{base}/api/v3/...`; OAuth
     /// paths live at `{base}/login/oauth/...`. The real GitHub splits
     /// these across `github.com` and `api.github.com`, but on a single

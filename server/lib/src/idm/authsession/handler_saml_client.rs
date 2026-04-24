@@ -1,5 +1,5 @@
 use crate::idm::saml_client::SamlClientProvider;
-use crate::idm::saml_connector::SamlCachedState;
+use crate::idm::connector::saml::SamlCachedState;
 use crate::prelude::*;
 use base64::{engine::general_purpose, Engine as _};
 use flate2::{write::DeflateEncoder, Compression};

@@ -1,7 +1,7 @@
 //! Google upstream connector (PR-CONNECTOR-GOOGLE, DL30).
 //!
 //! Implements [`RefreshableConnector`] for Google Workspace / Google Identity.
-//! Providers whose `OAuth2Client` entry carries `oauth2_client_provider_kind =
+//! Providers whose `Connector` entry carries `connector_provider_kind =
 //! "google"` are dispatched here.
 //!
 //! Features:
@@ -11,10 +11,10 @@
 //! * Optional group fetching via the Admin SDK Directory API using service
 //!   account impersonation (domain-wide delegation).
 //!
-//! [`RefreshableConnector`]: crate::idm::oauth2_connector::RefreshableConnector
+//! [`RefreshableConnector`]: crate::idm::connector::traits::RefreshableConnector
 
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
-use crate::idm::oauth2_connector::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
+use crate::idm::connector::traits::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
 use crate::prelude::*;
 use async_trait::async_trait;
 use base64::{engine::general_purpose, Engine as _};
@@ -63,9 +63,9 @@ impl ServiceAccountKey {
     }
 }
 
-/// Parsed Google connector configuration — one per `OAuth2Client` entry with
-/// `oauth2_client_provider_kind = "google"`. Built once at server start and
-/// registered with the [`crate::idm::oauth2_connector::ConnectorRegistry`].
+/// Parsed Google connector configuration — one per `Connector` entry with
+/// `connector_provider_kind = "google"`. Built once at server start and
+/// registered with the [`crate::idm::connector::traits::ConnectorRegistry`].
 #[derive(Clone, Debug)]
 pub struct GoogleConfig {
     pub entry_uuid: Uuid,
@@ -100,33 +100,33 @@ impl GoogleConfig {
         let entry_uuid = entry.get_uuid();
 
         let client_id = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientId)
+            .get_ava_single_utf8(Attribute::ConnectorId)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "Google connector entry missing oauth2_client_id"
+                    "Google connector entry missing connector_id"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let client_secret = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientSecret)
+            .get_ava_single_utf8(Attribute::ConnectorSecret)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "Google connector entry missing oauth2_client_secret"
+                    "Google connector entry missing connector_secret"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let hosted_domain = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientGoogleHostedDomain)
+            .get_ava_single_iutf8(Attribute::ConnectorGoogleHostedDomain)
             .map(str::to_string);
 
         let service_account_json = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientGoogleServiceAccountJson)
+            .get_ava_single_utf8(Attribute::ConnectorGoogleServiceAccountJson)
             .map(str::to_string);
 
         let service_account = service_account_json
@@ -143,11 +143,11 @@ impl GoogleConfig {
             .transpose()?;
 
         let admin_email = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientGoogleAdminEmail)
+            .get_ava_single_iutf8(Attribute::ConnectorGoogleAdminEmail)
             .map(str::to_string);
 
         let fetch_groups = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientGoogleFetchGroups)
+            .get_ava_single_bool(Attribute::ConnectorGoogleFetchGroups)
             .unwrap_or(false);
 
         if fetch_groups && service_account.is_none() {
@@ -166,7 +166,7 @@ impl GoogleConfig {
         }
 
         let allow_jit_provisioning = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientGithubAllowJitProvisioning)
+            .get_ava_single_bool(Attribute::ConnectorGithubAllowJitProvisioning)
             .unwrap_or(false);
 
         let http = reqwest::Client::builder()

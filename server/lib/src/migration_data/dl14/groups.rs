@@ -352,7 +352,7 @@ pub static BUILTIN_GROUP_MESSAGE_SENDERS: LazyLock<BuiltinGroup> = LazyLock::new
 
 pub static BUILTIN_GROUP_OAUTH2_CLIENT_ADMINS: LazyLock<BuiltinGroup> =
     LazyLock::new(|| BuiltinGroup {
-        name: "idm_oauth2_client_admins",
+        name: "idm_connector_admins",
         description: "Builtin Domain Trust Administration Group.",
         uuid: UUID_IDM_OAUTH2_CLIENT_ADMINS,
         entry_managed_by: Some(UUID_SYSTEM_ADMINS),

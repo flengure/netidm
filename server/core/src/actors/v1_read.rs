@@ -1706,7 +1706,7 @@ impl QueryServerReadV1 {
         &self,
         name: &str,
     ) -> Option<(
-        netidmd_lib::idm::oauth2_client::ProviderKind,
+        netidmd_lib::idm::connector::ProviderKind,
         uuid::Uuid,
         String,
     )> {

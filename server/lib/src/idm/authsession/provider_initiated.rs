@@ -6,9 +6,9 @@
 //! validate the subsequent callback.
 
 use crate::idm::authentication::{AuthCredential, AuthExternal, AuthState};
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
 use crate::idm::oauth2::PkceS256Secret;
-use crate::idm::oauth2_client::{OAuth2ClientProvider, ProviderKind};
+use crate::idm::connector::{ConnectorProvider, ProviderKind};
 use crate::prelude::*;
 use crate::utils;
 use netidm_proto::oauth2::{
@@ -58,7 +58,7 @@ pub(crate) struct ProviderInitiatedSession {
 
 impl ProviderInitiatedSession {
     /// Create a new provider-initiated session from a configured provider.
-    pub(crate) fn new(provider: &OAuth2ClientProvider, issue: AuthIssueSession) -> Self {
+    pub(crate) fn new(provider: &ConnectorProvider, issue: AuthIssueSession) -> Self {
         let pkce_secret = PkceS256Secret::default();
         let csrf_state = utils::password_from_random();
         ProviderInitiatedSession {

@@ -69,7 +69,7 @@ pub struct Account {
     pub(crate) unix_extn: Option<UnixExtensions>,
     pub(crate) sshkeys: BTreeMap<String, SshPublicKey>,
     pub apps_pwds: BTreeMap<Uuid, Vec<ApplicationPassword>>,
-    pub(crate) oauth2_client_provider: Option<OAuth2AccountCredential>,
+    pub(crate) connector_provider: Option<OAuth2AccountCredential>,
     pub updated_at: Option<Cid>,
 }
 
@@ -220,7 +220,7 @@ macro_rules! try_from_entry {
         let maybe_account_credential_id =
             $value.get_ava_single_uuid(Attribute::OAuth2AccountCredentialUuid);
 
-        let oauth2_client_provider = match (
+        let connector_provider = match (
             maybe_account_provider,
             maybe_account_unique_user_id,
             maybe_account_credential_id,
@@ -259,7 +259,7 @@ macro_rules! try_from_entry {
             unix_extn,
             sshkeys,
             apps_pwds,
-            oauth2_client_provider,
+            connector_provider,
             updated_at,
         })
     }};
@@ -887,16 +887,16 @@ impl Account {
         })
     }
 
-    pub(crate) fn oauth2_client_provider(&self) -> Option<&OAuth2AccountCredential> {
-        self.oauth2_client_provider.as_ref()
+    pub(crate) fn connector_provider(&self) -> Option<&OAuth2AccountCredential> {
+        self.connector_provider.as_ref()
     }
 
     #[cfg(test)]
-    pub(crate) fn setup_oauth2_client_provider(
+    pub(crate) fn setup_connector_provider(
         &mut self,
-        client_provider: &crate::idm::oauth2_client::OAuth2ClientProvider,
+        client_provider: &crate::idm::connector::ConnectorProvider,
     ) {
-        self.oauth2_client_provider = Some(OAuth2AccountCredential {
+        self.connector_provider = Some(OAuth2AccountCredential {
             provider: client_provider.uuid,
             cred_id: Uuid::new_v4(),
             user_id: self.spn.clone(),

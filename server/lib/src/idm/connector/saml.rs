@@ -10,10 +10,10 @@
 //! downstream refresh, keeping the user's group memberships alive for the
 //! lifetime of their `Oauth2Session`.
 //!
-//! [`RefreshableConnector`]: crate::idm::oauth2_connector::RefreshableConnector
+//! [`RefreshableConnector`]: crate::idm::connector::traits::RefreshableConnector
 
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
-use crate::idm::oauth2_connector::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
+use crate::idm::connector::traits::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
 use crate::prelude::*;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};

@@ -1,7 +1,7 @@
 //! DL25 migration phases.
 //!
 //! DL25 extends three schema attributes (all `Utf8String`, multi-value) and
-//! updates three classes' `systemmay` lists (`OAuth2Client`, `SamlClient`,
+//! updates three classes' `systemmay` lists (`Connector`, `SamlClient`,
 //! `Person`). It also updates the OAuth2 / SAML client admin ACPs to allow
 //! writing the new attributes (and `OAuth2LinkBy`, which was added in DL24
 //! but whose ACP entry was missed at the time). Every non-schema /

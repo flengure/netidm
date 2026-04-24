@@ -169,8 +169,8 @@ pub const ATTR_OAUTH2_ALLOW_INSECURE_CLIENT_DISABLE_PKCE: &str =
     "oauth2_allow_insecure_client_disable_pkce";
 pub const ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT: &str = "oauth2_allow_localhost_redirect";
 pub const ATTR_OAUTH2_AUTHORISATION_ENDPOINT: &str = "oauth2_authorisation_endpoint";
-pub const ATTR_OAUTH2_CLIENT_ID: &str = "oauth2_client_id";
-pub const ATTR_OAUTH2_CLIENT_SECRET: &str = "oauth2_client_secret";
+pub const ATTR_CONNECTOR_ID: &str = "connector_id";
+pub const ATTR_CONNECTOR_SECRET: &str = "connector_secret";
 pub const ATTR_OAUTH2_CONSENT_SCOPE_MAP: &str = "oauth2_consent_scope_map";
 pub const ATTR_OAUTH2_DEVICE_FLOW_ENABLE: &str = "oauth2_device_flow_enable";
 pub const ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE: &str = "oauth2_jwt_legacy_crypto_enable";
@@ -231,115 +231,116 @@ pub const ATTR_SAML_SESSION_CREATED: &str = "saml_session_created";
 pub const ENTRYCLASS_LOGOUT_DELIVERY: &str = "logout_delivery";
 pub const ENTRYCLASS_SAML_SESSION: &str = "saml_session";
 // DL28 — GitHub upstream connector (PR-CONNECTOR-GITHUB)
-pub const ATTR_OAUTH2_CLIENT_PROVIDER_KIND: &str = "oauth2_client_provider_kind";
-pub const ATTR_OAUTH2_CLIENT_GITHUB_HOST: &str = "oauth2_client_github_host";
-pub const ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER: &str = "oauth2_client_github_org_filter";
-pub const ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS: &str = "oauth2_client_github_allowed_teams";
-pub const ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD: &str = "oauth2_client_github_team_name_field";
-pub const ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS: &str = "oauth2_client_github_load_all_groups";
-pub const ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN: &str =
-    "oauth2_client_github_preferred_email_domain";
-pub const ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING: &str =
-    "oauth2_client_github_allow_jit_provisioning";
+pub const ATTR_CONNECTOR_PROVIDER_KIND: &str = "connector_provider_kind";
+pub const ATTR_CONNECTOR_GITHUB_HOST: &str = "connector_github_host";
+pub const ATTR_CONNECTOR_GITHUB_ORG_FILTER: &str = "connector_github_org_filter";
+pub const ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS: &str = "connector_github_allowed_teams";
+pub const ATTR_CONNECTOR_GITHUB_TEAM_NAME_FIELD: &str = "connector_github_team_name_field";
+pub const ATTR_CONNECTOR_GITHUB_LOAD_ALL_GROUPS: &str = "connector_github_load_all_groups";
+pub const ATTR_CONNECTOR_GITHUB_PREFERRED_EMAIL_DOMAIN: &str =
+    "connector_github_preferred_email_domain";
+pub const ATTR_CONNECTOR_GITHUB_ALLOW_JIT_PROVISIONING: &str =
+    "connector_github_allow_jit_provisioning";
+pub const ATTR_CONNECTOR_GITHUB_USE_LOGIN_AS_ID: &str = "connector_github_use_login_as_id";
 // DL29 — Generic OIDC connector attributes
-pub const ATTR_OAUTH2_CLIENT_OIDC_ENABLE_GROUPS: &str = "oauth2_client_oidc_enable_groups";
-pub const ATTR_OAUTH2_CLIENT_OIDC_GROUPS_KEY: &str = "oauth2_client_oidc_groups_key";
-pub const ATTR_OAUTH2_CLIENT_OIDC_SKIP_EMAIL_VERIFIED: &str =
-    "oauth2_client_oidc_skip_email_verified";
-pub const ATTR_OAUTH2_CLIENT_OIDC_ALLOWED_GROUPS: &str = "oauth2_client_oidc_allowed_groups";
-pub const ATTR_OAUTH2_CLIENT_OIDC_GET_USER_INFO: &str = "oauth2_client_oidc_get_user_info";
-pub const ATTR_OAUTH2_CLIENT_OIDC_USER_ID_KEY: &str = "oauth2_client_oidc_user_id_key";
-pub const ATTR_OAUTH2_CLIENT_OIDC_USER_NAME_KEY: &str = "oauth2_client_oidc_user_name_key";
-pub const ATTR_OAUTH2_CLIENT_OIDC_OVERRIDE_CLAIM_MAPPING: &str =
-    "oauth2_client_oidc_override_claim_mapping";
-pub const ATTR_OAUTH2_CLIENT_OIDC_GROUPS_PREFIX: &str = "oauth2_client_oidc_groups_prefix";
-pub const ATTR_OAUTH2_CLIENT_OIDC_GROUPS_SUFFIX: &str = "oauth2_client_oidc_groups_suffix";
+pub const ATTR_CONNECTOR_OIDC_ENABLE_GROUPS: &str = "connector_oidc_enable_groups";
+pub const ATTR_CONNECTOR_OIDC_GROUPS_KEY: &str = "connector_oidc_groups_key";
+pub const ATTR_CONNECTOR_OIDC_SKIP_EMAIL_VERIFIED: &str =
+    "connector_oidc_skip_email_verified";
+pub const ATTR_CONNECTOR_OIDC_ALLOWED_GROUPS: &str = "connector_oidc_allowed_groups";
+pub const ATTR_CONNECTOR_OIDC_GET_USER_INFO: &str = "connector_oidc_get_user_info";
+pub const ATTR_CONNECTOR_OIDC_USER_ID_KEY: &str = "connector_oidc_user_id_key";
+pub const ATTR_CONNECTOR_OIDC_USER_NAME_KEY: &str = "connector_oidc_user_name_key";
+pub const ATTR_CONNECTOR_OIDC_OVERRIDE_CLAIM_MAPPING: &str =
+    "connector_oidc_override_claim_mapping";
+pub const ATTR_CONNECTOR_OIDC_GROUPS_PREFIX: &str = "connector_oidc_groups_prefix";
+pub const ATTR_CONNECTOR_OIDC_GROUPS_SUFFIX: &str = "connector_oidc_groups_suffix";
 // DL30 — Google upstream connector attributes
-pub const ATTR_OAUTH2_CLIENT_GOOGLE_HOSTED_DOMAIN: &str = "oauth2_client_google_hosted_domain";
-pub const ATTR_OAUTH2_CLIENT_GOOGLE_SERVICE_ACCOUNT_JSON: &str =
-    "oauth2_client_google_service_account_json";
-pub const ATTR_OAUTH2_CLIENT_GOOGLE_ADMIN_EMAIL: &str = "oauth2_client_google_admin_email";
-pub const ATTR_OAUTH2_CLIENT_GOOGLE_FETCH_GROUPS: &str = "oauth2_client_google_fetch_groups";
+pub const ATTR_CONNECTOR_GOOGLE_HOSTED_DOMAIN: &str = "connector_google_hosted_domain";
+pub const ATTR_CONNECTOR_GOOGLE_SERVICE_ACCOUNT_JSON: &str =
+    "connector_google_service_account_json";
+pub const ATTR_CONNECTOR_GOOGLE_ADMIN_EMAIL: &str = "connector_google_admin_email";
+pub const ATTR_CONNECTOR_GOOGLE_FETCH_GROUPS: &str = "connector_google_fetch_groups";
 // DL31 — Microsoft Azure AD upstream connector attributes
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_TENANT: &str = "oauth2_client_microsoft_tenant";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_ONLY_SECURITY_GROUPS: &str =
-    "oauth2_client_microsoft_only_security_groups";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_GROUPS: &str = "oauth2_client_microsoft_groups";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_GROUP_NAME_FORMAT: &str =
-    "oauth2_client_microsoft_group_name_format";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_USE_GROUPS_AS_WHITELIST: &str =
-    "oauth2_client_microsoft_use_groups_as_whitelist";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_EMAIL_TO_LOWERCASE: &str =
-    "oauth2_client_microsoft_email_to_lowercase";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_API_URL: &str = "oauth2_client_microsoft_api_url";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_GRAPH_URL: &str = "oauth2_client_microsoft_graph_url";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_PROMPT_TYPE: &str = "oauth2_client_microsoft_prompt_type";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_DOMAIN_HINT: &str = "oauth2_client_microsoft_domain_hint";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_SCOPES: &str = "oauth2_client_microsoft_scopes";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_PREFERRED_USERNAME_FIELD: &str =
-    "oauth2_client_microsoft_preferred_username_field";
-pub const ATTR_OAUTH2_CLIENT_MICROSOFT_ALLOW_JIT_PROVISIONING: &str =
-    "oauth2_client_microsoft_allow_jit_provisioning";
+pub const ATTR_CONNECTOR_MICROSOFT_TENANT: &str = "connector_microsoft_tenant";
+pub const ATTR_CONNECTOR_MICROSOFT_ONLY_SECURITY_GROUPS: &str =
+    "connector_microsoft_only_security_groups";
+pub const ATTR_CONNECTOR_MICROSOFT_GROUPS: &str = "connector_microsoft_groups";
+pub const ATTR_CONNECTOR_MICROSOFT_GROUP_NAME_FORMAT: &str =
+    "connector_microsoft_group_name_format";
+pub const ATTR_CONNECTOR_MICROSOFT_USE_GROUPS_AS_WHITELIST: &str =
+    "connector_microsoft_use_groups_as_whitelist";
+pub const ATTR_CONNECTOR_MICROSOFT_EMAIL_TO_LOWERCASE: &str =
+    "connector_microsoft_email_to_lowercase";
+pub const ATTR_CONNECTOR_MICROSOFT_API_URL: &str = "connector_microsoft_api_url";
+pub const ATTR_CONNECTOR_MICROSOFT_GRAPH_URL: &str = "connector_microsoft_graph_url";
+pub const ATTR_CONNECTOR_MICROSOFT_PROMPT_TYPE: &str = "connector_microsoft_prompt_type";
+pub const ATTR_CONNECTOR_MICROSOFT_DOMAIN_HINT: &str = "connector_microsoft_domain_hint";
+pub const ATTR_CONNECTOR_MICROSOFT_SCOPES: &str = "connector_microsoft_scopes";
+pub const ATTR_CONNECTOR_MICROSOFT_PREFERRED_USERNAME_FIELD: &str =
+    "connector_microsoft_preferred_username_field";
+pub const ATTR_CONNECTOR_MICROSOFT_ALLOW_JIT_PROVISIONING: &str =
+    "connector_microsoft_allow_jit_provisioning";
 // DL32 — Inbound LDAP federation connector (PR-CONNECTOR-LDAP)
 // Connection / TLS
-pub const ATTR_OAUTH2_CLIENT_LDAP_HOST: &str = "oauth2_client_ldap_host";
-pub const ATTR_OAUTH2_CLIENT_LDAP_INSECURE_NO_SSL: &str = "oauth2_client_ldap_insecure_no_ssl";
-pub const ATTR_OAUTH2_CLIENT_LDAP_INSECURE_SKIP_VERIFY: &str =
-    "oauth2_client_ldap_insecure_skip_verify";
-pub const ATTR_OAUTH2_CLIENT_LDAP_START_TLS: &str = "oauth2_client_ldap_start_tls";
-pub const ATTR_OAUTH2_CLIENT_LDAP_ROOT_CA_DATA: &str = "oauth2_client_ldap_root_ca_data";
-pub const ATTR_OAUTH2_CLIENT_LDAP_CLIENT_CERT: &str = "oauth2_client_ldap_client_cert";
-pub const ATTR_OAUTH2_CLIENT_LDAP_CLIENT_KEY: &str = "oauth2_client_ldap_client_key";
-pub const ATTR_OAUTH2_CLIENT_LDAP_BIND_DN: &str = "oauth2_client_ldap_bind_dn";
-pub const ATTR_OAUTH2_CLIENT_LDAP_BIND_PW: &str = "oauth2_client_ldap_bind_pw";
-pub const ATTR_OAUTH2_CLIENT_LDAP_USERNAME_PROMPT: &str = "oauth2_client_ldap_username_prompt";
+pub const ATTR_CONNECTOR_LDAP_HOST: &str = "connector_ldap_host";
+pub const ATTR_CONNECTOR_LDAP_INSECURE_NO_SSL: &str = "connector_ldap_insecure_no_ssl";
+pub const ATTR_CONNECTOR_LDAP_INSECURE_SKIP_VERIFY: &str =
+    "connector_ldap_insecure_skip_verify";
+pub const ATTR_CONNECTOR_LDAP_START_TLS: &str = "connector_ldap_start_tls";
+pub const ATTR_CONNECTOR_LDAP_ROOT_CA_DATA: &str = "connector_ldap_root_ca_data";
+pub const ATTR_CONNECTOR_LDAP_CLIENT_CERT: &str = "connector_ldap_client_cert";
+pub const ATTR_CONNECTOR_LDAP_CLIENT_KEY: &str = "connector_ldap_client_key";
+pub const ATTR_CONNECTOR_LDAP_BIND_DN: &str = "connector_ldap_bind_dn";
+pub const ATTR_CONNECTOR_LDAP_BIND_PW: &str = "connector_ldap_bind_pw";
+pub const ATTR_CONNECTOR_LDAP_USERNAME_PROMPT: &str = "connector_ldap_username_prompt";
 // UserSearch
-pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_BASE_DN: &str =
-    "oauth2_client_ldap_user_search_base_dn";
-pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_FILTER: &str =
-    "oauth2_client_ldap_user_search_filter";
-pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME: &str =
-    "oauth2_client_ldap_user_search_username";
-pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_SCOPE: &str = "oauth2_client_ldap_user_search_scope";
-pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_ID_ATTR: &str =
-    "oauth2_client_ldap_user_search_id_attr";
-pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_ATTR: &str =
-    "oauth2_client_ldap_user_search_email_attr";
-pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_NAME_ATTR: &str =
-    "oauth2_client_ldap_user_search_name_attr";
-pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_PREFERRED_USERNAME_ATTR: &str =
-    "oauth2_client_ldap_user_search_preferred_username_attr";
-pub const ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_SUFFIX: &str =
-    "oauth2_client_ldap_user_search_email_suffix";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN: &str =
+    "connector_ldap_user_search_base_dn";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_FILTER: &str =
+    "connector_ldap_user_search_filter";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME: &str =
+    "connector_ldap_user_search_username";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_SCOPE: &str = "connector_ldap_user_search_scope";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_ID_ATTR: &str =
+    "connector_ldap_user_search_id_attr";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_ATTR: &str =
+    "connector_ldap_user_search_email_attr";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_NAME_ATTR: &str =
+    "connector_ldap_user_search_name_attr";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_PREFERRED_USERNAME_ATTR: &str =
+    "connector_ldap_user_search_preferred_username_attr";
+pub const ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_SUFFIX: &str =
+    "connector_ldap_user_search_email_suffix";
 // GroupSearch
-pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_BASE_DN: &str =
-    "oauth2_client_ldap_group_search_base_dn";
-pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_FILTER: &str =
-    "oauth2_client_ldap_group_search_filter";
-pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_SCOPE: &str =
-    "oauth2_client_ldap_group_search_scope";
-pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS: &str =
-    "oauth2_client_ldap_group_search_user_matchers";
-pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_NAME_ATTR: &str =
-    "oauth2_client_ldap_group_search_name_attr";
+pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN: &str =
+    "connector_ldap_group_search_base_dn";
+pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER: &str =
+    "connector_ldap_group_search_filter";
+pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_SCOPE: &str =
+    "connector_ldap_group_search_scope";
+pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS: &str =
+    "connector_ldap_group_search_user_matchers";
+pub const ATTR_CONNECTOR_LDAP_GROUP_SEARCH_NAME_ATTR: &str =
+    "connector_ldap_group_search_name_attr";
 // DL34 — OpenShift connector dex-parity additions (PR-CONNECTOR-OPENSHIFT)
-pub const ATTR_OAUTH2_CLIENT_OPENSHIFT_ISSUER: &str = "oauth2_client_openshift_issuer";
-pub const ATTR_OAUTH2_CLIENT_OPENSHIFT_GROUPS: &str = "oauth2_client_openshift_groups";
-pub const ATTR_OAUTH2_CLIENT_OPENSHIFT_INSECURE_CA: &str = "oauth2_client_openshift_insecure_ca";
-pub const ATTR_OAUTH2_CLIENT_OPENSHIFT_ROOT_CA: &str = "oauth2_client_openshift_root_ca";
+pub const ATTR_CONNECTOR_OPENSHIFT_ISSUER: &str = "connector_openshift_issuer";
+pub const ATTR_CONNECTOR_OPENSHIFT_GROUPS: &str = "connector_openshift_groups";
+pub const ATTR_CONNECTOR_OPENSHIFT_INSECURE_CA: &str = "connector_openshift_insecure_ca";
+pub const ATTR_CONNECTOR_OPENSHIFT_ROOT_CA: &str = "connector_openshift_root_ca";
 // DL35 — GitLab connector dex-parity additions (PR-CONNECTOR-GITLAB)
-pub const ATTR_OAUTH2_CLIENT_GITLAB_BASE_URL: &str = "oauth2_client_gitlab_base_url";
-pub const ATTR_OAUTH2_CLIENT_GITLAB_GROUPS: &str = "oauth2_client_gitlab_groups";
-pub const ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID: &str = "oauth2_client_gitlab_use_login_as_id";
-pub const ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION: &str =
-    "oauth2_client_gitlab_get_groups_permission";
-pub const ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA: &str = "oauth2_client_gitlab_root_ca";
+pub const ATTR_CONNECTOR_GITLAB_BASE_URL: &str = "connector_gitlab_base_url";
+pub const ATTR_CONNECTOR_GITLAB_GROUPS: &str = "connector_gitlab_groups";
+pub const ATTR_CONNECTOR_GITLAB_USE_LOGIN_AS_ID: &str = "connector_gitlab_use_login_as_id";
+pub const ATTR_CONNECTOR_GITLAB_GET_GROUPS_PERMISSION: &str =
+    "connector_gitlab_get_groups_permission";
+pub const ATTR_CONNECTOR_GITLAB_ROOT_CA: &str = "connector_gitlab_root_ca";
 // DL36 — Bitbucket Cloud connector dex-parity additions (PR-CONNECTOR-BITBUCKET)
-pub const ATTR_OAUTH2_CLIENT_BITBUCKET_TEAMS: &str = "oauth2_client_bitbucket_teams";
-pub const ATTR_OAUTH2_CLIENT_BITBUCKET_GET_WORKSPACE_PERMISSIONS: &str =
-    "oauth2_client_bitbucket_get_workspace_permissions";
-pub const ATTR_OAUTH2_CLIENT_BITBUCKET_INCLUDE_TEAM_GROUPS: &str =
-    "oauth2_client_bitbucket_include_team_groups";
+pub const ATTR_CONNECTOR_BITBUCKET_TEAMS: &str = "connector_bitbucket_teams";
+pub const ATTR_CONNECTOR_BITBUCKET_GET_WORKSPACE_PERMISSIONS: &str =
+    "connector_bitbucket_get_workspace_permissions";
+pub const ATTR_CONNECTOR_BITBUCKET_INCLUDE_TEAM_GROUPS: &str =
+    "connector_bitbucket_include_team_groups";
 // DL33 — SAML connector dex-parity additions (PR-CONNECTOR-SAML)
 pub const ATTR_SAML_SSO_ISSUER: &str = "saml_sso_issuer";
 pub const ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION: &str = "saml_insecure_skip_sig_validation";
@@ -347,7 +348,7 @@ pub const ATTR_SAML_GROUPS_DELIM: &str = "saml_groups_delim";
 pub const ATTR_SAML_ALLOWED_GROUPS: &str = "saml_allowed_groups";
 pub const ATTR_SAML_FILTER_GROUPS: &str = "saml_filter_groups";
 // DL20 — OAuth2 client logo URI
-pub const ATTR_OAUTH2_CLIENT_LOGO_URI: &str = "oauth2_client_logo_uri";
+pub const ATTR_CONNECTOR_LOGO_URI: &str = "connector_logo_uri";
 // DL21 — Generic OIDC upstream connector
 pub const ATTR_OAUTH2_ISSUER: &str = "oauth2_issuer";
 pub const ATTR_OAUTH2_JWKS_URI: &str = "oauth2_jwks_uri";
@@ -533,7 +534,7 @@ pub const ENTRYCLASS_FEATURE: &str = "feature";
 pub const ENTRYCLASS_MEMBER_OF: &str = "memberof";
 pub const ENTRYCLASS_MEMORIAL: &str = "memorial";
 pub const ENTRYCLASS_OAUTH2_ACCOUNT: &str = "oauth2_account";
-pub const ENTRYCLASS_OAUTH2_CLIENT: &str = "oauth2_client";
+pub const ENTRYCLASS_CONNECTOR: &str = "connector";
 pub const ENTRYCLASS_OBJECT: &str = "object";
 pub const ENTRYCLASS_ORG_PERSON: &str = "orgperson";
 pub const ENTRYCLASS_OUTBOUND_MESSAGE: &str = "outbound_message";

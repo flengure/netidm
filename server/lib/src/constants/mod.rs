@@ -47,30 +47,30 @@ pub const PATCH_LEVEL_2: u32 = 2;
 /// Domain Level 28: GitHub upstream connector (PR-CONNECTOR-GITHUB).
 /// First concrete implementation of the `RefreshableConnector` trait
 /// introduced in DL27. Adds one discriminator attribute
-/// (`OAuth2ClientProviderKind`) plus seven GitHub-specific config
-/// attributes on `EntryClass::OAuth2Client`.
+/// (`ConnectorProviderKind`) plus seven GitHub-specific config
+/// attributes on `EntryClass::Connector`.
 pub const DOMAIN_LEVEL_28: DomainVersion = 28;
 
 /// DL29 — Generic OIDC upstream connector (PR-CONNECTOR-GENERIC-OIDC).
-/// Adds ten OIDC-specific config attributes on `EntryClass::OAuth2Client`
+/// Adds ten OIDC-specific config attributes on `EntryClass::Connector`
 /// and routes all `generic-oidc` provider entries through
 /// `GenericOidcConnector` / `ConnectorRegistry`.
 pub const DOMAIN_LEVEL_29: DomainVersion = 29;
 
 /// DL30 — Google upstream connector (PR-CONNECTOR-GOOGLE).
-/// Adds four Google-specific config attributes on `EntryClass::OAuth2Client`:
+/// Adds four Google-specific config attributes on `EntryClass::Connector`:
 /// hosted-domain restriction (`hd` claim), service-account JSON key,
 /// admin impersonation email, and a fetch-groups toggle for Admin SDK access.
 pub const DOMAIN_LEVEL_30: DomainVersion = 30;
 
 /// DL31 — Microsoft Azure AD upstream connector (PR-CONNECTOR-MICROSOFT).
-/// Adds thirteen Microsoft-specific config attributes on `EntryClass::OAuth2Client`:
+/// Adds thirteen Microsoft-specific config attributes on `EntryClass::Connector`:
 /// tenant, group settings, sovereign-cloud URL overrides, prompt/hint params,
 /// custom scopes, preferred-username field, and JIT provisioning toggle.
 pub const DOMAIN_LEVEL_31: DomainVersion = 31;
 
 /// DL32 — Inbound LDAP federation connector (PR-CONNECTOR-LDAP).
-/// Adds twenty-four LDAP-specific config attributes on `EntryClass::OAuth2Client`:
+/// Adds twenty-four LDAP-specific config attributes on `EntryClass::Connector`:
 /// connection/TLS settings, user search config, and group search config.
 pub const DOMAIN_LEVEL_32: DomainVersion = 32;
 
@@ -83,19 +83,19 @@ pub const DOMAIN_LEVEL_32: DomainVersion = 32;
 /// `RefreshableConnector` for SAML (cache-based, mirroring dex's `Refresh()`).
 pub const DOMAIN_LEVEL_33: DomainVersion = 33;
 /// DL34 — OpenShift connector dex-parity additions (PR-CONNECTOR-OPENSHIFT).
-/// Adds 4 new `systemmay` attributes on `EntryClass::OAuth2Client`:
-/// `oauth2_client_openshift_issuer`, `oauth2_client_openshift_groups`,
-/// `oauth2_client_openshift_insecure_ca`, `oauth2_client_openshift_root_ca`.
+/// Adds 4 new `systemmay` attributes on `EntryClass::Connector`:
+/// `connector_openshift_issuer`, `connector_openshift_groups`,
+/// `connector_openshift_insecure_ca`, `connector_openshift_root_ca`.
 pub const DOMAIN_LEVEL_34: DomainVersion = 34;
 /// DL35 — GitLab connector dex-parity additions (PR-CONNECTOR-GITLAB).
-/// Adds 5 new `systemmay` attributes on `EntryClass::OAuth2Client`:
-/// `oauth2_client_gitlab_base_url`, `oauth2_client_gitlab_groups`,
-/// `oauth2_client_gitlab_use_login_as_id`, `oauth2_client_gitlab_get_groups_permission`,
-/// `oauth2_client_gitlab_root_ca`.
+/// Adds 5 new `systemmay` attributes on `EntryClass::Connector`:
+/// `connector_gitlab_base_url`, `connector_gitlab_groups`,
+/// `connector_gitlab_use_login_as_id`, `connector_gitlab_get_groups_permission`,
+/// `connector_gitlab_root_ca`.
 pub const DOMAIN_LEVEL_35: DomainVersion = 35;
 /// DL36: Bitbucket Cloud connector dex-parity additions (PR-CONNECTOR-BITBUCKET).
-/// Adds `oauth2_client_bitbucket_teams`, `oauth2_client_bitbucket_get_workspace_permissions`,
-/// `oauth2_client_bitbucket_include_team_groups`.
+/// Adds `connector_bitbucket_teams`, `connector_bitbucket_get_workspace_permissions`,
+/// `connector_bitbucket_include_team_groups`.
 pub const DOMAIN_LEVEL_36: DomainVersion = 36;
 
 pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_36;

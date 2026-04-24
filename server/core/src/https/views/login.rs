@@ -446,7 +446,7 @@ pub async fn view_sso_initiate_get(
 ) -> Response {
     use axum::http::StatusCode;
     use netidm_proto::v1::AuthIssueSession;
-    use netidmd_lib::idm::oauth2_client::ProviderKind;
+    use netidmd_lib::idm::connector::ProviderKind;
 
     // For LDAP providers, skip the OAuth2 redirect and render a login form instead.
     if let Some((ProviderKind::Ldap, _provider_uuid, display_name)) = state
@@ -547,8 +547,8 @@ pub async fn view_ldap_login_post(
     Form(form): Form<LdapLoginForm>,
 ) -> Response {
     use axum::http::StatusCode;
-    use netidmd_lib::idm::oauth2_client::ProviderKind;
-    use netidmd_lib::idm::oauth2_connector::ConnectorRefreshError;
+    use netidmd_lib::idm::connector::ProviderKind;
+    use netidmd_lib::idm::connector::traits::ConnectorRefreshError;
 
     let Some((ProviderKind::Ldap, provider_uuid, provider_display_name)) = state
         .qe_r_ref
@@ -1572,7 +1572,7 @@ async fn view_login_step(
                                 .fetch_callback_claims(&code, None)
                                 .await
                                 .map_err(|e| {
-                                    use netidmd_lib::idm::oauth2_connector::ConnectorRefreshError;
+                                    use netidmd_lib::idm::connector::traits::ConnectorRefreshError;
                                     match &e {
                                         ConnectorRefreshError::AccessDenied => {
                                             // already logged at info inside check_access_gate
@@ -1612,7 +1612,7 @@ async fn view_login_step(
                             .fetch_callback_claims(&code, Some(&code_verifier))
                             .await
                             .map_err(|e| {
-                                use netidmd_lib::idm::oauth2_connector::ConnectorRefreshError;
+                                use netidmd_lib::idm::connector::traits::ConnectorRefreshError;
                                 match &e {
                                     ConnectorRefreshError::AccessDenied => {}
                                     _ => warn!(?provider_uuid, ?e, "generic-OIDC callback failed"),
@@ -2078,7 +2078,7 @@ pub async fn view_login_provision_get(
         available_sso_providers: Vec::new(),
     };
 
-    use netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims;
+    use netidmd_lib::idm::authsession::handler_connector::ExternalUserClaims;
     let claims = ExternalUserClaims {
         sub: cookie_data.sub.clone(),
         email: cookie_data.email.clone(),
@@ -2187,7 +2187,7 @@ pub async fn view_login_provision_post(
         .into_response();
     }
 
-    use netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims;
+    use netidmd_lib::idm::authsession::handler_connector::ExternalUserClaims;
     let claims = ExternalUserClaims {
         sub: cookie_data.sub.clone(),
         email: cookie_data.email.clone(),

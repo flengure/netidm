@@ -78,7 +78,7 @@ async fn test_oauth2_openid_basic_flow_impl(
         .expect("Failed to create oauth2 config");
 
     rsclient
-        .idm_oauth2_client_add_origin(
+        .idm_connector_add_origin(
             TEST_INTEGRATION_RS_ID,
             &Url::parse(TEST_INTEGRATION_RS_REDIRECT_URL).expect("Invalid URL"),
         )
@@ -764,7 +764,7 @@ async fn test_oauth2_openid_public_flow_impl(
         .expect("Failed to create oauth2 config");
 
     rsclient
-        .idm_oauth2_client_add_origin(
+        .idm_connector_add_origin(
             TEST_INTEGRATION_RS_ID,
             &Url::parse(TEST_INTEGRATION_RS_REDIRECT_URL).expect("Invalid URL"),
         )

@@ -3,7 +3,7 @@
 //! Exact-parity Rust port of `github.com/dexidp/dex/connector/microsoft/microsoft.go`.
 //!
 //! Implements [`RefreshableConnector`] for Microsoft Entra ID (Azure AD).
-//! Providers whose `OAuth2Client` entry carries `oauth2_client_provider_kind =
+//! Providers whose `Connector` entry carries `connector_provider_kind =
 //! "microsoft"` are dispatched here.
 //!
 //! Features (mirroring dex 1:1):
@@ -18,10 +18,10 @@
 //! * Sovereign-cloud overrides for the login API URL and Graph URL.
 //! * JIT provisioning toggle (netidm extension matching GitHub/Google pattern).
 //!
-//! [`RefreshableConnector`]: crate::idm::oauth2_connector::RefreshableConnector
+//! [`RefreshableConnector`]: crate::idm::connector::traits::RefreshableConnector
 
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
-use crate::idm::oauth2_connector::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
+use crate::idm::connector::traits::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
 use crate::prelude::*;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -56,9 +56,9 @@ impl GroupNameFormat {
     }
 }
 
-/// Parsed Microsoft connector configuration — one per `OAuth2Client` entry with
-/// `oauth2_client_provider_kind = "microsoft"`. Built once at server start and
-/// registered with the [`crate::idm::oauth2_connector::ConnectorRegistry`].
+/// Parsed Microsoft connector configuration — one per `Connector` entry with
+/// `connector_provider_kind = "microsoft"`. Built once at server start and
+/// registered with the [`crate::idm::connector::traits::ConnectorRegistry`].
 #[derive(Clone, Debug)]
 pub struct MicrosoftConfig {
     pub entry_uuid: Uuid,
@@ -104,85 +104,85 @@ impl MicrosoftConfig {
         let entry_uuid = entry.get_uuid();
 
         let client_id = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientId)
+            .get_ava_single_utf8(Attribute::ConnectorId)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "Microsoft connector entry missing oauth2_client_id"
+                    "Microsoft connector entry missing connector_id"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let client_secret = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientSecret)
+            .get_ava_single_utf8(Attribute::ConnectorSecret)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "Microsoft connector entry missing oauth2_client_secret"
+                    "Microsoft connector entry missing connector_secret"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let tenant = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientMicrosoftTenant)
+            .get_ava_single_iutf8(Attribute::ConnectorMicrosoftTenant)
             .unwrap_or("common")
             .to_string();
 
         let only_security_groups = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientMicrosoftOnlySecurityGroups)
+            .get_ava_single_bool(Attribute::ConnectorMicrosoftOnlySecurityGroups)
             .unwrap_or(false);
 
         let groups = entry
-            .get_ava_set(Attribute::OAuth2ClientMicrosoftGroups)
+            .get_ava_set(Attribute::ConnectorMicrosoftGroups)
             .and_then(|vs| vs.as_utf8_iter())
             .map(|iter| iter.map(str::to_string).collect())
             .unwrap_or_default();
 
         let group_name_format = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientMicrosoftGroupNameFormat)
+            .get_ava_single_iutf8(Attribute::ConnectorMicrosoftGroupNameFormat)
             .map(GroupNameFormat::from_str)
             .unwrap_or_default();
 
         let use_groups_as_whitelist = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientMicrosoftUseGroupsAsWhitelist)
+            .get_ava_single_bool(Attribute::ConnectorMicrosoftUseGroupsAsWhitelist)
             .unwrap_or(false);
 
         let email_to_lowercase = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientMicrosoftEmailToLowercase)
+            .get_ava_single_bool(Attribute::ConnectorMicrosoftEmailToLowercase)
             .unwrap_or(false);
 
         let api_url = entry
-            .get_ava_single_url(Attribute::OAuth2ClientMicrosoftApiUrl)
+            .get_ava_single_url(Attribute::ConnectorMicrosoftApiUrl)
             .map(|u| u.as_str().trim_end_matches('/').to_string())
             .unwrap_or_else(|| MICROSOFT_DEFAULT_API_URL.to_string());
 
         let graph_url = entry
-            .get_ava_single_url(Attribute::OAuth2ClientMicrosoftGraphUrl)
+            .get_ava_single_url(Attribute::ConnectorMicrosoftGraphUrl)
             .map(|u| u.as_str().trim_end_matches('/').to_string())
             .unwrap_or_else(|| MICROSOFT_DEFAULT_GRAPH_URL.to_string());
 
         let prompt_type = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientMicrosoftPromptType)
+            .get_ava_single_iutf8(Attribute::ConnectorMicrosoftPromptType)
             .map(str::to_string);
 
         let domain_hint = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientMicrosoftDomainHint)
+            .get_ava_single_iutf8(Attribute::ConnectorMicrosoftDomainHint)
             .map(str::to_string);
 
         let scopes = entry
-            .get_ava_set(Attribute::OAuth2ClientMicrosoftScopes)
+            .get_ava_set(Attribute::ConnectorMicrosoftScopes)
             .and_then(|vs| vs.as_utf8_iter())
             .map(|iter| iter.map(str::to_string).collect())
             .unwrap_or_default();
 
         let preferred_username_field = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientMicrosoftPreferredUsernameField)
+            .get_ava_single_iutf8(Attribute::ConnectorMicrosoftPreferredUsernameField)
             .map(str::to_string);
 
         let allow_jit_provisioning = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientMicrosoftAllowJitProvisioning)
+            .get_ava_single_bool(Attribute::ConnectorMicrosoftAllowJitProvisioning)
             .unwrap_or(false);
 
         let http = reqwest::Client::builder()

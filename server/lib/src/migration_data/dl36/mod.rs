@@ -1,10 +1,10 @@
 //! DL36 migration phases.
 //!
 //! DL36 introduces Bitbucket Cloud connector dex-parity additions (PR-CONNECTOR-BITBUCKET):
-//!   * Three new optional config attributes on `EntryClass::OAuth2Client`:
-//!     `OAuth2ClientBitbucketTeams`, `OAuth2ClientBitbucketGetWorkspacePermissions`,
-//!     and `OAuth2ClientBitbucketIncludeTeamGroups`.
-//!   * An extended `idm_acp_oauth2_client_admin` covering the new attrs.
+//!   * Three new optional config attributes on `EntryClass::Connector`:
+//!     `ConnectorBitbucketTeams`, `ConnectorBitbucketGetWorkspacePermissions`,
+//!     and `ConnectorBitbucketIncludeTeamGroups`.
+//!   * An extended `idm_acp_connector_admin` covering the new attrs.
 //!
 //! No new entry class. No data migration — schema-only. Every other phase
 //! delegates to DL35.
@@ -21,17 +21,17 @@ use crate::prelude::*;
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl35::phase_1_schema_attrs();
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_TEAMS_DL36
+        SCHEMA_ATTR_CONNECTOR_BITBUCKET_TEAMS_DL36
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_GET_WORKSPACE_PERMISSIONS_DL36
+        SCHEMA_ATTR_CONNECTOR_BITBUCKET_GET_WORKSPACE_PERMISSIONS_DL36
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_INCLUDE_TEAM_GROUPS_DL36
+        SCHEMA_ATTR_CONNECTOR_BITBUCKET_INCLUDE_TEAM_GROUPS_DL36
             .clone()
             .into(),
     );

@@ -938,19 +938,19 @@ pub static SCHEMA_ATTR_OAUTH2_ACCOUNT_UNIQUE_USER_ID: LazyLock<SchemaAttribute> 
         ..Default::default()
     });
 
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_ID: LazyLock<SchemaAttribute> =
+pub static SCHEMA_ATTR_CONNECTOR_ID: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_ID,
-        name: Attribute::OAuth2ClientId,
+        uuid: UUID_SCHEMA_ATTR_CONNECTOR_ID,
+        name: Attribute::ConnectorId,
         description: "The OAuth2 Client ID".to_string(),
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });
 
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_SECRET: LazyLock<SchemaAttribute> =
+pub static SCHEMA_ATTR_CONNECTOR_SECRET: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_SECRET,
-        name: Attribute::OAuth2ClientSecret,
+        uuid: UUID_SCHEMA_ATTR_CONNECTOR_SECRET,
+        name: Attribute::ConnectorSecret,
         description: "The OAuth2 Client Secret".to_string(),
         // TODO: We may need a new secret type that CAN be imported from externally. Currently
         // our secret string type denies external modification.
@@ -1324,13 +1324,13 @@ pub static SCHEMA_CLASS_OAUTH2_RS_PUBLIC_DL4: LazyLock<SchemaClass> =
 
 pub static SCHEMA_CLASS_OAUTH2_CLIENT: LazyLock<SchemaClass> = LazyLock::new(|| {
     SchemaClass {
-    uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
-    name: EntryClass::OAuth2Client.into(),
+    uuid: UUID_SCHEMA_CLASS_CONNECTOR,
+    name: EntryClass::Connector.into(),
     description: "The class representing a configured OAuth2 Confidential Client acting as an authentication source".to_string(),
     systemmust: vec![
         Attribute::Name,
-        Attribute::OAuth2ClientId,
-        Attribute::OAuth2ClientSecret,
+        Attribute::ConnectorId,
+        Attribute::ConnectorSecret,
         Attribute::OAuth2AuthorisationEndpoint,
         Attribute::OAuth2TokenEndpoint,
         Attribute::OAuth2RequestScopes,

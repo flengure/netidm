@@ -409,9 +409,9 @@ impl QueryServerWriteTransaction<'_> {
 
     /// DL28 — PR-CONNECTOR-GITHUB.
     ///
-    /// Adds one discriminator attribute (`OAuth2ClientProviderKind`) + seven
-    /// GitHub-specific config attributes on `EntryClass::OAuth2Client`, plus
-    /// a DL28 refresh of `idm_acp_oauth2_client_admin` covering the new
+    /// Adds one discriminator attribute (`ConnectorProviderKind`) + seven
+    /// GitHub-specific config attributes on `EntryClass::Connector`, plus
+    /// a DL28 refresh of `idm_acp_connector_admin` covering the new
     /// attrs. No new entry class.
     ///
     /// Runs the full DL28 phase batches (schema attrs, ACP refresh) with
@@ -496,7 +496,7 @@ impl QueryServerWriteTransaction<'_> {
 
     /// DL29 bootstrap — schema-only migration for the generic-OIDC connector
     /// (PR-CONNECTOR-GENERIC-OIDC). Adds ten OIDC-specific config attributes on
-    /// `EntryClass::OAuth2Client` and extends the ACP to cover them. All new
+    /// `EntryClass::Connector` and extends the ACP to cover them. All new
     /// attributes are optional so pre-DL29 entries decode unchanged.
     ///
     /// # Errors
@@ -567,9 +567,9 @@ impl QueryServerWriteTransaction<'_> {
 
     /// DL30 — PR-CONNECTOR-GOOGLE.
     ///
-    /// Adds four Google-specific config attributes on `EntryClass::OAuth2Client`
+    /// Adds four Google-specific config attributes on `EntryClass::Connector`
     /// (hosted_domain, service_account_json, admin_email, fetch_groups) plus a DL30
-    /// refresh of `idm_acp_oauth2_client_admin`. No new entry class.
+    /// refresh of `idm_acp_connector_admin`. No new entry class.
     ///
     /// # Errors
     ///
@@ -1229,7 +1229,7 @@ mod tests {
     /// DL28 idempotent re-migration: asserts that the eight new schema attributes introduced
     /// for the GitHub upstream connector (one discriminator + seven
     /// GitHub-specific config attrs) are reachable through the schema after
-    /// migration, and that an `OAuth2Client` entry can round-trip each new
+    /// migration, and that an `Connector` entry can round-trip each new
     /// attribute through a write → commit → read cycle (which exercises both
     /// the schema-class extension and the DL28 ACP refresh).
     #[qs_test(domain_level=DOMAIN_PREVIOUS_TGT_LEVEL)]
@@ -1252,35 +1252,35 @@ mod tests {
         // migration — that is, the schema phase has loaded them.
         for (uuid, label) in [
             (
-                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_PROVIDER_KIND,
+                UUID_SCHEMA_ATTR_CONNECTOR_PROVIDER_KIND,
                 "OAUTH2_CLIENT_PROVIDER_KIND",
             ),
             (
-                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_HOST,
+                UUID_SCHEMA_ATTR_CONNECTOR_GITHUB_HOST,
                 "OAUTH2_CLIENT_GITHUB_HOST",
             ),
             (
-                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER,
+                UUID_SCHEMA_ATTR_CONNECTOR_GITHUB_ORG_FILTER,
                 "OAUTH2_CLIENT_GITHUB_ORG_FILTER",
             ),
             (
-                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS,
+                UUID_SCHEMA_ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS,
                 "OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS",
             ),
             (
-                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD,
+                UUID_SCHEMA_ATTR_CONNECTOR_GITHUB_TEAM_NAME_FIELD,
                 "OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD",
             ),
             (
-                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS,
+                UUID_SCHEMA_ATTR_CONNECTOR_GITHUB_LOAD_ALL_GROUPS,
                 "OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS",
             ),
             (
-                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN,
+                UUID_SCHEMA_ATTR_CONNECTOR_GITHUB_PREFERRED_EMAIL_DOMAIN,
                 "OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN",
             ),
             (
-                UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING,
+                UUID_SCHEMA_ATTR_CONNECTOR_GITHUB_ALLOW_JIT_PROVISIONING,
                 "OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING",
             ),
         ] {
@@ -1289,24 +1289,24 @@ mod tests {
             });
         }
 
-        // Round-trip: create an OAuth2Client entry carrying all eight
+        // Round-trip: create an Connector entry carrying all eight
         // DL28 attrs. Bound by schema, so success proves both that the
-        // `OAuth2Client` class was extended to include them in `systemmay`
+        // `Connector` class was extended to include them in `systemmay`
         // and that their declared syntaxes match the values we pass.
         let client_uuid = Uuid::new_v4();
         write_txn
             .internal_create(vec![entry_init!(
                 (Attribute::Class, EntryClass::Object.to_value()),
-                (Attribute::Class, EntryClass::OAuth2Client.to_value()),
+                (Attribute::Class, EntryClass::Connector.to_value()),
                 (Attribute::Name, Value::new_iname("test_github_connector")),
                 (Attribute::Uuid, Value::Uuid(client_uuid)),
                 (Attribute::DisplayName, Value::new_utf8s("Test GitHub")),
                 (
-                    Attribute::OAuth2ClientId,
+                    Attribute::ConnectorId,
                     Value::new_utf8s("github-client-id")
                 ),
                 (
-                    Attribute::OAuth2ClientSecret,
+                    Attribute::ConnectorSecret,
                     Value::new_utf8s("github-client-secret")
                 ),
                 (
@@ -1324,86 +1324,86 @@ mod tests {
                     Value::new_oauthscope("read_user").expect("valid oauth scope")
                 ),
                 (
-                    Attribute::OAuth2ClientProviderKind,
+                    Attribute::ConnectorProviderKind,
                     Value::new_iutf8("github")
                 ),
                 (
-                    Attribute::OAuth2ClientGithubHost,
+                    Attribute::ConnectorGithubHost,
                     Value::new_url_s("https://github.acme.internal").expect("valid url")
                 ),
                 (
-                    Attribute::OAuth2ClientGithubOrgFilter,
+                    Attribute::ConnectorGithubOrgFilter,
                     Value::new_utf8s("acme")
                 ),
                 (
-                    Attribute::OAuth2ClientGithubOrgFilter,
+                    Attribute::ConnectorGithubOrgFilter,
                     Value::new_utf8s("widgetco")
                 ),
                 (
-                    Attribute::OAuth2ClientGithubAllowedTeams,
+                    Attribute::ConnectorGithubAllowedTeams,
                     Value::new_utf8s("acme:employees")
                 ),
                 (
-                    Attribute::OAuth2ClientGithubTeamNameField,
+                    Attribute::ConnectorGithubTeamNameField,
                     Value::new_iutf8("slug")
                 ),
                 (
-                    Attribute::OAuth2ClientGithubLoadAllGroups,
+                    Attribute::ConnectorGithubLoadAllGroups,
                     Value::Bool(true)
                 ),
                 (
-                    Attribute::OAuth2ClientGithubPreferredEmailDomain,
+                    Attribute::ConnectorGithubPreferredEmailDomain,
                     Value::new_iutf8("acme.com")
                 ),
                 (
-                    Attribute::OAuth2ClientGithubAllowJitProvisioning,
+                    Attribute::ConnectorGithubAllowJitProvisioning,
                     Value::Bool(false)
                 )
             )])
-            .expect("Unable to create DL28 OAuth2Client test entry");
+            .expect("Unable to create DL28 Connector test entry");
 
         // Read-back each attribute to confirm round-trip.
         let read_back = write_txn
             .internal_search_uuid(client_uuid)
-            .expect("Unable to retrieve DL28 OAuth2Client test entry");
+            .expect("Unable to retrieve DL28 Connector test entry");
 
         assert_eq!(
-            read_back.get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind),
+            read_back.get_ava_single_iutf8(Attribute::ConnectorProviderKind),
             Some("github")
         );
         assert_eq!(
             read_back
-                .get_ava_single_url(Attribute::OAuth2ClientGithubHost)
+                .get_ava_single_url(Attribute::ConnectorGithubHost)
                 .map(|u| u.as_str()),
             Some("https://github.acme.internal/")
         );
         let org_filter: std::collections::BTreeSet<&str> = read_back
-            .get_ava_set(Attribute::OAuth2ClientGithubOrgFilter)
+            .get_ava_set(Attribute::ConnectorGithubOrgFilter)
             .and_then(|vs| vs.as_utf8_iter())
             .expect("org filter present")
             .collect();
         assert!(org_filter.contains("acme"));
         assert!(org_filter.contains("widgetco"));
         let allowed_teams: std::collections::BTreeSet<&str> = read_back
-            .get_ava_set(Attribute::OAuth2ClientGithubAllowedTeams)
+            .get_ava_set(Attribute::ConnectorGithubAllowedTeams)
             .and_then(|vs| vs.as_utf8_iter())
             .expect("allowed teams present")
             .collect();
         assert!(allowed_teams.contains("acme:employees"));
         assert_eq!(
-            read_back.get_ava_single_iutf8(Attribute::OAuth2ClientGithubTeamNameField),
+            read_back.get_ava_single_iutf8(Attribute::ConnectorGithubTeamNameField),
             Some("slug")
         );
         assert_eq!(
-            read_back.get_ava_single_bool(Attribute::OAuth2ClientGithubLoadAllGroups),
+            read_back.get_ava_single_bool(Attribute::ConnectorGithubLoadAllGroups),
             Some(true)
         );
         assert_eq!(
-            read_back.get_ava_single_iutf8(Attribute::OAuth2ClientGithubPreferredEmailDomain),
+            read_back.get_ava_single_iutf8(Attribute::ConnectorGithubPreferredEmailDomain),
             Some("acme.com")
         );
         assert_eq!(
-            read_back.get_ava_single_bool(Attribute::OAuth2ClientGithubAllowJitProvisioning),
+            read_back.get_ava_single_bool(Attribute::ConnectorGithubAllowJitProvisioning),
             Some(false)
         );
 

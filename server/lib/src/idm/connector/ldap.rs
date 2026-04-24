@@ -3,7 +3,7 @@
 //! Exact-parity Rust port of `github.com/dexidp/dex/connector/ldap/ldap.go`.
 //!
 //! Implements [`RefreshableConnector`] for LDAP / Active Directory.
-//! Providers whose `OAuth2Client` entry carries `oauth2_client_provider_kind =
+//! Providers whose `Connector` entry carries `connector_provider_kind =
 //! "ldap"` are dispatched here.
 //!
 //! Unlike all other connectors, LDAP is a *password connector*: the user enters
@@ -12,10 +12,10 @@
 //! trait method handles the login; `refresh` re-fetches the user's claims
 //! using the stored session state.
 //!
-//! [`RefreshableConnector`]: crate::idm::oauth2_connector::RefreshableConnector
+//! [`RefreshableConnector`]: crate::idm::connector::traits::RefreshableConnector
 
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
-use crate::idm::oauth2_connector::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
+use crate::idm::connector::traits::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
 use crate::prelude::*;
 use async_trait::async_trait;
 use hashbrown::HashSet;
@@ -124,7 +124,7 @@ pub struct GroupSearchConfig {
     pub name_attr: String,
 }
 
-/// Full connector configuration built from an `OAuth2Client` entry.
+/// Full connector configuration built from an `Connector` entry.
 #[derive(Clone, Debug)]
 pub struct LdapConfig {
     /// `ldap://host:port` or `ldaps://host:port`
@@ -139,7 +139,7 @@ pub struct LdapConfig {
 }
 
 impl LdapConfig {
-    /// Build a `LdapConfig` from an `OAuth2Client` entry.
+    /// Build a `LdapConfig` from an `Connector` entry.
     ///
     /// Returns `Err` if any required field is absent or unparseable.
     pub fn from_entry(
@@ -147,10 +147,10 @@ impl LdapConfig {
     ) -> Result<Self, OperationError> {
         // ── Required: host ───────────────────────────────────────────────────
         let raw_host = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapHost)
+            .get_ava_single_utf8(Attribute::ConnectorLdapHost)
             .ok_or_else(|| {
-                error!("LDAP connector missing required attribute: oauth2_client_ldap_host");
-                OperationError::InvalidAttribute("oauth2_client_ldap_host is required".to_string())
+                error!("LDAP connector missing required attribute: connector_ldap_host");
+                OperationError::InvalidAttribute("connector_ldap_host is required".to_string())
             })?;
 
         // Derive URL from host. If host starts with ldap:// or ldaps:// use
@@ -160,7 +160,7 @@ impl LdapConfig {
         } else {
             // Default to LDAPS unless insecure_no_ssl is set
             let no_ssl = entry
-                .get_ava_single_bool(Attribute::OAuth2ClientLdapInsecureNoSsl)
+                .get_ava_single_bool(Attribute::ConnectorLdapInsecureNoSsl)
                 .unwrap_or(false);
             if no_ssl {
                 format!("ldap://{raw_host}")
@@ -175,11 +175,11 @@ impl LdapConfig {
         })?;
 
         let insecure_skip_verify = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientLdapInsecureSkipVerify)
+            .get_ava_single_bool(Attribute::ConnectorLdapInsecureSkipVerify)
             .unwrap_or(false);
 
         if entry
-            .get_ava_single_bool(Attribute::OAuth2ClientLdapStartTls)
+            .get_ava_single_bool(Attribute::ConnectorLdapStartTls)
             .unwrap_or(false)
         {
             warn!(
@@ -189,47 +189,47 @@ impl LdapConfig {
         }
 
         let bind_dn = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapBindDn)
+            .get_ava_single_utf8(Attribute::ConnectorLdapBindDn)
             .map(str::to_string);
         let bind_pw = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapBindPw)
+            .get_ava_single_utf8(Attribute::ConnectorLdapBindPw)
             .map(str::to_string);
         let username_prompt = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapUsernamePrompt)
+            .get_ava_single_utf8(Attribute::ConnectorLdapUsernamePrompt)
             .map(str::to_string);
 
         // ── UserSearch — required: base_dn, username_attrs ───────────────────
         let user_base_dn = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapUserSearchBaseDn)
+            .get_ava_single_utf8(Attribute::ConnectorLdapUserSearchBaseDn)
             .ok_or_else(|| {
                 error!(
                     "LDAP connector missing required attribute: \
-                     oauth2_client_ldap_user_search_base_dn"
+                     connector_ldap_user_search_base_dn"
                 );
                 OperationError::InvalidAttribute(
-                    "oauth2_client_ldap_user_search_base_dn is required".to_string(),
+                    "connector_ldap_user_search_base_dn is required".to_string(),
                 )
             })?
             .to_string();
 
         let username_attrs: Vec<String> = entry
-            .get_ava_set(Attribute::OAuth2ClientLdapUserSearchUsername)
+            .get_ava_set(Attribute::ConnectorLdapUserSearchUsername)
             .and_then(|vs| vs.as_utf8_iter())
             .map(|iter| iter.map(str::to_string).collect::<Vec<_>>())
             .unwrap_or_default();
 
         if username_attrs.is_empty() {
             error!(
-                "LDAP connector: at least one oauth2_client_ldap_user_search_username \
+                "LDAP connector: at least one connector_ldap_user_search_username \
                  value is required"
             );
             return Err(OperationError::InvalidAttribute(
-                "oauth2_client_ldap_user_search_username must have at least one value".to_string(),
+                "connector_ldap_user_search_username must have at least one value".to_string(),
             ));
         }
 
         let user_filter = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapUserSearchFilter)
+            .get_ava_single_utf8(Attribute::ConnectorLdapUserSearchFilter)
             .and_then(|s| {
                 ldap3_client::filter::parse_ldap_filter_str(s)
                     .map_err(|e| {
@@ -239,29 +239,29 @@ impl LdapConfig {
             });
 
         let user_scope = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientLdapUserSearchScope)
+            .get_ava_single_iutf8(Attribute::ConnectorLdapUserSearchScope)
             .map(LdapScope::from_str)
             .unwrap_or_default();
 
         let id_attr = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapUserSearchIdAttr)
+            .get_ava_single_utf8(Attribute::ConnectorLdapUserSearchIdAttr)
             .unwrap_or("uid")
             .to_string();
 
         let email_attr = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapUserSearchEmailAttr)
+            .get_ava_single_utf8(Attribute::ConnectorLdapUserSearchEmailAttr)
             .map(str::to_string);
 
         let name_attr = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapUserSearchNameAttr)
+            .get_ava_single_utf8(Attribute::ConnectorLdapUserSearchNameAttr)
             .map(str::to_string);
 
         let preferred_username_attr = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapUserSearchPreferredUsernameAttr)
+            .get_ava_single_utf8(Attribute::ConnectorLdapUserSearchPreferredUsernameAttr)
             .map(str::to_string);
 
         let email_suffix = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientLdapUserSearchEmailSuffix)
+            .get_ava_single_utf8(Attribute::ConnectorLdapUserSearchEmailSuffix)
             .map(str::to_string);
 
         let user_search = UserSearchConfig {
@@ -278,12 +278,12 @@ impl LdapConfig {
 
         // ── GroupSearch — optional: only if base_dn is configured ────────────
         let group_search = if let Some(gs_base_str) =
-            entry.get_ava_single_utf8(Attribute::OAuth2ClientLdapGroupSearchBaseDn)
+            entry.get_ava_single_utf8(Attribute::ConnectorLdapGroupSearchBaseDn)
         {
             let gs_base = gs_base_str.to_string();
 
             let gs_filter = entry
-                .get_ava_single_utf8(Attribute::OAuth2ClientLdapGroupSearchFilter)
+                .get_ava_single_utf8(Attribute::ConnectorLdapGroupSearchFilter)
                 .and_then(|s| {
                     ldap3_client::filter::parse_ldap_filter_str(s)
                         .map_err(|e| {
@@ -293,12 +293,12 @@ impl LdapConfig {
                 });
 
             let gs_scope = entry
-                .get_ava_single_iutf8(Attribute::OAuth2ClientLdapGroupSearchScope)
+                .get_ava_single_iutf8(Attribute::ConnectorLdapGroupSearchScope)
                 .map(LdapScope::from_str)
                 .unwrap_or_default();
 
             let user_matchers: Vec<UserMatcher> = entry
-                .get_ava_set(Attribute::OAuth2ClientLdapGroupSearchUserMatchers)
+                .get_ava_set(Attribute::ConnectorLdapGroupSearchUserMatchers)
                 .and_then(|vs| vs.as_utf8_iter())
                 .map(|iter| {
                     iter.filter_map(|s: &str| {
@@ -315,7 +315,7 @@ impl LdapConfig {
                 .unwrap_or_default();
 
             let gs_name_attr = entry
-                .get_ava_single_utf8(Attribute::OAuth2ClientLdapGroupSearchNameAttr)
+                .get_ava_single_utf8(Attribute::ConnectorLdapGroupSearchNameAttr)
                 .unwrap_or("cn")
                 .to_string();
 

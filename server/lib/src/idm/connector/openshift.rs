@@ -1,8 +1,8 @@
 //! OpenShift upstream connector (PR-CONNECTOR-OPENSHIFT).
 //!
 //! Exact-parity port of `connector/openshift/openshift.go` from dex.
-//! Providers whose `OAuth2Client` entry carries
-//! `oauth2_client_provider_kind = "openshift"` are dispatched here.
+//! Providers whose `Connector` entry carries
+//! `connector_provider_kind = "openshift"` are dispatched here.
 //!
 //! OpenShift exposes a single `user:info` scope. The user's identity is
 //! returned from the `/apis/user.openshift.io/v1/users/~` API endpoint.
@@ -13,8 +13,8 @@
 //! is performed at connector initialisation time. Override URLs are provided
 //! for unit tests so no real cluster is needed.
 
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
-use crate::idm::oauth2_connector::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
+use crate::idm::connector::traits::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
 use crate::prelude::*;
 use async_trait::async_trait;
 use hashbrown::HashSet;
@@ -25,7 +25,7 @@ use uuid::Uuid;
 pub const OPENSHIFT_SESSION_STATE_FORMAT_VERSION: u8 = 1;
 
 /// Parsed OpenShift connector configuration. Built once at server start and
-/// registered with the [`crate::idm::oauth2_connector::ConnectorRegistry`].
+/// registered with the [`crate::idm::connector::traits::ConnectorRegistry`].
 pub struct OpenShiftConfig {
     pub entry_uuid: Uuid,
     pub issuer: Url,
@@ -72,33 +72,33 @@ impl OpenShiftConfig {
         let entry_uuid = entry.get_uuid();
 
         let client_id = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientId)
+            .get_ava_single_utf8(Attribute::ConnectorId)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "OpenShift connector entry missing oauth2_client_id"
+                    "OpenShift connector entry missing connector_id"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let client_secret = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientSecret)
+            .get_ava_single_utf8(Attribute::ConnectorSecret)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "OpenShift connector entry missing oauth2_client_secret"
+                    "OpenShift connector entry missing connector_secret"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let issuer_str = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientOpenshiftIssuer)
+            .get_ava_single_iutf8(Attribute::ConnectorOpenshiftIssuer)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "OpenShift connector entry missing oauth2_client_openshift_issuer"
+                    "OpenShift connector entry missing connector_openshift_issuer"
                 );
                 OperationError::InvalidEntryState
             })?
@@ -110,17 +110,17 @@ impl OpenShiftConfig {
         })?;
 
         let allowed_groups: HashSet<String> = entry
-            .get_ava_set(Attribute::OAuth2ClientOpenshiftGroups)
+            .get_ava_set(Attribute::ConnectorOpenshiftGroups)
             .and_then(|vs| vs.as_utf8_iter())
             .map(|iter| iter.map(str::to_string).collect())
             .unwrap_or_default();
 
         let insecure_ca = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientOpenshiftInsecureCa)
+            .get_ava_single_bool(Attribute::ConnectorOpenshiftInsecureCa)
             .unwrap_or(false);
 
         let root_ca_pem = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientOpenshiftRootCa)
+            .get_ava_single_utf8(Attribute::ConnectorOpenshiftRootCa)
             .map(str::to_string);
 
         let mut client_builder =

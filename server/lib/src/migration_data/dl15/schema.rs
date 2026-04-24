@@ -3,7 +3,7 @@
 use crate::constants::{
     UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME, UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_EMAIL,
     UUID_SCHEMA_ATTR_OAUTH2_CLAIM_MAP_NAME, UUID_SCHEMA_ATTR_OAUTH2_JIT_PROVISIONING,
-    UUID_SCHEMA_ATTR_OAUTH2_USERINFO_ENDPOINT, UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
+    UUID_SCHEMA_ATTR_OAUTH2_USERINFO_ENDPOINT, UUID_SCHEMA_CLASS_CONNECTOR,
 };
 use crate::prelude::*;
 
@@ -75,18 +75,18 @@ pub static SCHEMA_ATTR_OAUTH2_CLAIM_MAP_EMAIL_DL15: LazyLock<SchemaAttribute> = 
     },
 );
 
-// T010 — updated OAuth2Client class with new optional attributes
+// T010 — updated Connector class with new optional attributes
 pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL15: LazyLock<SchemaClass> = LazyLock::new(|| {
     SchemaClass {
-    uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
-    name: EntryClass::OAuth2Client.into(),
+    uuid: UUID_SCHEMA_CLASS_CONNECTOR,
+    name: EntryClass::Connector.into(),
     description:
         "The class representing a configured OAuth2 Confidential Client acting as an authentication source."
             .to_string(),
     systemmust: vec![
         Attribute::Name,
-        Attribute::OAuth2ClientId,
-        Attribute::OAuth2ClientSecret,
+        Attribute::ConnectorId,
+        Attribute::ConnectorSecret,
         Attribute::OAuth2AuthorisationEndpoint,
         Attribute::OAuth2TokenEndpoint,
         Attribute::OAuth2RequestScopes,

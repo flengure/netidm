@@ -1,8 +1,8 @@
 //! Bitbucket Cloud upstream connector (PR-CONNECTOR-BITBUCKET).
 //!
 //! Exact-parity port of `connector/bitbucketcloud/bitbucketcloud.go` from dex.
-//! Providers whose `OAuth2Client` entry carries
-//! `oauth2_client_provider_kind = "bitbucket"` are dispatched here.
+//! Providers whose `Connector` entry carries
+//! `connector_provider_kind = "bitbucket"` are dispatched here.
 //!
 //! Authentication is pure OAuth2 (scopes: `account email`).
 //! Groups are workspace slugs fetched from `GET /2.0/user/workspaces`.
@@ -14,8 +14,8 @@
 //! setting it logs a warning and has no other effect.
 //! Session state carries both access and refresh tokens for the refresh flow.
 
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
-use crate::idm::oauth2_connector::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
+use crate::idm::connector::traits::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
 use crate::prelude::*;
 use async_trait::async_trait;
 use hashbrown::HashSet;
@@ -64,39 +64,39 @@ impl BitbucketConfig {
         let entry_uuid = entry.get_uuid();
 
         let client_id = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientId)
+            .get_ava_single_utf8(Attribute::ConnectorId)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "Bitbucket connector entry missing oauth2_client_id"
+                    "Bitbucket connector entry missing connector_id"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let client_secret = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientSecret)
+            .get_ava_single_utf8(Attribute::ConnectorSecret)
             .ok_or_else(|| {
                 error!(
                     ?entry_uuid,
-                    "Bitbucket connector entry missing oauth2_client_secret"
+                    "Bitbucket connector entry missing connector_secret"
                 );
                 OperationError::InvalidEntryState
             })?
             .to_string();
 
         let teams: HashSet<String> = entry
-            .get_ava_set(Attribute::OAuth2ClientBitbucketTeams)
+            .get_ava_set(Attribute::ConnectorBitbucketTeams)
             .and_then(|vs| vs.as_iutf8_iter())
             .map(|iter| iter.map(str::to_string).collect())
             .unwrap_or_default();
 
         let get_workspace_permissions = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientBitbucketGetWorkspacePermissions)
+            .get_ava_single_bool(Attribute::ConnectorBitbucketGetWorkspacePermissions)
             .unwrap_or(false);
 
         if entry
-            .get_ava_single_bool(Attribute::OAuth2ClientBitbucketIncludeTeamGroups)
+            .get_ava_single_bool(Attribute::ConnectorBitbucketIncludeTeamGroups)
             .unwrap_or(false)
         {
             warn!(

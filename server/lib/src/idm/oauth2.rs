@@ -1724,7 +1724,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                     // the netidm-side stable identity, which concrete
                     // connectors round-trip through their opaque blob.
                     let previous_claims =
-                        crate::idm::authsession::handler_oauth2_client::ExternalUserClaims {
+                        crate::idm::authsession::handler_connector::ExternalUserClaims {
                             sub: uuid.to_string(),
                             email: None,
                             email_verified: None,
@@ -1754,7 +1754,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                         std::thread::spawn(move || handle.block_on(c.refresh(&sb, &pc)))
                             .join()
                             .unwrap_or_else(|_| {
-                                Err(crate::idm::oauth2_connector::ConnectorRefreshError::Other(
+                                Err(crate::idm::connector::traits::ConnectorRefreshError::Other(
                                     "connector thread panicked".into(),
                                 ))
                             })
@@ -1792,7 +1792,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                     // (FR-010). The span fires only on change
                     // (FR-013).
                     let mapping = self
-                        .oauth2_client_providers
+                        .connector_providers
                         .get(&connector_uuid)
                         .map(|p| p.group_mapping.clone())
                         .unwrap_or_default();
@@ -1804,7 +1804,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                             }
                         }
                     }
-                    let existing = crate::idm::oauth2_connector::read_synced_markers(
+                    let existing = crate::idm::connector::traits::read_synced_markers(
                         &mut self.qs_write,
                         uuid,
                         connector_uuid,
@@ -6482,7 +6482,7 @@ mod tests {
         // we run the same test as test_idm_oauth2_openid_extensions()
         // but change the preferred_username setting on the RS
         let ct = Duration::from_secs(TEST_CURRENT_TIME);
-        let (secret, _uat, ident, oauth2_client_uuid) =
+        let (secret, _uat, ident, connector_uuid) =
             setup_oauth2_resource_server_basic(idms, ct, true, false, true).await;
 
         // Modify the oauth2 client to have different scope maps.
@@ -6505,7 +6505,7 @@ mod tests {
 
         idms_prox_write
             .qs_write
-            .internal_modify_uuid(oauth2_client_uuid, &modlist)
+            .internal_modify_uuid(connector_uuid, &modlist)
             .expect("Failed to modify scopes");
 
         idms_prox_write.commit().expect("failed to commit");
@@ -9257,7 +9257,7 @@ mod tests {
         idms: &IdmServer,
         idms_delayed: &mut IdmServerDelayed,
     ) {
-        use crate::idm::oauth2_connector::TestMockConnector;
+        use crate::idm::connector::traits::TestMockConnector;
 
         const N: usize = 5;
 
@@ -9344,7 +9344,7 @@ mod tests {
         idms: &IdmServer,
         idms_delayed: &mut IdmServerDelayed,
     ) {
-        use crate::idm::oauth2_connector::TestMockConnector;
+        use crate::idm::connector::traits::TestMockConnector;
 
         let ct = Duration::from_secs(TEST_CURRENT_TIME);
         let (atr, client_authz) = setup_refresh_token(idms, idms_delayed, ct).await;
@@ -9429,7 +9429,7 @@ mod tests {
         idms: &IdmServer,
         idms_delayed: &mut IdmServerDelayed,
     ) {
-        use crate::idm::oauth2_connector::TestMockConnector;
+        use crate::idm::connector::traits::TestMockConnector;
 
         let ct = Duration::from_secs(TEST_CURRENT_TIME);
         let (atr, client_authz) = setup_refresh_token(idms, idms_delayed, ct).await;
@@ -9478,7 +9478,7 @@ mod tests {
 
     // T019 — reconcile only runs when the upstream-synced marker set changes.
     //
-    // The `oauth2_client_providers` table is empty in this unit test (no full
+    // The `connector_providers` table is empty in this unit test (no full
     // provider entry is created), so `desired` is always `{}`. By pre-seeding
     // a stale marker on the person entry we force `existing != desired` on the
     // first refresh, which triggers the reconcile and clears the marker. A
@@ -9490,7 +9490,7 @@ mod tests {
         idms: &IdmServer,
         idms_delayed: &mut IdmServerDelayed,
     ) {
-        use crate::idm::oauth2_connector::{read_synced_markers, TestMockConnector};
+        use crate::idm::connector::traits::{read_synced_markers, TestMockConnector};
 
         let ct = Duration::from_secs(TEST_CURRENT_TIME);
         let (atr, client_authz) = setup_refresh_token(idms, idms_delayed, ct).await;
@@ -9504,7 +9504,7 @@ mod tests {
         let connector_uuid = Uuid::new_v4();
         let mock = std::sync::Arc::new(TestMockConnector::new(UUID_TESTPERSON_1.to_string()));
         // Mock returns empty groups — `desired` is always {} since there is no
-        // group mapping in oauth2_client_providers for this connector.
+        // group mapping in connector_providers for this connector.
         mock.set_groups(vec![]);
         idms.connector_registry().register(
             connector_uuid,
@@ -9626,7 +9626,7 @@ mod tests {
         idms: &IdmServer,
         idms_delayed: &mut IdmServerDelayed,
     ) {
-        use crate::idm::oauth2_connector::{read_synced_markers, TestMockConnector};
+        use crate::idm::connector::traits::{read_synced_markers, TestMockConnector};
 
         let ct = Duration::from_secs(TEST_CURRENT_TIME);
         let (atr, client_authz) = setup_refresh_token(idms, idms_delayed, ct).await;
@@ -9720,7 +9720,7 @@ mod tests {
         idms: &IdmServer,
         _idms_delayed: &mut IdmServerDelayed,
     ) {
-        use crate::idm::oauth2_connector::read_synced_markers;
+        use crate::idm::connector::traits::read_synced_markers;
 
         let provider_a = Uuid::new_v4();
         let provider_b = Uuid::new_v4();

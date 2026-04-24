@@ -3,7 +3,7 @@
 use crate::constants::{
     UUID_SCHEMA_ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS,
     UUID_SCHEMA_ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS, UUID_SCHEMA_CLASS_DOMAIN_INFO,
-    UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
+    UUID_SCHEMA_CLASS_CONNECTOR,
 };
 use crate::prelude::*;
 
@@ -30,15 +30,15 @@ pub static SCHEMA_ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS_DL18: LazyLock<SchemaAt
 
 pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL18: LazyLock<SchemaClass> = LazyLock::new(|| {
     SchemaClass {
-    uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
-    name: EntryClass::OAuth2Client.into(),
+    uuid: UUID_SCHEMA_CLASS_CONNECTOR,
+    name: EntryClass::Connector.into(),
     description:
         "The class representing a configured OAuth2 Confidential Client acting as an authentication source."
             .to_string(),
     systemmust: vec![
         Attribute::Name,
-        Attribute::OAuth2ClientId,
-        Attribute::OAuth2ClientSecret,
+        Attribute::ConnectorId,
+        Attribute::ConnectorSecret,
         Attribute::OAuth2AuthorisationEndpoint,
         Attribute::OAuth2TokenEndpoint,
         Attribute::OAuth2RequestScopes,

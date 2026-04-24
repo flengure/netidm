@@ -14,7 +14,7 @@ impl Oauth2Opt {
                 // TODO: finish the CLI bits for DeviceFlowDisable
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_device_flow_update(&nopt.name, true)
+                    .idm_connector_device_flow_update(&nopt.name, true)
                     .await
                 {
                     Ok(_) => opt.output_mode.print_message("Success"),
@@ -26,7 +26,7 @@ impl Oauth2Opt {
                 // TODO: finish the CLI bits for DeviceFlowEnable
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_device_flow_update(&nopt.name, true)
+                    .idm_connector_device_flow_update(&nopt.name, true)
                     .await
                 {
                     Ok(_) => opt.output_mode.print_message("Success"),
@@ -55,7 +55,7 @@ impl Oauth2Opt {
                     Ok(Some(e)) => opt.output_mode.print_message(e),
                     Ok(None) => {
                         // Fall back to OAuth2 client provider lookup
-                        match client.idm_oauth2_client_get(nopt.name.as_str()).await {
+                        match client.idm_connector_get(nopt.name.as_str()).await {
                             Ok(Some(e)) => opt.output_mode.print_message(e),
                             Ok(None) => opt.output_mode.print_message("No matching entries"),
                             Err(e) => handle_client_error(e, opt.output_mode),
@@ -351,14 +351,14 @@ impl Oauth2Opt {
 
             Oauth2Opt::AddOrigin { name, origin } => {
                 let client = opt.to_client(OpType::Write).await;
-                match client.idm_oauth2_client_add_origin(name, origin).await {
+                match client.idm_connector_add_origin(name, origin).await {
                     Ok(_) => opt.output_mode.print_message("Success"),
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
             Oauth2Opt::RemoveOrigin { name, origin } => {
                 let client = opt.to_client(OpType::Write).await;
-                match client.idm_oauth2_client_remove_origin(name, origin).await {
+                match client.idm_connector_remove_origin(name, origin).await {
                     Ok(_) => opt.output_mode.print_message("Success"),
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
@@ -512,7 +512,7 @@ impl Oauth2Opt {
             } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_create_github(
+                    .idm_connector_create_github(
                         name.as_str(),
                         client_id.as_str(),
                         client_secret.as_str(),
@@ -530,7 +530,7 @@ impl Oauth2Opt {
             } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_create_google(
+                    .idm_connector_create_google(
                         name.as_str(),
                         client_id.as_str(),
                         client_secret.as_str(),
@@ -549,7 +549,7 @@ impl Oauth2Opt {
             } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_create_oidc(
+                    .idm_connector_create_oidc(
                         name.as_str(),
                         issuer,
                         client_id.as_str(),
@@ -564,7 +564,7 @@ impl Oauth2Opt {
             Oauth2Opt::EnableJitProvisioning { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_enable_jit_provisioning(name.as_str())
+                    .idm_connector_enable_jit_provisioning(name.as_str())
                     .await
                 {
                     Ok(_) => opt.output_mode.print_message("Success"),
@@ -574,7 +574,7 @@ impl Oauth2Opt {
             Oauth2Opt::DisableJitProvisioning { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_disable_jit_provisioning(name.as_str())
+                    .idm_connector_disable_jit_provisioning(name.as_str())
                     .await
                 {
                     Ok(_) => opt.output_mode.print_message("Success"),
@@ -584,7 +584,7 @@ impl Oauth2Opt {
             Oauth2Opt::EnableEmailLinkAccounts { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_enable_email_link_accounts(name.as_str())
+                    .idm_connector_enable_email_link_accounts(name.as_str())
                     .await
                 {
                     Ok(_) => opt.output_mode.print_message("Success"),
@@ -594,7 +594,7 @@ impl Oauth2Opt {
             Oauth2Opt::DisableEmailLinkAccounts { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_disable_email_link_accounts(name.as_str())
+                    .idm_connector_disable_email_link_accounts(name.as_str())
                     .await
                 {
                     Ok(_) => opt.output_mode.print_message("Success"),
@@ -622,7 +622,7 @@ impl Oauth2Opt {
             } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_set_claim_map(
+                    .idm_connector_set_claim_map(
                         name.as_str(),
                         netidm_attr.as_str(),
                         provider_claim.as_str(),
@@ -645,7 +645,7 @@ impl Oauth2Opt {
                 }
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_set_link_by(name.as_str(), normalised.as_str())
+                    .idm_connector_set_link_by(name.as_str(), normalised.as_str())
                     .await
                 {
                     Ok(_) => opt.output_mode.print_message("Success"),
@@ -669,7 +669,7 @@ impl Oauth2Opt {
                         }
                     };
                 match client
-                    .idm_oauth2_client_add_group_mapping(name.as_str(), upstream.as_str(), uuid)
+                    .idm_connector_add_group_mapping(name.as_str(), upstream.as_str(), uuid)
                     .await
                 {
                     Ok(_) => opt
@@ -681,7 +681,7 @@ impl Oauth2Opt {
             Oauth2Opt::RemoveGroupMapping { name, upstream } => {
                 let client = opt.to_client(OpType::Write).await;
                 match client
-                    .idm_oauth2_client_remove_group_mapping(name.as_str(), upstream.as_str())
+                    .idm_connector_remove_group_mapping(name.as_str(), upstream.as_str())
                     .await
                 {
                     Ok(_) => opt
@@ -693,7 +693,7 @@ impl Oauth2Opt {
             Oauth2Opt::ListGroupMappings { name } => {
                 let client = opt.to_client(OpType::Read).await;
                 match client
-                    .idm_oauth2_client_list_group_mappings(name.as_str())
+                    .idm_connector_list_group_mappings(name.as_str())
                     .await
                 {
                     Ok(mappings) => {
@@ -711,7 +711,7 @@ impl Oauth2Opt {
             Oauth2Opt::AddPostLogoutRedirectUri { name, uri } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_add_post_logout_redirect_uri(name.as_str(), uri.as_str())
+                    .idm_connector_add_post_logout_redirect_uri(name.as_str(), uri.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -720,7 +720,7 @@ impl Oauth2Opt {
             Oauth2Opt::RemovePostLogoutRedirectUri { name, uri } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_remove_post_logout_redirect_uri(name.as_str(), uri.as_str())
+                    .idm_connector_remove_post_logout_redirect_uri(name.as_str(), uri.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -729,7 +729,7 @@ impl Oauth2Opt {
             Oauth2Opt::ListPostLogoutRedirectUris { name } => {
                 let client = opt.to_client(OpType::Read).await;
                 match client
-                    .idm_oauth2_client_list_post_logout_redirect_uris(name.as_str())
+                    .idm_connector_list_post_logout_redirect_uris(name.as_str())
                     .await
                 {
                     Ok(uris) => {
@@ -748,7 +748,7 @@ impl Oauth2Opt {
             Oauth2Opt::SetBackchannelLogoutUri { name, uri } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_set_backchannel_logout_uri(name.as_str(), uri.as_str())
+                    .idm_connector_set_backchannel_logout_uri(name.as_str(), uri.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -757,7 +757,7 @@ impl Oauth2Opt {
             Oauth2Opt::ClearBackchannelLogoutUri { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_clear_backchannel_logout_uri(name.as_str())
+                    .idm_connector_clear_backchannel_logout_uri(name.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -766,7 +766,7 @@ impl Oauth2Opt {
             Oauth2Opt::SetProviderKind { name, kind } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_set_provider_kind(name.as_str(), kind.as_str())
+                    .idm_connector_set_provider_kind(name.as_str(), kind.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -775,7 +775,7 @@ impl Oauth2Opt {
             Oauth2Opt::GithubSetHost { name, url } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_set_host(name.as_str(), url.as_str())
+                    .idm_connector_github_set_host(name.as_str(), url.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -791,7 +791,7 @@ impl Oauth2Opt {
                 }
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_add_org_filter(name.as_str(), org.as_str())
+                    .idm_connector_github_add_org_filter(name.as_str(), org.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -800,7 +800,7 @@ impl Oauth2Opt {
             Oauth2Opt::GithubRemoveOrgFilter { name, org } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_remove_org_filter(name.as_str(), org.as_str())
+                    .idm_connector_github_remove_org_filter(name.as_str(), org.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -813,7 +813,7 @@ impl Oauth2Opt {
                 }
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_add_allowed_team(name.as_str(), team.as_str())
+                    .idm_connector_github_add_allowed_team(name.as_str(), team.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -822,7 +822,7 @@ impl Oauth2Opt {
             Oauth2Opt::GithubRemoveAllowedTeam { name, team } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_remove_allowed_team(name.as_str(), team.as_str())
+                    .idm_connector_github_remove_allowed_team(name.as_str(), team.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -835,7 +835,7 @@ impl Oauth2Opt {
                 }
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_set_team_name_field(name.as_str(), field.as_str())
+                    .idm_connector_github_set_team_name_field(name.as_str(), field.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -844,7 +844,7 @@ impl Oauth2Opt {
             Oauth2Opt::GithubEnableLoadAllGroups { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_set_load_all_groups(name.as_str(), true)
+                    .idm_connector_github_set_load_all_groups(name.as_str(), true)
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -853,7 +853,7 @@ impl Oauth2Opt {
             Oauth2Opt::GithubDisableLoadAllGroups { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_set_load_all_groups(name.as_str(), false)
+                    .idm_connector_github_set_load_all_groups(name.as_str(), false)
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -862,7 +862,7 @@ impl Oauth2Opt {
             Oauth2Opt::GithubSetPreferredEmailDomain { name, domain } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_set_preferred_email_domain(
+                    .idm_connector_github_set_preferred_email_domain(
                         name.as_str(),
                         domain.as_str(),
                     )
@@ -874,7 +874,7 @@ impl Oauth2Opt {
             Oauth2Opt::GithubClearPreferredEmailDomain { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_clear_preferred_email_domain(name.as_str())
+                    .idm_connector_github_clear_preferred_email_domain(name.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -883,7 +883,7 @@ impl Oauth2Opt {
             Oauth2Opt::GithubEnableJitProvisioning { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_set_allow_jit_provisioning(name.as_str(), true)
+                    .idm_connector_github_set_allow_jit_provisioning(name.as_str(), true)
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -892,7 +892,7 @@ impl Oauth2Opt {
             Oauth2Opt::GithubDisableJitProvisioning { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_github_set_allow_jit_provisioning(name.as_str(), false)
+                    .idm_connector_github_set_allow_jit_provisioning(name.as_str(), false)
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -902,7 +902,7 @@ impl Oauth2Opt {
             // ── LDAP inbound connector (DL32) ──────────────────────────────────
             Oauth2Opt::CreateLdap { name } => {
                 let client = opt.to_client(OpType::Write).await;
-                match client.idm_oauth2_client_create_ldap(name.as_str()).await {
+                match client.idm_connector_create_ldap(name.as_str()).await {
                     Ok(_) => opt.output_mode.print_message("Success"),
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
@@ -910,7 +910,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetHost { name, host } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_host(name.as_str(), host.as_str())
+                    .idm_connector_ldap_set_host(name.as_str(), host.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -919,7 +919,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapEnableNoSsl { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_insecure_no_ssl(name.as_str(), true)
+                    .idm_connector_ldap_set_insecure_no_ssl(name.as_str(), true)
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -928,7 +928,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapDisableNoSsl { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_insecure_no_ssl(name.as_str(), false)
+                    .idm_connector_ldap_set_insecure_no_ssl(name.as_str(), false)
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -937,7 +937,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapEnableInsecureSkipVerify { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_insecure_skip_verify(name.as_str(), true)
+                    .idm_connector_ldap_set_insecure_skip_verify(name.as_str(), true)
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -946,7 +946,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapDisableInsecureSkipVerify { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_insecure_skip_verify(name.as_str(), false)
+                    .idm_connector_ldap_set_insecure_skip_verify(name.as_str(), false)
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -955,7 +955,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetBindDn { name, bind_dn } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_bind_dn(name.as_str(), bind_dn.as_str())
+                    .idm_connector_ldap_set_bind_dn(name.as_str(), bind_dn.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -964,7 +964,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetBindPw { name, bind_pw } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_bind_pw(name.as_str(), bind_pw.as_str())
+                    .idm_connector_ldap_set_bind_pw(name.as_str(), bind_pw.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -973,7 +973,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetUserSearchBaseDn { name, base_dn } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_user_search_base_dn(name.as_str(), base_dn.as_str())
+                    .idm_connector_ldap_set_user_search_base_dn(name.as_str(), base_dn.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -982,7 +982,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetUserSearchFilter { name, filter } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_user_search_filter(name.as_str(), filter.as_str())
+                    .idm_connector_ldap_set_user_search_filter(name.as_str(), filter.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -991,7 +991,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapAddUserSearchUsername { name, attr } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_add_user_search_username(name.as_str(), attr.as_str())
+                    .idm_connector_ldap_add_user_search_username(name.as_str(), attr.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -1000,7 +1000,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapRemoveUserSearchUsername { name, attr } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_remove_user_search_username(
+                    .idm_connector_ldap_remove_user_search_username(
                         name.as_str(),
                         attr.as_str(),
                     )
@@ -1012,7 +1012,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetUserIdAttr { name, attr } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_user_id_attr(name.as_str(), attr.as_str())
+                    .idm_connector_ldap_set_user_id_attr(name.as_str(), attr.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -1021,7 +1021,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetUserEmailAttr { name, attr } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_user_email_attr(name.as_str(), attr.as_str())
+                    .idm_connector_ldap_set_user_email_attr(name.as_str(), attr.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -1030,7 +1030,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetUserNameAttr { name, attr } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_user_name_attr(name.as_str(), attr.as_str())
+                    .idm_connector_ldap_set_user_name_attr(name.as_str(), attr.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -1039,7 +1039,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetUserEmailSuffix { name, suffix } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_user_email_suffix(name.as_str(), suffix.as_str())
+                    .idm_connector_ldap_set_user_email_suffix(name.as_str(), suffix.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -1048,7 +1048,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetGroupSearchBaseDn { name, base_dn } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_group_search_base_dn(
+                    .idm_connector_ldap_set_group_search_base_dn(
                         name.as_str(),
                         base_dn.as_str(),
                     )
@@ -1060,7 +1060,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetGroupSearchFilter { name, filter } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_group_search_filter(name.as_str(), filter.as_str())
+                    .idm_connector_ldap_set_group_search_filter(name.as_str(), filter.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -1069,7 +1069,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapSetGroupNameAttr { name, attr } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_set_group_name_attr(name.as_str(), attr.as_str())
+                    .idm_connector_ldap_set_group_name_attr(name.as_str(), attr.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -1078,7 +1078,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapAddUserMatcher { name, matcher } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_add_user_matcher(name.as_str(), matcher.as_str())
+                    .idm_connector_ldap_add_user_matcher(name.as_str(), matcher.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);
@@ -1087,7 +1087,7 @@ impl Oauth2Opt {
             Oauth2Opt::LdapRemoveUserMatcher { name, matcher } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client
-                    .idm_oauth2_client_ldap_remove_user_matcher(name.as_str(), matcher.as_str())
+                    .idm_connector_ldap_remove_user_matcher(name.as_str(), matcher.as_str())
                     .await
                 {
                     handle_client_error(e, opt.output_mode);

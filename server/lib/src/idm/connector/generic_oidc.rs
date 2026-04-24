@@ -1,7 +1,7 @@
 //! Generic OIDC upstream connector (PR-CONNECTOR-GENERIC-OIDC, DL29).
 //!
 //! Implements [`RefreshableConnector`] for any standards-conformant OIDC provider.
-//! Providers whose `OAuth2Client` entry carries `oauth2_client_provider_kind =
+//! Providers whose `Connector` entry carries `connector_provider_kind =
 //! "generic-oidc"` (or which have no `provider_kind` attribute set — the default)
 //! are dispatched here at callback time, bypassing the legacy multi-step
 //! `OAuth2AccessTokenRequest` / `OAuth2JwksRequest` state machine.
@@ -11,10 +11,10 @@
 //! extraction (claim key, allowed-groups filter, prefix/suffix), and
 //! refresh-token re-fetch that re-derives all claims including groups.
 //!
-//! [`RefreshableConnector`]: crate::idm::oauth2_connector::RefreshableConnector
+//! [`RefreshableConnector`]: crate::idm::connector::traits::RefreshableConnector
 
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
-use crate::idm::oauth2_connector::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
+use crate::idm::connector::traits::{ConnectorRefreshError, RefreshOutcome, RefreshableConnector};
 use crate::prelude::*;
 use async_trait::async_trait;
 use compact_jwt::compact::{JwaAlg, Jwk, JwkKeySet};
@@ -29,8 +29,8 @@ use uuid::Uuid;
 
 pub const GENERIC_OIDC_SESSION_STATE_FORMAT_VERSION: u8 = 1;
 
-/// Parsed generic-OIDC connector config — one per `OAuth2Client` entry with
-/// `oauth2_client_provider_kind = "generic-oidc"` (or absent). Built once at
+/// Parsed generic-OIDC connector config — one per `Connector` entry with
+/// `connector_provider_kind = "generic-oidc"` (or absent). Built once at
 /// `IdmServer::start` and registered with `ConnectorRegistry`; immutable for
 /// the lifetime of the process.
 #[derive(Clone, Debug)]
@@ -64,12 +64,12 @@ impl GenericOidcConfig {
         let entry_uuid = entry.get_uuid();
 
         let client_id = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientId)
+            .get_ava_single_utf8(Attribute::ConnectorId)
             .map(str::to_string)
             .ok_or(OperationError::InvalidValueState)?;
 
         let client_secret = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientSecret)
+            .get_ava_single_utf8(Attribute::ConnectorSecret)
             .map(str::to_string)
             .ok_or(OperationError::InvalidValueState)?;
 
@@ -85,46 +85,46 @@ impl GenericOidcConfig {
             .cloned();
 
         let enable_groups = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientOidcEnableGroups)
+            .get_ava_single_bool(Attribute::ConnectorOidcEnableGroups)
             .unwrap_or(false);
 
         let groups_key = entry
-            .get_ava_single_iutf8(Attribute::OAuth2ClientOidcGroupsKey)
+            .get_ava_single_iutf8(Attribute::ConnectorOidcGroupsKey)
             .unwrap_or("groups")
             .to_string();
 
         let skip_email_verified = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientOidcSkipEmailVerified)
+            .get_ava_single_bool(Attribute::ConnectorOidcSkipEmailVerified)
             .unwrap_or(false);
 
         let allowed_groups: HashSet<String> = entry
-            .get_ava_set(Attribute::OAuth2ClientOidcAllowedGroups)
+            .get_ava_set(Attribute::ConnectorOidcAllowedGroups)
             .and_then(|vs| vs.as_utf8_iter())
             .map(|iter| iter.map(str::to_string).collect())
             .unwrap_or_default();
 
         let get_user_info = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientOidcGetUserInfo)
+            .get_ava_single_bool(Attribute::ConnectorOidcGetUserInfo)
             .unwrap_or(false);
 
         let user_id_key = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientOidcUserIdKey)
+            .get_ava_single_utf8(Attribute::ConnectorOidcUserIdKey)
             .map(str::to_string);
 
         let user_name_key = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientOidcUserNameKey)
+            .get_ava_single_utf8(Attribute::ConnectorOidcUserNameKey)
             .map(str::to_string);
 
         let override_claim_mapping = entry
-            .get_ava_single_bool(Attribute::OAuth2ClientOidcOverrideClaimMapping)
+            .get_ava_single_bool(Attribute::ConnectorOidcOverrideClaimMapping)
             .unwrap_or(false);
 
         let groups_prefix = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientOidcGroupsPrefix)
+            .get_ava_single_utf8(Attribute::ConnectorOidcGroupsPrefix)
             .map(str::to_string);
 
         let groups_suffix = entry
-            .get_ava_single_utf8(Attribute::OAuth2ClientOidcGroupsSuffix)
+            .get_ava_single_utf8(Attribute::ConnectorOidcGroupsSuffix)
             .map(str::to_string);
 
         let allow_jit_provisioning = entry

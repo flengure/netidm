@@ -220,7 +220,7 @@ async fn test_logout_post_logout_redirect_uri_crud(rsclient: &NetidmClient) {
 
     // Initial state: empty allowlist.
     let listed = rsclient
-        .idm_oauth2_client_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
+        .idm_connector_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
         .await
         .expect("initial list");
     assert!(listed.is_empty(), "allowlist should start empty");
@@ -229,16 +229,16 @@ async fn test_logout_post_logout_redirect_uri_crud(rsclient: &NetidmClient) {
     let uri_a = "https://app.example.com/after-logout";
     let uri_b = "https://app.example.com/after-logout-alt";
     rsclient
-        .idm_oauth2_client_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, uri_a)
+        .idm_connector_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, uri_a)
         .await
         .expect("add first URI");
     rsclient
-        .idm_oauth2_client_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, uri_b)
+        .idm_connector_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, uri_b)
         .await
         .expect("add second URI");
 
     let listed = rsclient
-        .idm_oauth2_client_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
+        .idm_connector_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
         .await
         .expect("list after add");
     assert_eq!(listed.len(), 2, "both URIs should be present");
@@ -247,11 +247,11 @@ async fn test_logout_post_logout_redirect_uri_crud(rsclient: &NetidmClient) {
 
     // Idempotent add.
     rsclient
-        .idm_oauth2_client_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, uri_a)
+        .idm_connector_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, uri_a)
         .await
         .expect("idempotent add of existing URI");
     let listed = rsclient
-        .idm_oauth2_client_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
+        .idm_connector_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
         .await
         .expect("list after idempotent add");
     assert_eq!(
@@ -262,11 +262,11 @@ async fn test_logout_post_logout_redirect_uri_crud(rsclient: &NetidmClient) {
 
     // Remove the first, list should drop it.
     rsclient
-        .idm_oauth2_client_remove_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, uri_a)
+        .idm_connector_remove_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, uri_a)
         .await
         .expect("remove");
     let listed = rsclient
-        .idm_oauth2_client_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
+        .idm_connector_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
         .await
         .expect("list after remove");
     assert_eq!(listed.len(), 1);
@@ -291,7 +291,7 @@ async fn test_logout_backchannel_uri_set_clear(rsclient: &NetidmClient) {
 
     // Set.
     rsclient
-        .idm_oauth2_client_set_backchannel_logout_uri(
+        .idm_connector_set_backchannel_logout_uri(
             TEST_INTEGRATION_RS_ID,
             "https://app.example.com/oidc/backchannel-logout",
         )
@@ -300,7 +300,7 @@ async fn test_logout_backchannel_uri_set_clear(rsclient: &NetidmClient) {
 
     // Overwrite (single-value — must not accumulate).
     rsclient
-        .idm_oauth2_client_set_backchannel_logout_uri(
+        .idm_connector_set_backchannel_logout_uri(
             TEST_INTEGRATION_RS_ID,
             "https://app2.example.com/oidc/backchannel-logout",
         )
@@ -309,13 +309,13 @@ async fn test_logout_backchannel_uri_set_clear(rsclient: &NetidmClient) {
 
     // Clear.
     rsclient
-        .idm_oauth2_client_clear_backchannel_logout_uri(TEST_INTEGRATION_RS_ID)
+        .idm_connector_clear_backchannel_logout_uri(TEST_INTEGRATION_RS_ID)
         .await
         .expect("clear backchannel URI");
 
     // Idempotent clear.
     rsclient
-        .idm_oauth2_client_clear_backchannel_logout_uri(TEST_INTEGRATION_RS_ID)
+        .idm_connector_clear_backchannel_logout_uri(TEST_INTEGRATION_RS_ID)
         .await
         .expect("idempotent clear");
 }
@@ -386,7 +386,7 @@ async fn setup_oauth2_flow_and_get_id_token(
         .expect("create RS");
 
     rsclient
-        .idm_oauth2_client_add_origin(
+        .idm_connector_add_origin(
             TEST_INTEGRATION_RS_ID,
             &Url::parse(TEST_INTEGRATION_RS_REDIRECT_URL).expect("redirect URL"),
         )
@@ -580,7 +580,7 @@ async fn test_logout_end_session_end_to_end_registered_redirect(rsclient: &Netid
         .expect("admin auth");
     let post_logout_uri = "https://demo.example.com/after-logout";
     rsclient
-        .idm_oauth2_client_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, post_logout_uri)
+        .idm_connector_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, post_logout_uri)
         .await
         .expect("add post-logout URI");
 
@@ -675,7 +675,7 @@ async fn test_logout_end_session_unregistered_redirect_falls_through(rsclient: &
         .await
         .expect("admin auth");
     rsclient
-        .idm_oauth2_client_add_post_logout_redirect_uri(
+        .idm_connector_add_post_logout_redirect_uri(
             TEST_INTEGRATION_RS_ID,
             "https://demo.example.com/after-logout",
         )
@@ -769,7 +769,7 @@ async fn test_logout_backchannel_delivery_end_to_end(rsclient: &NetidmClient) {
         .await
         .expect("admin auth");
     rsclient
-        .idm_oauth2_client_set_backchannel_logout_uri(TEST_INTEGRATION_RS_ID, bcl_url.as_str())
+        .idm_connector_set_backchannel_logout_uri(TEST_INTEGRATION_RS_ID, bcl_url.as_str())
         .await
         .expect("set backchannel URL");
 
@@ -1020,7 +1020,7 @@ async fn test_logout_post_logout_redirect_uri_crud_rejects_non_admin(rsclient: &
         .expect("non-admin auth");
 
     let add_result = rsclient
-        .idm_oauth2_client_add_post_logout_redirect_uri(
+        .idm_connector_add_post_logout_redirect_uri(
             TEST_INTEGRATION_RS_ID,
             "https://demo.example.com/after-logout",
         )
@@ -1031,7 +1031,7 @@ async fn test_logout_post_logout_redirect_uri_crud_rejects_non_admin(rsclient: &
     );
 
     let remove_result = rsclient
-        .idm_oauth2_client_remove_post_logout_redirect_uri(
+        .idm_connector_remove_post_logout_redirect_uri(
             TEST_INTEGRATION_RS_ID,
             "https://demo.example.com/after-logout",
         )
@@ -1048,7 +1048,7 @@ async fn test_logout_post_logout_redirect_uri_crud_rejects_non_admin(rsclient: &
         .await
         .expect("admin reauth");
     let listed = rsclient
-        .idm_oauth2_client_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
+        .idm_connector_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
         .await
         .expect("list");
     assert!(
@@ -1091,7 +1091,7 @@ async fn test_logout_deliveries_admin_list_show_with_mix(rsclient: &NetidmClient
         .await
         .expect("admin auth");
     rsclient
-        .idm_oauth2_client_set_backchannel_logout_uri(TEST_INTEGRATION_RS_ID, bcl_working.as_str())
+        .idm_connector_set_backchannel_logout_uri(TEST_INTEGRATION_RS_ID, bcl_working.as_str())
         .await
         .expect("set working backchannel URL");
 
@@ -1124,7 +1124,7 @@ async fn test_logout_deliveries_admin_list_show_with_mix(rsclient: &NetidmClient
         .await
         .expect("admin re-auth");
     rsclient
-        .idm_oauth2_client_set_backchannel_logout_uri(
+        .idm_connector_set_backchannel_logout_uri(
             TEST_INTEGRATION_RS_ID,
             "http://127.0.0.1:1/bcl",
         )
@@ -1278,7 +1278,7 @@ async fn test_logout_post_logout_redirect_uri_malformed_rejected(rsclient: &Neti
     // partial validation.
     for bad in ["not-a-url", "example.com/missing-scheme", " "] {
         let add_result = rsclient
-            .idm_oauth2_client_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, bad)
+            .idm_connector_add_post_logout_redirect_uri(TEST_INTEGRATION_RS_ID, bad)
             .await;
         assert!(
             add_result.is_err(),
@@ -1288,7 +1288,7 @@ async fn test_logout_post_logout_redirect_uri_malformed_rejected(rsclient: &Neti
 
     // Storage must remain untouched by the failed adds.
     let listed = rsclient
-        .idm_oauth2_client_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
+        .idm_connector_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
         .await
         .expect("list");
     assert!(
@@ -1299,14 +1299,14 @@ async fn test_logout_post_logout_redirect_uri_malformed_rejected(rsclient: &Neti
     // A properly-formed URL must still succeed — sanity check that
     // we didn't break the happy path.
     rsclient
-        .idm_oauth2_client_add_post_logout_redirect_uri(
+        .idm_connector_add_post_logout_redirect_uri(
             TEST_INTEGRATION_RS_ID,
             "https://demo.example.com/after-logout",
         )
         .await
         .expect("well-formed URI must still succeed");
     let listed = rsclient
-        .idm_oauth2_client_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
+        .idm_connector_list_post_logout_redirect_uris(TEST_INTEGRATION_RS_ID)
         .await
         .expect("list");
     assert_eq!(listed.len(), 1, "one well-formed URL should be stored");
@@ -1338,7 +1338,7 @@ async fn test_logout_self_logout_all_fans_out_backchannel(rsclient: &NetidmClien
         .await
         .expect("admin auth");
     rsclient
-        .idm_oauth2_client_set_backchannel_logout_uri(TEST_INTEGRATION_RS_ID, bcl_url.as_str())
+        .idm_connector_set_backchannel_logout_uri(TEST_INTEGRATION_RS_ID, bcl_url.as_str())
         .await
         .expect("set backchannel URL");
 

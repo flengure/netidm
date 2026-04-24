@@ -8,8 +8,8 @@
 use super::google_mock::{spawn_mock_google_server, MockGoogleUser};
 use base64::{engine::general_purpose, Engine as _};
 use compact_jwt::crypto::JwsRs256Signer;
-use netidmd_lib::idm::google_connector::{GoogleConfig, GoogleConnector, ServiceAccountKey};
-use netidmd_lib::idm::oauth2_connector::RefreshableConnector;
+use netidmd_lib::idm::connector::google::{GoogleConfig, GoogleConnector, ServiceAccountKey};
+use netidmd_lib::idm::connector::traits::RefreshableConnector;
 use url::Url;
 use uuid::Uuid;
 
@@ -153,7 +153,7 @@ async fn test_google_fetch_callback_hd_deny() {
     assert!(
         matches!(
             result,
-            Err(netidmd_lib::idm::oauth2_connector::ConnectorRefreshError::AccessDenied)
+            Err(netidmd_lib::idm::connector::traits::ConnectorRefreshError::AccessDenied)
         ),
         "expected AccessDenied, got {result:?}"
     );
@@ -183,7 +183,7 @@ async fn test_google_fetch_callback_no_hd_claim() {
     assert!(
         matches!(
             result,
-            Err(netidmd_lib::idm::oauth2_connector::ConnectorRefreshError::AccessDenied)
+            Err(netidmd_lib::idm::connector::traits::ConnectorRefreshError::AccessDenied)
         ),
         "expected AccessDenied for missing hd claim, got {result:?}"
     );
@@ -250,8 +250,8 @@ async fn test_google_refresh_rotates_token() {
         .expect("initial fetch failed");
 
     // Build a valid session state with the mock refresh token.
-    let session_state = netidmd_lib::idm::google_connector::GoogleSessionState {
-        format_version: netidmd_lib::idm::google_connector::GOOGLE_SESSION_STATE_FORMAT_VERSION,
+    let session_state = netidmd_lib::idm::connector::google::GoogleSessionState {
+        format_version: netidmd_lib::idm::connector::google::GOOGLE_SESSION_STATE_FORMAT_VERSION,
         refresh_token: Some("mock-refresh-token".to_string()),
     };
     #[allow(clippy::expect_used)]

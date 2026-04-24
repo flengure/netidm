@@ -1,10 +1,10 @@
 //! DL34 migration phases.
 //!
 //! DL34 introduces OpenShift connector dex-parity additions (PR-CONNECTOR-OPENSHIFT):
-//!   * Four new optional config attributes on `EntryClass::OAuth2Client`:
-//!     `OAuth2ClientOpenshiftIssuer`, `OAuth2ClientOpenshiftGroups`,
-//!     `OAuth2ClientOpenshiftInsecureCa`, and `OAuth2ClientOpenshiftRootCa`.
-//!   * An extended `idm_acp_oauth2_client_admin` covering the new attrs.
+//!   * Four new optional config attributes on `EntryClass::Connector`:
+//!     `ConnectorOpenshiftIssuer`, `ConnectorOpenshiftGroups`,
+//!     `ConnectorOpenshiftInsecureCa`, and `ConnectorOpenshiftRootCa`.
+//!   * An extended `idm_acp_connector_admin` covering the new attrs.
 //!
 //! No new entry class. No data migration — schema-only. Every other phase
 //! delegates to DL33.
@@ -18,22 +18,22 @@ use crate::prelude::*;
 pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
     let mut attrs = super::dl33::phase_1_schema_attrs();
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_ISSUER_DL34
+        SCHEMA_ATTR_CONNECTOR_OPENSHIFT_ISSUER_DL34
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_GROUPS_DL34
+        SCHEMA_ATTR_CONNECTOR_OPENSHIFT_GROUPS_DL34
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_INSECURE_CA_DL34
+        SCHEMA_ATTR_CONNECTOR_OPENSHIFT_INSECURE_CA_DL34
             .clone()
             .into(),
     );
     attrs.push(
-        SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_ROOT_CA_DL34
+        SCHEMA_ATTR_CONNECTOR_OPENSHIFT_ROOT_CA_DL34
             .clone()
             .into(),
     );

@@ -7,7 +7,7 @@
 //!   them via CLI. These attrs live on `EntryClass::OAuth2ResourceServer`
 //!   — the downstream relying-party class — because netidm consults them
 //!   when issuing OIDC logout responses FOR those RPs. (The upstream
-//!   `OAuth2Client` class is unrelated — it's netidm-as-SP federation.)
+//!   `Connector` class is unrelated — it's netidm-as-SP federation.)
 //! * `idm_acp_saml_client_admin` gains `SamlSingleLogoutServiceUrl`
 //!   symmetrically (the SAML client class is used per spec §US4).
 //! * A new `idm_acp_logout_delivery_read` ACP gives system admins

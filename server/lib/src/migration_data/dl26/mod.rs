@@ -6,7 +6,7 @@
 //!     `SamlSingleLogoutServiceUrl`).
 //!   * Two new entry classes (`LogoutDelivery` for the persistent back-channel
 //!     delivery queue, `SamlSession` for the per-SP SAML session index).
-//!   * Updated `idm_acp_oauth2_client_admin` and `idm_acp_saml_client_admin`
+//!   * Updated `idm_acp_connector_admin` and `idm_acp_saml_client_admin`
 //!     ACPs to include the new URL attributes; a new
 //!     `idm_acp_logout_delivery_read` for admin visibility into the queue.
 //!   * Twelve new schema attributes (the three URL attrs plus seven on

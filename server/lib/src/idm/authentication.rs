@@ -143,7 +143,7 @@ pub enum AuthState {
     /// is enabled. Account creation is pending user confirmation.
     ProvisioningRequired {
         provider_uuid: uuid::Uuid,
-        claims: crate::idm::authsession::handler_oauth2_client::ExternalUserClaims,
+        claims: crate::idm::authsession::handler_connector::ExternalUserClaims,
         email_link_accounts: bool,
     },
 }

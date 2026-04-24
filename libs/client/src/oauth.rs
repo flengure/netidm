@@ -5,20 +5,20 @@ use netidm_proto::constants::{
     ATTR_OAUTH2_ALLOW_INSECURE_CLIENT_DISABLE_PKCE, ATTR_OAUTH2_ALLOW_LOCALHOST_REDIRECT,
     ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLAIM_MAP_DISPLAYNAME,
     ATTR_OAUTH2_CLAIM_MAP_EMAIL, ATTR_OAUTH2_CLAIM_MAP_NAME,
-    ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS, ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING,
-    ATTR_OAUTH2_CLIENT_GITHUB_HOST, ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS,
-    ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER, ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN,
-    ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD, ATTR_OAUTH2_CLIENT_ID,
-    ATTR_OAUTH2_CLIENT_LDAP_BIND_DN, ATTR_OAUTH2_CLIENT_LDAP_BIND_PW,
-    ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_BASE_DN, ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_FILTER,
-    ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_NAME_ATTR,
-    ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS, ATTR_OAUTH2_CLIENT_LDAP_HOST,
-    ATTR_OAUTH2_CLIENT_LDAP_INSECURE_NO_SSL, ATTR_OAUTH2_CLIENT_LDAP_INSECURE_SKIP_VERIFY,
-    ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_BASE_DN, ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_ATTR,
-    ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_SUFFIX, ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_FILTER,
-    ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_ID_ATTR, ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_NAME_ATTR,
-    ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME, ATTR_OAUTH2_CLIENT_PROVIDER_KIND,
-    ATTR_OAUTH2_CLIENT_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
+    ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS, ATTR_CONNECTOR_GITHUB_ALLOW_JIT_PROVISIONING,
+    ATTR_CONNECTOR_GITHUB_HOST, ATTR_CONNECTOR_GITHUB_LOAD_ALL_GROUPS,
+    ATTR_CONNECTOR_GITHUB_ORG_FILTER, ATTR_CONNECTOR_GITHUB_PREFERRED_EMAIL_DOMAIN,
+    ATTR_CONNECTOR_GITHUB_TEAM_NAME_FIELD, ATTR_CONNECTOR_ID,
+    ATTR_CONNECTOR_LDAP_BIND_DN, ATTR_CONNECTOR_LDAP_BIND_PW,
+    ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN, ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER,
+    ATTR_CONNECTOR_LDAP_GROUP_SEARCH_NAME_ATTR,
+    ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS, ATTR_CONNECTOR_LDAP_HOST,
+    ATTR_CONNECTOR_LDAP_INSECURE_NO_SSL, ATTR_CONNECTOR_LDAP_INSECURE_SKIP_VERIFY,
+    ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN, ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_ATTR,
+    ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_SUFFIX, ATTR_CONNECTOR_LDAP_USER_SEARCH_FILTER,
+    ATTR_CONNECTOR_LDAP_USER_SEARCH_ID_ATTR, ATTR_CONNECTOR_LDAP_USER_SEARCH_NAME_ATTR,
+    ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME, ATTR_CONNECTOR_PROVIDER_KIND,
+    ATTR_CONNECTOR_SECRET, ATTR_OAUTH2_CONSENT_PROMPT_ENABLE,
     ATTR_OAUTH2_DOMAIN_EMAIL_LINK_ACCOUNTS, ATTR_OAUTH2_EMAIL_LINK_ACCOUNTS,
     ATTR_OAUTH2_GROUP_MAPPING, ATTR_OAUTH2_ISSUER, ATTR_OAUTH2_JIT_PROVISIONING,
     ATTR_OAUTH2_JWKS_URI, ATTR_OAUTH2_JWT_LEGACY_CRYPTO_ENABLE, ATTR_OAUTH2_LINK_BY,
@@ -454,7 +454,7 @@ impl NetidmClient {
         .await
     }
 
-    pub async fn idm_oauth2_client_add_origin(
+    pub async fn idm_connector_add_origin(
         &self,
         id: &str,
         origin: &Url,
@@ -469,7 +469,7 @@ impl NetidmClient {
         .await
     }
 
-    pub async fn idm_oauth2_client_remove_origin(
+    pub async fn idm_connector_remove_origin(
         &self,
         id: &str,
         origin: &Url,
@@ -482,7 +482,7 @@ impl NetidmClient {
         .await
     }
 
-    pub async fn idm_oauth2_client_device_flow_update(
+    pub async fn idm_connector_device_flow_update(
         &self,
         id: &str,
         value: bool,
@@ -536,12 +536,12 @@ impl NetidmClient {
 
     // ==== OAuth2 Client Provider (Netidm as OAuth2 client to external providers)
 
-    pub async fn idm_oauth2_client_get(&self, name: &str) -> Result<Option<Entry>, ClientError> {
+    pub async fn idm_connector_get(&self, name: &str) -> Result<Option<Entry>, ClientError> {
         self.perform_get_request(format!("/v1/oauth2/_client/{name}").as_str())
             .await
     }
 
-    pub async fn idm_oauth2_client_create_github(
+    pub async fn idm_connector_create_github(
         &self,
         name: &str,
         client_id: &str,
@@ -555,11 +555,11 @@ impl NetidmClient {
             .attrs
             .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_ID.to_string(),
+            ATTR_CONNECTOR_ID.to_string(),
             vec![client_id.to_string()],
         );
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_SECRET.to_string(),
+            ATTR_CONNECTOR_SECRET.to_string(),
             vec![client_secret.to_string()],
         );
         entry.attrs.insert(
@@ -581,7 +581,7 @@ impl NetidmClient {
         self.perform_post_request("/v1/oauth2/_client", entry).await
     }
 
-    pub async fn idm_oauth2_client_create_google(
+    pub async fn idm_connector_create_google(
         &self,
         name: &str,
         client_id: &str,
@@ -595,11 +595,11 @@ impl NetidmClient {
             .attrs
             .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_ID.to_string(),
+            ATTR_CONNECTOR_ID.to_string(),
             vec![client_id.to_string()],
         );
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_SECRET.to_string(),
+            ATTR_CONNECTOR_SECRET.to_string(),
             vec![client_secret.to_string()],
         );
         entry.attrs.insert(
@@ -621,7 +621,7 @@ impl NetidmClient {
         self.perform_post_request("/v1/oauth2/_client", entry).await
     }
 
-    pub async fn idm_oauth2_client_create_oidc(
+    pub async fn idm_connector_create_oidc(
         &self,
         name: &str,
         issuer: &Url,
@@ -683,11 +683,11 @@ impl NetidmClient {
             .attrs
             .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_ID.to_string(),
+            ATTR_CONNECTOR_ID.to_string(),
             vec![client_id.to_string()],
         );
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_SECRET.to_string(),
+            ATTR_CONNECTOR_SECRET.to_string(),
             vec![client_secret.to_string()],
         );
         entry.attrs.insert(
@@ -723,7 +723,7 @@ impl NetidmClient {
         self.perform_post_request("/v1/oauth2/_client", entry).await
     }
 
-    pub async fn idm_oauth2_client_enable_jit_provisioning(
+    pub async fn idm_connector_enable_jit_provisioning(
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
@@ -738,7 +738,7 @@ impl NetidmClient {
             .await
     }
 
-    pub async fn idm_oauth2_client_disable_jit_provisioning(
+    pub async fn idm_connector_disable_jit_provisioning(
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
@@ -753,7 +753,7 @@ impl NetidmClient {
             .await
     }
 
-    pub async fn idm_oauth2_client_enable_email_link_accounts(
+    pub async fn idm_connector_enable_email_link_accounts(
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
@@ -768,7 +768,7 @@ impl NetidmClient {
             .await
     }
 
-    pub async fn idm_oauth2_client_disable_email_link_accounts(
+    pub async fn idm_connector_disable_email_link_accounts(
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
@@ -789,8 +789,8 @@ impl NetidmClient {
     /// per-strategy match semantics.
     ///
     /// Targets `/v1/oauth2/_client/{id}` (upstream clients). The RS-scoped
-    /// `/v1/oauth2/{id}` PATCH route does not match `OAuth2Client` entries.
-    pub async fn idm_oauth2_client_set_link_by(
+    /// `/v1/oauth2/{id}` PATCH route does not match `Connector` entries.
+    pub async fn idm_connector_set_link_by(
         &self,
         id: &str,
         link_by: &str,
@@ -815,7 +815,7 @@ impl NetidmClient {
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer or
     /// the server rejects the URI as malformed.
-    pub async fn idm_oauth2_client_add_post_logout_redirect_uri(
+    pub async fn idm_connector_add_post_logout_redirect_uri(
         &self,
         id: &str,
         uri: &str,
@@ -834,7 +834,7 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer.
-    pub async fn idm_oauth2_client_remove_post_logout_redirect_uri(
+    pub async fn idm_connector_remove_post_logout_redirect_uri(
         &self,
         id: &str,
         uri: &str,
@@ -853,7 +853,7 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the client entry cannot be fetched.
-    pub async fn idm_oauth2_client_list_post_logout_redirect_uris(
+    pub async fn idm_connector_list_post_logout_redirect_uris(
         &self,
         id: &str,
     ) -> Result<Vec<String>, ClientError> {
@@ -878,7 +878,7 @@ impl NetidmClient {
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer or
     /// the server rejects the URI as malformed.
-    pub async fn idm_oauth2_client_set_backchannel_logout_uri(
+    pub async fn idm_connector_set_backchannel_logout_uri(
         &self,
         id: &str,
         uri: &str,
@@ -897,7 +897,7 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer.
-    pub async fn idm_oauth2_client_clear_backchannel_logout_uri(
+    pub async fn idm_connector_clear_backchannel_logout_uri(
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
@@ -910,7 +910,7 @@ impl NetidmClient {
     /// connector's `oauth2_group_mapping` attribute. The server rejects the
     /// request if a mapping for the same `upstream` name already exists on
     /// the connector (FR-007a).
-    pub async fn idm_oauth2_client_add_group_mapping(
+    pub async fn idm_connector_add_group_mapping(
         &self,
         id: &str,
         upstream: &str,
@@ -929,7 +929,7 @@ impl NetidmClient {
     /// side effect. Users who had memberships granted through the removed
     /// mapping keep them until their next authentication through this
     /// connector (FR-007b).
-    pub async fn idm_oauth2_client_remove_group_mapping(
+    pub async fn idm_connector_remove_group_mapping(
         &self,
         id: &str,
         upstream: &str,
@@ -944,7 +944,7 @@ impl NetidmClient {
     /// List all upstream-to-netidm group mappings on an OAuth2 upstream
     /// client. Returns pairs of `(upstream_name, netidm_group_uuid)` in the
     /// order the server returns them (no ordering guarantee).
-    pub async fn idm_oauth2_client_list_group_mappings(
+    pub async fn idm_connector_list_group_mappings(
         &self,
         id: &str,
     ) -> Result<Vec<(String, Uuid)>, ClientError> {
@@ -986,7 +986,7 @@ impl NetidmClient {
         .await
     }
 
-    pub async fn idm_oauth2_client_set_claim_map(
+    pub async fn idm_connector_set_claim_map(
         &self,
         id: &str,
         netidm_attr: &str,
@@ -1019,7 +1019,7 @@ impl NetidmClient {
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer or the
     /// server rejects the value.
-    pub async fn idm_oauth2_client_set_provider_kind(
+    pub async fn idm_connector_set_provider_kind(
         &self,
         id: &str,
         kind: &str,
@@ -1028,7 +1028,7 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_PROVIDER_KIND.to_string(),
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
             vec![kind.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
@@ -1043,7 +1043,7 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails or the server rejects the URL.
-    pub async fn idm_oauth2_client_github_set_host(
+    pub async fn idm_connector_github_set_host(
         &self,
         id: &str,
         url: &str,
@@ -1052,7 +1052,7 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_GITHUB_HOST.to_string(),
+            ATTR_CONNECTOR_GITHUB_HOST.to_string(),
             vec![url.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
@@ -1067,15 +1067,15 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer.
-    pub async fn idm_oauth2_client_github_add_org_filter(
+    pub async fn idm_connector_github_add_org_filter(
         &self,
         id: &str,
         org: &str,
     ) -> Result<(), ClientError> {
         let mut current: Vec<String> = self
-            .idm_oauth2_client_get(id)
+            .idm_connector_get(id)
             .await?
-            .and_then(|e| e.attrs.get(ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER).cloned())
+            .and_then(|e| e.attrs.get(ATTR_CONNECTOR_GITHUB_ORG_FILTER).cloned())
             .unwrap_or_default();
         if !current.contains(&org.to_string()) {
             current.push(org.to_string());
@@ -1085,7 +1085,7 @@ impl NetidmClient {
         };
         entry
             .attrs
-            .insert(ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER.to_string(), current);
+            .insert(ATTR_CONNECTOR_GITHUB_ORG_FILTER.to_string(), current);
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
@@ -1096,15 +1096,15 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer.
-    pub async fn idm_oauth2_client_github_remove_org_filter(
+    pub async fn idm_connector_github_remove_org_filter(
         &self,
         id: &str,
         org: &str,
     ) -> Result<(), ClientError> {
         let current: Vec<String> = self
-            .idm_oauth2_client_get(id)
+            .idm_connector_get(id)
             .await?
-            .and_then(|e| e.attrs.get(ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER).cloned())
+            .and_then(|e| e.attrs.get(ATTR_CONNECTOR_GITHUB_ORG_FILTER).cloned())
             .unwrap_or_default();
         let updated: Vec<String> = current.into_iter().filter(|v| v != org).collect();
         let mut entry = Entry {
@@ -1112,7 +1112,7 @@ impl NetidmClient {
         };
         entry
             .attrs
-            .insert(ATTR_OAUTH2_CLIENT_GITHUB_ORG_FILTER.to_string(), updated);
+            .insert(ATTR_CONNECTOR_GITHUB_ORG_FILTER.to_string(), updated);
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
@@ -1124,17 +1124,17 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer.
-    pub async fn idm_oauth2_client_github_add_allowed_team(
+    pub async fn idm_connector_github_add_allowed_team(
         &self,
         id: &str,
         team: &str,
     ) -> Result<(), ClientError> {
         let mut current: Vec<String> = self
-            .idm_oauth2_client_get(id)
+            .idm_connector_get(id)
             .await?
             .and_then(|e| {
                 e.attrs
-                    .get(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS)
+                    .get(ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS)
                     .cloned()
             })
             .unwrap_or_default();
@@ -1146,7 +1146,7 @@ impl NetidmClient {
         };
         entry
             .attrs
-            .insert(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS.to_string(), current);
+            .insert(ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS.to_string(), current);
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
@@ -1157,17 +1157,17 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer.
-    pub async fn idm_oauth2_client_github_remove_allowed_team(
+    pub async fn idm_connector_github_remove_allowed_team(
         &self,
         id: &str,
         team: &str,
     ) -> Result<(), ClientError> {
         let current: Vec<String> = self
-            .idm_oauth2_client_get(id)
+            .idm_connector_get(id)
             .await?
             .and_then(|e| {
                 e.attrs
-                    .get(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS)
+                    .get(ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS)
                     .cloned()
             })
             .unwrap_or_default();
@@ -1177,7 +1177,7 @@ impl NetidmClient {
         };
         entry
             .attrs
-            .insert(ATTR_OAUTH2_CLIENT_GITHUB_ALLOWED_TEAMS.to_string(), updated);
+            .insert(ATTR_CONNECTOR_GITHUB_ALLOWED_TEAMS.to_string(), updated);
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
@@ -1188,7 +1188,7 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails or the server rejects the value.
-    pub async fn idm_oauth2_client_github_set_team_name_field(
+    pub async fn idm_connector_github_set_team_name_field(
         &self,
         id: &str,
         field: &str,
@@ -1197,7 +1197,7 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_GITHUB_TEAM_NAME_FIELD.to_string(),
+            ATTR_CONNECTOR_GITHUB_TEAM_NAME_FIELD.to_string(),
             vec![field.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
@@ -1211,7 +1211,7 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer.
-    pub async fn idm_oauth2_client_github_set_load_all_groups(
+    pub async fn idm_connector_github_set_load_all_groups(
         &self,
         id: &str,
         enable: bool,
@@ -1220,7 +1220,7 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_GITHUB_LOAD_ALL_GROUPS.to_string(),
+            ATTR_CONNECTOR_GITHUB_LOAD_ALL_GROUPS.to_string(),
             vec![enable.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
@@ -1234,7 +1234,7 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer.
-    pub async fn idm_oauth2_client_github_set_preferred_email_domain(
+    pub async fn idm_connector_github_set_preferred_email_domain(
         &self,
         id: &str,
         domain: &str,
@@ -1243,7 +1243,7 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN.to_string(),
+            ATTR_CONNECTOR_GITHUB_PREFERRED_EMAIL_DOMAIN.to_string(),
             vec![domain.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
@@ -1258,7 +1258,7 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer.
-    pub async fn idm_oauth2_client_github_clear_preferred_email_domain(
+    pub async fn idm_connector_github_clear_preferred_email_domain(
         &self,
         id: &str,
     ) -> Result<(), ClientError> {
@@ -1266,7 +1266,7 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_GITHUB_PREFERRED_EMAIL_DOMAIN.to_string(),
+            ATTR_CONNECTOR_GITHUB_PREFERRED_EMAIL_DOMAIN.to_string(),
             vec![],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
@@ -1280,7 +1280,7 @@ impl NetidmClient {
     /// # Errors
     ///
     /// Returns [`ClientError`] if the request fails at the HTTP layer.
-    pub async fn idm_oauth2_client_github_set_allow_jit_provisioning(
+    pub async fn idm_connector_github_set_allow_jit_provisioning(
         &self,
         id: &str,
         enable: bool,
@@ -1289,7 +1289,7 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_GITHUB_ALLOW_JIT_PROVISIONING.to_string(),
+            ATTR_CONNECTOR_GITHUB_ALLOW_JIT_PROVISIONING.to_string(),
             vec![enable.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
@@ -1298,7 +1298,7 @@ impl NetidmClient {
 
     // ── LDAP inbound connector methods (DL32) ─────────────────────────────────
 
-    pub async fn idm_oauth2_client_create_ldap(&self, name: &str) -> Result<(), ClientError> {
+    pub async fn idm_connector_create_ldap(&self, name: &str) -> Result<(), ClientError> {
         let mut entry = Entry::default();
         entry
             .attrs
@@ -1307,13 +1307,13 @@ impl NetidmClient {
             .attrs
             .insert(ATTR_DISPLAYNAME.to_string(), vec![name.to_string()]);
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_PROVIDER_KIND.to_string(),
+            ATTR_CONNECTOR_PROVIDER_KIND.to_string(),
             vec!["ldap".to_string()],
         );
         self.perform_post_request("/v1/oauth2/_client", entry).await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_host(
+    pub async fn idm_connector_ldap_set_host(
         &self,
         id: &str,
         host: &str,
@@ -1322,14 +1322,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_HOST.to_string(),
+            ATTR_CONNECTOR_LDAP_HOST.to_string(),
             vec![host.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_insecure_no_ssl(
+    pub async fn idm_connector_ldap_set_insecure_no_ssl(
         &self,
         id: &str,
         enable: bool,
@@ -1338,14 +1338,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_INSECURE_NO_SSL.to_string(),
+            ATTR_CONNECTOR_LDAP_INSECURE_NO_SSL.to_string(),
             vec![enable.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_insecure_skip_verify(
+    pub async fn idm_connector_ldap_set_insecure_skip_verify(
         &self,
         id: &str,
         enable: bool,
@@ -1354,14 +1354,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_INSECURE_SKIP_VERIFY.to_string(),
+            ATTR_CONNECTOR_LDAP_INSECURE_SKIP_VERIFY.to_string(),
             vec![enable.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_bind_dn(
+    pub async fn idm_connector_ldap_set_bind_dn(
         &self,
         id: &str,
         bind_dn: &str,
@@ -1370,14 +1370,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_BIND_DN.to_string(),
+            ATTR_CONNECTOR_LDAP_BIND_DN.to_string(),
             vec![bind_dn.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_bind_pw(
+    pub async fn idm_connector_ldap_set_bind_pw(
         &self,
         id: &str,
         bind_pw: &str,
@@ -1386,14 +1386,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_BIND_PW.to_string(),
+            ATTR_CONNECTOR_LDAP_BIND_PW.to_string(),
             vec![bind_pw.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_user_search_base_dn(
+    pub async fn idm_connector_ldap_set_user_search_base_dn(
         &self,
         id: &str,
         base_dn: &str,
@@ -1402,14 +1402,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_BASE_DN.to_string(),
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_BASE_DN.to_string(),
             vec![base_dn.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_user_search_filter(
+    pub async fn idm_connector_ldap_set_user_search_filter(
         &self,
         id: &str,
         filter: &str,
@@ -1418,24 +1418,24 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_FILTER.to_string(),
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_FILTER.to_string(),
             vec![filter.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_add_user_search_username(
+    pub async fn idm_connector_ldap_add_user_search_username(
         &self,
         id: &str,
         attr: &str,
     ) -> Result<(), ClientError> {
         let mut current: Vec<String> = self
-            .idm_oauth2_client_get(id)
+            .idm_connector_get(id)
             .await?
             .and_then(|e| {
                 e.attrs
-                    .get(ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME)
+                    .get(ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME)
                     .cloned()
             })
             .unwrap_or_default();
@@ -1446,24 +1446,24 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME.to_string(),
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME.to_string(),
             current,
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_remove_user_search_username(
+    pub async fn idm_connector_ldap_remove_user_search_username(
         &self,
         id: &str,
         attr: &str,
     ) -> Result<(), ClientError> {
         let current: Vec<String> = self
-            .idm_oauth2_client_get(id)
+            .idm_connector_get(id)
             .await?
             .and_then(|e| {
                 e.attrs
-                    .get(ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME)
+                    .get(ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME)
                     .cloned()
             })
             .unwrap_or_default();
@@ -1472,14 +1472,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_USERNAME.to_string(),
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_USERNAME.to_string(),
             updated,
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_user_id_attr(
+    pub async fn idm_connector_ldap_set_user_id_attr(
         &self,
         id: &str,
         attr: &str,
@@ -1488,14 +1488,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_ID_ATTR.to_string(),
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_ID_ATTR.to_string(),
             vec![attr.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_user_email_attr(
+    pub async fn idm_connector_ldap_set_user_email_attr(
         &self,
         id: &str,
         attr: &str,
@@ -1504,14 +1504,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_ATTR.to_string(),
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_ATTR.to_string(),
             vec![attr.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_user_name_attr(
+    pub async fn idm_connector_ldap_set_user_name_attr(
         &self,
         id: &str,
         attr: &str,
@@ -1520,14 +1520,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_NAME_ATTR.to_string(),
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_NAME_ATTR.to_string(),
             vec![attr.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_user_email_suffix(
+    pub async fn idm_connector_ldap_set_user_email_suffix(
         &self,
         id: &str,
         suffix: &str,
@@ -1536,14 +1536,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_USER_SEARCH_EMAIL_SUFFIX.to_string(),
+            ATTR_CONNECTOR_LDAP_USER_SEARCH_EMAIL_SUFFIX.to_string(),
             vec![suffix.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_group_search_base_dn(
+    pub async fn idm_connector_ldap_set_group_search_base_dn(
         &self,
         id: &str,
         base_dn: &str,
@@ -1552,14 +1552,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_BASE_DN.to_string(),
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_BASE_DN.to_string(),
             vec![base_dn.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_group_search_filter(
+    pub async fn idm_connector_ldap_set_group_search_filter(
         &self,
         id: &str,
         filter: &str,
@@ -1568,14 +1568,14 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_FILTER.to_string(),
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_FILTER.to_string(),
             vec![filter.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_set_group_name_attr(
+    pub async fn idm_connector_ldap_set_group_name_attr(
         &self,
         id: &str,
         attr: &str,
@@ -1584,24 +1584,24 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_NAME_ATTR.to_string(),
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_NAME_ATTR.to_string(),
             vec![attr.to_string()],
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_add_user_matcher(
+    pub async fn idm_connector_ldap_add_user_matcher(
         &self,
         id: &str,
         matcher: &str,
     ) -> Result<(), ClientError> {
         let mut current: Vec<String> = self
-            .idm_oauth2_client_get(id)
+            .idm_connector_get(id)
             .await?
             .and_then(|e| {
                 e.attrs
-                    .get(ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS)
+                    .get(ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS)
                     .cloned()
             })
             .unwrap_or_default();
@@ -1612,24 +1612,24 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS.to_string(),
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS.to_string(),
             current,
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)
             .await
     }
 
-    pub async fn idm_oauth2_client_ldap_remove_user_matcher(
+    pub async fn idm_connector_ldap_remove_user_matcher(
         &self,
         id: &str,
         matcher: &str,
     ) -> Result<(), ClientError> {
         let current: Vec<String> = self
-            .idm_oauth2_client_get(id)
+            .idm_connector_get(id)
             .await?
             .and_then(|e| {
                 e.attrs
-                    .get(ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS)
+                    .get(ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS)
                     .cloned()
             })
             .unwrap_or_default();
@@ -1638,7 +1638,7 @@ impl NetidmClient {
             attrs: BTreeMap::new(),
         };
         entry.attrs.insert(
-            ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS.to_string(),
+            ATTR_CONNECTOR_LDAP_GROUP_SEARCH_USER_MATCHERS.to_string(),
             updated,
         );
         self.perform_patch_request(&format!("/v1/oauth2/_client/{id}"), entry)

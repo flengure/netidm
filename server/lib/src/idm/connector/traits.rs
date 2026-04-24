@@ -29,7 +29,217 @@ use hashbrown::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
+use crate::idm::authsession::handler_connector::ExternalUserClaims;
+
+// ===========================================================================
+// Dex connector/connector.go parity — types and traits
+// ===========================================================================
+
+/// Mirrors dex `Scopes`. Passed to connector methods to communicate what
+/// the downstream client has requested beyond the baseline auth flow.
+#[derive(Debug, Clone, Default)]
+pub struct Scopes {
+    /// The client has requested a refresh token (offline_access scope).
+    pub offline_access: bool,
+    /// The client has requested group information about the end user.
+    pub groups: bool,
+}
+
+/// Rust equivalent of dex's `Identity`. Renamed `ConnectorIdentity` to
+/// avoid collision with netidm's internal `Identity` type (the session/
+/// authorization identity used throughout `server/lib`).
+///
+/// `connector_data` is the opaque per-session blob the connector owns —
+/// it is stored on the session record and handed back to the connector
+/// on every subsequent call (refresh, logout). It is never exposed to
+/// downstream clients or through the API.
+#[derive(Debug, Clone, Default)]
+pub struct ConnectorIdentity {
+    pub user_id: String,
+    pub username: String,
+    pub preferred_username: String,
+    pub email: String,
+    pub email_verified: bool,
+    pub groups: Vec<String>,
+    pub connector_data: Option<Vec<u8>>,
+}
+
+/// Replaces `*http.Request` for [`CallbackConnector`]. Carries the
+/// query parameters netidm extracts from the upstream redirect.
+#[derive(Debug, Clone, Default)]
+pub struct CallbackParams {
+    pub code: Option<String>,
+    pub state: Option<String>,
+    pub error: Option<String>,
+    pub raw_query: String,
+}
+
+/// Replaces `*http.Request` for [`LogoutCallbackConnector`].
+#[derive(Debug, Clone, Default)]
+pub struct LogoutCallbackParams {
+    pub raw_query: String,
+}
+
+/// Unified error type for all dex-parity connector traits.
+///
+/// Mirrors dex's `UserNotInRequiredGroupsError` (as a variant) plus
+/// the implicit Go `error` return from every other connector method.
+#[derive(Debug, Clone)]
+pub enum ConnectorError {
+    /// The user authenticated successfully but is not a member of any
+    /// of the connector's required groups. The server must respond with
+    /// HTTP 403 rather than 500. Mirrors dex `UserNotInRequiredGroupsError`.
+    UserNotInRequiredGroups { user_id: String, groups: Vec<String> },
+    /// Transport-level failure (TCP, TLS, DNS, timeout).
+    Network(String),
+    /// Upstream responded with a non-2xx HTTP status.
+    UpstreamRejected(u16),
+    /// Response from upstream could not be parsed or verified.
+    Parse(String),
+    /// Any other connector-internal failure.
+    Other(String),
+}
+
+impl std::fmt::Display for ConnectorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ConnectorError::UserNotInRequiredGroups { user_id, groups } => {
+                write!(
+                    f,
+                    "user {user_id:?} is not in any of the required groups {groups:?}"
+                )
+            }
+            ConnectorError::Network(msg) => write!(f, "upstream transport error: {msg}"),
+            ConnectorError::UpstreamRejected(status) => {
+                write!(f, "upstream responded with HTTP {status}")
+            }
+            ConnectorError::Parse(msg) => write!(f, "parse error: {msg}"),
+            ConnectorError::Other(msg) => write!(f, "connector error: {msg}"),
+        }
+    }
+}
+
+impl std::error::Error for ConnectorError {}
+
+/// Marker trait. Every connector implementation must be `Send + Sync + 'static`
+/// so it can be stored behind `Arc<dyn …>` and used across async task boundaries.
+/// Mirrors dex's empty `Connector` interface.
+pub trait Connector: Send + Sync + 'static {}
+
+/// Mirrors dex `CallbackConnector`. Implemented by connectors that use an
+/// OAuth2-style redirect flow (OIDC, GitHub, Google, Microsoft, GitLab, …).
+#[async_trait]
+pub trait CallbackConnector: Connector {
+    /// Return the upstream authorization URL to redirect the user to, plus
+    /// an opaque state blob that will be handed back at [`handle_callback`]
+    /// time via `conn_data`. Mirrors dex `LoginURL`.
+    fn login_url(
+        &self,
+        s: &Scopes,
+        callback_url: &str,
+        state: &str,
+    ) -> Result<(String, Vec<u8>), ConnectorError>;
+
+    /// Process the upstream redirect, exchange the authorization code, fetch
+    /// user info, and return a [`ConnectorIdentity`]. Mirrors dex `HandleCallback`.
+    async fn handle_callback(
+        &self,
+        s: &Scopes,
+        conn_data: &[u8],
+        params: &CallbackParams,
+    ) -> Result<ConnectorIdentity, ConnectorError>;
+}
+
+/// Mirrors dex `PasswordConnector`. Implemented by connectors that accept
+/// a username and password directly (LDAP).
+#[async_trait]
+pub trait PasswordConnector: Connector {
+    /// Label to display in the password form. Mirrors dex `Prompt`.
+    fn prompt(&self) -> &str;
+
+    /// Validate the credentials and return a [`ConnectorIdentity`] plus a bool
+    /// indicating whether the password was valid. Mirrors dex `Login`.
+    async fn login(
+        &self,
+        s: &Scopes,
+        username: &str,
+        password: &str,
+    ) -> Result<(ConnectorIdentity, bool), ConnectorError>;
+}
+
+/// Mirrors dex `SAMLConnector`. Implemented by connectors using SAML 2.0
+/// HTTP POST binding.
+#[async_trait]
+pub trait SAMLConnector: Connector {
+    /// Return the SSO URL and encoded SAML request for the POST form.
+    /// Mirrors dex `POSTData`.
+    fn post_data(
+        &self,
+        s: &Scopes,
+        request_id: &str,
+    ) -> Result<(String, String), ConnectorError>;
+
+    /// Decode, verify, and map attributes from the SAML response.
+    /// Mirrors dex `HandlePOST`.
+    async fn handle_post(
+        &self,
+        s: &Scopes,
+        saml_response: &str,
+        in_response_to: &str,
+    ) -> Result<ConnectorIdentity, ConnectorError>;
+}
+
+/// Mirrors dex `RefreshConnector`. Implemented by connectors that can
+/// refresh a session's claims when the downstream client presents a
+/// refresh token.
+#[async_trait]
+pub trait RefreshConnector: Connector {
+    /// Re-fetch the user's identity from the upstream. The connector
+    /// should update the returned [`ConnectorIdentity`] to reflect any changes
+    /// (group membership, email, etc.) since the token was last refreshed.
+    /// Mirrors dex `Refresh`.
+    async fn refresh(
+        &self,
+        s: &Scopes,
+        identity: ConnectorIdentity,
+    ) -> Result<ConnectorIdentity, ConnectorError>;
+}
+
+/// Mirrors dex `TokenIdentityConnector`. Implemented by connectors that
+/// can resolve a subject token (e.g. a Kubernetes service-account token)
+/// into an identity without a browser redirect.
+#[async_trait]
+pub trait TokenIdentityConnector: Connector {
+    /// Exchange a subject token for a [`ConnectorIdentity`]. Mirrors dex `TokenIdentity`.
+    async fn token_identity(
+        &self,
+        subject_token_type: &str,
+        subject_token: &str,
+    ) -> Result<ConnectorIdentity, ConnectorError>;
+}
+
+/// Mirrors dex `LogoutCallbackConnector`. Implemented by connectors that
+/// support RP-Initiated Logout by redirecting to the upstream provider.
+#[async_trait]
+pub trait LogoutCallbackConnector: Connector {
+    /// Return the upstream provider's logout URL, or an empty string if
+    /// upstream logout is not available. `conn_data` is the opaque blob
+    /// stored during authentication. Mirrors dex `LogoutURL`.
+    fn logout_url(
+        &self,
+        conn_data: &[u8],
+        post_logout_redirect_uri: &str,
+    ) -> Result<String, ConnectorError>;
+
+    /// Validate the upstream provider's logout response. SAML connectors
+    /// should verify the LogoutResponse signature here. OIDC connectors
+    /// that receive no structured response should return `Ok(())`.
+    /// Mirrors dex `HandleLogoutCallback`.
+    async fn handle_logout_callback(
+        &self,
+        params: &LogoutCallbackParams,
+    ) -> Result<(), ConnectorError>;
+}
 
 /// Hook invoked at `grant_type=refresh_token` time for sessions
 /// federated through an upstream connector. Re-fetches the user's
@@ -49,10 +259,10 @@ use crate::idm::authsession::handler_oauth2_client::ExternalUserClaims;
 ///
 /// ```rust,ignore
 /// use async_trait::async_trait;
-/// use netidmd_lib::idm::oauth2_connector::{
+/// use netidmd_lib::idm::connector::traits::{
 ///     RefreshableConnector, RefreshOutcome, ConnectorRefreshError,
 /// };
-/// use netidmd_lib::idm::authsession::handler_oauth2_client::ExternalUserClaims;
+/// use netidmd_lib::idm::authsession::handler_connector::ExternalUserClaims;
 ///
 /// struct EchoConnector;
 ///
@@ -214,6 +424,25 @@ impl std::fmt::Display for ConnectorRefreshError {
 }
 
 impl std::error::Error for ConnectorRefreshError {}
+
+impl From<ConnectorRefreshError> for ConnectorError {
+    fn from(e: ConnectorRefreshError) -> Self {
+        match e {
+            ConnectorRefreshError::Network(msg) => ConnectorError::Network(msg),
+            ConnectorRefreshError::UpstreamRejected(s) => ConnectorError::UpstreamRejected(s),
+            ConnectorRefreshError::Serialization(msg) => ConnectorError::Parse(msg),
+            ConnectorRefreshError::Other(msg) => ConnectorError::Other(msg),
+            ConnectorRefreshError::TokenRevoked => ConnectorError::Other("upstream token revoked".into()),
+            ConnectorRefreshError::AccessDenied => ConnectorError::UserNotInRequiredGroups {
+                user_id: String::new(),
+                groups: Vec::new(),
+            },
+            ConnectorRefreshError::ConnectorMissing(uuid) => {
+                ConnectorError::Other(format!("connector {uuid} not registered"))
+            }
+        }
+    }
+}
 
 /// Process-local lookup of concrete [`RefreshableConnector`]
 /// implementations by the connector-entry UUID that declares their

@@ -190,7 +190,7 @@ impl IdmServerProxyWriteTransaction<'_> {
 
         // Register each SAML provider as a RefreshableConnector (dex SAML parity).
         for (uuid, provider) in &providers {
-            let connector = Arc::new(crate::idm::saml_connector::SamlConnector {
+            let connector = Arc::new(crate::idm::connector::saml::SamlConnector {
                 provider_uuid: *uuid,
                 jit_provisioning: provider.jit_provisioning,
             });

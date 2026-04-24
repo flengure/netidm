@@ -49,7 +49,7 @@ pub use testkit_macros::test;
 // connector in the process-local ConnectorRegistry owned by the
 // in-test IdmServer. All four types come from the `testkit` feature
 // on `netidmd_lib`.
-pub use netidmd_lib::idm::oauth2_connector::{
+pub use netidmd_lib::idm::connector::traits::{
     ConnectorRefreshError, ConnectorRegistry, RefreshOutcome, RefreshableConnector,
     TestMockConnector,
 };

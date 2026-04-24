@@ -71,7 +71,7 @@ async fn setup_rs_and_user(rsclient: &NetidmClient) -> String {
         .expect("create RS");
 
     rsclient
-        .idm_oauth2_client_add_origin(
+        .idm_connector_add_origin(
             TEST_INTEGRATION_RS_ID,
             &Url::parse(TEST_INTEGRATION_RS_REDIRECT_URL).expect("redirect URL"),
         )
@@ -589,7 +589,7 @@ async fn test_refresh_claims_local_groups_survive_narrowing_upstream(
 
     // Upstream marker must be cleared (reconcile ran and removed the upstream group).
     {
-        use netidmd_lib::idm::oauth2_connector::read_synced_markers;
+        use netidmd_lib::idm::connector::traits::read_synced_markers;
         let ct = duration_from_epoch_now();
         let mut w = test_env
             .idm_server

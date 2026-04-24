@@ -231,7 +231,7 @@ pub static SCHEMA_ATTR_SAML_SESSION_CREATED_DL26: LazyLock<SchemaAttribute> =
 /// OAuth2 **resource server** class updated for DL26: adds the two new
 /// URL attributes (post-logout redirect allowlist and back-channel
 /// logout URI). These live on the downstream relying-party entry (the
-/// class netidm mints tokens FOR), not on `OAuth2Client` which is the
+/// class netidm mints tokens FOR), not on `Connector` which is the
 /// upstream federation class. The `Oauth2RS` loader in
 /// `idm::oauth2::reload_oauth2` reads these values off resource-server
 /// entries to populate the post-logout allowlist and the back-channel

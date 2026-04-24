@@ -6,8 +6,8 @@
 //! provides realistic responses without hitting github.com.
 
 use super::github_mock::{spawn_mock_github_server, MockGithubEmail};
-use netidmd_lib::idm::github_connector::{GitHubConfig, GitHubConnector};
-use netidmd_lib::idm::oauth2_connector::RefreshableConnector;
+use netidmd_lib::idm::connector::github::{Config, Conn};
+use netidmd_lib::idm::connector::traits::RefreshableConnector;
 use netidmd_testkit::{test, ADMIN_TEST_PASSWORD, ADMIN_TEST_USER};
 use std::sync::Arc;
 use url::Url;
@@ -15,10 +15,10 @@ use uuid::Uuid;
 
 // ── Test helpers ──────────────────────────────────────────────────────────────
 
-/// Build a minimal `GitHubConfig` that targets a running `MockGithub`.
+/// Build a minimal `Config` that targets a running `MockGithub`.
 /// The `entry_uuid` is a random new UUID per test so parallel tests
 /// don't collide in the registry.
-fn make_test_config(mock_base: &Url) -> GitHubConfig {
+fn make_test_config(mock_base: &Url) -> Config {
     let host = mock_base.clone();
     let mut api_base = mock_base.clone();
     api_base.set_path("/api/v3/");
@@ -41,16 +41,20 @@ fn make_test_config(mock_base: &Url) -> GitHubConfig {
         .build()
         .expect("reqwest client");
 
-    GitHubConfig {
+    Config {
         entry_uuid: Uuid::new_v4(),
         host,
-        api_base,
+        api_url: api_base.to_string(),
+        host_name: None,
+        root_ca: None,
         client_id: "test-client-id".to_string(),
         client_secret: "test-client-secret".to_string(),
+        orgs: vec![],
         org_filter: Default::default(),
         allowed_teams: Default::default(),
-        team_name_field: netidmd_lib::idm::github_connector::TeamNameField::Slug,
+        team_name_field: netidmd_lib::idm::connector::github::TeamNameField::Slug,
         load_all_groups: false,
+        use_login_as_id: false,
         preferred_email_domain: None,
         allow_jit_provisioning: false,
         redirect_uri: Url::parse("https://idm.example.com/ui/login/oauth2_landing")
@@ -106,7 +110,7 @@ async fn test_github_fetch_callback_claims_email_and_groups() {
     let code = mock.mint_token_for(42).await;
 
     let config = make_test_config(&mock.base);
-    let connector = Arc::new(GitHubConnector::new(config));
+    let connector = Arc::new(Conn::new(config));
 
     let claims = connector
         .fetch_callback_claims(&code, None)
@@ -157,7 +161,7 @@ async fn test_github_fetch_callback_claims_load_all_groups() {
 
     let mut config = make_test_config(&mock.base);
     config.load_all_groups = true;
-    let connector = Arc::new(GitHubConnector::new(config));
+    let connector = Arc::new(Conn::new(config));
 
     let claims = connector
         .fetch_callback_claims(&code, None)
@@ -201,7 +205,7 @@ async fn test_github_fetch_callback_claims_org_filter() {
 
     let mut config = make_test_config(&mock.base);
     config.org_filter.insert("allowed-org".to_string());
-    let connector = Arc::new(GitHubConnector::new(config));
+    let connector = Arc::new(Conn::new(config));
 
     let claims = connector
         .fetch_callback_claims(&code, None)
@@ -215,8 +219,8 @@ async fn test_github_fetch_callback_claims_org_filter() {
 /// T033 — GitHub Enterprise host routing. All OAuth2 + REST traffic must
 /// reach the configured host; the mock's per-host counter proves it.
 ///
-/// `make_test_config` already uses GHE-style routing (api_base at /api/v3/)
-/// which is exactly what `GitHubConfig::from_entry` derives for non-github.com
+/// `make_test_config` already uses GHE-style routing (api_url at /api/v3/)
+/// which is exactly what `Config::from_entry` derives for non-github.com
 /// hosts. The mock mounts REST routes under both `/api/v3` and bare paths,
 /// so this exercises the GHE code path end-to-end.
 #[tokio::test]
@@ -242,10 +246,10 @@ async fn test_github_enterprise_host_routing() {
     // HTTP Host headers include the port ("127.0.0.1:PORT"); mock.addr gives the exact form.
     let host_str = mock.addr.to_string();
 
-    // make_test_config sets api_base = mock_base/api/v3/ — matching the GHE
-    // derivation in GitHubConfig::from_entry for non-github.com hosts.
+    // make_test_config sets api_url = mock_base/api/v3/ — matching the GHE
+    // derivation in Config::from_entry for non-github.com hosts.
     let config = make_test_config(&mock.base);
-    let connector = Arc::new(GitHubConnector::new(config));
+    let connector = Arc::new(Conn::new(config));
 
     let claims = connector
         .fetch_callback_claims(&code, None)
@@ -296,13 +300,13 @@ async fn test_github_login_rejected_by_team_access_gate() {
     let mut config = make_test_config(&mock.base);
     // Only acme:eng is allowed; user is in acme:ops → denied.
     config.allowed_teams.insert("acme:eng".to_string());
-    let connector = Arc::new(GitHubConnector::new(config));
+    let connector = Arc::new(Conn::new(config));
 
     let result = connector.fetch_callback_claims(&code, None).await;
     assert!(
         matches!(
             result,
-            Err(netidmd_lib::idm::oauth2_connector::ConnectorRefreshError::AccessDenied)
+            Err(netidmd_lib::idm::connector::traits::ConnectorRefreshError::AccessDenied)
         ),
         "expected AccessDenied, got {result:?}"
     );
@@ -334,7 +338,7 @@ async fn test_github_login_allowed_after_adding_to_allowed_team() {
 
     let mut config = make_test_config(&mock.base);
     config.allowed_teams.insert("acme:eng".to_string());
-    let connector = Arc::new(GitHubConnector::new(config));
+    let connector = Arc::new(Conn::new(config));
 
     let claims = connector
         .fetch_callback_claims(&code, None)
@@ -378,7 +382,7 @@ async fn test_github_org_filter_narrows_group_mapping_without_rejecting_login() 
 
     let mut config = make_test_config(&mock.base);
     config.org_filter.insert("allowed-org".to_string());
-    let connector = Arc::new(GitHubConnector::new(config));
+    let connector = Arc::new(Conn::new(config));
 
     let claims = connector
         .fetch_callback_claims(&code, None)
@@ -417,7 +421,7 @@ async fn test_github_org_filter_empty_match_login_succeeds_no_groups() {
     let mut config = make_test_config(&mock.base);
     // org_filter = allowed-org but user has no teams there.
     config.org_filter.insert("allowed-org".to_string());
-    let connector = Arc::new(GitHubConnector::new(config));
+    let connector = Arc::new(Conn::new(config));
 
     let claims = connector
         .fetch_callback_claims(&code, None)
@@ -439,8 +443,8 @@ async fn test_github_org_filter_empty_match_login_succeeds_no_groups() {
 /// updated groups, not the ones from the initial login.
 #[tokio::test]
 async fn test_github_refresh_reflects_upstream_team_mutation() {
-    use netidmd_lib::idm::github_connector::{
-        GitHubSessionState, GITHUB_SESSION_STATE_FORMAT_VERSION,
+    use netidmd_lib::idm::connector::github::{
+        ConnectorData, FORMAT_VERSION,
     };
 
     let mock = spawn_mock_github_server().await;
@@ -463,7 +467,7 @@ async fn test_github_refresh_reflects_upstream_team_mutation() {
 
     let code = mock.mint_token_for(100).await;
     let config = make_test_config(&mock.base);
-    let connector = Arc::new(GitHubConnector::new(config));
+    let connector = Arc::new(Conn::new(config));
 
     // Simulate a login: exchange the code to get claims + access token.
     let initial_claims = connector
@@ -477,10 +481,10 @@ async fn test_github_refresh_reflects_upstream_team_mutation() {
     // In production this would be written by the session-mint path (T016);
     // here we construct it manually using the known access token.
     let access_token = format!("gho_mock_{}", 100);
-    let session_state = GitHubSessionState {
-        format_version: GITHUB_SESSION_STATE_FORMAT_VERSION,
-        github_id: 100,
-        github_login: "rotating-user".to_string(),
+    let session_state = ConnectorData {
+        format_version: FORMAT_VERSION,
+        github_id: Some(100),
+        github_login: Some("rotating-user".to_string()),
         access_token: access_token.clone(),
         refresh_token: None,
         access_token_expires_at: None,
@@ -524,11 +528,11 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
         .await
         .expect("admin auth");
 
-    // idm_oauth2_client_create_github sets GitHub-specific scopes (read:user, user:email)
+    // idm_connector_create_github sets GitHub-specific scopes (read:user, user:email)
     // which contain colons and fail server scope validation.  Create the entry manually
     // with a valid placeholder scope so we can exercise the GitHub-specific PATCH verbs.
     use netidm_proto::constants::{
-        ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_OAUTH2_CLIENT_ID, ATTR_OAUTH2_CLIENT_SECRET,
+        ATTR_OAUTH2_AUTHORISATION_ENDPOINT, ATTR_CONNECTOR_ID, ATTR_CONNECTOR_SECRET,
         ATTR_OAUTH2_REQUEST_SCOPES, ATTR_OAUTH2_TOKEN_ENDPOINT,
     };
     use netidm_proto::v1::Entry as ProtoEntry;
@@ -542,11 +546,11 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
         vec!["gh-cli-test".to_string()],
     );
     create_entry.attrs.insert(
-        ATTR_OAUTH2_CLIENT_ID.to_string(),
+        ATTR_CONNECTOR_ID.to_string(),
         vec!["cli-client-id".to_string()],
     );
     create_entry.attrs.insert(
-        ATTR_OAUTH2_CLIENT_SECRET.to_string(),
+        ATTR_CONNECTOR_SECRET.to_string(),
         vec!["cli-secret".to_string()],
     );
     create_entry.attrs.insert(
@@ -568,72 +572,72 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
 
     // provider_kind
     rsclient
-        .idm_oauth2_client_set_provider_kind("gh-cli-test", "github")
+        .idm_connector_set_provider_kind("gh-cli-test", "github")
         .await
         .expect("set provider kind");
 
     let entry = rsclient
-        .idm_oauth2_client_get("gh-cli-test")
+        .idm_connector_get("gh-cli-test")
         .await
         .expect("get entry")
         .expect("entry present");
     assert_eq!(
-        entry.attrs.get("oauth2_client_provider_kind").cloned(),
+        entry.attrs.get("connector_provider_kind").cloned(),
         Some(vec!["github".to_string()]),
         "provider kind"
     );
 
     // github_set_host
     rsclient
-        .idm_oauth2_client_github_set_host("gh-cli-test", "https://github.example.com/")
+        .idm_connector_github_set_host("gh-cli-test", "https://github.example.com/")
         .await
         .expect("set host");
 
     let entry = rsclient
-        .idm_oauth2_client_get("gh-cli-test")
+        .idm_connector_get("gh-cli-test")
         .await
         .expect("get")
         .expect("present");
     assert_eq!(
-        entry.attrs.get("oauth2_client_github_host").cloned(),
+        entry.attrs.get("connector_github_host").cloned(),
         Some(vec!["https://github.example.com/".to_string()]),
         "github host"
     );
 
     // github_add_org_filter / remove
     rsclient
-        .idm_oauth2_client_github_add_org_filter("gh-cli-test", "acme")
+        .idm_connector_github_add_org_filter("gh-cli-test", "acme")
         .await
         .expect("add org filter");
 
     let entry = rsclient
-        .idm_oauth2_client_get("gh-cli-test")
+        .idm_connector_get("gh-cli-test")
         .await
         .expect("get")
         .expect("present");
     assert!(
         entry
             .attrs
-            .get("oauth2_client_github_org_filter")
+            .get("connector_github_org_filter")
             .map(|v| v.contains(&"acme".to_string()))
             .unwrap_or(false),
         "org filter contains acme"
     );
 
     rsclient
-        .idm_oauth2_client_github_remove_org_filter("gh-cli-test", "acme")
+        .idm_connector_github_remove_org_filter("gh-cli-test", "acme")
         .await
         .expect("remove org filter");
 
     let entry = rsclient
-        .idm_oauth2_client_get("gh-cli-test")
+        .idm_connector_get("gh-cli-test")
         .await
         .expect("get")
         .expect("present");
     assert!(
         !entry
             .attrs
-            .get("oauth2_client_github_org_filter")
+            .get("connector_github_org_filter")
             .map(|v| v.contains(&"acme".to_string()))
             .unwrap_or(false),
         "org filter no longer contains acme"
@@ -641,44 +645,44 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
 
     // github_add_allowed_team / remove
     rsclient
-        .idm_oauth2_client_github_add_allowed_team("gh-cli-test", "acme:engineers")
+        .idm_connector_github_add_allowed_team("gh-cli-test", "acme:engineers")
         .await
         .expect("add allowed team");
 
     let entry = rsclient
-        .idm_oauth2_client_get("gh-cli-test")
+        .idm_connector_get("gh-cli-test")
         .await
         .expect("get")
         .expect("present");
     assert!(
         entry
             .attrs
-            .get("oauth2_client_github_allowed_teams")
+            .get("connector_github_allowed_teams")
             .map(|v| v.contains(&"acme:engineers".to_string()))
             .unwrap_or(false),
         "allowed teams contains acme:engineers"
     );
 
     rsclient
-        .idm_oauth2_client_github_remove_allowed_team("gh-cli-test", "acme:engineers")
+        .idm_connector_github_remove_allowed_team("gh-cli-test", "acme:engineers")
         .await
         .expect("remove allowed team");
 
     // github_set_team_name_field
     rsclient
-        .idm_oauth2_client_github_set_team_name_field("gh-cli-test", "name")
+        .idm_connector_github_set_team_name_field("gh-cli-test", "name")
         .await
         .expect("set team name field");
 
     let entry = rsclient
-        .idm_oauth2_client_get("gh-cli-test")
+        .idm_connector_get("gh-cli-test")
         .await
         .expect("get")
         .expect("present");
     assert_eq!(
         entry
             .attrs
-            .get("oauth2_client_github_team_name_field")
+            .get("connector_github_team_name_field")
             .cloned(),
         Some(vec!["name".to_string()]),
         "team name field"
@@ -686,19 +690,19 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
 
     // github_set_load_all_groups
     rsclient
-        .idm_oauth2_client_github_set_load_all_groups("gh-cli-test", true)
+        .idm_connector_github_set_load_all_groups("gh-cli-test", true)
         .await
         .expect("set load all groups");
 
     let entry = rsclient
-        .idm_oauth2_client_get("gh-cli-test")
+        .idm_connector_get("gh-cli-test")
         .await
         .expect("get")
         .expect("present");
     assert_eq!(
         entry
             .attrs
-            .get("oauth2_client_github_load_all_groups")
+            .get("connector_github_load_all_groups")
             .cloned(),
         Some(vec!["true".to_string()]),
         "load all groups"
@@ -706,44 +710,44 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
 
     // github_set_preferred_email_domain / clear
     rsclient
-        .idm_oauth2_client_github_set_preferred_email_domain("gh-cli-test", "example.com")
+        .idm_connector_github_set_preferred_email_domain("gh-cli-test", "example.com")
         .await
         .expect("set preferred email domain");
 
     let entry = rsclient
-        .idm_oauth2_client_get("gh-cli-test")
+        .idm_connector_get("gh-cli-test")
         .await
         .expect("get")
         .expect("present");
     assert_eq!(
         entry
             .attrs
-            .get("oauth2_client_github_preferred_email_domain")
+            .get("connector_github_preferred_email_domain")
             .cloned(),
         Some(vec!["example.com".to_string()]),
         "preferred email domain"
     );
 
     rsclient
-        .idm_oauth2_client_github_clear_preferred_email_domain("gh-cli-test")
+        .idm_connector_github_clear_preferred_email_domain("gh-cli-test")
         .await
         .expect("clear preferred email domain");
 
     // github_set_allow_jit_provisioning
     rsclient
-        .idm_oauth2_client_github_set_allow_jit_provisioning("gh-cli-test", true)
+        .idm_connector_github_set_allow_jit_provisioning("gh-cli-test", true)
         .await
         .expect("enable jit provisioning");
 
     let entry = rsclient
-        .idm_oauth2_client_get("gh-cli-test")
+        .idm_connector_get("gh-cli-test")
         .await
         .expect("get")
         .expect("present");
     assert_eq!(
         entry
             .attrs
-            .get("oauth2_client_github_allow_jit_provisioning")
+            .get("connector_github_allow_jit_provisioning")
             .cloned(),
         Some(vec!["true".to_string()]),
         "allow jit provisioning"
@@ -752,7 +756,7 @@ async fn test_github_cli_verbs_round_trip(rsclient: &netidm_client::NetidmClient
 
 // ── T028: JIT provisioning toggle respects the admin flag ────────────────────
 //
-// The DB-level linking logic lives in `github_link_or_provision_chain` and is
+// The DB-level linking logic lives in `link_or_provision_chain` and is
 // exercised directly by the unit tests in `github_connector.rs`:
 //   - T027: JIT off + no match → Ok(None)  (unit test with real DB)
 //   - T020: email match links step-1 even with JIT off  (unit test with real DB)
