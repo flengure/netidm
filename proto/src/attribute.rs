@@ -498,6 +498,10 @@ pub enum Attribute {
     WgTokenUsesLeft,
     WgTokenExpiry,
     WgTokenPrincipalRef,
+    /// Virtual attribute used only in migration hjson files to inline WG peer specs
+    /// on person assertions. Stripped by scim_assert() before schema validation.
+    #[strum(serialize = "wg")]
+    WgInlinePeer,
 
     // DL22 — SAML 2.0 client attributes
     SamlIdpSsoUrl,

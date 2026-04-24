@@ -1,27 +1,31 @@
 use anyhow::{bail, Result};
-use hashbrown::HashSet;
 use ipnet::IpNet;
 use std::net::IpAddr;
 
 /// Allocate per-address-family IPs for a new peer from `tunnel_cidrs`.
+
 ///
 /// For each CIDR in `tunnel_cidrs`, allocates the lowest available host
 /// address not already used by `existing_peers`, skipping slot 1 (server).
 /// Returns one `/32` per IPv4 CIDR and one `/128` per IPv6 CIDR.
+///
+/// `existing_peers` may contain host addresses (`/32`, `/128`) or subnets
+/// (`/30`, `/126`, etc.). Any candidate host that falls within an existing
+/// peer's CIDR is considered occupied and skipped.
 pub fn allocate(tunnel_cidrs: &[IpNet], existing_peers: &[IpNet]) -> Result<Vec<IpNet>> {
-    let used: HashSet<IpAddr> = existing_peers.iter().map(|n| n.addr()).collect();
     let mut result = Vec::new();
     for cidr in tunnel_cidrs {
-        result.push(allocate_peer_ip(cidr, &used)?);
+        result.push(allocate_peer_ip(cidr, existing_peers)?);
     }
     Ok(result)
 }
 
-/// Allocate the next free host address within `tunnel_cidr` that is not in `used`.
+/// Allocate the next free host address within `tunnel_cidr` that does not
+/// overlap with any entry in `existing_peers`.
 ///
 /// The server always occupies the first host address (.1 / ::1).
 /// Peers receive addresses from the second host (.2 / ::2) onwards.
-pub fn allocate_peer_ip(tunnel_cidr: &IpNet, used: &HashSet<IpAddr>) -> Result<IpNet> {
+pub fn allocate_peer_ip(tunnel_cidr: &IpNet, existing_peers: &[IpNet]) -> Result<IpNet> {
     // The server address is the first address in the network (network_addr + 1).
     let server_addr = {
         let mut h = tunnel_cidr.hosts();
@@ -50,7 +54,9 @@ pub fn allocate_peer_ip(tunnel_cidr: &IpNet, used: &HashSet<IpAddr>) -> Result<I
         if host == server_addr {
             continue;
         }
-        if used.contains(&host) {
+        // Skip if this host falls within any existing peer's allocated range.
+        // This correctly handles both /32 host peers and wider subnet peers (/30, /29, etc.).
+        if existing_peers.iter().any(|p| p.contains(&host)) {
             continue;
         }
         let prefix_len = match host {
@@ -65,21 +71,19 @@ pub fn allocate_peer_ip(tunnel_cidr: &IpNet, used: &HashSet<IpAddr>) -> Result<I
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
 
     #[test]
     fn allocates_slot_2() {
         let cidr: IpNet = "10.100.0.0/24".parse().unwrap();
-        let peer_ip = allocate_peer_ip(&cidr, &HashSet::default()).unwrap();
+        let peer_ip = allocate_peer_ip(&cidr, &[]).unwrap();
         assert_eq!(peer_ip.to_string(), "10.100.0.2/32");
     }
 
     #[test]
     fn skips_used_addresses() {
         let cidr: IpNet = "10.100.0.0/24".parse().unwrap();
-        let mut used = HashSet::default();
-        used.insert(IpAddr::from_str("10.100.0.2").unwrap());
-        let peer_ip = allocate_peer_ip(&cidr, &used).unwrap();
+        let existing = vec!["10.100.0.2/32".parse().unwrap()];
+        let peer_ip = allocate_peer_ip(&cidr, &existing).unwrap();
         assert_eq!(peer_ip.to_string(), "10.100.0.3/32");
     }
 
@@ -99,8 +103,39 @@ mod tests {
     fn allocate_exhausted() {
         let cidr: IpNet = "10.100.0.0/30".parse().unwrap();
         // /30 has 2 hosts: .1 (server) and .2. After .2 is used, exhausted.
-        let mut used = HashSet::default();
-        used.insert(IpAddr::from_str("10.100.0.2").unwrap());
-        assert!(allocate_peer_ip(&cidr, &used).is_err());
+        let existing = vec!["10.100.0.2/32".parse::<IpNet>().unwrap()];
+        assert!(allocate_peer_ip(&cidr, &existing).is_err());
+    }
+
+    #[test]
+    fn respects_subnet_peers() {
+        let cidr: IpNet = "10.100.0.0/24".parse().unwrap();
+        // Peer owns /30 at .8 — covers .8, .9, .10, .11 (hosts within the /30)
+        let existing: Vec<IpNet> = vec!["10.100.0.8/30".parse().unwrap()];
+        let peer_ip = allocate_peer_ip(&cidr, &existing).unwrap();
+        // .2 through .7 are free; .2 should be the first allocation
+        assert_eq!(peer_ip.to_string(), "10.100.0.2/32");
+    }
+
+    #[test]
+    fn respects_subnet_peers_skips_interior() {
+        let cidr: IpNet = "10.100.0.0/24".parse().unwrap();
+        // Peer owns /30 at .8, plus .2 as a host — next free should be .3
+        let existing: Vec<IpNet> = vec![
+            "10.100.0.2/32".parse().unwrap(),
+            "10.100.0.8/30".parse().unwrap(),
+        ];
+        let peer_ip = allocate_peer_ip(&cidr, &existing).unwrap();
+        assert_eq!(peer_ip.to_string(), "10.100.0.3/32");
+    }
+
+    #[test]
+    fn respects_subnet_peers_ipv6() {
+        let cidr: IpNet = "fd00::/64".parse().unwrap();
+        // Peer owns a /126 at ::8 — covers ::8, ::9, ::a, ::b
+        let existing: Vec<IpNet> = vec!["fd00::8/126".parse().unwrap()];
+        let peer_ip = allocate_peer_ip(&cidr, &existing).unwrap();
+        // ::2 through ::7 are free; ::2 is first
+        assert_eq!(peer_ip.to_string(), "fd00::2/128");
     }
 }

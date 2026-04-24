@@ -9,6 +9,7 @@ use netidm_proto::scim_v1::client::{
     ScimEntryAssertion, ScimEntryPostGeneric, ScimEntryPutGeneric,
 };
 use netidm_proto::scim_v1::JsonValue;
+use serde::Deserialize;
 use std::collections::{
     // BTreeSet,
     BTreeMap,
@@ -143,6 +144,27 @@ impl ScimAssertEvent {
             nonce,
         }
     }
+}
+
+/// Inline WG peer spec parsed from the `"wg"` virtual attribute on a person assertion.
+/// Fields mirror what a user/admin provides — the tunnel UUID and WgUserRef are injected
+/// by the migration processor.
+#[derive(Debug, Deserialize)]
+struct WgInlinePeerSpec {
+    tunnel: String,
+    name: String,
+    key: String,
+    address: String,
+    psk: Option<String>,
+}
+
+/// Deterministic UUID for an inline-seeded WgPeer, keyed on
+/// (person_uuid, tunnel_uuid, peer_name). Idempotent across re-runs.
+fn wgpeer_inline_uuid(person_uuid: Uuid, tunnel_uuid: Uuid, peer_name: &str) -> Uuid {
+    Uuid::new_v5(
+        &Uuid::NAMESPACE_OID,
+        format!("wgpeer:{}:{}:{}", person_uuid, tunnel_uuid, peer_name).as_bytes(),
+    )
 }
 
 impl QueryServerWriteTransaction<'_> {
@@ -306,7 +328,7 @@ impl QueryServerWriteTransaction<'_> {
     pub fn scim_assert(&mut self, scim_assert: ScimAssertEvent) -> Result<(), OperationError> {
         let ScimAssertEvent {
             ident,
-            asserts,
+            mut asserts,
             id,
             nonce,
         } = scim_assert;
@@ -333,6 +355,81 @@ impl QueryServerWriteTransaction<'_> {
                 ScimEntryAssertion::Absent { .. } => None,
             },
         ));
+
+        // Expand inline "wg" peer specs from person assertions into separate
+        // WgPeer assertions. The "wg" key (Attribute::WgInlinePeer) is a
+        // virtual/synthetic attribute — never stored on the person entry.
+        let mut peer_assertions: Vec<ScimEntryAssertion> = Vec::new();
+        for scim_assert in &mut asserts {
+            if let ScimEntryAssertion::Present { id: person_id, attrs } = scim_assert {
+                if let Some(Some(wg_json)) = attrs.remove(&Attribute::WgInlinePeer) {
+                    match serde_json::from_value::<Vec<WgInlinePeerSpec>>(wg_json) {
+                        Ok(peers) => {
+                            for peer in peers {
+                                let tunnel_uuid = match self
+                                    .txn_name_to_uuid()
+                                    .get(&peer.tunnel)
+                                    .copied()
+                                {
+                                    Some(u) => u,
+                                    None => {
+                                        warn!(
+                                            tunnel = %peer.tunnel,
+                                            "inline wg peer references unknown tunnel — skipping"
+                                        );
+                                        continue;
+                                    }
+                                };
+                                let peer_uuid =
+                                    wgpeer_inline_uuid(*person_id, tunnel_uuid, &peer.name);
+                                let addresses: Vec<&str> =
+                                    peer.address.split(',').map(|s| s.trim()).collect();
+                                let mut peer_attrs: BTreeMap<Attribute, Option<JsonValue>> =
+                                    BTreeMap::new();
+                                peer_attrs.insert(
+                                    Attribute::Class,
+                                    Some(serde_json::json!(["object", "wgpeer"])),
+                                );
+                                peer_attrs.insert(
+                                    Attribute::Name,
+                                    Some(serde_json::json!(peer.name)),
+                                );
+                                peer_attrs.insert(
+                                    Attribute::WgPubkey,
+                                    Some(serde_json::json!(peer.key)),
+                                );
+                                peer_attrs.insert(
+                                    Attribute::WgAllowedIps,
+                                    Some(serde_json::json!(addresses)),
+                                );
+                                peer_attrs.insert(
+                                    Attribute::WgTunnelRef,
+                                    Some(serde_json::json!([{"uuid": tunnel_uuid.to_string()}])),
+                                );
+                                peer_attrs.insert(
+                                    Attribute::WgUserRef,
+                                    Some(serde_json::json!([{"uuid": person_id.to_string()}])),
+                                );
+                                if let Some(psk) = peer.psk {
+                                    peer_attrs.insert(
+                                        Attribute::WgPresharedKey,
+                                        Some(serde_json::json!(psk)),
+                                    );
+                                }
+                                peer_assertions.push(ScimEntryAssertion::Present {
+                                    id: peer_uuid,
+                                    attrs: peer_attrs,
+                                });
+                            }
+                        }
+                        Err(e) => {
+                            warn!(?e, "Failed to parse inline wg peers — skipping block");
+                        }
+                    }
+                }
+            }
+        }
+        asserts.extend(peer_assertions);
 
         // Transform from SCIM to Netidm Internal representations.
         let asserts = asserts
