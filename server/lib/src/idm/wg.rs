@@ -188,13 +188,13 @@ impl IdmServerProxyWriteTransaction<'_> {
         })
     }
 
-    /// Validate a presented token secret and return the entry UUID and tunnel UUID.
-    /// Checks expiry and uses_left. Does NOT consume the token.
+    /// Validate a presented token secret and return the entry UUID, tunnel UUID, and optional
+    /// principal constraint. Checks expiry and uses_left. Does NOT consume the token.
     pub fn wg_token_validate(
         &mut self,
         secret: &str,
         ct: Duration,
-    ) -> Result<(Uuid, Uuid), OperationError> {
+    ) -> Result<(Uuid, Uuid, Option<Uuid>), OperationError> {
         let hash = sha256_of(secret.as_bytes());
         let filter = filter!(f_and!([
             f_eq(Attribute::Class, EntryClass::WgToken.into()),
@@ -225,8 +225,9 @@ impl IdmServerProxyWriteTransaction<'_> {
         let tunnel_uuid = e
             .get_ava_single_refer(Attribute::WgTunnelRef)
             .ok_or(OperationError::InvalidEntryState)?;
+        let principal_ref = e.get_ava_single_refer(Attribute::WgTokenPrincipalRef);
 
-        Ok((token_uuid, tunnel_uuid))
+        Ok((token_uuid, tunnel_uuid, principal_ref))
     }
 
     /// Consume a token: decrement uses_left, or delete if it hits 0 / was single-use.
@@ -257,13 +258,21 @@ impl IdmServerProxyWriteTransaction<'_> {
     }
 
     /// Full peer registration flow: validate token, allocate IPs, create WgPeer entry.
+    /// `caller_uuid` must be the UUID of the authenticated person or service account.
     pub fn wg_connect(
         &mut self,
-        caller_name: &str,
+        caller_uuid: Uuid,
         req: &WgConnectRequest,
         ct: Duration,
     ) -> Result<WgConnectResponse, OperationError> {
-        let (token_uuid, tunnel_uuid) = self.wg_token_validate(&req.token, ct)?;
+        let (token_uuid, tunnel_uuid, principal_ref) = self.wg_token_validate(&req.token, ct)?;
+
+        // If the token is locked to a specific principal, the caller must match.
+        if let Some(required) = principal_ref {
+            if caller_uuid != required {
+                return Err(OperationError::NotAuthenticated);
+            }
+        }
 
         // Load tunnel config.
         let tunnel_filter = filter!(f_and!([
@@ -312,7 +321,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             allocate(&tunnel.address, &existing).map_err(|_| OperationError::ResourceLimit)?;
 
         // Create WgPeer entry.
-        let peer_name = format!("peer-{}-{}", caller_name, &tunnel.name);
+        let peer_name = format!("peer-{}-{}", caller_uuid.as_simple(), &tunnel.name);
         let peer_uuid = Uuid::new_v4();
         let mut peer_entry = entry_init!(
             (Attribute::Class, EntryClass::Object.to_value()),
@@ -320,7 +329,8 @@ impl IdmServerProxyWriteTransaction<'_> {
             (Attribute::Name, Value::new_iname(&peer_name)),
             (Attribute::Uuid, Value::Uuid(peer_uuid)),
             (Attribute::WgPubkey, Value::new_utf8s(&req.pubkey)),
-            (Attribute::WgTunnelRef, Value::Refer(tunnel_uuid))
+            (Attribute::WgTunnelRef, Value::Refer(tunnel_uuid)),
+            (Attribute::WgUserRef, Value::Refer(caller_uuid))
         );
         for cidr in &allocated {
             peer_entry.add_ava(Attribute::WgAllowedIps, Value::new_utf8s(&cidr.to_string()));

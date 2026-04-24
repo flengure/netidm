@@ -287,10 +287,9 @@ pub async fn wg_connect(
     VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Json(req): Json<WgConnectRequest>,
 ) -> Result<Json<WgConnectResponse>, WebError> {
-    let caller_name = format!("peer-{}", &kopid.eventid.as_simple());
     state
         .qe_w_ref
-        .handle_wg_connect(client_auth_info, caller_name, req, kopid.eventid)
+        .handle_wg_connect(client_auth_info, req, kopid.eventid)
         .await
         .map(Json)
         .map_err(WebError::from)

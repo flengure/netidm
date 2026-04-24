@@ -2123,14 +2123,20 @@ impl QueryServerWriteV1 {
     #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
     pub async fn handle_wg_connect(
         &self,
-        _client_auth_info: ClientAuthInfo,
-        caller_name: String,
+        client_auth_info: ClientAuthInfo,
         req: netidm_proto::wg::WgConnectRequest,
         eventid: Uuid,
     ) -> Result<netidm_proto::wg::WgConnectResponse, OperationError> {
         let ct = duration_from_epoch_now();
         let mut idms_prox_write = self.idms.proxy_write(ct).await?;
-        let resp = idms_prox_write.wg_connect(&caller_name, &req, ct)?;
+        let ident = idms_prox_write
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(|e| {
+                error!(err = ?e, "Invalid identity");
+                e
+            })?;
+        let caller_uuid = ident.get_uuid().ok_or(OperationError::NotAuthenticated)?;
+        let resp = idms_prox_write.wg_connect(caller_uuid, &req, ct)?;
         idms_prox_write.commit()?;
         Ok(resp)
     }
