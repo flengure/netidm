@@ -450,11 +450,20 @@ impl IdmServerProxyReadTransaction<'_> {
                         .unwrap_or_default()
                 });
                 let keepalive = e.get_ava_single_uint32(Attribute::WgPersistentKeepalive);
+                let user = e
+                    .get_ava_single_refer(Attribute::WgUserRef)
+                    .and_then(|uuid| self.qs_read.internal_search_uuid(uuid).ok())
+                    .map(|ue| {
+                        ue.get_ava_single_iname(Attribute::Name)
+                            .unwrap_or("")
+                            .to_string()
+                    })
+                    .unwrap_or_default();
                 WgPeerResponse {
                     name,
                     pubkey,
                     allowed_ips,
-                    user: String::new(),
+                    user,
                     last_seen,
                     keepalive,
                 }
