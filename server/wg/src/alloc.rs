@@ -3,7 +3,6 @@ use ipnet::IpNet;
 use std::net::IpAddr;
 
 /// Allocate per-address-family IPs for a new peer from `tunnel_cidrs`.
-
 ///
 /// For each CIDR in `tunnel_cidrs`, allocates the lowest available host
 /// address not already used by `existing_peers`, skipping slot 1 (server).
