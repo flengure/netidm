@@ -127,6 +127,12 @@ pub struct ServerState {
     /// Entries are evicted after 5 minutes on lookup.
     #[allow(dead_code)]
     pub(crate) saml_pending_requests: Arc<Mutex<HashMap<String, SamlPendingRequest>>>,
+    /// When true, always display the SSO connector picker even if only one
+    /// upstream connector is configured (from `[oauth2] always_show_login_screen`).
+    pub(crate) always_show_login_screen: bool,
+    /// When true, automatically approve the OAuth2 consent screen without user
+    /// interaction (from `[oauth2] skip_approval_screen`).
+    pub(crate) skip_approval_screen: bool,
 }
 
 impl ServerState {
@@ -305,6 +311,28 @@ pub async fn create_https_server(
             );
         })?;
 
+    // Allow operators to override both CSP variants with a single custom value.
+    // When set, it replaces the computed headers for all routes. The operator is
+    // responsible for correctness (including the form-action directive implications
+    // described above).
+    let (csp_header, csp_header_no_form_action) = if !config.web.csp_header.is_empty() {
+        match HeaderValue::from_str(&config.web.csp_header) {
+            Ok(v) => {
+                info!("Using custom Content-Security-Policy from [web] config");
+                (v.clone(), v)
+            }
+            Err(err) => {
+                error!(
+                    ?err,
+                    "Invalid [web].csp_header value — falling back to computed CSP"
+                );
+                (csp_header, csp_header_no_form_action)
+            }
+        }
+    } else {
+        (csp_header, csp_header_no_form_action)
+    };
+
     let trust_x_forward_for_ips = config
         .http_client_address_info
         .trusted_x_forward_for()
@@ -368,6 +396,8 @@ pub async fn create_https_server(
         forward_auth_allowed_groups: Arc::new(config.forward_auth_allowed_groups.clone()),
         forward_auth_inject_headers: Arc::new(forward_auth_inject_headers),
         saml_pending_requests: Arc::new(Mutex::new(HashMap::new())),
+        always_show_login_screen: config.oauth2.always_show_login_screen,
+        skip_approval_screen: config.oauth2.skip_approval_screen,
     };
 
     let static_routes = match config.role {

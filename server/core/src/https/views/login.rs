@@ -901,6 +901,16 @@ pub async fn view_index_get(
                 .await
                 .unwrap_or_default();
 
+            // When exactly one upstream connector is configured and
+            // `always_show_login_screen` is false, skip the picker and redirect
+            // directly to that connector's SSO initiation URL.
+            if !state.always_show_login_screen {
+                if let [sole] = available_sso_providers.as_slice() {
+                    let sso_url = format!("{}/{}", sole.sso_url_prefix, sole.name);
+                    return (jar, Redirect::to(&sso_url)).into_response();
+                }
+            }
+
             let show_internal_first = jar
                 .get(COOKIE_AUTH_METHOD_PREF)
                 .map(|c| c.value() == "internal")

@@ -188,6 +188,14 @@ async fn oauth2_authorise(
     kopid: KOpId,
     client_auth_info: ClientAuthInfo,
 ) -> impl IntoResponse {
+    // Clone auth info before the move so we can reuse it for the auto-permit
+    // path when skip_approval_screen is enabled.
+    let client_auth_info_permit = if state.skip_approval_screen {
+        Some(client_auth_info.clone())
+    } else {
+        None
+    };
+
     let res: Result<AuthoriseResponse, Oauth2Error> = state
         .qe_r_ref
         .handle_oauth2_authorise(client_auth_info, auth_req, kopid.eventid)
@@ -200,6 +208,14 @@ async fn oauth2_authorise(
             pii_scopes,
             consent_token,
         }) => {
+            // When `skip_approval_screen` is set globally, bypass the consent UI
+            // by immediately auto-permitting with the consent token.
+            if let Some(auth_info) = client_auth_info_permit {
+                return oauth2_authorise_permit(state, consent_token, kopid, auth_info)
+                    .await
+                    .into_response();
+            }
+
             // Render a redirect to the consent page for the user to interact with
             // to authorise this session-id
             // This is json so later we can expand it with better detail.
