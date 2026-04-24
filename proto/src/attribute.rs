@@ -404,6 +404,16 @@ pub enum Attribute {
     OAuth2ClientOpenshiftInsecureCa,
     #[strum(serialize = "oauth2_client_openshift_root_ca")]
     OAuth2ClientOpenshiftRootCa,
+    #[strum(serialize = "oauth2_client_gitlab_base_url")]
+    OAuth2ClientGitlabBaseUrl,
+    #[strum(serialize = "oauth2_client_gitlab_groups")]
+    OAuth2ClientGitlabGroups,
+    #[strum(serialize = "oauth2_client_gitlab_use_login_as_id")]
+    OAuth2ClientGitlabUseLoginAsId,
+    #[strum(serialize = "oauth2_client_gitlab_get_groups_permission")]
+    OAuth2ClientGitlabGetGroupsPermission,
+    #[strum(serialize = "oauth2_client_gitlab_root_ca")]
+    OAuth2ClientGitlabRootCa,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]
@@ -985,6 +995,17 @@ impl Attribute {
             "saml_attr_map_displayname" => Attribute::SamlAttrMapDisplayname,
             "saml_attr_map_groups" => Attribute::SamlAttrMapGroups,
             "saml_jit_provisioning" => Attribute::SamlJitProvisioning,
+            ATTR_OAUTH2_CLIENT_OPENSHIFT_ISSUER => Attribute::OAuth2ClientOpenshiftIssuer,
+            ATTR_OAUTH2_CLIENT_OPENSHIFT_GROUPS => Attribute::OAuth2ClientOpenshiftGroups,
+            ATTR_OAUTH2_CLIENT_OPENSHIFT_INSECURE_CA => Attribute::OAuth2ClientOpenshiftInsecureCa,
+            ATTR_OAUTH2_CLIENT_OPENSHIFT_ROOT_CA => Attribute::OAuth2ClientOpenshiftRootCa,
+            ATTR_OAUTH2_CLIENT_GITLAB_BASE_URL => Attribute::OAuth2ClientGitlabBaseUrl,
+            ATTR_OAUTH2_CLIENT_GITLAB_GROUPS => Attribute::OAuth2ClientGitlabGroups,
+            ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID => Attribute::OAuth2ClientGitlabUseLoginAsId,
+            ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION => {
+                Attribute::OAuth2ClientGitlabGetGroupsPermission
+            }
+            ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA => Attribute::OAuth2ClientGitlabRootCa,
             ATTR_SAML_SSO_ISSUER => Attribute::SamlSsoIssuer,
             ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION => Attribute::SamlInsecureSkipSigValidation,
             ATTR_SAML_GROUPS_DELIM => Attribute::SamlGroupsDelim,

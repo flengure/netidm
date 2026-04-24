@@ -87,11 +87,17 @@ pub const DOMAIN_LEVEL_33: DomainVersion = 33;
 /// `oauth2_client_openshift_issuer`, `oauth2_client_openshift_groups`,
 /// `oauth2_client_openshift_insecure_ca`, `oauth2_client_openshift_root_ca`.
 pub const DOMAIN_LEVEL_34: DomainVersion = 34;
+/// DL35 — GitLab connector dex-parity additions (PR-CONNECTOR-GITLAB).
+/// Adds 5 new `systemmay` attributes on `EntryClass::OAuth2Client`:
+/// `oauth2_client_gitlab_base_url`, `oauth2_client_gitlab_groups`,
+/// `oauth2_client_gitlab_use_login_as_id`, `oauth2_client_gitlab_get_groups_permission`,
+/// `oauth2_client_gitlab_root_ca`.
+pub const DOMAIN_LEVEL_35: DomainVersion = 35;
 
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_34;
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_35;
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_34;
-pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_34;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_35;
+pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_35;
 pub const DOMAIN_PREVIOUS_TGT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL - 1;
 pub const DOMAIN_TGT_NEXT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL + 1;
 pub const DOMAIN_MIGRATION_FROM_INVALID: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;

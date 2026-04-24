@@ -322,6 +322,18 @@ pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_USER_MATCHERS: &str =
     "oauth2_client_ldap_group_search_user_matchers";
 pub const ATTR_OAUTH2_CLIENT_LDAP_GROUP_SEARCH_NAME_ATTR: &str =
     "oauth2_client_ldap_group_search_name_attr";
+// DL34 — OpenShift connector dex-parity additions (PR-CONNECTOR-OPENSHIFT)
+pub const ATTR_OAUTH2_CLIENT_OPENSHIFT_ISSUER: &str = "oauth2_client_openshift_issuer";
+pub const ATTR_OAUTH2_CLIENT_OPENSHIFT_GROUPS: &str = "oauth2_client_openshift_groups";
+pub const ATTR_OAUTH2_CLIENT_OPENSHIFT_INSECURE_CA: &str = "oauth2_client_openshift_insecure_ca";
+pub const ATTR_OAUTH2_CLIENT_OPENSHIFT_ROOT_CA: &str = "oauth2_client_openshift_root_ca";
+// DL35 — GitLab connector dex-parity additions (PR-CONNECTOR-GITLAB)
+pub const ATTR_OAUTH2_CLIENT_GITLAB_BASE_URL: &str = "oauth2_client_gitlab_base_url";
+pub const ATTR_OAUTH2_CLIENT_GITLAB_GROUPS: &str = "oauth2_client_gitlab_groups";
+pub const ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID: &str = "oauth2_client_gitlab_use_login_as_id";
+pub const ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION: &str =
+    "oauth2_client_gitlab_get_groups_permission";
+pub const ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA: &str = "oauth2_client_gitlab_root_ca";
 // DL33 — SAML connector dex-parity additions (PR-CONNECTOR-SAML)
 pub const ATTR_SAML_SSO_ISSUER: &str = "saml_sso_issuer";
 pub const ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION: &str = "saml_insecure_skip_sig_validation";

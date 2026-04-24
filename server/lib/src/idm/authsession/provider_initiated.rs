@@ -88,7 +88,10 @@ impl ProviderInitiatedSession {
         // upstream token endpoint.
         let pkce = if matches!(
             self.provider_kind,
-            ProviderKind::Github | ProviderKind::LinkedIn | ProviderKind::OpenShift
+            ProviderKind::Github
+                | ProviderKind::LinkedIn
+                | ProviderKind::OpenShift
+                | ProviderKind::GitLab
         ) {
             None
         } else {
@@ -129,7 +132,10 @@ impl ProviderInitiatedSession {
                     }
                     if matches!(
                         self.provider_kind,
-                        ProviderKind::Github | ProviderKind::LinkedIn | ProviderKind::OpenShift
+                        ProviderKind::Github
+                            | ProviderKind::LinkedIn
+                            | ProviderKind::OpenShift
+                            | ProviderKind::GitLab
                     ) {
                         return AuthState::External(AuthExternal::GitHubCallbackRequest {
                             code: code.clone(),
