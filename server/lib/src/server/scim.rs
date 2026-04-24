@@ -386,7 +386,7 @@ impl QueryServerWriteTransaction<'_> {
                                 let mut peer_attrs: BTreeMap<Attribute, Option<JsonValue>> =
                                     BTreeMap::new();
                                 peer_attrs
-                                    .insert(Attribute::Class, Some(serde_json::json!(["wgpeer"])));
+                                    .insert(Attribute::Class, Some(serde_json::json!(["wg_peer"])));
                                 peer_attrs
                                     .insert(Attribute::Name, Some(serde_json::json!(peer.name)));
                                 peer_attrs
