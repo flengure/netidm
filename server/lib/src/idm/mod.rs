@@ -28,6 +28,7 @@ pub mod microsoft_connector;
 pub mod oauth2;
 pub mod oauth2_client;
 pub mod oauth2_connector;
+pub mod openshift_connector;
 pub(crate) mod radius;
 pub(crate) mod reauth;
 pub(crate) mod saml_client;
