@@ -385,10 +385,8 @@ impl QueryServerWriteTransaction<'_> {
                                     peer.address.split(',').map(|s| s.trim()).collect();
                                 let mut peer_attrs: BTreeMap<Attribute, Option<JsonValue>> =
                                     BTreeMap::new();
-                                peer_attrs.insert(
-                                    Attribute::Class,
-                                    Some(serde_json::json!(["object", "wgpeer"])),
-                                );
+                                peer_attrs
+                                    .insert(Attribute::Class, Some(serde_json::json!(["wgpeer"])));
                                 peer_attrs
                                     .insert(Attribute::Name, Some(serde_json::json!(peer.name)));
                                 peer_attrs

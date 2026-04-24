@@ -80,6 +80,8 @@ pub enum ProviderKind {
     LinkedIn,
     /// OpenShift OAuth2 connector — PR-CONNECTOR-OPENSHIFT.
     OpenShift,
+    /// GitLab OAuth2 connector — PR-CONNECTOR-GITLAB.
+    GitLab,
 }
 
 impl ProviderKind {
@@ -95,6 +97,7 @@ impl ProviderKind {
             ProviderKind::Ldap => "ldap",
             ProviderKind::LinkedIn => "linkedin",
             ProviderKind::OpenShift => "openshift",
+            ProviderKind::GitLab => "gitlab",
         }
     }
 
@@ -110,6 +113,7 @@ impl ProviderKind {
             "ldap" => ProviderKind::Ldap,
             "linkedin" => ProviderKind::LinkedIn,
             "openshift" => ProviderKind::OpenShift,
+            "gitlab" => ProviderKind::GitLab,
             _ => ProviderKind::GenericOidc,
         }
     }
@@ -582,6 +586,37 @@ impl IdmServerProxyWriteTransaction<'_> {
                         ?entry_uuid,
                         ?e,
                         "Failed to build OpenShift connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register GitLab connectors with the ConnectorRegistry.
+        for provider_entry in &oauth2_client_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_gitlab = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| s == "gitlab")
+                .unwrap_or(false);
+            if !is_gitlab {
+                continue;
+            }
+            match crate::idm::gitlab_connector::GitLabConfig::from_entry(
+                provider_entry,
+                client_redirect_uri.clone(),
+            ) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::gitlab_connector::GitLabConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered GitLab connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build GitLab connector config; skipping this provider"
                     );
                 }
             }

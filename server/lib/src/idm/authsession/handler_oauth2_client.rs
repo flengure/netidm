@@ -166,7 +166,10 @@ impl CredHandlerOAuth2Client {
         // multi-step OIDC state machine entirely.
         if matches!(
             self.provider_kind,
-            ProviderKind::Github | ProviderKind::LinkedIn | ProviderKind::OpenShift
+            ProviderKind::Github
+                | ProviderKind::LinkedIn
+                | ProviderKind::OpenShift
+                | ProviderKind::GitLab
         ) {
             let csrf_valid = state.map(|s| s == self.csrf_state).unwrap_or_default();
             if !csrf_valid {

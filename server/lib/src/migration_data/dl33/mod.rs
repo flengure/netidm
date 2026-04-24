@@ -12,9 +12,6 @@
 pub(crate) mod access;
 pub(crate) mod schema;
 
-#[cfg(test)]
-pub(crate) use super::dl25::accounts;
-
 use self::schema::*;
 use crate::prelude::*;
 

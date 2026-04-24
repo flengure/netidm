@@ -1,40 +1,43 @@
-//! Schema entries for DL34: OpenShift connector dex-parity additions (PR-CONNECTOR-OPENSHIFT).
+//! Schema entries for DL35: GitLab connector dex-parity additions (PR-CONNECTOR-GITLAB).
 //!
-//! Adds four optional config attributes on `EntryClass::OAuth2Client`:
-//! `OAuth2ClientOpenshiftIssuer`, `OAuth2ClientOpenshiftGroups`,
-//! `OAuth2ClientOpenshiftInsecureCa`, and `OAuth2ClientOpenshiftRootCa`.
+//! Adds five optional config attributes on `EntryClass::OAuth2Client`:
+//! `OAuth2ClientGitlabBaseUrl`, `OAuth2ClientGitlabGroups`,
+//! `OAuth2ClientGitlabUseLoginAsId`, `OAuth2ClientGitlabGetGroupsPermission`,
+//! and `OAuth2ClientGitlabRootCa`.
+
+#[cfg(test)]
+pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
 
 use crate::constants::{
-    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_GROUPS,
-    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_INSECURE_CA,
-    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_ISSUER,
-    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_ROOT_CA, UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
+    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_BASE_URL,
+    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION,
+    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GROUPS, UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA,
+    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID, UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
 };
 use crate::prelude::*;
 
-/// Issuer URL for the OpenShift cluster. Discovery of auth/token endpoints is
-/// performed at connector initialisation by fetching
-/// `{issuer}/.well-known/oauth-authorization-server`.
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_ISSUER_DL34: LazyLock<SchemaAttribute> =
+/// Base URL for the GitLab instance. Defaults to `https://gitlab.com` when absent.
+/// Set to the root of a self-hosted GitLab for enterprise deployments.
+pub static SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_BASE_URL_DL35: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_ISSUER,
-        name: Attribute::OAuth2ClientOpenshiftIssuer,
-        description: "OpenShift cluster issuer URL. Used for endpoint discovery and the \
-                      users/~ API base."
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_BASE_URL,
+        name: Attribute::OAuth2ClientGitlabBaseUrl,
+        description: "Base URL of the GitLab instance (default: https://gitlab.com). \
+                      Set for self-hosted GitLab deployments."
             .to_string(),
         multivalue: false,
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });
 
-/// Allowlist of OpenShift group names. When non-empty, only users belonging to
+/// Allowlist of GitLab group paths. When non-empty, only users who are members of
 /// at least one listed group are permitted to authenticate. Multi-value — each
-/// value is one permitted group name.
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_GROUPS_DL34: LazyLock<SchemaAttribute> =
+/// value is one permitted group path (e.g. `myorg/myteam`).
+pub static SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GROUPS_DL35: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_GROUPS,
-        name: Attribute::OAuth2ClientOpenshiftGroups,
-        description: "Allowlist of OpenShift group names. Users not in any listed group are \
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GROUPS,
+        name: Attribute::OAuth2ClientGitlabGroups,
+        description: "Allowlist of GitLab group paths. Users not in any listed group are \
                       rejected. When absent, all authenticated users are permitted."
             .to_string(),
         multivalue: true,
@@ -42,38 +45,51 @@ pub static SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_GROUPS_DL34: LazyLock<SchemaAttri
         ..Default::default()
     });
 
-/// When true, TLS certificate verification is skipped for all OpenShift API
-/// calls. Dangerous — use only in dev/test against trusted clusters.
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_INSECURE_CA_DL34: LazyLock<SchemaAttribute> =
+/// When true, use the user's GitLab login (username) as the subject identifier
+/// instead of the numeric user ID. Mirrors dex's `useLoginAsID` option.
+pub static SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID_DL35: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_INSECURE_CA,
-        name: Attribute::OAuth2ClientOpenshiftInsecureCa,
-        description: "When true, skip TLS certificate verification for OpenShift API calls. \
-                      Dangerous — use only in dev/test. Default: false."
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID,
+        name: Attribute::OAuth2ClientGitlabUseLoginAsId,
+        description: "When true, use the GitLab username as the subject ID instead of the \
+                      numeric user ID. Default: false."
             .to_string(),
         multivalue: false,
         syntax: SyntaxType::Boolean,
         ..Default::default()
     });
 
-/// PEM-encoded root CA certificate used when connecting to the OpenShift cluster.
-/// Takes precedence over system trust roots. Use when the cluster presents a
-/// private/self-signed CA.
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_ROOT_CA_DL34: LazyLock<SchemaAttribute> =
+/// When true, group membership level (owner/maintainer/developer) is appended to
+/// each group name as a suffix (e.g. `myorg:owner`). Mirrors dex's
+/// `getGroupsPermission` option.
+pub static SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION_DL35: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_OPENSHIFT_ROOT_CA,
-        name: Attribute::OAuth2ClientOpenshiftRootCa,
-        description: "PEM-encoded root CA certificate for OpenShift cluster TLS verification. \
-                      Use when the cluster presents a private/self-signed CA."
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION,
+        name: Attribute::OAuth2ClientGitlabGetGroupsPermission,
+        description: "When true, append the user's role suffix (:owner/:maintainer/:developer) \
+                      to each group name. Default: false."
+            .to_string(),
+        multivalue: false,
+        syntax: SyntaxType::Boolean,
+        ..Default::default()
+    });
+
+/// PEM-encoded root CA certificate used when connecting to a self-hosted GitLab
+/// instance with a private/self-signed CA.
+pub static SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA_DL35: LazyLock<SchemaAttribute> =
+    LazyLock::new(|| SchemaAttribute {
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA,
+        name: Attribute::OAuth2ClientGitlabRootCa,
+        description: "PEM-encoded root CA certificate for self-hosted GitLab TLS verification."
             .to_string(),
         multivalue: false,
         syntax: SyntaxType::Utf8String,
         ..Default::default()
     });
 
-/// OAuth2Client class updated for DL34: adds the four OpenShift connector config
-/// attributes to `systemmay`. Carries forward all DL32 `systemmay` entries.
-pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL34: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+/// OAuth2Client class updated for DL35: adds the five GitLab connector config
+/// attributes to `systemmay`. Carries forward all DL34 `systemmay` entries.
+pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL35: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
     uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
     name: EntryClass::OAuth2Client.into(),
     description: "The class representing a configured OAuth2 Confidential Client acting as \
@@ -169,6 +185,12 @@ pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL34: LazyLock<SchemaClass> = LazyLock::ne
         Attribute::OAuth2ClientOpenshiftGroups,
         Attribute::OAuth2ClientOpenshiftInsecureCa,
         Attribute::OAuth2ClientOpenshiftRootCa,
+        // DL35 additions — PR-CONNECTOR-GITLAB
+        Attribute::OAuth2ClientGitlabBaseUrl,
+        Attribute::OAuth2ClientGitlabGroups,
+        Attribute::OAuth2ClientGitlabUseLoginAsId,
+        Attribute::OAuth2ClientGitlabGetGroupsPermission,
+        Attribute::OAuth2ClientGitlabRootCa,
     ],
     ..Default::default()
 });
