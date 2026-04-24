@@ -76,6 +76,8 @@ pub enum ProviderKind {
     Microsoft,
     /// Inbound LDAP / Active Directory password connector — PR-CONNECTOR-LDAP.
     Ldap,
+    /// LinkedIn OAuth2 connector — PR-CONNECTOR-LINKEDIN.
+    LinkedIn,
 }
 
 impl ProviderKind {
@@ -89,6 +91,7 @@ impl ProviderKind {
             ProviderKind::Google => "google",
             ProviderKind::Microsoft => "microsoft",
             ProviderKind::Ldap => "ldap",
+            ProviderKind::LinkedIn => "linkedin",
         }
     }
 
@@ -102,6 +105,7 @@ impl ProviderKind {
             "google" => ProviderKind::Google,
             "microsoft" => ProviderKind::Microsoft,
             "ldap" => ProviderKind::Ldap,
+            "linkedin" => ProviderKind::LinkedIn,
             _ => ProviderKind::GenericOidc,
         }
     }
@@ -512,6 +516,37 @@ impl IdmServerProxyWriteTransaction<'_> {
                         ?entry_uuid,
                         ?e,
                         "Failed to build LDAP connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register LinkedIn connectors with the ConnectorRegistry.
+        for provider_entry in &oauth2_client_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_linkedin = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| s == "linkedin")
+                .unwrap_or(false);
+            if !is_linkedin {
+                continue;
+            }
+            match crate::idm::linkedin_connector::LinkedInConfig::from_entry(
+                provider_entry,
+                client_redirect_uri.clone(),
+            ) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::linkedin_connector::LinkedInConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered LinkedIn connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build LinkedIn connector config; skipping this provider"
                     );
                 }
             }

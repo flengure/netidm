@@ -83,10 +83,13 @@ impl ProviderInitiatedSession {
 
     /// Build the authorization redirect URL and request parameters.
     pub(crate) fn start_auth_request(&self) -> (Url, AuthorisationRequest) {
-        // GitHub enforces PKCE round-trip: if code_challenge is in the auth request,
-        // code_verifier must be in the token exchange. The GitHub connector handles its
-        // own token exchange (post_token) without PKCE, so skip it for GitHub to avoid 400.
-        let pkce = if self.provider_kind == ProviderKind::Github {
+        // Non-OIDC connectors (GitHub, LinkedIn, …) handle their own token exchange
+        // without PKCE. Skip the code_challenge for those to avoid a 400 from the
+        // upstream token endpoint.
+        let pkce = if matches!(
+            self.provider_kind,
+            ProviderKind::Github | ProviderKind::LinkedIn
+        ) {
             None
         } else {
             Some(self.pkce_secret.to_request())
@@ -124,7 +127,10 @@ impl ProviderInitiatedSession {
                     if !csrf_valid {
                         return AuthState::Denied(BAD_CSRF_STATE_MSG.to_string());
                     }
-                    if self.provider_kind == ProviderKind::Github {
+                    if matches!(
+                        self.provider_kind,
+                        ProviderKind::Github | ProviderKind::LinkedIn
+                    ) {
                         return AuthState::External(AuthExternal::GitHubCallbackRequest {
                             code: code.clone(),
                             provider_uuid: self.provider_uuid,
