@@ -30,7 +30,6 @@ pub mod oauth2_connector;
 pub(crate) mod radius;
 pub(crate) mod reauth;
 pub(crate) mod saml_client;
-pub mod saml_connector;
 pub mod saml_session;
 pub mod scim;
 pub mod server;
