@@ -367,6 +367,73 @@ impl ServerConfigUntagged {
     }
 }
 
+/// OAuth2 / OIDC flow tuning.
+#[derive(Debug, Deserialize, Default, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct OAuth2Config {
+    /// Always skip the OAuth2 consent / approval screen.
+    #[serde(default)]
+    pub skip_approval_screen: bool,
+    /// Show the connector picker even when only one upstream connector is configured.
+    #[serde(default)]
+    pub always_show_login_screen: bool,
+    /// Name of the connector that handles the Resource Owner Password grant.
+    /// Empty (default) means the grant is disabled.
+    #[serde(default)]
+    pub password_connector: String,
+    /// Require PKCE on all authorization code flows.
+    #[serde(default)]
+    pub pkce_enforce: bool,
+}
+
+/// Token lifetime configuration.
+#[derive(Debug, Deserialize, Default, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ExpiryConfig {
+    /// Maximum absolute lifetime of a refresh token (e.g. "3960h", "30d").
+    #[serde(default)]
+    pub refresh_token_absolute_lifetime: String,
+    /// Refresh token is invalidated if unused for longer than this duration (e.g. "2160h").
+    #[serde(default)]
+    pub refresh_token_valid_if_not_used: String,
+    /// Lifetime of an authorization request before it expires (e.g. "24h").
+    #[serde(default)]
+    pub auth_request_ttl: String,
+}
+
+/// HTTP layer and CORS configuration.
+#[derive(Debug, Deserialize, Default, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct WebConfig {
+    /// Allowed CORS origins (e.g. `["https://app.example.com"]`).
+    #[serde(default)]
+    pub allowed_origins: Vec<String>,
+    /// Override the `Content-Security-Policy` header. Empty = use the built-in default.
+    #[serde(default)]
+    pub csp_header: String,
+    /// Header name used to obtain the real client IP from a trusted proxy (e.g. `X-Forwarded-For`).
+    #[serde(default)]
+    pub real_ip_header: String,
+    /// CIDR ranges of trusted upstream proxies for real-IP extraction.
+    #[serde(default)]
+    pub trusted_proxies: Vec<String>,
+}
+
+/// UI / login page appearance.
+#[derive(Debug, Deserialize, Default, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct FrontendConfig {
+    /// Label shown on the login page to identify this identity provider.
+    #[serde(default)]
+    pub issuer_label: String,
+    /// URL of a custom logo image shown on the login page.
+    #[serde(default)]
+    pub logo_url: String,
+    /// UI colour theme: `"light"` (default) or `"dark"`.
+    #[serde(default)]
+    pub theme: String,
+}
+
 #[serde_as]
 #[derive(Debug, Deserialize, Default)]
 #[serde(deny_unknown_fields)]
@@ -413,6 +480,19 @@ pub struct ServerConfigV2 {
     /// See [`Configuration::forward_auth_inject_request_headers`].
     #[serde(default)]
     forward_auth_inject_request_headers: Vec<String>,
+
+    /// OAuth2 / OIDC flow tuning.
+    #[serde(default)]
+    oauth2: OAuth2Config,
+    /// Token lifetime configuration.
+    #[serde(default)]
+    expiry: ExpiryConfig,
+    /// HTTP layer and CORS configuration.
+    #[serde(default)]
+    web: WebConfig,
+    /// UI / login page appearance.
+    #[serde(default)]
+    frontend: FrontendConfig,
 }
 
 #[derive(Debug, Clone)]
@@ -480,6 +560,14 @@ pub struct Configuration {
     /// headers. Each entry has the form `"Header-Name: attribute_name"`.
     /// Example: `["X-User-Department: department"]`.
     pub forward_auth_inject_request_headers: Vec<String>,
+    /// OAuth2 / OIDC flow tuning.
+    pub oauth2: OAuth2Config,
+    /// Token lifetime configuration.
+    pub expiry: ExpiryConfig,
+    /// HTTP layer and CORS configuration.
+    pub web: WebConfig,
+    /// UI / login page appearance.
+    pub frontend: FrontendConfig,
 }
 
 impl Configuration {
@@ -515,6 +603,10 @@ impl Configuration {
             forward_auth_allowed_email_domains: Vec::new(),
             forward_auth_allowed_groups: Vec::new(),
             forward_auth_inject_request_headers: Vec::new(),
+            oauth2: OAuth2Config::default(),
+            expiry: ExpiryConfig::default(),
+            web: WebConfig::default(),
+            frontend: FrontendConfig::default(),
         }
     }
 
@@ -547,6 +639,10 @@ impl Configuration {
             forward_auth_allowed_email_domains: Vec::new(),
             forward_auth_allowed_groups: Vec::new(),
             forward_auth_inject_request_headers: Vec::new(),
+            oauth2: OAuth2Config::default(),
+            expiry: ExpiryConfig::default(),
+            web: WebConfig::default(),
+            frontend: FrontendConfig::default(),
         }
     }
 }
@@ -661,6 +757,10 @@ pub struct ConfigurationBuilder {
     forward_auth_allowed_email_domains: Vec<String>,
     forward_auth_allowed_groups: Vec<String>,
     forward_auth_inject_request_headers: Vec<String>,
+    oauth2: OAuth2Config,
+    expiry: ExpiryConfig,
+    web: WebConfig,
+    frontend: FrontendConfig,
 }
 
 impl ConfigurationBuilder {
@@ -1003,6 +1103,12 @@ impl ConfigurationBuilder {
             self.forward_auth_inject_request_headers = config.forward_auth_inject_request_headers;
         }
 
+        // New Phase E config sections — always overwrite from config file (structs have defaults).
+        self.oauth2 = config.oauth2;
+        self.expiry = config.expiry;
+        self.web = config.web;
+        self.frontend = config.frontend;
+
         self
     }
 
@@ -1040,6 +1146,10 @@ impl ConfigurationBuilder {
             forward_auth_allowed_email_domains,
             forward_auth_allowed_groups,
             forward_auth_inject_request_headers,
+            oauth2,
+            expiry,
+            web,
+            frontend,
         } = self;
 
         let tls_config = match (tls_key, tls_chain, tls_client_ca) {
@@ -1111,6 +1221,10 @@ impl ConfigurationBuilder {
             forward_auth_allowed_email_domains,
             forward_auth_allowed_groups,
             forward_auth_inject_request_headers,
+            oauth2,
+            expiry,
+            web,
+            frontend,
         })
     }
 }

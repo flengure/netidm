@@ -131,6 +131,54 @@ origin = "https://idm.example.com"
 # # AVOID IF POSSIBLE!!!
 # proxy-v1 = ["127.0.0.1", "127.0.0.0/8"]
 
+# ── OAuth2 / OIDC flow tuning ────────────────────────────────────────────────
+# [oauth2]
+#   Skip the OAuth2 consent / approval screen entirely. Default: false
+# skip_approval_screen = false
+#
+#   Show the upstream connector picker even when only one connector is configured.
+#   Default: false (single connector is used automatically)
+# always_show_login_screen = false
+#
+#   Name of the upstream connector that handles the Resource Owner Password grant.
+#   Empty string (default) disables the grant.
+# password_connector = ""
+#
+#   Require PKCE on all authorization code flows. Default: false
+# pkce_enforce = false
+
+# ── Token lifetime ───────────────────────────────────────────────────────────
+# [expiry]
+#   Maximum absolute lifetime of a refresh token (e.g. "3960h", "30d").
+#   Empty (default) = use built-in server default.
+# refresh_token_absolute_lifetime = ""
+#
+#   Refresh token is invalidated if unused for longer than this duration.
+# refresh_token_valid_if_not_used = ""
+#
+#   Maximum lifetime of a pending authorization request. Default: "24h"
+# auth_request_ttl = ""
+
+# ── HTTP layer ───────────────────────────────────────────────────────────────
+# [web]
+#   Additional CORS origins beyond the server's own origin.
+# allowed_origins = []
+#
+#   Override the Content-Security-Policy header. Empty = built-in default.
+# csp_header = ""
+
+# ── UI appearance ────────────────────────────────────────────────────────────
+# [frontend]
+#   Label shown on the login page. Default: "netidm"
+# issuer_label = "netidm"
+#
+#   URL of a custom logo image shown on the login page.
+# logo_url = ""
+#
+#   UI colour theme: "light" (default) or "dark".
+# theme = "light"
+
+# ── Online backup ────────────────────────────────────────────────────────────
 [online_backup]
 #   The path to the output folder for online backups
 path = "/data/netidm/backups/"
