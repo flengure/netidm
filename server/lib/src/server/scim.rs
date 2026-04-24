@@ -361,7 +361,11 @@ impl QueryServerWriteTransaction<'_> {
         // virtual/synthetic attribute — never stored on the person entry.
         let mut peer_assertions: Vec<ScimEntryAssertion> = Vec::new();
         for scim_assert in &mut asserts {
-            if let ScimEntryAssertion::Present { id: person_id, attrs } = scim_assert {
+            if let ScimEntryAssertion::Present {
+                id: person_id,
+                attrs,
+            } = scim_assert
+            {
                 if let Some(Some(wg_json)) = attrs.remove(&Attribute::WgInlinePeer) {
                     match serde_json::from_value::<Vec<WgInlinePeerSpec>>(wg_json) {
                         Ok(peers) => {
@@ -390,14 +394,10 @@ impl QueryServerWriteTransaction<'_> {
                                     Attribute::Class,
                                     Some(serde_json::json!(["object", "wgpeer"])),
                                 );
-                                peer_attrs.insert(
-                                    Attribute::Name,
-                                    Some(serde_json::json!(peer.name)),
-                                );
-                                peer_attrs.insert(
-                                    Attribute::WgPubkey,
-                                    Some(serde_json::json!(peer.key)),
-                                );
+                                peer_attrs
+                                    .insert(Attribute::Name, Some(serde_json::json!(peer.name)));
+                                peer_attrs
+                                    .insert(Attribute::WgPubkey, Some(serde_json::json!(peer.key)));
                                 peer_attrs.insert(
                                     Attribute::WgAllowedIps,
                                     Some(serde_json::json!(addresses)),
