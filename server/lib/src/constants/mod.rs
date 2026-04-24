@@ -82,11 +82,16 @@ pub const DOMAIN_LEVEL_32: DomainVersion = 32;
 /// allowed set). Also fixes the NameIDPolicyFormat pass-through bug and implements
 /// `RefreshableConnector` for SAML (cache-based, mirroring dex's `Refresh()`).
 pub const DOMAIN_LEVEL_33: DomainVersion = 33;
+/// DL34 — OpenShift connector dex-parity additions (PR-CONNECTOR-OPENSHIFT).
+/// Adds 4 new `systemmay` attributes on `EntryClass::OAuth2Client`:
+/// `oauth2_client_openshift_issuer`, `oauth2_client_openshift_groups`,
+/// `oauth2_client_openshift_insecure_ca`, `oauth2_client_openshift_root_ca`.
+pub const DOMAIN_LEVEL_34: DomainVersion = 34;
 
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_33;
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_34;
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_33;
-pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_33;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_34;
+pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_34;
 pub const DOMAIN_PREVIOUS_TGT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL - 1;
 pub const DOMAIN_TGT_NEXT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL + 1;
 pub const DOMAIN_MIGRATION_FROM_INVALID: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;

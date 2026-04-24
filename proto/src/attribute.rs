@@ -396,6 +396,14 @@ pub enum Attribute {
     OAuth2ClientLdapGroupSearchUserMatchers,
     #[strum(serialize = "oauth2_client_ldap_group_search_name_attr")]
     OAuth2ClientLdapGroupSearchNameAttr,
+    #[strum(serialize = "oauth2_client_openshift_issuer")]
+    OAuth2ClientOpenshiftIssuer,
+    #[strum(serialize = "oauth2_client_openshift_groups")]
+    OAuth2ClientOpenshiftGroups,
+    #[strum(serialize = "oauth2_client_openshift_insecure_ca")]
+    OAuth2ClientOpenshiftInsecureCa,
+    #[strum(serialize = "oauth2_client_openshift_root_ca")]
+    OAuth2ClientOpenshiftRootCa,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]

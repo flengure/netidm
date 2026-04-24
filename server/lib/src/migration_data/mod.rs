@@ -17,9 +17,10 @@ pub(crate) mod dl30;
 pub(crate) mod dl31;
 pub(crate) mod dl32;
 pub(crate) mod dl33;
+pub(crate) mod dl34;
 
 #[cfg(test)]
-pub(crate) use dl33 as latest;
+pub(crate) use dl34 as latest;
 
 mod types;
 

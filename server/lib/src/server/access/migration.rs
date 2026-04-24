@@ -21,6 +21,8 @@ pub static MIGRATION_ENTRY_CLASSES: LazyLock<BTreeSet<String>> = LazyLock::new(|
         EntryClass::PosixGroup,
         EntryClass::ServiceAccount,
         EntryClass::OAuth2Client,
+        EntryClass::WgTunnel,
+        EntryClass::WgPeer,
     ];
 
     BTreeSet::from_iter(classes.into_iter().map(|ec| ec.into()))
@@ -143,6 +145,35 @@ pub fn migration_entry_attrs(
             Attribute::OAuth2ClientGithubLoadAllGroups,
             Attribute::OAuth2ClientGithubPreferredEmailDomain,
             Attribute::OAuth2ClientGithubAllowJitProvisioning,
+        ]);
+    }
+
+    if classes.contains(EntryClass::WgTunnel.into()) {
+        allow_cls.clear();
+        allow_cls.extend([EntryClass::WgTunnel.as_ref()]);
+        allow_attrs.extend([
+            Attribute::Name,
+            Attribute::WgInterface,
+            Attribute::WgPrivateKey,
+            Attribute::WgEndpoint,
+            Attribute::WgListenPort,
+            Attribute::WgAddress,
+            Attribute::WgDns,
+            Attribute::WgMtu,
+        ]);
+    }
+
+    if classes.contains(EntryClass::WgPeer.into()) {
+        allow_cls.clear();
+        allow_cls.extend([EntryClass::WgPeer.as_ref()]);
+        allow_attrs.extend([
+            Attribute::Name,
+            Attribute::WgPubkey,
+            Attribute::WgAllowedIps,
+            Attribute::WgPresharedKey,
+            Attribute::WgPersistentKeepalive,
+            Attribute::WgTunnelRef,
+            Attribute::WgUserRef,
         ]);
     }
 

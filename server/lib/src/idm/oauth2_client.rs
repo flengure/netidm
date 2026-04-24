@@ -78,6 +78,8 @@ pub enum ProviderKind {
     Ldap,
     /// LinkedIn OAuth2 connector — PR-CONNECTOR-LINKEDIN.
     LinkedIn,
+    /// OpenShift OAuth2 connector — PR-CONNECTOR-OPENSHIFT.
+    OpenShift,
 }
 
 impl ProviderKind {
@@ -92,6 +94,7 @@ impl ProviderKind {
             ProviderKind::Microsoft => "microsoft",
             ProviderKind::Ldap => "ldap",
             ProviderKind::LinkedIn => "linkedin",
+            ProviderKind::OpenShift => "openshift",
         }
     }
 
@@ -106,6 +109,7 @@ impl ProviderKind {
             "microsoft" => ProviderKind::Microsoft,
             "ldap" => ProviderKind::Ldap,
             "linkedin" => ProviderKind::LinkedIn,
+            "openshift" => ProviderKind::OpenShift,
             _ => ProviderKind::GenericOidc,
         }
     }
@@ -547,6 +551,37 @@ impl IdmServerProxyWriteTransaction<'_> {
                         ?entry_uuid,
                         ?e,
                         "Failed to build LinkedIn connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register OpenShift connectors with the ConnectorRegistry.
+        for provider_entry in &oauth2_client_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_openshift = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| s == "openshift")
+                .unwrap_or(false);
+            if !is_openshift {
+                continue;
+            }
+            match crate::idm::openshift_connector::OpenShiftConfig::from_entry(
+                provider_entry,
+                client_redirect_uri.clone(),
+            ) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::openshift_connector::OpenShiftConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered OpenShift connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build OpenShift connector config; skipping this provider"
                     );
                 }
             }
