@@ -334,6 +334,22 @@ pub trait RefreshableConnector: Send + Sync {
             "authenticate_password not implemented for this connector".to_string(),
         ))
     }
+
+    /// Extract user claims from HTTP request headers (authproxy connector, DL38).
+    ///
+    /// Called by the login handler when `ProviderKind::AuthProxy` is detected,
+    /// bypassing the OAuth2 redirect entirely. Returns `Ok(claims)` when the
+    /// required user header is present, `Err(AccessDenied)` when it is absent
+    /// or empty.
+    ///
+    /// Only `AuthProxyConnector` overrides this. All other connectors inherit
+    /// the default, which always returns an error.
+    fn claims_from_request_headers(
+        &self,
+        _headers: &http::HeaderMap,
+    ) -> Result<ExternalUserClaims, crate::prelude::OperationError> {
+        Err(crate::prelude::OperationError::InvalidState)
+    }
 }
 
 /// Successful outcome of [`RefreshableConnector::refresh`]. Carries

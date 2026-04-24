@@ -346,6 +346,16 @@ pub const ATTR_PROVIDER_IDENTITY_LAST_LOGIN: &str = "provider_identity_last_logi
 pub const ATTR_PROVIDER_IDENTITY_BLOCKED_UNTIL: &str = "provider_identity_blocked_until";
 pub const ATTR_OAUTH2_RS_TRUSTED_PEERS: &str = "oauth2_rs_trusted_peers";
 pub const ATTR_OAUTH2_RS_ALLOWED_CONNECTORS: &str = "oauth2_rs_allowed_connectors";
+// DL38 — authproxy + gitea connector attrs
+pub const ATTR_CONNECTOR_AUTHPROXY_USER_HEADER: &str = "connector_authproxy_user_header";
+pub const ATTR_CONNECTOR_AUTHPROXY_EMAIL_HEADER: &str = "connector_authproxy_email_header";
+pub const ATTR_CONNECTOR_AUTHPROXY_GROUPS_HEADER: &str = "connector_authproxy_groups_header";
+pub const ATTR_CONNECTOR_GITEA_BASE_URL: &str = "connector_gitea_base_url";
+pub const ATTR_CONNECTOR_GITEA_GROUPS: &str = "connector_gitea_groups";
+pub const ATTR_CONNECTOR_GITEA_INSECURE_CA: &str = "connector_gitea_insecure_ca";
+pub const ATTR_CONNECTOR_GITEA_ROOT_CA: &str = "connector_gitea_root_ca";
+pub const ATTR_CONNECTOR_GITEA_LOAD_ALL_GROUPS: &str = "connector_gitea_load_all_groups";
+pub const ATTR_CONNECTOR_GITEA_USE_LOGIN_AS_ID: &str = "connector_gitea_use_login_as_id";
 // DL33 — SAML connector dex-parity additions (PR-CONNECTOR-SAML)
 pub const ATTR_SAML_SSO_ISSUER: &str = "saml_sso_issuer";
 pub const ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION: &str = "saml_insecure_skip_sig_validation";

@@ -450,6 +450,26 @@ pub enum Attribute {
     Oauth2RsTrustedPeers,
     #[strum(serialize = "oauth2_rs_allowed_connectors")]
     Oauth2RsAllowedConnectors,
+    // DL38 — authproxy connector attrs (header-based identity trust)
+    #[strum(serialize = "connector_authproxy_user_header")]
+    ConnectorAuthproxyUserHeader,
+    #[strum(serialize = "connector_authproxy_email_header")]
+    ConnectorAuthproxyEmailHeader,
+    #[strum(serialize = "connector_authproxy_groups_header")]
+    ConnectorAuthproxyGroupsHeader,
+    // DL38 — gitea connector attrs
+    #[strum(serialize = "connector_gitea_base_url")]
+    ConnectorGiteaBaseUrl,
+    #[strum(serialize = "connector_gitea_groups")]
+    ConnectorGiteaGroups,
+    #[strum(serialize = "connector_gitea_insecure_ca")]
+    ConnectorGiteaInsecureCa,
+    #[strum(serialize = "connector_gitea_root_ca")]
+    ConnectorGiteaRootCa,
+    #[strum(serialize = "connector_gitea_load_all_groups")]
+    ConnectorGiteaLoadAllGroups,
+    #[strum(serialize = "connector_gitea_use_login_as_id")]
+    ConnectorGiteaUseLoginAsId,
     #[strum(serialize = "objectclass")]
     ObjectClass,
     #[strum(serialize = "other-no-index")]
@@ -1045,6 +1065,15 @@ impl Attribute {
             ATTR_PROVIDER_IDENTITY_BLOCKED_UNTIL => Attribute::ProviderIdentityBlockedUntil,
             ATTR_OAUTH2_RS_TRUSTED_PEERS => Attribute::Oauth2RsTrustedPeers,
             ATTR_OAUTH2_RS_ALLOWED_CONNECTORS => Attribute::Oauth2RsAllowedConnectors,
+            ATTR_CONNECTOR_AUTHPROXY_USER_HEADER => Attribute::ConnectorAuthproxyUserHeader,
+            ATTR_CONNECTOR_AUTHPROXY_EMAIL_HEADER => Attribute::ConnectorAuthproxyEmailHeader,
+            ATTR_CONNECTOR_AUTHPROXY_GROUPS_HEADER => Attribute::ConnectorAuthproxyGroupsHeader,
+            ATTR_CONNECTOR_GITEA_BASE_URL => Attribute::ConnectorGiteaBaseUrl,
+            ATTR_CONNECTOR_GITEA_GROUPS => Attribute::ConnectorGiteaGroups,
+            ATTR_CONNECTOR_GITEA_INSECURE_CA => Attribute::ConnectorGiteaInsecureCa,
+            ATTR_CONNECTOR_GITEA_ROOT_CA => Attribute::ConnectorGiteaRootCa,
+            ATTR_CONNECTOR_GITEA_LOAD_ALL_GROUPS => Attribute::ConnectorGiteaLoadAllGroups,
+            ATTR_CONNECTOR_GITEA_USE_LOGIN_AS_ID => Attribute::ConnectorGiteaUseLoginAsId,
             ATTR_SAML_SSO_ISSUER => Attribute::SamlSsoIssuer,
             ATTR_SAML_INSECURE_SKIP_SIG_VALIDATION => Attribute::SamlInsecureSkipSigValidation,
             ATTR_SAML_GROUPS_DELIM => Attribute::SamlGroupsDelim,

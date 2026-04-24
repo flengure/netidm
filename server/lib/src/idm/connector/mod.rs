@@ -1,5 +1,7 @@
+pub mod authproxy;
 pub mod bitbucket;
 pub mod generic_oidc;
+pub mod gitea;
 pub mod github;
 pub mod gitlab;
 pub mod google;
@@ -96,6 +98,10 @@ pub enum ProviderKind {
     GitLab,
     /// Bitbucket Cloud OAuth2 connector — PR-CONNECTOR-BITBUCKET.
     Bitbucket,
+    /// Gitea OAuth2 connector — DL38.
+    Gitea,
+    /// Authproxy direct-identity connector (header-trust) — DL38.
+    AuthProxy,
 }
 
 impl ProviderKind {
@@ -113,6 +119,8 @@ impl ProviderKind {
             ProviderKind::OpenShift => "openshift",
             ProviderKind::GitLab => "gitlab",
             ProviderKind::Bitbucket => "bitbucket",
+            ProviderKind::Gitea => "gitea",
+            ProviderKind::AuthProxy => "authproxy",
         }
     }
 
@@ -130,6 +138,8 @@ impl ProviderKind {
             "openshift" => ProviderKind::OpenShift,
             "gitlab" => ProviderKind::GitLab,
             "bitbucket" => ProviderKind::Bitbucket,
+            "gitea" => ProviderKind::Gitea,
+            "authproxy" => ProviderKind::AuthProxy,
             _ => ProviderKind::GenericOidc,
         }
     }
@@ -376,7 +386,7 @@ impl IdmServerProxyWriteTransaction<'_> {
                 .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
                 .map(|s| {
                     let kind = ProviderKind::from_str_or_default(s);
-                    if !matches!(s, "generic-oidc" | "github" | "google" | "microsoft") {
+                    if matches!(kind, ProviderKind::GenericOidc) && !matches!(s, "generic-oidc") {
                         warn!(
                             ?uuid,
                             value = %s,
@@ -662,6 +672,65 @@ impl IdmServerProxyWriteTransaction<'_> {
                         ?entry_uuid,
                         ?e,
                         "Failed to build Bitbucket connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register Gitea connectors with the ConnectorRegistry.
+        for provider_entry in &connector_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_gitea = provider_entry
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
+                .map(|s| s == "gitea")
+                .unwrap_or(false);
+            if !is_gitea {
+                continue;
+            }
+            match crate::idm::connector::gitea::GiteaConfig::from_entry(
+                provider_entry,
+                client_redirect_uri.clone(),
+            ) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::connector::gitea::GiteaConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered Gitea connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build Gitea connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register authproxy connectors with the ConnectorRegistry.
+        for provider_entry in &connector_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_authproxy = provider_entry
+                .get_ava_single_iutf8(Attribute::ConnectorProviderKind)
+                .map(|s| s == "authproxy")
+                .unwrap_or(false);
+            if !is_authproxy {
+                continue;
+            }
+            match crate::idm::connector::authproxy::AuthProxyConfig::from_entry(provider_entry) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::connector::authproxy::AuthProxyConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered authproxy connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build authproxy connector config; skipping this provider"
                     );
                 }
             }

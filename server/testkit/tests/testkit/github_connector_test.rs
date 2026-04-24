@@ -21,7 +21,7 @@ use uuid::Uuid;
 fn make_test_config(mock_base: &Url) -> Config {
     let host = mock_base.clone();
     let mut api_base = mock_base.clone();
-    api_base.set_path("/api/v3/");
+    api_base.set_path("/api/v3");
 
     let mut default_headers = reqwest::header::HeaderMap::new();
     default_headers.insert(
@@ -788,7 +788,7 @@ async fn test_github_jit_provisioning_toggle_respects_admin_flag() {
     // here, see T027) would return Ok(None) because no Person exists.
     let mut config_off = make_test_config(&mock.base);
     config_off.allow_jit_provisioning = false;
-    let connector_off = Arc::new(GitHubConnector::new(config_off));
+    let connector_off = Arc::new(Conn::new(config_off));
 
     let claims_off = connector_off
         .fetch_callback_claims(&code_jit_off, None)
@@ -808,7 +808,7 @@ async fn test_github_jit_provisioning_toggle_respects_admin_flag() {
     // Part B: JIT on — same claims come back; connector reports JIT enabled.
     let mut config_on = make_test_config(&mock.base);
     config_on.allow_jit_provisioning = true;
-    let connector_on = Arc::new(GitHubConnector::new(config_on));
+    let connector_on = Arc::new(Conn::new(config_on));
 
     let claims_on = connector_on
         .fetch_callback_claims(&code_jit_on, None)

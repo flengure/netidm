@@ -442,18 +442,73 @@ pub async fn view_sso_initiate_get(
     Path(provider_name): Path<String>,
     Query(query): Query<SsoInitiateQuery>,
     DomainInfo(domain_info): DomainInfo,
+    headers: axum::http::HeaderMap,
     jar: CookieJar,
 ) -> Response {
     use axum::http::StatusCode;
     use netidm_proto::v1::AuthIssueSession;
     use netidmd_lib::idm::connector::ProviderKind;
 
-    // For LDAP providers, skip the OAuth2 redirect and render a login form instead.
-    if let Some((ProviderKind::Ldap, _provider_uuid, display_name)) = state
+    let provider_info = state
         .qe_r_ref
         .handle_get_oauth2_provider_info_by_name(&provider_name)
-        .await
-    {
+        .await;
+
+    // For authproxy providers: read the trusted reverse-proxy headers directly,
+    // construct claims, and issue a session without any OAuth2 redirect.
+    if let Some((ProviderKind::AuthProxy, provider_uuid, _display_name)) = &provider_info {
+        let connector = state.qe_r_ref.idms.connector_registry().get(*provider_uuid);
+        let Some(connector) = connector else {
+            error!(
+                ?provider_uuid,
+                "authproxy connector not found in registry — \
+                 provider may not have been loaded at startup"
+            );
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+        };
+        let claims = match connector.claims_from_request_headers(&headers) {
+            Ok(c) => c,
+            Err(_) => return StatusCode::UNAUTHORIZED.into_response(),
+        };
+        match state
+            .qe_w_ref
+            .handle_github_link_or_provision(
+                *provider_uuid,
+                claims,
+                kopid.eventid,
+                client_auth_info,
+            )
+            .await
+        {
+            Ok(Some(token)) => {
+                security_info!(%provider_uuid, "authproxy account linked/provisioned — issuing session");
+                let token_str = token.to_string();
+                let mut bearer_cookie =
+                    cookies::make_unsigned(&state, COOKIE_BEARER_TOKEN, token_str);
+                bearer_cookie.make_permanent();
+                let jar = jar.add(bearer_cookie);
+                let jar = jar.add(cookies::make_unsigned(
+                    &state,
+                    COOKIE_AUTH_METHOD_PREF,
+                    "sso".to_string(),
+                ));
+                let dest = if jar.get(COOKIE_OAUTH2_REQ).is_some() {
+                    super::constants::Urls::Oauth2Resume.as_ref().to_string()
+                } else {
+                    super::constants::Urls::Apps.as_ref().to_string()
+                };
+                return (jar, axum::response::Redirect::to(&dest)).into_response();
+            }
+            Ok(None) => return StatusCode::FORBIDDEN.into_response(),
+            Err(e) => {
+                warn!(?e, "authproxy account-link/provision failed");
+                return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+            }
+        }
+    }
+
+    // For LDAP providers, skip the OAuth2 redirect and render a login form instead.
+    if let Some((ProviderKind::Ldap, _provider_uuid, display_name)) = provider_info {
         let display_ctx = LoginDisplayCtx {
             domain_info,
             oauth2: None,

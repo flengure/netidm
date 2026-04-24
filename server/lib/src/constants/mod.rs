@@ -102,10 +102,16 @@ pub const DOMAIN_LEVEL_36: DomainVersion = 36;
 /// `oauth2_rs_trusted_peers` and `oauth2_rs_allowed_connectors` on `OAuth2ResourceServer`.
 pub const DOMAIN_LEVEL_37: DomainVersion = 37;
 
-pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_37;
+/// DL38: authproxy connector (`ConnectorAuthproxyUserHeader`, `ConnectorAuthproxyEmailHeader`,
+/// `ConnectorAuthproxyGroupsHeader`) and gitea connector (`ConnectorGiteaBaseUrl`,
+/// `ConnectorGiteaGroups`, `ConnectorGiteaInsecureCa`, `ConnectorGiteaRootCa`,
+/// `ConnectorGiteaLoadAllGroups`, `ConnectorGiteaUseLoginAsId`) schema attrs on `Connector`.
+pub const DOMAIN_LEVEL_38: DomainVersion = 38;
+
+pub const DOMAIN_TGT_LEVEL: DomainVersion = DOMAIN_LEVEL_38;
 pub const DOMAIN_TGT_PATCH_LEVEL: u32 = PATCH_LEVEL_2;
-pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_37;
-pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_37;
+pub const DOMAIN_MAX_LEVEL: DomainVersion = DOMAIN_LEVEL_38;
+pub const DOMAIN_MIN_CREATION_LEVEL: DomainVersion = DOMAIN_LEVEL_38;
 pub const DOMAIN_PREVIOUS_TGT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL - 1;
 pub const DOMAIN_TGT_NEXT_LEVEL: DomainVersion = DOMAIN_TGT_LEVEL + 1;
 pub const DOMAIN_MIGRATION_FROM_INVALID: DomainVersion = DOMAIN_MIN_CREATION_LEVEL;
