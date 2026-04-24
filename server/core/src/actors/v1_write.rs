@@ -2427,6 +2427,126 @@ impl QueryServerWriteV1 {
         let _ = eventid;
         handle_saml_slo_url_clear(&self.idms, client_auth_info, client_name).await
     }
+
+    // ── DL33 SAML dex-parity attribute handlers ───────────────────────────────
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_sso_issuer_set(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        issuer: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_saml_utf8_attr_set(
+            &self.idms,
+            client_auth_info,
+            client_name,
+            Attribute::SamlSsoIssuer,
+            issuer,
+        )
+        .await
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_sso_issuer_clear(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_saml_attr_clear(&self.idms, client_auth_info, client_name, Attribute::SamlSsoIssuer)
+            .await
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_groups_delim_set(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        delim: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_saml_utf8_attr_set(
+            &self.idms,
+            client_auth_info,
+            client_name,
+            Attribute::SamlGroupsDelim,
+            delim,
+        )
+        .await
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_groups_delim_clear(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_saml_attr_clear(
+            &self.idms,
+            client_auth_info,
+            client_name,
+            Attribute::SamlGroupsDelim,
+        )
+        .await
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_allowed_groups_add(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        group: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_saml_multivalue_utf8_add(
+            &self.idms,
+            client_auth_info,
+            client_name,
+            Attribute::SamlAllowedGroups,
+            group,
+        )
+        .await
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_allowed_groups_remove(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        group: String,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_saml_multivalue_utf8_remove(
+            &self.idms,
+            client_auth_info,
+            client_name,
+            Attribute::SamlAllowedGroups,
+            group,
+        )
+        .await
+    }
+
+    #[instrument(level = "info", skip_all, fields(uuid = ?eventid))]
+    pub async fn handle_saml_client_bool_set(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        client_name: String,
+        attr: Attribute,
+        value: bool,
+        eventid: Uuid,
+    ) -> Result<(), OperationError> {
+        let _ = eventid;
+        handle_saml_bool_attr_set(&self.idms, client_auth_info, client_name, attr, value).await
+    }
 }
 
 /// Shared implementation for the OAuth2 / SAML `add-group-mapping` handlers.
@@ -2619,6 +2739,198 @@ async fn handle_oauth2_backchannel_uri_clear(
     let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
         .map_err(|e| {
             error!(err = ?e, "Failed to begin modify for backchannel_logout_uri clear");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+// ── DL33 SAML attr helpers ───────────────────────────────────────────────────
+
+/// Set (replace) a single-value Utf8String attribute on a `SamlClient` entry.
+async fn handle_saml_utf8_attr_set(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+    attr: Attribute,
+    value: String,
+) -> Result<(), OperationError> {
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::SamlClient.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    let ml = ModifyList::new_list(vec![
+        Modify::Purged(attr.clone()),
+        Modify::Present(attr, Value::Utf8(value)),
+    ]);
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Clear (purge) a single-value attribute on a `SamlClient` entry. Idempotent.
+async fn handle_saml_attr_clear(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+    attr: Attribute,
+) -> Result<(), OperationError> {
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::SamlClient.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    let ml = ModifyList::new_purge(attr);
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Append one value to a multi-value Utf8String attribute on a `SamlClient` entry. Idempotent.
+async fn handle_saml_multivalue_utf8_add(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+    attr: Attribute,
+    value: String,
+) -> Result<(), OperationError> {
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::SamlClient.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    let ml = ModifyList::new_list(vec![Modify::Present(attr, Value::Utf8(value))]);
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Remove one value from a multi-value Utf8String attribute on a `SamlClient` entry. Idempotent.
+async fn handle_saml_multivalue_utf8_remove(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+    attr: Attribute,
+    value: String,
+) -> Result<(), OperationError> {
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::SamlClient.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    let ml = ModifyList::new_list(vec![Modify::Removed(attr, PartialValue::Utf8(value))]);
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify");
+            e
+        })?;
+
+    idms_prox_write
+        .qs_write
+        .modify(&mdf)
+        .and_then(|_| idms_prox_write.commit().map(|_| ()))
+}
+
+/// Set a Boolean attribute on a `SamlClient` entry (replacing any existing value).
+async fn handle_saml_bool_attr_set(
+    idms: &std::sync::Arc<IdmServer>,
+    client_auth_info: ClientAuthInfo,
+    client_name: String,
+    attr: Attribute,
+    value: bool,
+) -> Result<(), OperationError> {
+    let ct = duration_from_epoch_now();
+    let mut idms_prox_write = idms.proxy_write(ct).await?;
+
+    let ident = idms_prox_write
+        .validate_client_auth_info_to_ident(client_auth_info, ct)
+        .map_err(|e| {
+            error!(err = ?e, "Invalid identity");
+            e
+        })?;
+
+    let filter = filter_all!(f_and!([
+        f_eq(Attribute::Class, EntryClass::SamlClient.into()),
+        f_eq(Attribute::Name, PartialValue::new_iname(&client_name))
+    ]));
+
+    let ml = ModifyList::new_list(vec![
+        Modify::Purged(attr.clone()),
+        Modify::Present(attr, Value::Bool(value)),
+    ]);
+
+    let mdf = ModifyEvent::from_internal_parts(ident, &ml, &filter, &idms_prox_write.qs_write)
+        .map_err(|e| {
+            error!(err = ?e, "Failed to begin modify");
             e
         })?;
 

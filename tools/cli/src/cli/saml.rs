@@ -45,6 +45,10 @@ impl SamlClientOpt {
                 displayname_attr,
                 groups_attr,
                 jit_provisioning,
+                sso_issuer,
+                groups_delim,
+                insecure_skip_sig_validation,
+                filter_groups,
             } => {
                 let pem = match fs::read_to_string(idp_cert) {
                     Ok(p) => p,
@@ -67,6 +71,10 @@ impl SamlClientOpt {
                         displayname_attr: displayname_attr.as_deref(),
                         groups_attr: groups_attr.as_deref(),
                         jit_provisioning: *jit_provisioning,
+                        sso_issuer: sso_issuer.as_deref(),
+                        groups_delim: groups_delim.as_deref(),
+                        insecure_skip_sig_validation: *insecure_skip_sig_validation,
+                        filter_groups: *filter_groups,
                     })
                     .await
                 {
@@ -166,6 +174,115 @@ impl SamlClientOpt {
             SamlClientOpt::ClearSloUrl { name } => {
                 let client = opt.to_client(OpType::Write).await;
                 if let Err(e) = client.idm_saml_client_clear_slo_url(name.as_str()).await {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            SamlClientOpt::SetSsoIssuer { name, issuer } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_saml_client_set_sso_issuer(name.as_str(), issuer.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            SamlClientOpt::ClearSsoIssuer { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client.idm_saml_client_clear_sso_issuer(name.as_str()).await {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            SamlClientOpt::SetGroupsDelim { name, delim } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_saml_client_set_groups_delim(name.as_str(), delim.as_str())
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            SamlClientOpt::ClearGroupsDelim { name } => {
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client.idm_saml_client_clear_groups_delim(name.as_str()).await {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            SamlClientOpt::AddAllowedGroup { name, group } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_saml_client_add_allowed_group(name.as_str(), group.as_str())
+                    .await
+                {
+                    Ok(_) => opt
+                        .output_mode
+                        .print_message(format!("added allowed group: {group}")),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            SamlClientOpt::RemoveAllowedGroup { name, group } => {
+                let client = opt.to_client(OpType::Write).await;
+                match client
+                    .idm_saml_client_remove_allowed_group(name.as_str(), group.as_str())
+                    .await
+                {
+                    Ok(_) => opt
+                        .output_mode
+                        .print_message(format!("removed allowed group: {group}")),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            SamlClientOpt::ListAllowedGroups { name } => {
+                let client = opt.to_client(OpType::Read).await;
+                match client.idm_saml_client_get(name.as_str()).await {
+                    Ok(Some(entry)) => {
+                        let groups: Vec<_> = entry
+                            .attrs
+                            .get("saml_allowed_groups")
+                            .cloned()
+                            .unwrap_or_default();
+                        if groups.is_empty() {
+                            opt.output_mode.print_message("(no allowed groups)");
+                        } else {
+                            for g in groups {
+                                opt.output_mode.print_message(g);
+                            }
+                        }
+                    }
+                    Ok(None) => opt.output_mode.print_message("Not found"),
+                    Err(e) => handle_client_error(e, opt.output_mode),
+                }
+            }
+            SamlClientOpt::SetInsecureSkipSigValidation { name, value } => {
+                let parsed = match value.as_str() {
+                    "true" => true,
+                    "false" => false,
+                    other => {
+                        eprintln!("invalid value {other:?}: expected 'true' or 'false'");
+                        return;
+                    }
+                };
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_saml_client_set_insecure_skip_sig_validation(name.as_str(), parsed)
+                    .await
+                {
+                    handle_client_error(e, opt.output_mode);
+                }
+            }
+            SamlClientOpt::SetFilterGroups { name, value } => {
+                let parsed = match value.as_str() {
+                    "true" => true,
+                    "false" => false,
+                    other => {
+                        eprintln!("invalid value {other:?}: expected 'true' or 'false'");
+                        return;
+                    }
+                };
+                let client = opt.to_client(OpType::Write).await;
+                if let Err(e) = client
+                    .idm_saml_client_set_filter_groups(name.as_str(), parsed)
+                    .await
+                {
                     handle_client_error(e, opt.output_mode);
                 }
             }

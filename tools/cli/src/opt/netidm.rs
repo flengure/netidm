@@ -1893,6 +1893,18 @@ pub enum SamlClientOpt {
         /// Enable just-in-time account provisioning on first login
         #[clap(long, default_value = "false")]
         jit_provisioning: bool,
+        /// Expected `<Issuer>` string in IdP responses; reject if mismatched
+        #[clap(long)]
+        sso_issuer: Option<String>,
+        /// Delimiter used to split a single group attribute value into multiple group names
+        #[clap(long)]
+        groups_delim: Option<String>,
+        /// Skip XML signature validation (dev/test only)
+        #[clap(long, default_value = "false")]
+        insecure_skip_sig_validation: bool,
+        /// Filter the user's group claims to only allowed groups (requires --allowed-groups on the connector)
+        #[clap(long, default_value = "false")]
+        filter_groups: bool,
     },
     /// Delete a SAML client provider
     #[clap(name = "delete")]
@@ -1947,6 +1959,55 @@ pub enum SamlClientOpt {
     ClearSloUrl {
         /// SAML SP name.
         name: String,
+    },
+    /// Set the expected SSO issuer string. Responses whose `<Issuer>` does not match are rejected.
+    #[clap(name = "set-sso-issuer")]
+    SetSsoIssuer {
+        name: String,
+        issuer: String,
+    },
+    /// Clear the expected SSO issuer (disables issuer validation).
+    #[clap(name = "clear-sso-issuer")]
+    ClearSsoIssuer { name: String },
+    /// Set the group-attribute delimiter. The group attribute value is split on this string.
+    #[clap(name = "set-groups-delim")]
+    SetGroupsDelim {
+        name: String,
+        delim: String,
+    },
+    /// Clear the group-attribute delimiter (reverts to multi-valued collection).
+    #[clap(name = "clear-groups-delim")]
+    ClearGroupsDelim { name: String },
+    /// Add a group name to the allowed-groups allowlist.
+    #[clap(name = "add-allowed-group")]
+    AddAllowedGroup {
+        name: String,
+        group: String,
+    },
+    /// Remove a group name from the allowed-groups allowlist. Idempotent.
+    #[clap(name = "remove-allowed-group")]
+    RemoveAllowedGroup {
+        name: String,
+        group: String,
+    },
+    /// List all groups in the allowed-groups allowlist.
+    #[clap(name = "list-allowed-groups")]
+    ListAllowedGroups { name: String },
+    /// Set or clear the insecure-skip-signature-validation flag (dev/test only).
+    /// Pass `true` or `false` as the value argument.
+    #[clap(name = "set-insecure-skip-sig-validation")]
+    SetInsecureSkipSigValidation {
+        name: String,
+        /// true or false
+        value: String,
+    },
+    /// Set or clear the filter-groups flag.
+    /// Pass `true` or `false` as the value argument.
+    #[clap(name = "set-filter-groups")]
+    SetFilterGroups {
+        name: String,
+        /// true or false
+        value: String,
     },
 }
 

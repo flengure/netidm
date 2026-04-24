@@ -2994,8 +2994,10 @@ impl IdmServerProxyWriteTransaction<'_> {
         use crate::value::AuthType;
         use compact_jwt::Jws;
 
-        let (claims, cached_state) =
-            handler_saml_client::validate_saml_response(provider, encoded_response, request_id)?;
+        let (claims, cached_state): (
+            handler_saml_client::SamlClaims,
+            crate::idm::saml_connector::SamlCachedState,
+        ) = handler_saml_client::validate_saml_response(provider, encoded_response, request_id)?;
 
         // Find or provision the account.
         let account_uuid =

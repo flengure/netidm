@@ -3380,6 +3380,29 @@ pub(crate) fn route_setup(state: ServerState) -> Router<ServerState> {
             post(super::v1_saml::saml_client_id_slo_url_post)
                 .delete(super::v1_saml::saml_client_id_slo_url_delete),
         )
+        .route(
+            "/v1/saml_client/{name}/_sso_issuer",
+            post(super::v1_saml::saml_client_id_sso_issuer_post)
+                .delete(super::v1_saml::saml_client_id_sso_issuer_delete),
+        )
+        .route(
+            "/v1/saml_client/{name}/_groups_delim",
+            post(super::v1_saml::saml_client_id_groups_delim_post)
+                .delete(super::v1_saml::saml_client_id_groups_delim_delete),
+        )
+        .route(
+            "/v1/saml_client/{name}/_allowed_groups/{group}",
+            post(super::v1_saml::saml_client_id_allowed_groups_post)
+                .delete(super::v1_saml::saml_client_id_allowed_groups_delete),
+        )
+        .route(
+            "/v1/saml_client/{name}/_insecure_skip_sig_validation",
+            post(super::v1_saml::saml_client_id_insecure_skip_sig_validation_post),
+        )
+        .route(
+            "/v1/saml_client/{name}/_filter_groups",
+            post(super::v1_saml::saml_client_id_filter_groups_post),
+        )
         .route("/v1/raw/create", post(raw_create))
         .route("/v1/raw/modify", post(raw_modify))
         .route("/v1/raw/delete", post(raw_delete))

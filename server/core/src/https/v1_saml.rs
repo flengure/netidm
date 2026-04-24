@@ -215,3 +215,146 @@ pub(crate) async fn saml_client_id_slo_url_delete(
         .map(Json::from)
         .map_err(WebError::from)
 }
+
+// ── DL33 endpoints — SAML dex-parity additions ───────────────────────────────
+
+/// Set the expected SSO issuer string. Responses whose `<Issuer>` element does
+/// not match are rejected.
+pub(crate) async fn saml_client_id_sso_issuer_post(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(issuer): Json<String>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_sso_issuer_set(client_auth_info, name, issuer, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+/// Clear the expected SSO issuer. After this, issuer validation is disabled.
+pub(crate) async fn saml_client_id_sso_issuer_delete(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_sso_issuer_clear(client_auth_info, name, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+/// Set the group-attribute delimiter. When set, the group attribute value is
+/// split on this string to produce multiple group names.
+pub(crate) async fn saml_client_id_groups_delim_post(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(delim): Json<String>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_groups_delim_set(client_auth_info, name, delim, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+/// Clear the group-attribute delimiter. After this, multi-valued collection is used.
+pub(crate) async fn saml_client_id_groups_delim_delete(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_groups_delim_clear(client_auth_info, name, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+/// Add a group name to the allowed-groups allowlist.
+pub(crate) async fn saml_client_id_allowed_groups_post(
+    State(state): State<ServerState>,
+    Path((name, group)): Path<(String, String)>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_allowed_groups_add(client_auth_info, name, group, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+/// Remove a group name from the allowed-groups allowlist.
+pub(crate) async fn saml_client_id_allowed_groups_delete(
+    State(state): State<ServerState>,
+    Path((name, group)): Path<(String, String)>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_allowed_groups_remove(client_auth_info, name, group, kopid.eventid)
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+/// Set the insecure-skip-signature-validation flag. Body: JSON bool.
+/// When true, XML signature verification is bypassed — use only in dev/test.
+pub(crate) async fn saml_client_id_insecure_skip_sig_validation_post(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(value): Json<bool>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_bool_set(
+            client_auth_info,
+            name,
+            netidm_proto::attribute::Attribute::SamlInsecureSkipSigValidation,
+            value,
+            kopid.eventid,
+        )
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}
+
+/// Set the filter-groups flag. Body: JSON bool.
+/// When true and allowed_groups is set, only the matching allowed groups
+/// are included in user's group claims.
+pub(crate) async fn saml_client_id_filter_groups_post(
+    State(state): State<ServerState>,
+    Path(name): Path<String>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
+    Json(value): Json<bool>,
+) -> Result<Json<()>, WebError> {
+    state
+        .qe_w_ref
+        .handle_saml_client_bool_set(
+            client_auth_info,
+            name,
+            netidm_proto::attribute::Attribute::SamlFilterGroups,
+            value,
+            kopid.eventid,
+        )
+        .await
+        .map(Json::from)
+        .map_err(WebError::from)
+}

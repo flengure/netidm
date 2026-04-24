@@ -15,6 +15,10 @@ pub struct SamlClientConfig<'a> {
     pub displayname_attr: Option<&'a str>,
     pub groups_attr: Option<&'a str>,
     pub jit_provisioning: bool,
+    pub sso_issuer: Option<&'a str>,
+    pub groups_delim: Option<&'a str>,
+    pub insecure_skip_sig_validation: bool,
+    pub filter_groups: bool,
 }
 
 impl NetidmClient {
@@ -76,6 +80,27 @@ impl NetidmClient {
                 "saml_jit_provisioning".to_string(),
                 vec!["true".to_string()],
             );
+        }
+        if let Some(issuer) = cfg.sso_issuer {
+            new_entry
+                .attrs
+                .insert("saml_sso_issuer".to_string(), vec![issuer.to_string()]);
+        }
+        if let Some(delim) = cfg.groups_delim {
+            new_entry
+                .attrs
+                .insert("saml_groups_delim".to_string(), vec![delim.to_string()]);
+        }
+        if cfg.insecure_skip_sig_validation {
+            new_entry.attrs.insert(
+                "saml_insecure_skip_sig_validation".to_string(),
+                vec!["true".to_string()],
+            );
+        }
+        if cfg.filter_groups {
+            new_entry
+                .attrs
+                .insert("saml_filter_groups".to_string(), vec!["true".to_string()]);
         }
         self.perform_post_request("/v1/saml_client", new_entry)
             .await
@@ -193,5 +218,93 @@ impl NetidmClient {
     pub async fn idm_saml_client_clear_slo_url(&self, name: &str) -> Result<(), ClientError> {
         self.perform_delete_request(format!("/v1/saml_client/{name}/_slo_url").as_str())
             .await
+    }
+
+    // ── DL33 — SAML dex-parity additions ─────────────────────────────────────
+
+    pub async fn idm_saml_client_set_sso_issuer(
+        &self,
+        name: &str,
+        issuer: &str,
+    ) -> Result<(), ClientError> {
+        self.perform_post_request(
+            format!("/v1/saml_client/{name}/_sso_issuer").as_str(),
+            issuer.to_string(),
+        )
+        .await
+    }
+
+    pub async fn idm_saml_client_clear_sso_issuer(&self, name: &str) -> Result<(), ClientError> {
+        self.perform_delete_request(format!("/v1/saml_client/{name}/_sso_issuer").as_str())
+            .await
+    }
+
+    pub async fn idm_saml_client_set_groups_delim(
+        &self,
+        name: &str,
+        delim: &str,
+    ) -> Result<(), ClientError> {
+        self.perform_post_request(
+            format!("/v1/saml_client/{name}/_groups_delim").as_str(),
+            delim.to_string(),
+        )
+        .await
+    }
+
+    pub async fn idm_saml_client_clear_groups_delim(
+        &self,
+        name: &str,
+    ) -> Result<(), ClientError> {
+        self.perform_delete_request(format!("/v1/saml_client/{name}/_groups_delim").as_str())
+            .await
+    }
+
+    pub async fn idm_saml_client_add_allowed_group(
+        &self,
+        name: &str,
+        group: &str,
+    ) -> Result<(), ClientError> {
+        let group_enc = urlencoding::encode(group);
+        self.perform_post_request(
+            format!("/v1/saml_client/{name}/_allowed_groups/{group_enc}").as_str(),
+            (),
+        )
+        .await
+    }
+
+    pub async fn idm_saml_client_remove_allowed_group(
+        &self,
+        name: &str,
+        group: &str,
+    ) -> Result<(), ClientError> {
+        let group_enc = urlencoding::encode(group);
+        self.perform_delete_request(
+            format!("/v1/saml_client/{name}/_allowed_groups/{group_enc}").as_str(),
+        )
+        .await
+    }
+
+    pub async fn idm_saml_client_set_insecure_skip_sig_validation(
+        &self,
+        name: &str,
+        value: bool,
+    ) -> Result<(), ClientError> {
+        self.perform_post_request(
+            format!("/v1/saml_client/{name}/_insecure_skip_sig_validation").as_str(),
+            value,
+        )
+        .await
+    }
+
+    pub async fn idm_saml_client_set_filter_groups(
+        &self,
+        name: &str,
+        value: bool,
+    ) -> Result<(), ClientError> {
+        self.perform_post_request(
+            format!("/v1/saml_client/{name}/_filter_groups").as_str(),
+            value,
+        )
+        .await
     }
 }
