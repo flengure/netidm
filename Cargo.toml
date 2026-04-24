@@ -37,6 +37,7 @@ members = [
     "libs/sketching",
     "libs/users",
     "tools/mail_sender",
+    "tools/dex_migrate",
 ]
 
 # Below follows some guides/estimates to system resources consumed during a build.

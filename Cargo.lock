@@ -4559,6 +4559,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "netidm-dex-migrate"
+version = "0.1.28-dev"
+dependencies = [
+ "anyhow",
+ "clap",
+ "reqwest 0.13.2",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "time",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "netidm-ipa-sync"
 version = "0.1.28-dev"
 dependencies = [

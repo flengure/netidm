@@ -1955,6 +1955,17 @@ impl QueryServerWriteV1 {
             );
         }
 
+        if let Err(e) =
+            idms_prox_write.upsert_provider_identity(person_uuid, provider_uuid, &claims, ct)
+        {
+            warn!(
+                ?e,
+                ?provider_uuid,
+                ?person_uuid,
+                "upsert_provider_identity failed during JIT provision; proceeding"
+            );
+        }
+
         idms_prox_write.commit().map(|_| person_uuid)
     }
 
@@ -2003,6 +2014,17 @@ impl QueryServerWriteV1 {
             );
         }
 
+        if let Err(e) =
+            idms_prox_write.upsert_provider_identity(person_uuid, provider_uuid, &claims, ct)
+        {
+            warn!(
+                ?e,
+                ?provider_uuid,
+                ?person_uuid,
+                "upsert_provider_identity failed during GitHub link/provision; proceeding"
+            );
+        }
+
         let token = idms_prox_write.provider_initiated_complete_login(person_uuid, ct)?;
         idms_prox_write.commit().map(|_| Some(token))
     }
@@ -2032,6 +2054,17 @@ impl QueryServerWriteV1 {
                     ?provider_uuid,
                     ?person_uuid,
                     "reconcile_upstream_memberships failed during link-by-email; proceeding"
+                );
+            }
+
+            if let Err(e) =
+                idms_prox_write.upsert_provider_identity(person_uuid, provider_uuid, &claims, ct)
+            {
+                warn!(
+                    ?e,
+                    ?provider_uuid,
+                    ?person_uuid,
+                    "upsert_provider_identity failed during link-by-email; proceeding"
                 );
             }
         }

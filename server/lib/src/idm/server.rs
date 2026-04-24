@@ -3120,6 +3120,205 @@ impl IdmServerProxyWriteTransaction<'_> {
             })
     }
 
+    /// Upsert a `ProviderIdentity` entry for the given (person, connector) pair.
+    ///
+    /// Creates a new entry on first login via a connector; updates `ProviderIdentityLastLogin`
+    /// and the claims snapshot on every subsequent login.  Failures are logged at `warn!` but
+    /// never block the auth flow — callers should treat this as best-effort.
+    pub fn upsert_provider_identity(
+        &mut self,
+        person_uuid: Uuid,
+        connector_uuid: Uuid,
+        claims: &crate::idm::authsession::handler_connector::ExternalUserClaims,
+        ct: Duration,
+    ) -> Result<(), OperationError> {
+        let now_str = (time::OffsetDateTime::UNIX_EPOCH + ct)
+            .format(&Rfc3339)
+            .unwrap_or_else(|_| String::from("1970-01-01T00:00:00Z"));
+
+        let mut existing = self.qs_write.internal_search(filter!(f_and!([
+            f_eq(
+                Attribute::ProviderIdentityUserUuid,
+                PartialValue::new_utf8s(&person_uuid.to_string())
+            ),
+            f_eq(
+                Attribute::ProviderIdentityConnectorId,
+                PartialValue::new_iutf8(&connector_uuid.to_string())
+            ),
+            f_eq(Attribute::Class, EntryClass::ProviderIdentity.into()),
+        ])))?;
+
+        if !existing.is_empty() {
+            // Update existing entry.
+            let target_uuid = existing
+                .pop()
+                .ok_or(OperationError::InvalidState)?
+                .get_uuid();
+
+            let mut mods = vec![
+                Modify::Purged(Attribute::ProviderIdentityLastLogin),
+                Modify::Present(
+                    Attribute::ProviderIdentityLastLogin,
+                    Value::new_utf8s(&now_str),
+                ),
+                Modify::Purged(Attribute::ProviderIdentityClaimsUserId),
+                Modify::Present(
+                    Attribute::ProviderIdentityClaimsUserId,
+                    Value::new_utf8s(&claims.sub),
+                ),
+            ];
+
+            // username_hint
+            mods.push(Modify::Purged(Attribute::ProviderIdentityClaimsUsername));
+            if let Some(ref username) = claims.username_hint {
+                mods.push(Modify::Present(
+                    Attribute::ProviderIdentityClaimsUsername,
+                    Value::new_utf8s(username),
+                ));
+            }
+
+            // email
+            mods.push(Modify::Purged(Attribute::ProviderIdentityClaimsEmail));
+            if let Some(ref email) = claims.email {
+                mods.push(Modify::Present(
+                    Attribute::ProviderIdentityClaimsEmail,
+                    Value::new_iutf8(email),
+                ));
+            }
+
+            // email_verified
+            mods.push(Modify::Purged(
+                Attribute::ProviderIdentityClaimsEmailVerified,
+            ));
+            if let Some(ev) = claims.email_verified {
+                mods.push(Modify::Present(
+                    Attribute::ProviderIdentityClaimsEmailVerified,
+                    Value::Bool(ev),
+                ));
+            }
+
+            // groups (multi-value replace)
+            mods.push(Modify::Purged(Attribute::ProviderIdentityClaimsGroups));
+            for g in &claims.groups {
+                mods.push(Modify::Present(
+                    Attribute::ProviderIdentityClaimsGroups,
+                    Value::new_utf8s(g),
+                ));
+            }
+
+            let modlist = ModifyList::new_list(mods);
+            self.qs_write
+                .internal_modify_uuid(target_uuid, &modlist)
+                .map_err(|e| {
+                    warn!(?e, "upsert_provider_identity modify failed");
+                    e
+                })?;
+        } else {
+            // Create new entry.
+            let pi_uuid = Uuid::new_v4();
+            // Build a name with no hyphens so it's a valid iname.
+            let name = format!(
+                "pi-{}-{}",
+                person_uuid.as_simple(),
+                connector_uuid.as_simple()
+            );
+
+            let mut entry: Entry<EntryInit, EntryNew> = Entry::new();
+            entry.add_ava(Attribute::Class, EntryClass::Object.to_value());
+            entry.add_ava(Attribute::Class, EntryClass::ProviderIdentity.to_value());
+            entry.add_ava(Attribute::Uuid, Value::Uuid(pi_uuid));
+            entry.add_ava(Attribute::Name, Value::new_iname(&name));
+            entry.add_ava(
+                Attribute::ProviderIdentityUserUuid,
+                Value::new_utf8s(&person_uuid.to_string()),
+            );
+            entry.add_ava(
+                Attribute::ProviderIdentityConnectorId,
+                Value::new_iutf8(&connector_uuid.to_string()),
+            );
+            entry.add_ava(
+                Attribute::ProviderIdentityClaimsUserId,
+                Value::new_utf8s(&claims.sub),
+            );
+            if let Some(ref username) = claims.username_hint {
+                entry.add_ava(
+                    Attribute::ProviderIdentityClaimsUsername,
+                    Value::new_utf8s(username),
+                );
+            }
+            if let Some(ref email) = claims.email {
+                entry.add_ava(
+                    Attribute::ProviderIdentityClaimsEmail,
+                    Value::new_iutf8(email),
+                );
+            }
+            if let Some(ev) = claims.email_verified {
+                entry.add_ava(
+                    Attribute::ProviderIdentityClaimsEmailVerified,
+                    Value::Bool(ev),
+                );
+            }
+            for g in &claims.groups {
+                entry.add_ava(Attribute::ProviderIdentityClaimsGroups, Value::new_utf8s(g));
+            }
+            entry.add_ava(
+                Attribute::ProviderIdentityCreatedAt,
+                Value::new_utf8s(&now_str),
+            );
+            entry.add_ava(
+                Attribute::ProviderIdentityLastLogin,
+                Value::new_utf8s(&now_str),
+            );
+
+            self.qs_write.internal_create(vec![entry]).map_err(|e| {
+                warn!(?e, "upsert_provider_identity create failed");
+                e
+            })?;
+        }
+
+        Ok(())
+    }
+
+    /// Check that the `ProviderIdentity` for the given (person, connector) pair is not blocked.
+    ///
+    /// Returns `Err(OperationError::AccessDenied)` when a `ProviderIdentityBlockedUntil`
+    /// timestamp exists and is still in the future relative to `ct`.  Returns `Ok(())` when
+    /// no PI entry exists, when no `blocked_until` attribute is set, or when the block has
+    /// already expired.
+    pub fn check_provider_identity_not_blocked(
+        &mut self,
+        person_uuid: Uuid,
+        connector_uuid: Uuid,
+        ct: Duration,
+    ) -> Result<(), OperationError> {
+        let entries = self.qs_write.internal_search(filter!(f_and!([
+            f_eq(
+                Attribute::ProviderIdentityUserUuid,
+                PartialValue::new_utf8s(&person_uuid.to_string())
+            ),
+            f_eq(
+                Attribute::ProviderIdentityConnectorId,
+                PartialValue::new_iutf8(&connector_uuid.to_string())
+            ),
+            f_eq(Attribute::Class, EntryClass::ProviderIdentity.into()),
+        ])))?;
+
+        if let Some(entry) = entries.first() {
+            if let Some(blocked_str) =
+                entry.get_ava_single_utf8(Attribute::ProviderIdentityBlockedUntil)
+            {
+                if let Ok(blocked_until) = time::OffsetDateTime::parse(blocked_str, &Rfc3339) {
+                    let now = time::OffsetDateTime::UNIX_EPOCH + ct;
+                    if blocked_until > now {
+                        return Err(OperationError::AccessDenied);
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     fn reload_oauth2(&mut self) -> Result<(), OperationError> {
         let domain_level = self.qs_write.get_domain_version();
         self.qs_write.get_oauth2rs_set().and_then(|oauth2rs_set| {

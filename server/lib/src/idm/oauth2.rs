@@ -1709,6 +1709,18 @@ impl IdmServerProxyWriteTransaction<'_> {
                 // new session (FR-007); `None` otherwise.
                 let mut upstream_binding_for_mint: Option<(Uuid, Vec<u8>)> = None;
                 if let Some(connector_uuid) = oauth2_session.upstream_connector {
+                    // Check that the ProviderIdentity is not administratively blocked.
+                    if let Err(_e) =
+                        self.check_provider_identity_not_blocked(uuid, connector_uuid, ct)
+                    {
+                        error!(
+                            %connector_uuid,
+                            user_uuid = %uuid,
+                            "refresh rejected: provider identity is blocked"
+                        );
+                        return Err(Oauth2Error::InvalidGrant);
+                    }
+
                     let connector =
                         self.connector_registry.get(connector_uuid).ok_or_else(|| {
                             error!(
@@ -1861,6 +1873,18 @@ impl IdmServerProxyWriteTransaction<'_> {
                         .new_session_state
                         .unwrap_or_else(|| state_blob.clone());
                     upstream_binding_for_mint = Some((connector_uuid, rotated_blob));
+
+                    // Upsert the ProviderIdentity record with refreshed claims.
+                    if let Err(e) =
+                        self.upsert_provider_identity(uuid, connector_uuid, &outcome.claims, ct)
+                    {
+                        warn!(
+                            ?e,
+                            user_uuid = %uuid,
+                            %connector_uuid,
+                            "upsert_provider_identity failed during token refresh; proceeding"
+                        );
+                    }
                 }
                 // --- /PR-REFRESH-CLAIMS ---
 
