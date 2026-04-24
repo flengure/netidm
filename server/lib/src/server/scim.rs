@@ -370,9 +370,22 @@ impl QueryServerWriteTransaction<'_> {
                     match serde_json::from_value::<Vec<WgInlinePeerSpec>>(wg_json) {
                         Ok(peers) => {
                             for peer in peers {
-                                let Some(tunnel_uuid) =
-                                    self.txn_name_to_uuid().get(&peer.tunnel).copied()
-                                else {
+                                let tunnel_uuid =
+                                    self.txn_name_to_uuid().get(&peer.tunnel).copied().or_else(
+                                        || {
+                                            let f = filter!(f_and!([
+                                                f_eq(
+                                                    Attribute::Name,
+                                                    PartialValue::new_iname(&peer.tunnel)
+                                                ),
+                                                f_eq(Attribute::Class, EntryClass::WgTunnel.into())
+                                            ]));
+                                            self.internal_search(f)
+                                                .ok()
+                                                .and_then(|es| es.first().map(|e| e.get_uuid()))
+                                        },
+                                    );
+                                let Some(tunnel_uuid) = tunnel_uuid else {
                                     warn!(
                                         tunnel = %peer.tunnel,
                                         "inline wg peer references unknown tunnel — skipping"
@@ -386,7 +399,7 @@ impl QueryServerWriteTransaction<'_> {
                                 let mut peer_attrs: BTreeMap<Attribute, Option<JsonValue>> =
                                     BTreeMap::new();
                                 peer_attrs
-                                    .insert(Attribute::Class, Some(serde_json::json!(["wgpeer"])));
+                                    .insert(Attribute::Class, Some(serde_json::json!(["wg_peer"])));
                                 peer_attrs
                                     .insert(Attribute::Name, Some(serde_json::json!(peer.name)));
                                 peer_attrs

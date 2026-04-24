@@ -1,98 +1,68 @@
-//! Schema entries for DL35: GitLab connector dex-parity additions (PR-CONNECTOR-GITLAB).
+//! Schema entries for DL36: Bitbucket Cloud connector dex-parity additions (PR-CONNECTOR-BITBUCKET).
 //!
-//! Adds five optional config attributes on `EntryClass::OAuth2Client`:
-//! `OAuth2ClientGitlabBaseUrl`, `OAuth2ClientGitlabGroups`,
-//! `OAuth2ClientGitlabUseLoginAsId`, `OAuth2ClientGitlabGetGroupsPermission`,
-//! and `OAuth2ClientGitlabRootCa`.
+//! Adds three optional config attributes on `EntryClass::OAuth2Client`:
+//! `OAuth2ClientBitbucketTeams`, `OAuth2ClientBitbucketGetWorkspacePermissions`,
+//! and `OAuth2ClientBitbucketIncludeTeamGroups`.
+
+#[cfg(test)]
+pub(crate) use crate::migration_data::dl14::schema::SCHEMA_ATTR_DISPLAYNAME_DL7;
 
 use crate::constants::{
-    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_BASE_URL,
-    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION,
-    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GROUPS, UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA,
-    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID, UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
+    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_GET_WORKSPACE_PERMISSIONS,
+    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_INCLUDE_TEAM_GROUPS,
+    UUID_SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_TEAMS, UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
 };
 use crate::prelude::*;
 
-/// Base URL for the GitLab instance. Defaults to `https://gitlab.com` when absent.
-/// Set to the root of a self-hosted GitLab for enterprise deployments.
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_BASE_URL_DL35: LazyLock<SchemaAttribute> =
+/// Workspace/team allowlist for Bitbucket Cloud. Each value is a workspace slug.
+/// Empty = allow any authenticated Bitbucket user. Non-empty = access denied unless
+/// the user belongs to at least one listed workspace.
+pub static SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_TEAMS_DL36: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_BASE_URL,
-        name: Attribute::OAuth2ClientGitlabBaseUrl,
-        description: "Base URL of the GitLab instance (default: https://gitlab.com). \
-                      Set for self-hosted GitLab deployments."
-            .to_string(),
-        multivalue: false,
-        syntax: SyntaxType::Utf8String,
-        ..Default::default()
-    });
-
-/// Allowlist of GitLab group paths. When non-empty, only users who are members of
-/// at least one listed group are permitted to authenticate. Multi-value — each
-/// value is one permitted group path (e.g. `myorg/myteam`).
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GROUPS_DL35: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GROUPS,
-        name: Attribute::OAuth2ClientGitlabGroups,
-        description: "Allowlist of GitLab group paths. Users not in any listed group are \
-                      rejected. When absent, all authenticated users are permitted."
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_TEAMS,
+        name: Attribute::OAuth2ClientBitbucketTeams,
+        description: "Workspace slugs the Bitbucket user must belong to (access gate). \
+                      Empty = allow any authenticated user."
             .to_string(),
         multivalue: true,
-        syntax: SyntaxType::Utf8String,
+        syntax: SyntaxType::Utf8StringInsensitive,
         ..Default::default()
     });
 
-/// When true, use the user's GitLab login (username) as the subject identifier
-/// instead of the numeric user ID. Mirrors dex's `useLoginAsID` option.
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID_DL35: LazyLock<SchemaAttribute> =
+/// When enabled, appends `{workspace}:{permission}` entries to the groups claim
+/// (e.g. `my-org:owner`, `my-org:member`), mirroring dex's getWorkspacePermissions.
+pub static SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_GET_WORKSPACE_PERMISSIONS_DL36: LazyLock<
+    SchemaAttribute,
+> = LazyLock::new(|| SchemaAttribute {
+    uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_GET_WORKSPACE_PERMISSIONS,
+    name: Attribute::OAuth2ClientBitbucketGetWorkspacePermissions,
+    description: "Append workspace:permission suffix entries to the groups claim.".to_string(),
+    multivalue: false,
+    syntax: SyntaxType::Boolean,
+    ..Default::default()
+});
+
+/// Deprecated. The Bitbucket 1.0 API this relied on has been removed by Atlassian.
+/// If set, a warning is logged at startup and the value is otherwise ignored.
+pub static SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_INCLUDE_TEAM_GROUPS_DL36: LazyLock<SchemaAttribute> =
     LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_USE_LOGIN_AS_ID,
-        name: Attribute::OAuth2ClientGitlabUseLoginAsId,
-        description: "When true, use the GitLab username as the subject ID instead of the \
-                      numeric user ID. Default: false."
+        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_BITBUCKET_INCLUDE_TEAM_GROUPS,
+        name: Attribute::OAuth2ClientBitbucketIncludeTeamGroups,
+        description: "Deprecated. The Bitbucket 1.0 API this relied on has been removed. \
+                      Setting this logs a warning at startup."
             .to_string(),
         multivalue: false,
         syntax: SyntaxType::Boolean,
         ..Default::default()
     });
 
-/// When true, group membership level (owner/maintainer/developer) is appended to
-/// each group name as a suffix (e.g. `myorg:owner`). Mirrors dex's
-/// `getGroupsPermission` option.
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION_DL35: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_GET_GROUPS_PERMISSION,
-        name: Attribute::OAuth2ClientGitlabGetGroupsPermission,
-        description: "When true, append the user's role suffix (:owner/:maintainer/:developer) \
-                      to each group name. Default: false."
-            .to_string(),
-        multivalue: false,
-        syntax: SyntaxType::Boolean,
-        ..Default::default()
-    });
-
-/// PEM-encoded root CA certificate used when connecting to a self-hosted GitLab
-/// instance with a private/self-signed CA.
-pub static SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA_DL35: LazyLock<SchemaAttribute> =
-    LazyLock::new(|| SchemaAttribute {
-        uuid: UUID_SCHEMA_ATTR_OAUTH2_CLIENT_GITLAB_ROOT_CA,
-        name: Attribute::OAuth2ClientGitlabRootCa,
-        description: "PEM-encoded root CA certificate for self-hosted GitLab TLS verification."
-            .to_string(),
-        multivalue: false,
-        syntax: SyntaxType::Utf8String,
-        ..Default::default()
-    });
-
-/// OAuth2Client class updated for DL35: adds the five GitLab connector config
-/// attributes to `systemmay`. Carries forward all DL34 `systemmay` entries.
-pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL35: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL36: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
     uuid: UUID_SCHEMA_CLASS_OAUTH2_CLIENT,
     name: EntryClass::OAuth2Client.into(),
-    description: "The class representing a configured OAuth2 Confidential Client acting as \
-                      an authentication source."
-        .to_string(),
+    description: "OAuth2 upstream client connector (DL36).".to_string(),
     systemmust: vec![
+        Attribute::Class,
+        Attribute::Uuid,
         Attribute::Name,
         Attribute::OAuth2ClientId,
         Attribute::OAuth2ClientSecret,
@@ -188,6 +158,10 @@ pub static SCHEMA_CLASS_OAUTH2_CLIENT_DL35: LazyLock<SchemaClass> = LazyLock::ne
         Attribute::OAuth2ClientGitlabUseLoginAsId,
         Attribute::OAuth2ClientGitlabGetGroupsPermission,
         Attribute::OAuth2ClientGitlabRootCa,
+        // DL36 additions — PR-CONNECTOR-BITBUCKET
+        Attribute::OAuth2ClientBitbucketTeams,
+        Attribute::OAuth2ClientBitbucketGetWorkspacePermissions,
+        Attribute::OAuth2ClientBitbucketIncludeTeamGroups,
     ],
     ..Default::default()
 });

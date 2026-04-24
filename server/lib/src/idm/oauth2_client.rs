@@ -82,6 +82,8 @@ pub enum ProviderKind {
     OpenShift,
     /// GitLab OAuth2 connector — PR-CONNECTOR-GITLAB.
     GitLab,
+    /// Bitbucket Cloud OAuth2 connector — PR-CONNECTOR-BITBUCKET.
+    Bitbucket,
 }
 
 impl ProviderKind {
@@ -98,6 +100,7 @@ impl ProviderKind {
             ProviderKind::LinkedIn => "linkedin",
             ProviderKind::OpenShift => "openshift",
             ProviderKind::GitLab => "gitlab",
+            ProviderKind::Bitbucket => "bitbucket",
         }
     }
 
@@ -114,6 +117,7 @@ impl ProviderKind {
             "linkedin" => ProviderKind::LinkedIn,
             "openshift" => ProviderKind::OpenShift,
             "gitlab" => ProviderKind::GitLab,
+            "bitbucket" => ProviderKind::Bitbucket,
             _ => ProviderKind::GenericOidc,
         }
     }
@@ -617,6 +621,37 @@ impl IdmServerProxyWriteTransaction<'_> {
                         ?entry_uuid,
                         ?e,
                         "Failed to build GitLab connector config; skipping this provider"
+                    );
+                }
+            }
+        }
+
+        // Register Bitbucket Cloud connectors with the ConnectorRegistry.
+        for provider_entry in &oauth2_client_provider_entries {
+            let entry_uuid = provider_entry.get_uuid();
+            let is_bitbucket = provider_entry
+                .get_ava_single_iutf8(Attribute::OAuth2ClientProviderKind)
+                .map(|s| s == "bitbucket")
+                .unwrap_or(false);
+            if !is_bitbucket {
+                continue;
+            }
+            match crate::idm::bitbucket_connector::BitbucketConfig::from_entry(
+                provider_entry,
+                client_redirect_uri.clone(),
+            ) {
+                Ok(config) => {
+                    let connector = std::sync::Arc::new(
+                        crate::idm::bitbucket_connector::BitbucketConnector::new(config),
+                    );
+                    self.connector_registry.register(entry_uuid, connector);
+                    trace!(?entry_uuid, "registered Bitbucket connector");
+                }
+                Err(e) => {
+                    error!(
+                        ?entry_uuid,
+                        ?e,
+                        "Failed to build Bitbucket connector config; skipping this provider"
                     );
                 }
             }
