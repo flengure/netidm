@@ -43,7 +43,13 @@ pub(crate) fn get_reqwest_client() -> reqwest::Client {
 }
 
 /// Create a confidential RS and return its client_secret.
-async fn create_rs(rsclient: &NetidmClient, id: &str, display: &str, url: &str, redirect: &str) -> String {
+async fn create_rs(
+    rsclient: &NetidmClient,
+    id: &str,
+    display: &str,
+    url: &str,
+    redirect: &str,
+) -> String {
     rsclient
         .idm_oauth2_rs_basic_create(id, display, url)
         .await
@@ -109,7 +115,11 @@ async fn auth_code_flow(
         .await
         .expect("Failed to send authorise request");
 
-    assert_eq!(response.status(), StatusCode::OK, "authorise must return 200");
+    assert_eq!(
+        response.status(),
+        StatusCode::OK,
+        "authorise must return 200"
+    );
 
     let consent_req: AuthorisationResponse = response
         .json()
@@ -129,7 +139,11 @@ async fn auth_code_flow(
         .await
         .expect("Failed to send authorise_permit request");
 
-    assert_eq!(response.status(), StatusCode::FOUND, "authorise_permit must 302");
+    assert_eq!(
+        response.status(),
+        StatusCode::FOUND,
+        "authorise_permit must 302"
+    );
 
     let redir_str = response
         .headers()
@@ -156,7 +170,11 @@ async fn auth_code_flow(
         .await
         .expect("Failed to send token request");
 
-    assert_eq!(response.status(), StatusCode::OK, "token exchange must succeed");
+    assert_eq!(
+        response.status(),
+        StatusCode::OK,
+        "token exchange must succeed"
+    );
 
     response
         .json::<AccessTokenResponse>()
@@ -174,14 +192,7 @@ async fn test_oauth2_ropc_rejected_without_password_connector(rsclient: &NetidmC
         .await;
     assert!(res.is_ok());
 
-    let client_secret = create_rs(
-        rsclient,
-        RS_A_ID,
-        RS_A_DISPLAY,
-        RS_A_URL,
-        RS_A_REDIRECT,
-    )
-    .await;
+    let client_secret = create_rs(rsclient, RS_A_ID, RS_A_DISPLAY, RS_A_URL, RS_A_REDIRECT).await;
 
     let client = get_reqwest_client();
 
@@ -271,7 +282,15 @@ async fn test_oauth2_cross_client_audience(rsclient: &NetidmClient) {
     let audience_scope = format!("audience:server:client_id:{RS_B_ID}");
     let scopes = format!("openid email read {audience_scope}");
 
-    let atr = auth_code_flow(rsclient, &client, RS_A_ID, RS_A_REDIRECT, &secret_a, &scopes).await;
+    let atr = auth_code_flow(
+        rsclient,
+        &client,
+        RS_A_ID,
+        RS_A_REDIRECT,
+        &secret_a,
+        &scopes,
+    )
+    .await;
 
     // Decode the JWT access token without signature verification to inspect `aud`.
     // The token format is header.payload.signature (JWS compact serialisation).
@@ -292,10 +311,7 @@ async fn test_oauth2_cross_client_audience(rsclient: &NetidmClient) {
         )
     });
 
-    let aud_strings: Vec<&str> = aud
-        .iter()
-        .filter_map(|v| v.as_str())
-        .collect();
+    let aud_strings: Vec<&str> = aud.iter().filter_map(|v| v.as_str()).collect();
 
     assert!(
         aud_strings.contains(&RS_A_ID),
