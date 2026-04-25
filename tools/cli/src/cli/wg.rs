@@ -139,6 +139,8 @@ impl WgOpt {
                 let req = WgConnectRequest {
                     token: token.clone(),
                     pubkey: pubkey.clone(),
+                    preshared_key: None,
+                    hostname: None,
                 };
                 match client.wg_connect(req).await {
                     Ok(resp) => {

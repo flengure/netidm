@@ -104,12 +104,27 @@ pub struct WgTokenInfo {
 pub struct WgConnectRequest {
     pub token: String,
     pub pubkey: String,
+    /// Optional PSK supplied by the client. If omitted on first registration,
+    /// the server generates one. Ignored on re-sync (existing peer).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preshared_key: Option<String>,
+    /// Optional device label (hostname) used to name the peer entry.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub hostname: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct WgConnectResponse {
+    /// wg-quick config block with `PrivateKey = <client-private-key>` as a
+    /// placeholder — the calling script substitutes the real private key.
     pub config: String,
     pub address: Vec<String>,
     pub server_pubkey: String,
     pub endpoint: String,
+    /// The PSK to embed in the config. Present on first registration (server-
+    /// generated or client-supplied) and on re-sync (the stored value).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub psk: Option<String>,
+    /// `"new"` when a peer was created, `"existing"` when returning stored config.
+    pub status: String,
 }

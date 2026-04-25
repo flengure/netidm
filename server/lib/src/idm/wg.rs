@@ -177,6 +177,13 @@ impl IdmServerProxyWriteTransaction<'_> {
             .map_err(|_| OperationError::InvalidAttribute("Invalid expiry datetime".into()))?;
             entry.add_ava(Attribute::WgTokenExpiry, Value::new_datetime(expiry));
         }
+        if let Some(principal_name) = &req.principal {
+            let principal_uuid = self
+                .qs_write
+                .name_to_uuid(principal_name)
+                .map_err(|_| OperationError::NoMatchingEntries)?;
+            entry.add_ava(Attribute::WgTokenPrincipalRef, Value::Refer(principal_uuid));
+        }
 
         self.qs_write.internal_create(vec![entry])?;
 
@@ -257,7 +264,13 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
     }
 
-    /// Full peer registration flow: validate token, allocate IPs, create WgPeer entry.
+    /// Full peer registration or re-sync flow.
+    ///
+    /// - **Re-sync**: if the caller already has a peer with this pubkey on this tunnel,
+    ///   returns the stored config and PSK without consuming the token.
+    /// - **New registration**: validates and consumes the token, allocates IPs, uses the
+    ///   client-supplied PSK or generates one if none was provided.
+    ///
     /// `caller_uuid` must be the UUID of the authenticated person or service account.
     pub fn wg_connect(
         &mut self,
@@ -265,9 +278,11 @@ impl IdmServerProxyWriteTransaction<'_> {
         req: &WgConnectRequest,
         ct: Duration,
     ) -> Result<WgConnectResponse, OperationError> {
+        // Validate the token to find the tunnel UUID and any principal constraint.
+        // We do this before the re-sync check so we always verify the token is
+        // still valid (not expired / exhausted), even on re-sync.
         let (token_uuid, tunnel_uuid, principal_ref) = self.wg_token_validate(&req.token, ct)?;
 
-        // If the token is locked to a specific principal, the caller must match.
         if let Some(required) = principal_ref {
             if caller_uuid != required {
                 return Err(OperationError::NotAuthenticated);
@@ -279,32 +294,56 @@ impl IdmServerProxyWriteTransaction<'_> {
             f_eq(Attribute::Class, EntryClass::WgTunnel.into()),
             f_eq(Attribute::Uuid, PartialValue::Uuid(tunnel_uuid))
         ]));
-        let tunnels = self.qs_write.internal_search(tunnel_filter)?;
-        let tunnel_entry = tunnels
+        let tunnel_entry = self
+            .qs_write
+            .internal_search(tunnel_filter)?
             .into_iter()
             .next()
             .ok_or(OperationError::InvalidEntryState)?;
         let tunnel = wg_tunnel_config_from_entry(&tunnel_entry)?;
 
-        // Check pubkey uniqueness.
-        let peer_filter = filter!(f_and!([
+        // ── RE-SYNC PATH ─────────────────────────────────────────────────────
+        // If this caller already has a peer with this exact pubkey on this
+        // tunnel, return the stored config. Token is validated but NOT consumed.
+        let resync_filter = filter!(f_and!([
             f_eq(Attribute::Class, EntryClass::WgPeer.into()),
             f_eq(Attribute::WgTunnelRef, PartialValue::Refer(tunnel_uuid)),
-            f_eq(
-                Attribute::WgPubkey,
-                PartialValue::new_utf8s(req.pubkey.as_str())
-            )
+            f_eq(Attribute::WgPubkey, PartialValue::new_utf8s(&req.pubkey)),
+            f_eq(Attribute::WgUserRef, PartialValue::Refer(caller_uuid))
         ]));
-        if !self.qs_write.internal_search(peer_filter)?.is_empty() {
+        let existing = self.qs_write.internal_search(resync_filter)?;
+        if let Some(existing_peer) = existing.into_iter().next() {
+            let peer_cfg = wg_peer_config_from_entry(&existing_peer)?;
+            let addresses: Vec<String> =
+                peer_cfg.allowed_ips.iter().map(|a| a.to_string()).collect();
+            let psk = peer_cfg.preshared_key.clone();
+            return Ok(WgConnectResponse {
+                config: build_wg_config(&addresses, &tunnel, psk.as_deref()),
+                address: addresses,
+                server_pubkey: tunnel.public_key,
+                endpoint: tunnel.endpoint,
+                psk,
+                status: "existing".to_string(),
+            });
+        }
+
+        // ── NEW REGISTRATION PATH ─────────────────────────────────────────────
+        // Reject if the pubkey is already registered to a different user.
+        let conflict_filter = filter!(f_and!([
+            f_eq(Attribute::Class, EntryClass::WgPeer.into()),
+            f_eq(Attribute::WgTunnelRef, PartialValue::Refer(tunnel_uuid)),
+            f_eq(Attribute::WgPubkey, PartialValue::new_utf8s(&req.pubkey))
+        ]));
+        if !self.qs_write.internal_search(conflict_filter)?.is_empty() {
             return Err(OperationError::UniqueConstraintViolation);
         }
 
-        // Gather existing peer CIDRs for allocation.
-        let peer_entries = self.qs_write.internal_search(filter!(f_and!([
+        // Gather existing peer CIDRs for IP allocation.
+        let all_peers = self.qs_write.internal_search(filter!(f_and!([
             f_eq(Attribute::Class, EntryClass::WgPeer.into()),
             f_eq(Attribute::WgTunnelRef, PartialValue::Refer(tunnel_uuid))
         ])))?;
-        let existing: Vec<IpNet> = peer_entries
+        let used_cidrs: Vec<IpNet> = all_peers
             .iter()
             .flat_map(|e| {
                 e.get_ava_set(Attribute::WgAllowedIps)
@@ -318,10 +357,20 @@ impl IdmServerProxyWriteTransaction<'_> {
             .collect();
 
         let allocated =
-            allocate(&tunnel.address, &existing).map_err(|_| OperationError::ResourceLimit)?;
+            allocate(&tunnel.address, &used_cidrs).map_err(|_| OperationError::ResourceLimit)?;
 
-        // Create WgPeer entry.
-        let peer_name = format!("peer-{}-{}", caller_uuid.as_simple(), &tunnel.name);
+        // PSK: use the client-supplied key or generate one.
+        let psk = match &req.preshared_key {
+            Some(k) => k.clone(),
+            None => generate_psk(),
+        };
+
+        // Peer name: prefer hostname for readability, fall back to caller UUID.
+        let peer_name = match &req.hostname {
+            Some(h) => format!("peer-{}-{}", sanitise_label(h), caller_uuid.as_simple()),
+            None => format!("peer-{}-{}", caller_uuid.as_simple(), &tunnel.name),
+        };
+
         let peer_uuid = Uuid::new_v4();
         let mut peer_entry = entry_init!(
             (Attribute::Class, EntryClass::Object.to_value()),
@@ -329,6 +378,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             (Attribute::Name, Value::new_iname(&peer_name)),
             (Attribute::Uuid, Value::Uuid(peer_uuid)),
             (Attribute::WgPubkey, Value::new_utf8s(&req.pubkey)),
+            (Attribute::WgPresharedKey, Value::new_utf8s(&psk)),
             (Attribute::WgTunnelRef, Value::Refer(tunnel_uuid)),
             (Attribute::WgUserRef, Value::Refer(caller_uuid))
         );
@@ -337,31 +387,17 @@ impl IdmServerProxyWriteTransaction<'_> {
         }
         self.qs_write.internal_create(vec![peer_entry])?;
 
-        // Consume the token.
+        // Consume the registration token now that the peer is committed.
         self.wg_token_consume(token_uuid)?;
 
-        // Build wg-quick config string.
-        let address_list: Vec<String> = allocated.iter().map(|a| a.to_string()).collect();
-        let mut config = format!(
-            "[Interface]\nPrivateKey = <client-private-key>\nAddress = {}\n",
-            address_list.join(", ")
-        );
-        if !tunnel.dns.is_empty() {
-            config.push_str(&format!("DNS = {}\n", tunnel.dns.join(", ")));
-        }
-        config.push_str(&format!(
-            "\n[Peer]\nPublicKey = {}\nEndpoint = {}\nAllowedIPs = 0.0.0.0/0, ::/0\n",
-            tunnel.public_key, tunnel.endpoint
-        ));
-        if let Some(mtu) = tunnel.mtu {
-            config.push_str(&format!("# MTU = {mtu}\n"));
-        }
-
+        let addresses: Vec<String> = allocated.iter().map(|a| a.to_string()).collect();
         Ok(WgConnectResponse {
-            config,
-            address: address_list,
+            config: build_wg_config(&addresses, &tunnel, Some(&psk)),
+            address: addresses,
             server_pubkey: tunnel.public_key,
             endpoint: tunnel.endpoint,
+            psk: Some(psk),
+            status: "new".to_string(),
         })
     }
 
@@ -585,6 +621,57 @@ fn wg_tunnel_config_from_entry(
         pre_down,
         post_down,
     })
+}
+
+/// Generate a WireGuard pre-shared key: 32 cryptographically random bytes,
+/// standard base64-encoded (the format wg-quick expects).
+fn generate_psk() -> String {
+    let mut rng = rand::rng();
+    let bytes: [u8; 32] = rng.random();
+    use base64::Engine as _;
+    base64::engine::general_purpose::STANDARD.encode(bytes)
+}
+
+/// Build a wg-quick config block. `PrivateKey` is a placeholder that the
+/// calling script substitutes with the locally-generated private key.
+fn build_wg_config(addresses: &[String], tunnel: &WgTunnelConfig, psk: Option<&str>) -> String {
+    let mut config = format!(
+        "[Interface]\nPrivateKey = <client-private-key>\nAddress = {}\n",
+        addresses.join(", ")
+    );
+    if !tunnel.dns.is_empty() {
+        config.push_str(&format!("DNS = {}\n", tunnel.dns.join(", ")));
+    }
+    if let Some(mtu) = tunnel.mtu {
+        config.push_str(&format!("MTU = {mtu}\n"));
+    }
+    config.push_str(&format!(
+        "\n[Peer]\nPublicKey = {}\nEndpoint = {}\n",
+        tunnel.public_key, tunnel.endpoint
+    ));
+    if let Some(psk) = psk {
+        config.push_str(&format!("PresharedKey = {psk}\n"));
+    }
+    config.push_str("AllowedIPs = 0.0.0.0/0, ::/0\n");
+    config
+}
+
+/// Strip characters that are not safe in an iname (Netidm internal name) from
+/// a hostname label. Lowercases and replaces anything outside [a-z0-9-] with '-'.
+fn sanitise_label(label: &str) -> String {
+    label
+        .to_lowercase()
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' {
+                c
+            } else {
+                '-'
+            }
+        })
+        .collect::<String>()
+        .trim_matches('-')
+        .to_string()
 }
 
 fn sha256_of(data: &[u8]) -> Sha256Output {
