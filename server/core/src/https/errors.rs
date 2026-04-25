@@ -1,8 +1,7 @@
 //! Where we hide the error handling widgets
 //!
 
-use axum::http::header::ACCESS_CONTROL_ALLOW_ORIGIN;
-use axum::http::{HeaderValue, StatusCode};
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use axum::Json;
 
@@ -35,31 +34,12 @@ impl From<Oauth2Error> for WebError {
     }
 }
 
-impl WebError {
-    pub(crate) fn response_with_access_control_origin_header(self) -> Response {
-        let mut res = self.into_response();
-        res.headers_mut().insert(
-            ACCESS_CONTROL_ALLOW_ORIGIN,
-            #[allow(clippy::expect_used)]
-            HeaderValue::from_str("*").expect("Header generation failed, this is weird."),
-        );
-        res
-    }
-}
-
 impl IntoResponse for WebError {
     fn into_response(self) -> Response {
         match self {
             WebError::OAuth2(error) => {
                 if let Oauth2Error::AuthenticationRequired = error {
-                    (
-                        StatusCode::UNAUTHORIZED,
-                        [
-                            (WWW_AUTHENTICATE, "Bearer"),
-                            (ACCESS_CONTROL_ALLOW_ORIGIN, "*"),
-                        ],
-                    )
-                        .into_response()
+                    (StatusCode::UNAUTHORIZED, [(WWW_AUTHENTICATE, "Bearer")]).into_response()
                 } else {
                     let err = ErrorResponse {
                         error: error.to_string(),
@@ -74,12 +54,7 @@ impl IntoResponse for WebError {
                         }
                     };
 
-                    (
-                        StatusCode::BAD_REQUEST,
-                        [(ACCESS_CONTROL_ALLOW_ORIGIN, "*")],
-                        body,
-                    )
-                        .into_response()
+                    (StatusCode::BAD_REQUEST, body).into_response()
                 }
             }
             WebError::InternalServerError(inner) => {

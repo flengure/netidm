@@ -68,6 +68,7 @@ toml = { workspace = true }
 tower = { workspace = true, features = ["tokio-stream", "tracing"] }
 tower-http = { workspace = true, features = [
     "compression-gzip",
+    "cors",
     "fs",
     "tokio",
     "trace",

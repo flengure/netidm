@@ -7,13 +7,7 @@ use crate::https::extractors::{AuthorisationHeaders, VerifiedClientInformation};
 use axum::{
     body::Body,
     extract::{Path, Query, State},
-    http::{
-        header::{
-            ACCESS_CONTROL_ALLOW_HEADERS, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE, LOCATION,
-            WWW_AUTHENTICATE,
-        },
-        HeaderValue, StatusCode,
-    },
+    http::{header::CONTENT_TYPE, HeaderValue, Method, StatusCode},
     middleware::from_fn,
     response::{IntoResponse, Response},
     routing::{get, post},
@@ -25,6 +19,7 @@ use netidm_proto::constants::uri::{
 };
 use netidm_proto::constants::APPLICATION_JSON;
 use netidm_proto::oauth2::AuthorisationResponse;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 
 #[cfg(feature = "dev-oauth2-device-flow")]
 use netidm_proto::oauth2::DeviceAuthorizationResponse;
@@ -245,13 +240,8 @@ async fn oauth2_authorise(
             Response::builder()
                 .status(StatusCode::FOUND)
                 .header(
-                    LOCATION,
+                    axum::http::header::LOCATION,
                     HeaderValue::from_str(redirect_uri.as_str()).unwrap(),
-                )
-                // I think the client server needs this
-                .header(
-                    ACCESS_CONTROL_ALLOW_ORIGIN,
-                    HeaderValue::from_str(&redirect_uri.origin().ascii_serialization()).unwrap(),
                 )
                 .body(body)
                 .unwrap()
@@ -262,8 +252,10 @@ async fn oauth2_authorise(
             #[allow(clippy::unwrap_used)]
             Response::builder()
                 .status(StatusCode::UNAUTHORIZED)
-                .header(WWW_AUTHENTICATE, HeaderValue::from_static("Bearer"))
-                .header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
+                .header(
+                    axum::http::header::WWW_AUTHENTICATE,
+                    HeaderValue::from_static("Bearer"),
+                )
                 .body(Body::empty())
                 .unwrap()
         }
@@ -272,7 +264,6 @@ async fn oauth2_authorise(
             #[allow(clippy::expect_used)]
             Response::builder()
                 .status(StatusCode::FORBIDDEN)
-                .header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                 .body(Body::empty())
                 .expect("Failed to generate a forbidden response")
         }
@@ -295,7 +286,6 @@ async fn oauth2_authorise(
             #[allow(clippy::expect_used)]
             Response::builder()
                 .status(StatusCode::BAD_REQUEST)
-                .header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                 .body(Body::empty())
                 .expect("Failed to generate a bad request response")
         }
@@ -353,19 +343,13 @@ async fn oauth2_authorise_permit(
             #[allow(clippy::expect_used)]
             Response::builder()
                 .status(StatusCode::FOUND)
-                .header(LOCATION, redirect_uri.as_str())
-                .header(
-                    ACCESS_CONTROL_ALLOW_ORIGIN,
-                    redirect_uri.origin().ascii_serialization(),
-                )
+                .header(axum::http::header::LOCATION, redirect_uri.as_str())
                 .body(Body::empty())
                 .expect("Failed to generate response")
         }
         Err(err) => {
             match err {
-                OperationError::NotAuthenticated => {
-                    WebError::from(err).response_with_access_control_origin_header()
-                }
+                OperationError::NotAuthenticated => WebError::from(err).into_response(),
                 _ => {
                     // If an error happens in our consent flow, I think
                     // that we should NOT redirect to the calling application
@@ -378,7 +362,6 @@ async fn oauth2_authorise_permit(
                     #[allow(clippy::expect_used)]
                     Response::builder()
                         .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                         .body(Body::empty())
                         .expect("Failed to generate error response")
                 }
@@ -429,20 +412,13 @@ async fn oauth2_authorise_reject(
 
             #[allow(clippy::unwrap_used)]
             Response::builder()
-                .header(LOCATION, redirect_uri.as_str())
-                .header(
-                    ACCESS_CONTROL_ALLOW_ORIGIN,
-                    redirect_uri.origin().ascii_serialization(),
-                )
+                .header(axum::http::header::LOCATION, redirect_uri.as_str())
                 .body(Body::empty())
                 .unwrap()
-            // I think the client server needs this
         }
         Err(err) => {
             match err {
-                OperationError::NotAuthenticated => {
-                    WebError::from(err).response_with_access_control_origin_header()
-                }
+                OperationError::NotAuthenticated => WebError::from(err).into_response(),
                 _ => {
                     // If an error happens in our reject flow, I think
                     // that we should NOT redirect to the calling application
@@ -451,7 +427,6 @@ async fn oauth2_authorise_reject(
                     #[allow(clippy::expect_used)]
                     Response::builder()
                         .status(StatusCode::INTERNAL_SERVER_ERROR)
-                        .header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                         .body(Body::empty())
                         .expect("Failed to generate an error response")
                 }
@@ -479,12 +454,7 @@ pub async fn oauth2_token_post(
         .handle_oauth2_token_exchange(client_auth_info, tok_req, kopid.eventid)
         .await
     {
-        Ok(tok_res) => (
-            StatusCode::OK,
-            [(ACCESS_CONTROL_ALLOW_ORIGIN, "*")],
-            Json(tok_res),
-        )
-            .into_response(),
+        Ok(tok_res) => (StatusCode::OK, Json(tok_res)).into_response(),
         Err(e) => WebError::OAuth2(e).into_response(),
     }
 }
@@ -501,15 +471,10 @@ pub async fn oauth2_openid_discovery_get(
         .await;
 
     match res {
-        Ok(dsc) => (
-            StatusCode::OK,
-            [(ACCESS_CONTROL_ALLOW_ORIGIN, "*")],
-            Json(dsc),
-        )
-            .into_response(),
+        Ok(dsc) => (StatusCode::OK, Json(dsc)).into_response(),
         Err(e) => {
             error!(err = ?e, "Unable to access discovery info");
-            WebError::from(e).response_with_access_control_origin_header()
+            WebError::from(e).into_response()
         }
     }
 }
@@ -537,10 +502,7 @@ pub async fn oauth2_openid_webfinger_get(
     match res {
         Ok(mut dsc) => (
             StatusCode::OK,
-            [
-                (ACCESS_CONTROL_ALLOW_ORIGIN, "*"),
-                (CONTENT_TYPE, "application/jrd+json"),
-            ],
+            [(CONTENT_TYPE, "application/jrd+json")],
             Json({
                 dsc.subject = resource;
                 dsc
@@ -549,7 +511,7 @@ pub async fn oauth2_openid_webfinger_get(
             .into_response(),
         Err(e) => {
             error!(err = ?e, "Unable to access discovery info");
-            WebError::from(e).response_with_access_control_origin_header()
+            WebError::from(e).into_response()
         }
     }
 }
@@ -565,15 +527,10 @@ pub async fn oauth2_rfc8414_metadata_get(
         .await;
 
     match res {
-        Ok(dsc) => (
-            StatusCode::OK,
-            [(ACCESS_CONTROL_ALLOW_ORIGIN, "*")],
-            Json(dsc),
-        )
-            .into_response(),
+        Ok(dsc) => (StatusCode::OK, Json(dsc)).into_response(),
         Err(e) => {
             error!(err = ?e, "Unable to access discovery info");
-            WebError::from(e).response_with_access_control_origin_header()
+            WebError::from(e).into_response()
         }
     }
 }
@@ -597,12 +554,7 @@ pub async fn oauth2_openid_userinfo_get(
         .await;
 
     match res {
-        Ok(uir) => (
-            StatusCode::OK,
-            [(ACCESS_CONTROL_ALLOW_ORIGIN, "*")],
-            Json(uir),
-        )
-            .into_response(),
+        Ok(uir) => (StatusCode::OK, Json(uir)).into_response(),
         Err(e) => WebError::OAuth2(e).into_response(),
     }
 }
@@ -620,8 +572,8 @@ pub async fn oauth2_openid_publickey_get(
         .map_err(WebError::from);
 
     match res {
-        Ok(jsn) => (StatusCode::OK, [(ACCESS_CONTROL_ALLOW_ORIGIN, "*")], jsn).into_response(),
-        Err(web_err) => web_err.response_with_access_control_origin_header(),
+        Ok(jsn) => (StatusCode::OK, jsn).into_response(),
+        Err(web_err) => web_err.into_response(),
     }
 }
 
@@ -650,7 +602,6 @@ pub async fn oauth2_token_introspect_post(
             };
             #[allow(clippy::unwrap_used)]
             Response::builder()
-                .header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                 .header(CONTENT_TYPE, APPLICATION_JSON)
                 .body(Body::from(body))
                 .unwrap()
@@ -659,7 +610,6 @@ pub async fn oauth2_token_introspect_post(
             // This will trigger our ui to auth and retry.
             #[allow(clippy::expect_used)]
             Response::builder()
-                .header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                 .status(StatusCode::UNAUTHORIZED)
                 .body(Body::empty())
                 .expect("Failed to generate an unauthorized response")
@@ -680,7 +630,6 @@ pub async fn oauth2_token_introspect_post(
             #[allow(clippy::expect_used)]
             Response::builder()
                 .status(StatusCode::BAD_REQUEST)
-                .header(ACCESS_CONTROL_ALLOW_ORIGIN, "*")
                 .body(Body::from(body))
                 .expect("Failed to generate an error response")
         }
@@ -703,16 +652,8 @@ pub async fn oauth2_token_revoke_post(
         .await;
 
     match res {
-        Ok(()) => (StatusCode::OK, [(ACCESS_CONTROL_ALLOW_ORIGIN, "*")], "").into_response(),
-        Err(Oauth2Error::AuthenticationRequired) => {
-            // This will trigger our ui to auth and retry.
-            (
-                StatusCode::UNAUTHORIZED,
-                [(ACCESS_CONTROL_ALLOW_ORIGIN, "*")],
-                "",
-            )
-                .into_response()
-        }
+        Ok(()) => StatusCode::OK.into_response(),
+        Err(Oauth2Error::AuthenticationRequired) => StatusCode::UNAUTHORIZED.into_response(),
         Err(e) => {
             // https://datatracker.ietf.org/doc/html/rfc6749#section-5.2
             let err = ErrorResponse {
@@ -721,25 +662,11 @@ pub async fn oauth2_token_revoke_post(
             };
             (
                 StatusCode::BAD_REQUEST,
-                [(ACCESS_CONTROL_ALLOW_ORIGIN, "*")],
-                serde_json::to_string(&err).unwrap_or("".to_string()),
+                serde_json::to_string(&err).unwrap_or_default(),
             )
                 .into_response()
         }
     }
-}
-
-// Some requests from browsers require preflight so that CORS works.
-pub async fn oauth2_preflight_options() -> Response {
-    (
-        StatusCode::OK,
-        [
-            (ACCESS_CONTROL_ALLOW_ORIGIN, "*"),
-            (ACCESS_CONTROL_ALLOW_HEADERS, "Authorization"),
-        ],
-        String::new(),
-    )
-        .into_response()
 }
 
 // 1.90 incorrectly thinks this is dead code - it's literally used in the function below.
@@ -874,7 +801,7 @@ pub async fn oauth2_openid_end_session_get(
                 StatusCode::FOUND,
                 [
                     (
-                        LOCATION,
+                        axum::http::header::LOCATION,
                         HeaderValue::try_from(url.as_str())
                             .unwrap_or_else(|_| HeaderValue::from_static("/")),
                     ),
@@ -929,45 +856,59 @@ fn end_session_confirmation_response() -> Response {
 }
 
 pub fn route_setup(state: ServerState) -> Router<ServerState> {
+    // Build the CORS layer from config. Empty or ["*"] = permissive (allow all origins).
+    let cors_layer = {
+        let origins = &state.allowed_origins;
+        if origins.is_empty() || origins.iter().any(|o| o == "*") {
+            CorsLayer::permissive()
+        } else {
+            let allow_origin =
+                AllowOrigin::list(origins.iter().filter_map(|o| o.parse::<HeaderValue>().ok()));
+            CorsLayer::new()
+                .allow_origin(allow_origin)
+                .allow_methods([Method::GET, Method::POST])
+                .allow_headers([
+                    axum::http::header::AUTHORIZATION,
+                    axum::http::header::CONTENT_TYPE,
+                ])
+        }
+    };
+
     // this has all the openid-related routes
     let openid_router = Router::new()
         // // ⚠️  ⚠️   WARNING  ⚠️  ⚠️
         // // IF YOU CHANGE THESE VALUES YOU MUST UPDATE OIDC DISCOVERY URLS
         .route(
             "/oauth2/openid/{client_id}/.well-known/openid-configuration",
-            get(oauth2_openid_discovery_get).options(oauth2_preflight_options),
+            get(oauth2_openid_discovery_get),
         )
         .route(
             "/oauth2/openid/{client_id}/.well-known/webfinger",
-            get(oauth2_openid_webfinger_get).options(oauth2_preflight_options),
+            get(oauth2_openid_webfinger_get),
         )
         // // ⚠️  ⚠️   WARNING  ⚠️  ⚠️
         // // IF YOU CHANGE THESE VALUES YOU MUST UPDATE OIDC DISCOVERY URLS
         .route(
             "/oauth2/openid/{client_id}/userinfo",
-            get(oauth2_openid_userinfo_get)
-                .post(oauth2_openid_userinfo_get)
-                .options(oauth2_preflight_options),
+            get(oauth2_openid_userinfo_get).post(oauth2_openid_userinfo_get),
         )
         // // ⚠️  ⚠️   WARNING  ⚠️  ⚠️
         // // IF YOU CHANGE THESE VALUES YOU MUST UPDATE OIDC DISCOVERY URLS
         .route(
             "/oauth2/openid/{client_id}/public_key.jwk",
-            get(oauth2_openid_publickey_get).options(oauth2_preflight_options),
+            get(oauth2_openid_publickey_get),
         )
         // // ⚠️  ⚠️   WARNING  ⚠️  ⚠️
         // // IF YOU CHANGE THESE VALUES YOU MUST UPDATE OAUTH2 DISCOVERY URLS
         .route(
             "/oauth2/openid/{client_id}/.well-known/oauth-authorization-server",
-            get(oauth2_rfc8414_metadata_get).options(oauth2_preflight_options),
+            get(oauth2_rfc8414_metadata_get),
         )
         // OIDC RP-Initiated Logout 1.0 end_session_endpoint.
         // ⚠️  IF YOU CHANGE THIS VALUE YOU MUST UPDATE OIDC DISCOVERY URLS
         .route(
             "/oauth2/openid/{client_id}/end_session_endpoint",
-            get(oauth2_openid_end_session_get)
-                .post(oauth2_openid_end_session_get)
-                .options(oauth2_preflight_options),
+            get(oauth2_openid_end_session_get).post(oauth2_openid_end_session_get),
         )
         .with_state(state.clone());
 
@@ -1000,10 +941,7 @@ pub fn route_setup(state: ServerState) -> Router<ServerState> {
     // ⚠️  ⚠️   WARNING  ⚠️  ⚠️
     // IF YOU CHANGE THESE VALUES YOU MUST UPDATE OIDC DISCOVERY URLS
     router = router
-        .route(
-            OAUTH2_TOKEN_ENDPOINT,
-            post(oauth2_token_post).options(oauth2_preflight_options),
-        )
+        .route(OAUTH2_TOKEN_ENDPOINT, post(oauth2_token_post))
         // ⚠️  ⚠️   WARNING  ⚠️  ⚠️
         // IF YOU CHANGE THESE VALUES YOU MUST UPDATE OIDC DISCOVERY URLS
         .route(
@@ -1013,6 +951,7 @@ pub fn route_setup(state: ServerState) -> Router<ServerState> {
         .route(OAUTH2_TOKEN_REVOKE_ENDPOINT, post(oauth2_token_revoke_post))
         .merge(openid_router)
         .with_state(state)
+        .layer(cors_layer)
         .layer(from_fn(super::middleware::caching::dont_cache_me));
 
     router

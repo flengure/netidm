@@ -133,6 +133,9 @@ pub struct ServerState {
     /// When true, automatically approve the OAuth2 consent screen without user
     /// interaction (from `[oauth2] skip_approval_screen`).
     pub(crate) skip_approval_screen: bool,
+    /// Allowed CORS origins for OIDC endpoints (from `[web] allowed_origins`).
+    /// Empty or `["*"]` means permissive (allow all origins).
+    pub(crate) allowed_origins: Vec<String>,
 }
 
 impl ServerState {
@@ -398,6 +401,7 @@ pub async fn create_https_server(
         saml_pending_requests: Arc::new(Mutex::new(HashMap::new())),
         always_show_login_screen: config.oauth2.always_show_login_screen,
         skip_approval_screen: config.oauth2.skip_approval_screen,
+        allowed_origins: config.web.allowed_origins.clone(),
     };
 
     let static_routes = match config.role {
