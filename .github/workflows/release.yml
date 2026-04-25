@@ -107,6 +107,8 @@ jobs:
       contents: write
 
     steps:
+      - uses: actions/checkout@v6
+
       - name: Download all artifacts
         uses: actions/download-artifact@v8
         with:
@@ -129,7 +131,7 @@ jobs:
           name: "Netidm ${{ steps.version.outputs.version }}"
           draft: false
           prerelease: ${{ contains(steps.version.outputs.version, '-') }}
-          generate_release_notes: true
+          body_path: release-notes/${{ steps.version.outputs.version }}.md
           files: |
             artifacts/*.tar.gz
             artifacts/*.tar.gz.sha256

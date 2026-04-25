@@ -3,6 +3,7 @@ use opentelemetry_otlp::{
     tonic_types::metadata::MetadataMap, Protocol, WithExportConfig, WithTonicConfig,
 };
 use opentelemetry_sdk::{
+    metrics::{PeriodicReader, SdkMeterProvider},
     trace::{Sampler, SdkTracerProvider},
     Resource,
 };
@@ -23,7 +24,14 @@ const MAX_ATTRIBUTES_PER_SPAN: u32 = 128;
 pub fn start_logging_pipeline(
     otlp_endpoint: &Option<String>,
     log_filter: crate::LogLevel,
-) -> Result<(Option<SdkTracerProvider>, Box<dyn Subscriber + Send + Sync>), String> {
+) -> Result<
+    (
+        Option<SdkTracerProvider>,
+        Option<SdkMeterProvider>,
+        Box<dyn Subscriber + Send + Sync>,
+    ),
+    String,
+> {
     // Always force the event span to be generated at the correct level, regardless
     // of what the user set.
     let netidmd_core_directives = [
@@ -68,7 +76,6 @@ pub fn start_logging_pipeline(
         logging_filter.to_string()
     );
 
-    // TODO: work out how to do metrics things
     if let Some(endpoint) = otlp_endpoint {
         eprintln!("Starting OTLP logging pipeline endpoint={}", endpoint);
 
@@ -91,6 +98,9 @@ pub fn start_logging_pipeline(
                 }
             }
         }
+
+        let tonic_metadata_metrics = tonic_metadata.clone();
+
         let otlp_exporter = opentelemetry_otlp::SpanExporter::builder()
             .with_tonic()
             .with_endpoint(endpoint)
@@ -126,6 +136,26 @@ pub fn start_logging_pipeline(
         }
         let resource = resource.build();
 
+        let metric_exporter = opentelemetry_otlp::MetricExporter::builder()
+            .with_tonic()
+            .with_endpoint(endpoint)
+            .with_metadata(tonic_metadata_metrics)
+            .with_protocol(Protocol::HttpBinary)
+            .with_timeout(Duration::from_secs(5))
+            .build()
+            .map_err(|err| err.to_string())?;
+
+        let reader = PeriodicReader::builder(metric_exporter)
+            .with_interval(Duration::from_secs(30))
+            .build();
+
+        let meter_provider = SdkMeterProvider::builder()
+            .with_reader(reader)
+            .with_resource(resource.clone())
+            .build();
+
+        global::set_meter_provider(meter_provider.clone());
+
         let provider = opentelemetry_sdk::trace::TracerProviderBuilder::default()
             .with_batch_exporter(otlp_exporter)
             // we want *everything!*
@@ -151,10 +181,14 @@ pub fn start_logging_pipeline(
                     .with_filter(logging_filter),
             );
 
-        Ok((Some(provider_handle), Box::new(registry)))
+        Ok((
+            Some(provider_handle),
+            Some(meter_provider),
+            Box::new(registry),
+        ))
     } else {
         let forest_layer = tracing_forest::ForestLayer::default().with_filter(logging_filter);
-        Ok((None, Box::new(Registry::default().with(forest_layer))))
+        Ok((None, None, Box::new(Registry::default().with(forest_layer))))
     }
 }
 
@@ -169,6 +203,21 @@ impl Drop for TracingPipelineGuard {
                 eprintln!("Error shutting down logging pipeline: {}", err);
             } else {
                 eprintln!("Logging pipeline completed shutdown");
+            }
+        }
+    }
+}
+
+/// Cleanly shuts down the OTLP metrics provider on drop so in-flight data is flushed.
+pub struct MetricsPipelineGuard(pub Option<SdkMeterProvider>);
+
+impl Drop for MetricsPipelineGuard {
+    fn drop(&mut self) {
+        if let Some(provider) = self.0.take() {
+            if let Err(err) = provider.shutdown() {
+                eprintln!("Error shutting down metrics pipeline: {}", err);
+            } else {
+                eprintln!("Metrics pipeline completed shutdown");
             }
         }
     }

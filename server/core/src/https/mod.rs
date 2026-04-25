@@ -57,6 +57,7 @@ mod extractors;
 mod generic;
 mod javascript;
 mod manifest;
+pub(crate) mod metrics_handler;
 pub(crate) mod middleware;
 mod oauth2;
 pub(crate) mod trace;
@@ -136,6 +137,8 @@ pub struct ServerState {
     /// Allowed CORS origins for OIDC endpoints (from `[web] allowed_origins`).
     /// Empty or `["*"]` means permissive (allow all origins).
     pub(crate) allowed_origins: Vec<String>,
+    /// Prometheus metrics registry — shared with handlers and middleware.
+    pub(crate) metrics: std::sync::Arc<metrics_handler::NetidmMetrics>,
 }
 
 impl ServerState {
@@ -402,6 +405,7 @@ pub async fn create_https_server(
         always_show_login_screen: config.oauth2.always_show_login_screen,
         skip_approval_screen: config.oauth2.skip_approval_screen,
         allowed_origins: config.web.allowed_origins.clone(),
+        metrics: std::sync::Arc::clone(metrics_handler::global_metrics()),
     };
 
     let static_routes = match config.role {
@@ -497,8 +501,14 @@ pub async fn create_https_server(
 
     let app = app
         .route("/status", get(generic::status))
+        .route("/metrics", get(metrics_handler::metrics_handler))
         // 404 handler
         .fallback(handler_404)
+        // HTTP request metrics — runs after path routing so MatchedPath is available.
+        .route_layer(from_fn_with_state(
+            state.clone(),
+            middleware::metrics_middleware,
+        ))
         // This must be the LAST middleware.
         // This is because the last middleware here is the first to be entered and the last
         // to be exited, and this middleware sets up ids' and other bits for for logging

@@ -2,7 +2,7 @@ use crate::https::ServerState;
 use crate::https::{extractors::ClientConnInfo, LoggerType};
 use axum::{
     body::Body,
-    extract::{connect_info::ConnectInfo, State},
+    extract::{connect_info::ConnectInfo, MatchedPath, State},
     http::{header::HeaderName, StatusCode},
     http::{HeaderValue, Request},
     middleware::Next,
@@ -11,6 +11,7 @@ use axum::{
 };
 use netidm_proto::constants::{KOPID, KVERSION, X_FORWARDED_FOR};
 use std::net::IpAddr;
+use std::time::Instant;
 use uuid::Uuid;
 
 #[allow(clippy::declare_interior_mutable_const)]
@@ -191,4 +192,28 @@ async fn ip_address_middleware_inner(
         client_ip_addr,
         client_cert,
     })
+}
+
+/// Record HTTP request counts and durations in the Prometheus registry.
+///
+/// Must be added as a `route_layer` so that `MatchedPath` (the path template,
+/// e.g. `/oauth2/:rs_name/token`) is already set in the request extensions
+/// by the time this middleware runs.
+pub async fn metrics_middleware(
+    State(state): State<ServerState>,
+    req: Request<Body>,
+    next: Next,
+) -> Response {
+    let method = req.method().to_string();
+    let path = req
+        .extensions()
+        .get::<MatchedPath>()
+        .map(|m| m.as_str().to_string())
+        .unwrap_or_else(|| req.uri().path().to_string());
+    let start = Instant::now();
+    let response = next.run(req).await;
+    let elapsed = start.elapsed();
+    let status = response.status().as_u16().to_string();
+    state.metrics.record_http(&method, &path, &status, elapsed);
+    response
 }

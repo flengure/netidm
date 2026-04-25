@@ -3115,6 +3115,7 @@ fn auth_session_state_management(
                         .map(|_| ProtoAuthState::Continue(allowed))
                 }
                 AuthState::Success(token, issue) => {
+                    state.metrics.inc_auth("success");
                     debug!("🧩 -> AuthState::Success");
 
                     match issue {
@@ -3140,21 +3141,27 @@ fn auth_session_state_management(
                     }
                 }
                 AuthState::External(_) => {
+                    state.metrics.inc_auth("denied");
                     warn!("🧩 -> AuthState::Denied - we tried to use an external handler within an API");
                     Ok(ProtoAuthState::Denied("unable to use external authentication handler from this API.".into()))
                 }
                 AuthState::Denied(reason) => {
+                    state.metrics.inc_auth("denied");
                     debug!("🧩 -> AuthState::Denied");
                     Ok(ProtoAuthState::Denied(reason))
                 }
                 AuthState::ProvisioningRequired { .. } => {
+                    state.metrics.inc_auth("denied");
                     warn!("🧩 -> AuthState::ProvisioningRequired - not supported via API, use the web UI");
                     Ok(ProtoAuthState::Denied("JIT provisioning requires the web UI.".into()))
                 }
             }
             .map(|state| AuthResponse { sessionid, state })
         }
-        Err(e) => Err(e),
+        Err(e) => {
+            state.metrics.inc_auth("error");
+            Err(e)
+        }
     };
 
     // if the sessionid was injected into our cookie, set it in the header too.

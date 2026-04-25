@@ -24,7 +24,7 @@ use tower_http::cors::{AllowOrigin, CorsLayer};
 use netidm_proto::oauth2::DeviceAuthorizationResponse;
 use netidmd_lib::idm::oauth2::{
     AccessTokenIntrospectRequest, AccessTokenRequest, AuthorisationRequest, AuthoriseResponse,
-    ErrorResponse, Oauth2Error, TokenRevokeRequest,
+    ErrorResponse, GrantTypeReq, Oauth2Error, TokenRevokeRequest,
 };
 use netidmd_lib::prelude::f_eq;
 use netidmd_lib::prelude::*;
@@ -206,11 +206,13 @@ async fn oauth2_authorise(
             // When `skip_approval_screen` is set globally, bypass the consent UI
             // by immediately auto-permitting with the consent token.
             if let Some(auth_info) = client_auth_info_permit {
+                state.metrics.inc_oauth2_authorize("auto_permitted");
                 return oauth2_authorise_permit(state, consent_token, kopid, auth_info)
                     .await
                     .into_response();
             }
 
+            state.metrics.inc_oauth2_authorize("consent_pending");
             // Render a redirect to the consent page for the user to interact with
             // to authorise this session-id
             // This is json so later we can expand it with better detail.
@@ -229,6 +231,7 @@ async fn oauth2_authorise(
                 .unwrap()
         }
         Ok(AuthoriseResponse::Permitted(success)) => {
+            state.metrics.inc_oauth2_authorize("auto_permitted");
             // https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#section-4.11
             // We could consider changing this to 303?
             #[allow(clippy::unwrap_used)]
@@ -248,6 +251,7 @@ async fn oauth2_authorise(
         }
         Ok(AuthoriseResponse::AuthenticationRequired { .. })
         | Err(Oauth2Error::AuthenticationRequired) => {
+            state.metrics.inc_oauth2_authorize("auth_required");
             // This will trigger our ui to auth and retry.
             #[allow(clippy::unwrap_used)]
             Response::builder()
@@ -260,6 +264,7 @@ async fn oauth2_authorise(
                 .unwrap()
         }
         Err(Oauth2Error::AccessDenied) => {
+            state.metrics.inc_oauth2_authorize("denied");
             // If scopes are not available for this account.
             #[allow(clippy::expect_used)]
             Response::builder()
@@ -278,6 +283,7 @@ async fn oauth2_authorise(
         // site as the redirect URL, and then use that to trigger certain types of attacks. Instead
         // we do NOT redirect in an error condition, and just render the error ourselves.
         Err(e) => {
+            state.metrics.inc_oauth2_authorize("error");
             admin_error!(
                 "Unable to authorise - Error ID: {:?} error: {}",
                 kopid.eventid,
@@ -336,6 +342,7 @@ async fn oauth2_authorise_permit(
 
     match res {
         Ok(success) => {
+            state.metrics.inc_oauth2_consent("permitted");
             // https://datatracker.ietf.org/doc/html/draft-ietf-oauth-security-topics#section-4.11
             // We could consider changing this to 303?
             let redirect_uri = success.build_redirect_uri();
@@ -348,6 +355,7 @@ async fn oauth2_authorise_permit(
                 .expect("Failed to generate response")
         }
         Err(err) => {
+            state.metrics.inc_oauth2_consent("error");
             match err {
                 OperationError::NotAuthenticated => WebError::from(err).into_response(),
                 _ => {
@@ -408,6 +416,7 @@ async fn oauth2_authorise_reject(
 
     match res {
         Ok(reject) => {
+            state.metrics.inc_oauth2_consent("rejected");
             let redirect_uri = reject.build_redirect_uri();
 
             #[allow(clippy::unwrap_used)]
@@ -417,6 +426,7 @@ async fn oauth2_authorise_reject(
                 .unwrap()
         }
         Err(err) => {
+            state.metrics.inc_oauth2_consent("error");
             match err {
                 OperationError::NotAuthenticated => WebError::from(err).into_response(),
                 _ => {
@@ -445,6 +455,14 @@ pub async fn oauth2_token_post(
 ) -> impl IntoResponse {
     // This is called directly by the resource server, where we then issue
     // the token to the caller.
+    let grant_label = match &tok_req.grant_type {
+        GrantTypeReq::AuthorizationCode { .. } => "authorization_code",
+        GrantTypeReq::ClientCredentials { .. } => "client_credentials",
+        GrantTypeReq::RefreshToken { .. } => "refresh_token",
+        GrantTypeReq::Password { .. } => "password",
+        GrantTypeReq::DeviceCode { .. } => "device_code",
+        GrantTypeReq::TokenExchange { .. } => "token_exchange",
+    };
 
     // Do we change the method/path we take here based on the type of requested
     // grant? Should we cease the delayed/async session update here and just opt
@@ -454,8 +472,14 @@ pub async fn oauth2_token_post(
         .handle_oauth2_token_exchange(client_auth_info, tok_req, kopid.eventid)
         .await
     {
-        Ok(tok_res) => (StatusCode::OK, Json(tok_res)).into_response(),
-        Err(e) => WebError::OAuth2(e).into_response(),
+        Ok(tok_res) => {
+            state.metrics.inc_oauth2_token(grant_label, "success");
+            (StatusCode::OK, Json(tok_res)).into_response()
+        }
+        Err(e) => {
+            state.metrics.inc_oauth2_token(grant_label, "error");
+            WebError::OAuth2(e).into_response()
+        }
     }
 }
 

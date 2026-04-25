@@ -300,6 +300,7 @@ pub async fn view_oauth2_auth_get(
         .iter()
         .any(|rule| rule.matches(&forwarded_method, forwarded_path))
     {
+        state.metrics.inc_forward_auth("skip");
         return StatusCode::OK.into_response();
     }
 
@@ -311,6 +312,7 @@ pub async fn view_oauth2_auth_get(
         // we build the `next` URL from headers that are only meaningful when
         // the proxy is trusted.
         let next_url = reconstruct_original_url(&headers);
+        state.metrics.inc_forward_auth("deny");
         return unauthenticated_response(&headers, next_url, &state.origin);
     }
 
@@ -328,6 +330,7 @@ pub async fn view_oauth2_auth_get(
     {
         Err(_) => {
             let next_url = reconstruct_original_url(&headers);
+            state.metrics.inc_forward_auth("deny");
             unauthenticated_response(&headers, next_url, &state.origin)
         }
         Ok(whoami) => {
@@ -370,6 +373,7 @@ pub async fn view_oauth2_auth_get(
                     })
                     .unwrap_or(false);
                 if !domain_ok {
+                    state.metrics.inc_forward_auth("deny");
                     return unauthenticated_response(&headers, None, &state.origin);
                 }
             }
@@ -383,6 +387,7 @@ pub async fn view_oauth2_auth_get(
                         .any(|allowed| allowed == g)
                 });
                 if !has_group {
+                    state.metrics.inc_forward_auth("deny");
                     return unauthenticated_response(&headers, None, &state.origin);
                 }
             }
@@ -392,6 +397,8 @@ pub async fn view_oauth2_auth_get(
             } else {
                 Some(groups.join(","))
             };
+
+            state.metrics.inc_forward_auth("allow");
 
             // Build 202 response with X-Auth-Request-* and X-Forwarded-* headers.
             let mut response_headers = vec![
