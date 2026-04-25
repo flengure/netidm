@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 use serde_with::base64::{Base64, UrlSafe};
 use serde_with::formats::SpaceSeparator;
 use serde_with::{
-    formats, rust::deserialize_ignore_any, serde_as, skip_serializing_none, StringWithSeparator,
+    formats, rust::deserialize_ignore_any, serde_as, skip_serializing_none, OneOrMany,
+    StringWithSeparator,
 };
 use url::Url;
 use uuid::Uuid;
@@ -19,6 +20,9 @@ pub const OAUTH2_DEVICE_CODE_EXPIRY_SECONDS: u64 = 300;
 pub const OAUTH2_DEVICE_CODE_INTERVAL_SECONDS: u64 = 5;
 /// Token type URI for OAuth2 access tokens as per RFC8693.
 pub const OAUTH2_TOKEN_TYPE_ACCESS_TOKEN: &str = "urn:ietf:params:oauth:token-type:access_token";
+/// Scope prefix for the cross-client audience extension (dex `trustedPeers` parity).
+/// A scope of `audience:server:client_id:PEER_ID` requests a token whose `aud` includes `PEER_ID`.
+pub const OAUTH2_SCOPE_AUDIENCE_PREFIX: &str = "audience:server:client_id:";
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Clone, Copy)]
 pub enum CodeChallengeMethod {
@@ -204,6 +208,7 @@ impl From<GrantTypeReq> for AccessTokenRequest {
     }
 }
 
+#[serde_as]
 #[derive(Serialize, Debug, Clone, Deserialize)]
 #[skip_serializing_none]
 pub struct OAuth2RFC9068Token<V>
@@ -214,8 +219,10 @@ where
     pub iss: String,
     /// Unique id of the subject
     pub sub: Uuid,
-    /// client_id of the oauth2 rp
-    pub aud: String,
+    /// Audience: one RS name (typical) or multiple when cross-client scopes are used.
+    /// Serialises as a bare string for single-audience tokens (RFC 7519 §4.1.3).
+    #[serde_as(as = "OneOrMany<_, formats::PreferOne>")]
+    pub aud: Vec<String>,
     /// Expiry in UTC epoch seconds
     pub exp: i64,
     /// Not valid before.

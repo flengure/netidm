@@ -32,7 +32,8 @@ pub use netidm_proto::oauth2::{
     GrantType, GrantTypeReq, IdTokenSignAlg, OAuth2RFC9068Token, OAuth2RFC9068TokenExtensions,
     Oauth2Rfc8414MetadataResponse, OidcDiscoveryResponse, OidcWebfingerRel, OidcWebfingerResponse,
     PkceAlg, PkceRequest, ResponseMode, ResponseType, SubjectType, TokenEndpointAuthMethod,
-    TokenRevokeRequest, OAUTH2_DEVICE_CODE_EXPIRY_SECONDS, OAUTH2_TOKEN_TYPE_ACCESS_TOKEN,
+    TokenRevokeRequest, OAUTH2_DEVICE_CODE_EXPIRY_SECONDS, OAUTH2_SCOPE_AUDIENCE_PREFIX,
+    OAUTH2_TOKEN_TYPE_ACCESS_TOKEN,
 };
 use netidm_proto::oauth2::{IssuedTokenType, Prompt};
 use serde::{Deserialize, Serialize};
@@ -516,6 +517,9 @@ pub struct Oauth2RS {
     has_custom_image: bool,
 
     device_authorization_endpoint: Option<Url>,
+    /// Client IDs that may request tokens with this RS in the audience.
+    /// Mirrors dex's `trustedPeers` — enforced for `audience:server:client_id:*` scopes.
+    trusted_peers: BTreeSet<String>,
 }
 
 impl Oauth2RS {
@@ -940,6 +944,12 @@ impl Oauth2ResourceServersWriteTransaction<'_> {
                     None
                 };
 
+                let trusted_peers: BTreeSet<String> = ent
+                    .get_ava_set(Attribute::Oauth2RsTrustedPeers)
+                    .and_then(|vs| vs.as_utf8_set())
+                    .cloned()
+                    .unwrap_or_default();
+
                 let client_id = name.clone();
                 let rscfg = Oauth2RS {
                     name,
@@ -972,6 +982,7 @@ impl Oauth2ResourceServersWriteTransaction<'_> {
                     type_,
                     has_custom_image,
                     device_authorization_endpoint,
+                    trusted_peers,
                 };
 
                 Ok((client_id, rscfg))
@@ -2266,6 +2277,22 @@ impl IdmServerProxyWriteTransaction<'_> {
         let refresh_expiry = iat + refresh_lifetime.as_secs() as i64;
         let odt_refresh_expiry = odt_ct + refresh_lifetime;
 
+        // Extract cross-client audience scopes and build the `aud` claim.
+        // `audience:server:client_id:PEER` scopes are removed from the token scope list
+        // (they are meta-scopes, not real permissions) and their peer IDs are added to `aud`.
+        let mut cross_client_peers: Vec<String> = Vec::new();
+        let scopes: BTreeSet<String> = scopes
+            .into_iter()
+            .filter(|s| {
+                if let Some(peer) = s.strip_prefix(OAUTH2_SCOPE_AUDIENCE_PREFIX) {
+                    cross_client_peers.push(peer.to_string());
+                    false
+                } else {
+                    true
+                }
+            })
+            .collect();
+
         let scope = scopes.clone();
 
         let iss = o2rs.iss.clone();
@@ -2273,7 +2300,8 @@ impl IdmServerProxyWriteTransaction<'_> {
         // Just reflect the access token expiry.
         let exp = expiry.unix_timestamp();
 
-        let aud = o2rs.name.clone();
+        let mut aud = vec![o2rs.name.clone()];
+        aud.extend(cross_client_peers);
 
         let client_id = o2rs.name.clone();
 
@@ -2313,7 +2341,7 @@ impl IdmServerProxyWriteTransaction<'_> {
             let oidc = OidcToken {
                 iss: iss.clone(),
                 sub: OidcSubject::U(account_uuid),
-                aud: aud.clone(),
+                aud: o2rs.name.clone(),
                 iat,
                 nbf: Some(iat),
                 exp,
@@ -3016,6 +3044,26 @@ impl IdmServerProxyReadTransaction<'_> {
                 "Invalid OAuth2 request - refusing to allow user that authenticated with anonymous"
             );
             return Err(Oauth2Error::AccessDenied);
+        }
+
+        // Validate cross-client audience scopes before regular scope processing.
+        // For each `audience:server:client_id:PEER_ID` scope, the PEER's trusted_peers
+        // list must contain this client's name (dex `trustedPeers` parity).
+        for scope in &auth_req.scope {
+            if let Some(peer_id) = scope.strip_prefix(OAUTH2_SCOPE_AUDIENCE_PREFIX) {
+                let peer_rs = self.oauth2rs.inner.rs_set_get(peer_id).ok_or_else(|| {
+                    warn!(%peer_id, "cross-client peer RS not found");
+                    Oauth2Error::InvalidScope
+                })?;
+                if !peer_rs.trusted_peers.contains(&o2rs.name) {
+                    warn!(
+                        client_id = %o2rs.name,
+                        %peer_id,
+                        "client is not in peer's trusted_peers list"
+                    );
+                    return Err(Oauth2Error::InvalidScope);
+                }
+            }
         }
 
         // scopes - you need to have every requested scope or this auth_req is denied.
@@ -3953,12 +4001,25 @@ fn process_requested_scopes_for_identity(
 ) -> Result<(BTreeSet<String>, BTreeSet<String>), Oauth2Error> {
     let req_scopes = req_scopes.cloned().unwrap_or_default();
 
-    if req_scopes.is_empty() {
+    // Separate cross-client audience scopes from regular OAuth2 scopes.
+    // Cross-client scopes (`audience:server:client_id:PEER`) are validated for trust
+    // at the caller and propagated into granted_scopes so they reach token generation.
+    let mut cross_client_scopes: BTreeSet<String> = BTreeSet::new();
+    let mut regular_scopes: BTreeSet<String> = BTreeSet::new();
+    for s in req_scopes.iter() {
+        if s.starts_with(OAUTH2_SCOPE_AUDIENCE_PREFIX) {
+            cross_client_scopes.insert(s.clone());
+        } else {
+            regular_scopes.insert(s.clone());
+        }
+    }
+
+    if regular_scopes.is_empty() {
         admin_error!("Invalid OAuth2 request - must contain at least one requested scope");
         return Err(Oauth2Error::InvalidRequest);
     }
 
-    validate_scopes(&req_scopes)?;
+    validate_scopes(&regular_scopes)?;
 
     let available_scopes: BTreeSet<String> = o2rs
         .scope_maps
@@ -3968,10 +4029,10 @@ fn process_requested_scopes_for_identity(
         .cloned()
         .collect();
 
-    if !req_scopes.is_subset(&available_scopes) {
+    if !regular_scopes.is_subset(&available_scopes) {
         admin_warn!(
             %ident,
-            requested_scopes = ?req_scopes,
+            requested_scopes = ?regular_scopes,
             available_scopes = ?available_scopes,
             "Identity does not have access to the requested scopes"
         );
@@ -3984,10 +4045,11 @@ fn process_requested_scopes_for_identity(
         .filter_map(|(u, m)| ident.is_memberof(*u).then_some(m.iter()))
         .flatten()
         .cloned()
-        .chain(req_scopes.iter().cloned())
+        .chain(regular_scopes.iter().cloned())
+        .chain(cross_client_scopes)
         .collect();
 
-    Ok((req_scopes, granted_scopes))
+    Ok((regular_scopes, granted_scopes))
 }
 
 fn validate_scopes(req_scopes: &BTreeSet<String>) -> Result<(), Oauth2Error> {
