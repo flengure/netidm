@@ -15,6 +15,7 @@ mod integration;
 mod ip_addr_extractors;
 mod ldap_basic;
 mod logout_test;
+mod oauth2_grants_test;
 mod oauth2_test;
 mod person;
 mod proto_v1_test;
