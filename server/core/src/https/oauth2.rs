@@ -21,7 +21,6 @@ use netidm_proto::constants::APPLICATION_JSON;
 use netidm_proto::oauth2::AuthorisationResponse;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 
-#[cfg(feature = "dev-oauth2-device-flow")]
 use netidm_proto::oauth2::DeviceAuthorizationResponse;
 use netidmd_lib::idm::oauth2::{
     AccessTokenIntrospectRequest, AccessTokenRequest, AuthorisationRequest, AuthoriseResponse,
@@ -34,9 +33,10 @@ use serde::{Deserialize, Serialize};
 use serde_with::formats::CommaSeparator;
 use serde_with::{serde_as, StringWithSeparator};
 
-#[cfg(feature = "dev-oauth2-device-flow")]
-use uri::OAUTH2_AUTHORISE_DEVICE;
-use uri::{OAUTH2_TOKEN_ENDPOINT, OAUTH2_TOKEN_INTROSPECT_ENDPOINT, OAUTH2_TOKEN_REVOKE_ENDPOINT};
+use uri::{
+    OAUTH2_AUTHORISE_DEVICE, OAUTH2_TOKEN_ENDPOINT, OAUTH2_TOKEN_INTROSPECT_ENDPOINT,
+    OAUTH2_TOKEN_REVOKE_ENDPOINT,
+};
 
 // == Oauth2 Configuration Endpoints ==
 
@@ -682,7 +682,6 @@ pub(crate) struct DeviceFlowForm {
 }
 
 /// Device flow! [RFC8628](https://datatracker.ietf.org/doc/html/rfc8628)
-#[cfg(feature = "dev-oauth2-device-flow")]
 #[instrument(level = "info", skip(state, kopid, client_auth_info))]
 pub(crate) async fn oauth2_authorise_device_post(
     State(state): State<ServerState>,
@@ -934,10 +933,7 @@ pub fn route_setup(state: ServerState) -> Router<ServerState> {
         );
     // ⚠️  ⚠️   WARNING  ⚠️  ⚠️
     // IF YOU CHANGE THESE VALUES YOU MUST UPDATE OIDC DISCOVERY URLS
-    #[cfg(feature = "dev-oauth2-device-flow")]
-    {
-        router = router.route(OAUTH2_AUTHORISE_DEVICE, post(oauth2_authorise_device_post))
-    }
+    router = router.route(OAUTH2_AUTHORISE_DEVICE, post(oauth2_authorise_device_post));
     // ⚠️  ⚠️   WARNING  ⚠️  ⚠️
     // IF YOU CHANGE THESE VALUES YOU MUST UPDATE OIDC DISCOVERY URLS
     router = router

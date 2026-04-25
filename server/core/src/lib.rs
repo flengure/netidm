@@ -56,7 +56,7 @@ use netidm_proto::scim_v1::client::ScimAssertGeneric;
 use netidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
 use netidmd_lib::idm::connector::traits::ConnectorRegistry;
 use netidmd_lib::idm::ldap::LdapServer;
-use netidmd_lib::idm::server::IdmServer;
+use netidmd_lib::idm::server::{IdmServer, TokenPolicy};
 use netidmd_lib::prelude::*;
 use netidmd_lib::schema::Schema;
 use netidmd_lib::status::StatusActor;
@@ -105,6 +105,37 @@ fn setup_backend_vacuum(
     Backend::new(cfg, idxmeta, vacuum)
 }
 
+/// Parse a duration string with a single unit suffix (e.g. "3960h", "30d", "900s").
+/// Supports: s (seconds), m (minutes), h (hours), d (days).
+/// Returns `None` on empty input or parse failure.
+fn parse_expiry_duration(s: &str) -> Option<std::time::Duration> {
+    let s = s.trim();
+    if s.is_empty() {
+        return None;
+    }
+    let (num_str, unit) = s.split_at(s.len() - 1);
+    let n: u64 = num_str.parse().ok()?;
+    let secs = match unit {
+        "s" => n,
+        "m" => n * 60,
+        "h" => n * 3600,
+        "d" => n * 86400,
+        _ => return None,
+    };
+    Some(std::time::Duration::from_secs(secs))
+}
+
+fn build_token_policy(expiry: &crate::config::ExpiryConfig) -> TokenPolicy {
+    let mut policy = TokenPolicy::default();
+    if let Some(d) = parse_expiry_duration(&expiry.refresh_token_absolute_lifetime) {
+        policy.refresh_token_lifetime = d;
+    }
+    if let Some(d) = parse_expiry_duration(&expiry.auth_request_ttl) {
+        policy.auth_request_lifetime = d;
+    }
+    policy
+}
+
 // TODO #54: We could move most of the be/schema/qs setup and startup
 // outside of this call, then pass in "what we need" in a cloneable
 // form, this way we could have separate Idm vs Qs threads, and dedicated
@@ -132,11 +163,13 @@ async fn setup_qs_idms(
 
     // We generate a SINGLE idms only!
     let is_integration_test = config.integration_test_config.is_some();
+    let token_policy = build_token_policy(&config.expiry);
     let (idms, idms_delayed, idms_audit) = IdmServer::new(
         query_server.clone(),
         &config.origin,
         is_integration_test,
         curtime,
+        token_policy,
     )
     .await?;
 

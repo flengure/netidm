@@ -247,7 +247,7 @@ pub struct OAuth2RFC9068TokenExtensions {
     pub parent_session_id: Option<Uuid>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub enum IssuedTokenType {
     AccessToken,
     RefreshToken,
@@ -259,7 +259,7 @@ pub enum IssuedTokenType {
 /// The response for an access token
 #[serde_as]
 #[skip_serializing_none]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AccessTokenResponse {
     pub access_token: String,
     pub token_type: AccessTokenType,
@@ -277,7 +277,7 @@ pub struct AccessTokenResponse {
 }
 
 /// Access token types, per [IANA Registry - OAuth Access Token Types](https://www.iana.org/assignments/oauth-parameters/oauth-parameters.xhtml#token-types)
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 #[serde(try_from = "&str")]
 pub enum AccessTokenType {
     Bearer,

@@ -34,7 +34,6 @@ use netidmd_lib::{
 
 use netidmd_lib::prelude::*;
 
-#[cfg(feature = "dev-oauth2-device-flow")]
 use std::collections::BTreeSet;
 
 use super::QueryServerWriteV1;
@@ -1896,7 +1895,6 @@ impl QueryServerWriteV1 {
         Ok(outcome)
     }
 
-    #[cfg(feature = "dev-oauth2-device-flow")]
     pub async fn handle_oauth2_device_flow_start(
         &self,
         client_auth_info: ClientAuthInfo,
@@ -1911,7 +1909,35 @@ impl QueryServerWriteV1 {
             .await
             .map_err(Oauth2Error::ServerError)?;
         idms_prox_write
-            .handle_oauth2_start_device_flow(client_auth_info, client_id, scope, eventid)
+            .handle_oauth2_start_device_flow(client_auth_info, client_id, scope, ct, eventid)
+            .and_then(|res| {
+                idms_prox_write.commit().map_err(Oauth2Error::ServerError)?;
+                Ok(res)
+            })
+    }
+
+    #[instrument(
+        level = "info",
+        skip_all,
+        fields(uuid = ?eventid)
+    )]
+    pub async fn handle_oauth2_device_code_authorize(
+        &self,
+        client_auth_info: ClientAuthInfo,
+        user_code: &str,
+        eventid: Uuid,
+    ) -> Result<(), Oauth2Error> {
+        let ct = duration_from_epoch_now();
+        let mut idms_prox_write = self
+            .idms
+            .proxy_write(ct)
+            .await
+            .map_err(Oauth2Error::ServerError)?;
+        let ident = idms_prox_write
+            .validate_client_auth_info_to_ident(client_auth_info, ct)
+            .map_err(Oauth2Error::ServerError)?;
+        idms_prox_write
+            .check_oauth2_device_code_authorize(&ident, user_code, ct)
             .and_then(|res| {
                 idms_prox_write.commit().map_err(Oauth2Error::ServerError)?;
                 Ok(res)

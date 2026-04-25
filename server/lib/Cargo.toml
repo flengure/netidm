@@ -21,7 +21,6 @@ doctest = false
 default = []
 dhat-heap = ["dep:dhat"]
 dhat-ad-hoc = ["dep:dhat"]
-dev-oauth2-device-flow = [] # still-in-development oauth2 device flow support
 test = []                   # Enable this for cross-package test features.
 # Enables the in-process `TestMockConnector` on `pub` surface so
 # integration tests in `netidmd_testkit` can register a mock

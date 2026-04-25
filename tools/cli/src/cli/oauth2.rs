@@ -9,7 +9,6 @@ use std::process::exit;
 impl Oauth2Opt {
     pub async fn exec(&self, opt: NetidmClientParser) {
         match self {
-            #[cfg(feature = "dev-oauth2-device-flow")]
             Oauth2Opt::DeviceFlowDisable(nopt) => {
                 // TODO: finish the CLI bits for DeviceFlowDisable
                 let client = opt.to_client(OpType::Write).await;
@@ -21,7 +20,6 @@ impl Oauth2Opt {
                     Err(e) => handle_client_error(e, opt.output_mode),
                 }
             }
-            #[cfg(feature = "dev-oauth2-device-flow")]
             Oauth2Opt::DeviceFlowEnable(nopt) => {
                 // TODO: finish the CLI bits for DeviceFlowEnable
                 let client = opt.to_client(OpType::Write).await;

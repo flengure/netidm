@@ -14,10 +14,8 @@ repository = { workspace = true }
 [features]
 default = [
     "unix",
-    # "dev-oauth2-device-flow"
 ]
 unix = []
-dev-oauth2-device-flow = []
 
 [lib]
 name = "netidm_cli"

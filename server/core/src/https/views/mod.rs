@@ -125,7 +125,6 @@ pub fn view_router(state: ServerState) -> Router<ServerState> {
         .route("/unlock", get(login::view_reauth_to_referer_get))
         .route("/logout", get(login::view_logout_get));
 
-    #[cfg(feature = "dev-oauth2-device-flow")]
     let unguarded_router = unguarded_router.route(
         netidmd_lib::prelude::uri::OAUTH2_DEVICE_LOGIN,
         get(oauth2::view_device_get).post(oauth2::view_device_post),

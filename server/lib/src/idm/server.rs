@@ -21,7 +21,7 @@ use crate::idm::event::{
 };
 use crate::idm::group::{Group, Unix};
 use crate::idm::oauth2::{
-    Oauth2ResourceServers, Oauth2ResourceServersReadTransaction,
+    DeviceCodeSession, Oauth2ResourceServers, Oauth2ResourceServersReadTransaction,
     Oauth2ResourceServersWriteTransaction,
 };
 use crate::idm::radius::RadiusAccount;
@@ -65,6 +65,29 @@ pub(crate) type ProviderInitiatedSessionMutex = Arc<Mutex<ProviderInitiatedSessi
 pub(crate) type CredSoftLockMutex = Arc<Mutex<CredSoftLock>>;
 
 pub type DomainInfoRead = CowCellReadTxn<DomainInfo>;
+
+/// Token lifetime policy derived from `[expiry]` config section.
+/// All fields default to the same hardcoded values that were used before
+/// config wiring was added, so omitting the section is a no-op.
+#[derive(Debug, Clone)]
+pub struct TokenPolicy {
+    /// Lifetime of a refresh token from the moment it is issued.
+    pub refresh_token_lifetime: Duration,
+    /// Lifetime of an auth-code exchange token (the short-lived JWE handed
+    /// from the consent page to the token endpoint).
+    pub auth_request_lifetime: Duration,
+}
+
+impl Default for TokenPolicy {
+    fn default() -> Self {
+        TokenPolicy {
+            refresh_token_lifetime: Duration::from_secs(
+                crate::constants::OAUTH_REFRESH_TOKEN_EXPIRY,
+            ),
+            auth_request_lifetime: Duration::from_secs(60),
+        }
+    }
+}
 
 /// Lightweight descriptor for an upstream OAuth2 SSO provider, used to render login buttons.
 #[derive(Clone)]
@@ -120,6 +143,14 @@ pub struct IdmServer {
     /// carries `upstream_connector = Some(_)`; a missing lookup
     /// yields `Oauth2Error::InvalidGrant` (FR-003).
     connector_registry: std::sync::Arc<crate::idm::connector::traits::ConnectorRegistry>,
+
+    /// Token lifetime policy derived from `[expiry]` configuration.
+    token_policy: TokenPolicy,
+
+    /// In-memory device code sessions keyed by raw device_code bytes (RFC 8628).
+    device_code_sessions: BptreeMap<[u8; 16], DeviceCodeSession>,
+    /// Reverse map: user_code (u32) → device_code bytes, for user-side lookup.
+    device_user_code_map: BptreeMap<u32, [u8; 16]>,
 }
 
 /// Contains methods that require writes, but in the context of writing to the idm in memory structures (maybe the query server too). This is things like authentication.
@@ -156,6 +187,7 @@ pub struct IdmServerProxyReadTransaction<'a> {
     pub(crate) oauth2rs: Oauth2ResourceServersReadTransaction,
     pub(crate) connector_providers: HashMapReadTxn<'a, Uuid, ConnectorProvider>,
     pub(crate) saml_client_providers: HashMapReadTxn<'a, Uuid, SamlClientProvider>,
+    pub(crate) token_policy: &'a TokenPolicy,
 }
 
 pub struct IdmServerProxyWriteTransaction<'a> {
@@ -185,6 +217,10 @@ pub struct IdmServerProxyWriteTransaction<'a> {
     /// (PR-REFRESH-CLAIMS, DL27).
     pub(crate) connector_registry:
         &'a std::sync::Arc<crate::idm::connector::traits::ConnectorRegistry>,
+
+    pub(crate) token_policy: &'a TokenPolicy,
+    pub(crate) device_code_sessions: BptreeMapWriteTxn<'a, [u8; 16], DeviceCodeSession>,
+    pub(crate) device_user_code_map: BptreeMapWriteTxn<'a, u32, [u8; 16]>,
 }
 
 pub struct IdmServerDelayed {
@@ -213,6 +249,7 @@ impl IdmServer {
         origin: &Url,
         is_integration_test: bool,
         current_time: Duration,
+        token_policy: TokenPolicy,
     ) -> Result<(IdmServer, IdmServerDelayed, IdmServerAudit), OperationError> {
         let crypto_policy = if cfg!(test) || is_integration_test {
             CryptoPolicy::danger_test_minimum()
@@ -296,6 +333,9 @@ impl IdmServer {
             connector_registry: std::sync::Arc::new(
                 crate::idm::connector::traits::ConnectorRegistry::new_empty(),
             ),
+            token_policy,
+            device_code_sessions: BptreeMap::new(),
+            device_user_code_map: BptreeMap::new(),
         };
         let idm_server_delayed = IdmServerDelayed { async_rx };
         let idm_server_audit = IdmServerAudit { audit_rx };
@@ -353,6 +393,7 @@ impl IdmServer {
             oauth2rs: self.oauth2rs.read(),
             connector_providers: self.connector_providers.read(),
             saml_client_providers: self.saml_client_providers.read(),
+            token_policy: &self.token_policy,
             // async_tx: self.async_tx.clone(),
         })
     }
@@ -392,6 +433,9 @@ impl IdmServer {
             saml_client_providers: self.saml_client_providers.write(),
             logout_delivery_notify: &self.logout_delivery_notify,
             connector_registry: &self.connector_registry,
+            token_policy: &self.token_policy,
+            device_code_sessions: self.device_code_sessions.write(),
+            device_user_code_map: self.device_user_code_map.write(),
         })
     }
 
@@ -3360,6 +3404,8 @@ impl IdmServerProxyWriteTransaction<'_> {
         self.cred_update_sessions.commit();
         self.connector_providers.commit();
         self.saml_client_providers.commit();
+        self.device_code_sessions.commit();
+        self.device_user_code_map.commit();
 
         trace!("cred_update_session.commit");
         self.qs_write.commit()

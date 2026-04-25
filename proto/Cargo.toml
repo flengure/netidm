@@ -18,7 +18,6 @@ doctest = true
 [features]
 default = []
 test = []
-dev-oauth2-device-flow = []
 
 [dependencies]
 base32 = { workspace = true }

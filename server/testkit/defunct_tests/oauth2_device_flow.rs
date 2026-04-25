@@ -32,7 +32,6 @@ use reqwest::Client;
 use tracing::{debug, error, info};
 use url::Url;
 
-#[cfg(feature = "dev-oauth2-device-flow")]
 async fn http_client(
     request: HttpRequest,
 ) -> Result<HttpResponse, oauth2_ext::reqwest::Error<reqwest::Error>> {
@@ -101,7 +100,6 @@ async fn http_client(
     })
 }
 
-#[cfg(feature = "dev-oauth2-device-flow")]
 #[netidmd_testkit::test]
 async fn oauth2_device_flow(rsclient: NetidmClient) {
     let res = rsclient

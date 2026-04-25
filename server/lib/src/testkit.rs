@@ -103,6 +103,7 @@ pub async fn setup_idm_test(
         &Url::from_str("https://idm.example.com").expect("Failed to parse URL"),
         true,
         duration_from_epoch_now(),
+        crate::idm::server::TokenPolicy::default(),
     )
     .await
     .expect("Failed to setup idms")

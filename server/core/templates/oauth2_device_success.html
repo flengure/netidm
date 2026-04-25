@@ -1,0 +1,16 @@
+(% extends "base.html" %)
+
+(% block body %)
+<main id="main" class="flex-shrink-0 form-signin">
+    <center>
+        (% if domain_custom_image %)
+        <img src="/ui/images/domain" alt="Netidm" class="netidm_logo" />
+        (% else %)
+        <img src="/pkg/img/logo-square.svg" alt="Netidm" class="netidm_logo" />
+        (% endif %)
+        <br />
+        <h2>Device Authorized</h2>
+        <p>Your device has been successfully authorized. You may now return to your device.</p>
+    </center>
+</main>
+(% endblock %)

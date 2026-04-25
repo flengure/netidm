@@ -13,8 +13,6 @@ use std::collections::BTreeSet;
 use askama::Template;
 use askama_web::WebTemplate;
 
-#[cfg(feature = "dev-oauth2-device-flow")]
-use axum::http::StatusCode;
 use axum::{
     extract::{Query, State},
     http::header::ACCESS_CONTROL_ALLOW_ORIGIN,
@@ -311,7 +309,6 @@ pub async fn view_consent_post(
 }
 
 #[derive(Template, Debug, Clone, WebTemplate)]
-#[cfg(feature = "dev-oauth2-device-flow")]
 #[template(path = "oauth2_device_login.html")]
 pub struct Oauth2DeviceLoginView {
     domain_custom_image: bool,
@@ -319,47 +316,65 @@ pub struct Oauth2DeviceLoginView {
     user_code: String,
 }
 
+#[derive(Template, WebTemplate)]
+#[template(path = "oauth2_device_success.html")]
+pub struct Oauth2DeviceSuccessView {
+    domain_custom_image: bool,
+    title: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
-#[cfg(feature = "dev-oauth2-device-flow")]
 pub(crate) struct QueryUserCode {
     pub user_code: Option<String>,
 }
 
 #[axum::debug_handler]
-#[cfg(feature = "dev-oauth2-device-flow")]
 pub async fn view_device_get(
     State(state): State<ServerState>,
     Extension(_kopid): Extension<KOpId>,
     VerifiedClientInformation(_client_auth_info): VerifiedClientInformation,
     Query(user_code): Query<QueryUserCode>,
-) -> Result<Oauth2DeviceLoginView, (StatusCode, String)> {
-    // TODO: if we have a valid auth session and the user code is valid, prompt the user to allow the session to start
-    Ok(Oauth2DeviceLoginView {
+) -> Oauth2DeviceLoginView {
+    Oauth2DeviceLoginView {
         domain_custom_image: state.qe_r_ref.domain_info_read().has_custom_image(),
         title: "Device Login".to_string(),
-        user_code: user_code.user_code.unwrap_or("".to_string()),
-    })
+        user_code: user_code.user_code.unwrap_or_default(),
+    }
 }
 
 #[derive(Deserialize)]
-#[cfg(feature = "dev-oauth2-device-flow")]
 pub struct Oauth2DeviceLoginForm {
     user_code: String,
-    confirm_login: bool,
 }
 
-#[cfg(feature = "dev-oauth2-device-flow")]
 #[axum::debug_handler]
 pub async fn view_device_post(
-    State(_state): State<ServerState>,
-    Extension(_kopid): Extension<KOpId>,
-    VerifiedClientInformation(_client_auth_info): VerifiedClientInformation,
+    State(state): State<ServerState>,
+    Extension(kopid): Extension<KOpId>,
+    VerifiedClientInformation(client_auth_info): VerifiedClientInformation,
     Form(form): Form<Oauth2DeviceLoginForm>,
-) -> Result<String, (StatusCode, &'static str)> {
-    debug!("User code: {}", form.user_code);
-    debug!("User confirmed: {}", form.confirm_login);
-
-    // TODO: when the user POST's this form we need to check the user code and see if it's valid
-    // then start a login flow which ends up authorizing the token at the end.
-    Err((StatusCode::NOT_IMPLEMENTED, "Not implemented yet"))
+) -> Response {
+    match state
+        .qe_w_ref
+        .handle_oauth2_device_code_authorize(client_auth_info, &form.user_code, kopid.eventid)
+        .await
+    {
+        Ok(()) => Oauth2DeviceSuccessView {
+            domain_custom_image: state.qe_r_ref.domain_info_read().has_custom_image(),
+            title: "Device Authorized".to_string(),
+        }
+        .into_response(),
+        Err(Oauth2Error::InvalidGrant) => Oauth2DeviceLoginView {
+            domain_custom_image: state.qe_r_ref.domain_info_read().has_custom_image(),
+            title: "Device Login".to_string(),
+            user_code: form.user_code,
+        }
+        .into_response(),
+        Err(_) => Oauth2DeviceLoginView {
+            domain_custom_image: state.qe_r_ref.domain_info_read().has_custom_image(),
+            title: "Device Login".to_string(),
+            user_code: String::new(),
+        }
+        .into_response(),
+    }
 }
