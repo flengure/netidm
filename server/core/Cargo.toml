@@ -95,7 +95,7 @@ webauthn-rs = { workspace = true, features = [
     "preview-features",
     "danger-credential-internals",
 ] }
-netidmd_wg = { version = "0.1.33-dev", path = "../wg" }
+netidmd_wg = { version = "0.1.33", path = "../wg" }
 
 [dev-dependencies]
 walkdir = { workspace = true }
