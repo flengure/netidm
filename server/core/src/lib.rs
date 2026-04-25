@@ -1173,95 +1173,15 @@ pub async fn create_server_core(
     let idms_arc = Arc::new(idms);
     let ldap_arc = Arc::new(ldap);
 
-    // Start the WireGuard manager and bring up configured tunnels.
+    // Create the WireGuard manager. Tunnels are brought up after migrations run
+    // so that peers seeded by migrations are present when bring_up is called.
     let wg_manager = {
         let backend_kind = netidmd_wg::backend::detect_backend();
         let backend: Arc<dyn netidmd_wg::backend::WgBackend> = match backend_kind {
             BackendKind::Kernel => Arc::new(KernelBackend),
             BackendKind::Boringtun => Arc::new(BoringtunBackend),
         };
-        let manager = Arc::new(WgManager::new(backend, backend_kind));
-        let mut idms_prox_read = match idms_arc.proxy_read().await {
-            Ok(r) => r,
-            Err(e) => {
-                error!(
-                    "Unable to acquire read transaction for WG startup -> {:?}",
-                    e
-                );
-                return Err(());
-            }
-        };
-        match idms_prox_read.wg_list_tunnels() {
-            Ok(tunnels) => {
-                let ct_now = duration_from_epoch_now();
-                drop(idms_prox_read);
-                for tunnel in tunnels {
-                    let tunnel_name = tunnel.name.clone();
-                    let tunnel_uuid = tunnel.uuid;
-
-                    // Derive public key and persist if absent.
-                    if tunnel.public_key.is_empty() {
-                        match WgManager::derive_public_key(&tunnel.private_key) {
-                            Ok(pubkey) => {
-                                if let Ok(mut w) = idms_arc.proxy_write(ct_now).await {
-                                    let ml = netidmd_lib::prelude::ModifyList::new_purge_and_set(
-                                        netidmd_lib::prelude::Attribute::WgPublicKey,
-                                        netidmd_lib::prelude::Value::new_utf8s(&pubkey),
-                                    );
-                                    if let Err(e) =
-                                        w.qs_write.internal_modify_uuid(tunnel_uuid, &ml)
-                                    {
-                                        error!(
-                                            "Failed to write public key for tunnel {} -> {:?}",
-                                            tunnel_name, e
-                                        );
-                                    } else {
-                                        let _ = w.commit();
-                                    }
-                                }
-                            }
-                            Err(e) => error!(
-                                "Failed to derive public key for tunnel {} -> {:?}",
-                                tunnel_name, e
-                            ),
-                        }
-                    }
-
-                    // Read peers fresh for this tunnel.
-                    let peers = match idms_arc.proxy_read().await {
-                        Ok(mut r) => match r.wg_list_peers_for_tunnel(tunnel_uuid) {
-                            Ok(p) => p,
-                            Err(e) => {
-                                error!(
-                                    "Failed to list peers for tunnel {} -> {:?}",
-                                    tunnel_name, e
-                                );
-                                continue;
-                            }
-                        },
-                        Err(e) => {
-                            error!(
-                                "Failed to acquire read txn for peers of tunnel {} -> {:?}",
-                                tunnel_name, e
-                            );
-                            continue;
-                        }
-                    };
-
-                    if let Err(e) = manager.bring_up(&tunnel, &peers).await {
-                        error!(
-                            "Failed to bring up WireGuard tunnel {} -> {:?}",
-                            tunnel_name, e
-                        );
-                    }
-                }
-            }
-            Err(e) => {
-                error!("Failed to list WireGuard tunnels at startup -> {:?}", e);
-                drop(idms_prox_read);
-            }
-        }
-        manager
+        Arc::new(WgManager::new(backend, backend_kind))
     };
 
     // Pass it to the actor for threading.
@@ -1467,6 +1387,90 @@ pub async fn create_server_core(
     if config.integration_test_config.is_none() {
         let eventid = Uuid::new_v4();
         migration_apply(eventid, server_write_ref, migration_path.as_path()).await;
+    }
+
+    // Bring up WireGuard tunnels now that migrations have run and all peer entries exist.
+    {
+        let mut idms_prox_read = match idms_arc.proxy_read().await {
+            Ok(r) => r,
+            Err(e) => {
+                error!(
+                    "Unable to acquire read transaction for WG bring-up -> {:?}",
+                    e
+                );
+                return Err(());
+            }
+        };
+        match idms_prox_read.wg_list_tunnels() {
+            Ok(tunnels) => {
+                let ct_now = duration_from_epoch_now();
+                drop(idms_prox_read);
+                for tunnel in tunnels {
+                    let tunnel_name = tunnel.name.clone();
+                    let tunnel_uuid = tunnel.uuid;
+
+                    // Derive public key and persist if absent.
+                    if tunnel.public_key.is_empty() {
+                        match WgManager::derive_public_key(&tunnel.private_key) {
+                            Ok(pubkey) => {
+                                if let Ok(mut w) = idms_arc.proxy_write(ct_now).await {
+                                    let ml = netidmd_lib::prelude::ModifyList::new_purge_and_set(
+                                        netidmd_lib::prelude::Attribute::WgPublicKey,
+                                        netidmd_lib::prelude::Value::new_utf8s(&pubkey),
+                                    );
+                                    if let Err(e) =
+                                        w.qs_write.internal_modify_uuid(tunnel_uuid, &ml)
+                                    {
+                                        error!(
+                                            "Failed to write public key for tunnel {} -> {:?}",
+                                            tunnel_name, e
+                                        );
+                                    } else {
+                                        let _ = w.commit();
+                                    }
+                                }
+                            }
+                            Err(e) => error!(
+                                "Failed to derive public key for tunnel {} -> {:?}",
+                                tunnel_name, e
+                            ),
+                        }
+                    }
+
+                    // Read peers fresh for this tunnel.
+                    let peers = match idms_arc.proxy_read().await {
+                        Ok(mut r) => match r.wg_list_peers_for_tunnel(tunnel_uuid) {
+                            Ok(p) => p,
+                            Err(e) => {
+                                error!(
+                                    "Failed to list peers for tunnel {} -> {:?}",
+                                    tunnel_name, e
+                                );
+                                continue;
+                            }
+                        },
+                        Err(e) => {
+                            error!(
+                                "Failed to acquire read txn for peers of tunnel {} -> {:?}",
+                                tunnel_name, e
+                            );
+                            continue;
+                        }
+                    };
+
+                    if let Err(e) = wg_manager.bring_up(&tunnel, &peers).await {
+                        error!(
+                            "Failed to bring up WireGuard tunnel {} -> {:?}",
+                            tunnel_name, e
+                        );
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Failed to list WireGuard tunnels at startup -> {:?}", e);
+                drop(idms_prox_read);
+            }
+        }
     }
 
     // Setup the Migration Reload Trigger.
