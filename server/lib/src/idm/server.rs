@@ -76,6 +76,9 @@ pub struct TokenPolicy {
     /// Lifetime of an auth-code exchange token (the short-lived JWE handed
     /// from the consent page to the token endpoint).
     pub auth_request_lifetime: Duration,
+    /// Name of the connector that handles the Resource Owner Password grant
+    /// (RFC 6749 §4.3). Empty string means the grant is disabled.
+    pub password_connector: String,
 }
 
 impl Default for TokenPolicy {
@@ -85,6 +88,7 @@ impl Default for TokenPolicy {
                 crate::constants::OAUTH_REFRESH_TOKEN_EXPIRY,
             ),
             auth_request_lifetime: Duration::from_secs(60),
+            password_connector: String::new(),
         }
     }
 }

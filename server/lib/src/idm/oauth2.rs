@@ -1232,6 +1232,24 @@ impl IdmServerProxyWriteTransaction<'_> {
             GrantTypeReq::DeviceCode { device_code, scope } => {
                 self.check_oauth2_device_code_status(device_code, scope, ct)
             }
+            GrantTypeReq::Password {
+                username,
+                password,
+                scope,
+            } => {
+                if self.token_policy.password_connector.is_empty() {
+                    security_info!("Password grant rejected: no password_connector configured");
+                    Err(Oauth2Error::InvalidGrant)
+                } else {
+                    self.check_oauth2_token_password(
+                        &o2rs,
+                        &username[..],
+                        &password[..],
+                        scope.as_ref(),
+                        ct,
+                    )
+                }
+            }
         }
     }
 
@@ -2236,6 +2254,119 @@ impl IdmServerProxyWriteTransaction<'_> {
             scope,
             id_token: None,
         })
+    }
+
+    /// Resource Owner Password Credentials grant (RFC 6749 §4.3).
+    /// Dispatched when `grant_type=password` and `token_policy.password_connector` is non-empty.
+    fn check_oauth2_token_password(
+        &mut self,
+        o2rs: &Oauth2RS,
+        username: &str,
+        password: &str,
+        req_scopes: Option<&BTreeSet<String>>,
+        ct: Duration,
+    ) -> Result<AccessTokenResponse, Oauth2Error> {
+        let connector_name = self.token_policy.password_connector.clone();
+        if connector_name.is_empty() {
+            security_info!("ROPC grant rejected: no password_connector configured");
+            return Err(Oauth2Error::InvalidGrant);
+        }
+
+        // Find connector UUID by name.
+        let connector_uuid = self
+            .connector_providers
+            .values()
+            .find(|p| p.name == connector_name)
+            .map(|p| p.uuid)
+            .ok_or_else(|| {
+                error!(
+                    %connector_name,
+                    "ROPC: password connector not found in connector_providers"
+                );
+                Oauth2Error::InvalidGrant
+            })?;
+
+        let connector = self.connector_registry.get(connector_uuid).ok_or_else(|| {
+            error!(
+                %connector_name,
+                "ROPC: password connector not registered in connector_registry"
+            );
+            Oauth2Error::InvalidGrant
+        })?;
+
+        // Run the async authenticate_password on a dedicated OS thread.
+        let handle = tokio::runtime::Handle::current();
+        let username_owned = username.to_string();
+        let password_owned = password.to_string();
+        let claims_opt = {
+            let c = Arc::clone(&connector);
+            std::thread::spawn(move || {
+                handle.block_on(c.authenticate_password(&username_owned, &password_owned))
+            })
+            .join()
+            .unwrap_or_else(|_| {
+                Err(crate::idm::connector::traits::ConnectorRefreshError::Other(
+                    "password connector thread panicked".into(),
+                ))
+            })
+        }
+        .map_err(|err| {
+            error!(?err, "ROPC: password connector returned error");
+            Oauth2Error::ServerError(OperationError::InvalidState)
+        })?;
+        drop(connector);
+
+        let claims = claims_opt.ok_or_else(|| {
+            security_info!(%connector_name, "ROPC: invalid credentials");
+            Oauth2Error::AccessDenied
+        })?;
+
+        // Link claims to a local account.
+        let account_uuid = self
+            .find_and_link_account(connector_uuid, &claims)
+            .map_err(|e| {
+                error!(?e, "ROPC: find_and_link_account failed");
+                Oauth2Error::ServerError(e)
+            })?
+            .ok_or_else(|| {
+                security_info!("ROPC: no local account linked to the connector identity");
+                Oauth2Error::AccessDenied
+            })?;
+
+        // Validate and grant scopes against the RS client_scopes.
+        let req_scopes = req_scopes.cloned().unwrap_or_default();
+        validate_scopes(&req_scopes)?;
+        let avail_scopes: BTreeSet<String> = req_scopes
+            .intersection(&o2rs.client_scopes)
+            .cloned()
+            .collect();
+        if avail_scopes.len() != req_scopes.len() {
+            admin_warn!(
+                rs = %o2rs.name,
+                requested = ?req_scopes,
+                available = ?o2rs.client_scopes,
+                "ROPC: client does not have access to all requested scopes"
+            );
+            return Err(Oauth2Error::AccessDenied);
+        }
+        let granted_scopes = avail_scopes
+            .into_iter()
+            .chain(o2rs.client_sup_scopes.iter().cloned())
+            .collect::<BTreeSet<_>>();
+
+        let parent_session_id = Uuid::new_v4();
+        let session_id = Uuid::new_v4();
+
+        self.generate_access_token_response(
+            o2rs,
+            ct,
+            granted_scopes,
+            account_uuid,
+            parent_session_id,
+            session_id,
+            None,
+            None,
+        )
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -3593,7 +3724,18 @@ impl IdmServerProxyReadTransaction<'_> {
         let scopes_supported = Some(o2rs.scopes_supported.iter().cloned().collect());
         let response_types_supported = vec![ResponseType::Code];
         let response_modes_supported = vec![ResponseMode::Query, ResponseMode::Fragment];
-        let grant_types_supported = vec![GrantType::AuthorisationCode, GrantType::TokenExchange];
+        let mut grant_types_supported = vec![
+            GrantType::AuthorisationCode,
+            GrantType::ClientCredentials,
+            GrantType::RefreshToken,
+            GrantType::TokenExchange,
+        ];
+        if o2rs.device_flow_enabled() {
+            grant_types_supported.push(GrantType::DeviceCode);
+        }
+        if !self.token_policy.password_connector.is_empty() {
+            grant_types_supported.push(GrantType::Password);
+        }
 
         let token_endpoint_auth_methods_supported = vec![
             TokenEndpointAuthMethod::ClientSecretBasic,
@@ -3663,9 +3805,18 @@ impl IdmServerProxyReadTransaction<'_> {
         let response_types_supported = vec![ResponseType::Code];
         let response_modes_supported = vec![ResponseMode::Query, ResponseMode::Fragment];
 
-        // TODO: add device code if the rs supports it per <https://www.rfc-editor.org/rfc/rfc8628#section-4>
-        // `urn:ietf:params:oauth:grant-type:device_code`
-        let grant_types_supported = vec![GrantType::AuthorisationCode, GrantType::TokenExchange];
+        let mut grant_types_supported = vec![
+            GrantType::AuthorisationCode,
+            GrantType::ClientCredentials,
+            GrantType::RefreshToken,
+            GrantType::TokenExchange,
+        ];
+        if o2rs.device_flow_enabled() {
+            grant_types_supported.push(GrantType::DeviceCode);
+        }
+        if !self.token_policy.password_connector.is_empty() {
+            grant_types_supported.push(GrantType::Password);
+        }
 
         let subject_types_supported = vec![SubjectType::Public];
 
@@ -5999,7 +6150,12 @@ mod tests {
         );
         assert_eq!(
             discovery.grant_types_supported,
-            vec![GrantType::AuthorisationCode, GrantType::TokenExchange]
+            vec![
+                GrantType::AuthorisationCode,
+                GrantType::ClientCredentials,
+                GrantType::RefreshToken,
+                GrantType::TokenExchange,
+            ]
         );
         assert!(
             discovery.token_endpoint_auth_methods_supported
@@ -6159,7 +6315,12 @@ mod tests {
         );
         assert_eq!(
             discovery.grant_types_supported,
-            vec![GrantType::AuthorisationCode, GrantType::TokenExchange]
+            vec![
+                GrantType::AuthorisationCode,
+                GrantType::ClientCredentials,
+                GrantType::RefreshToken,
+                GrantType::TokenExchange,
+            ]
         );
         assert_eq!(discovery.subject_types_supported, vec![SubjectType::Public]);
         assert_eq!(

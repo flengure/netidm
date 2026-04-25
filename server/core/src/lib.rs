@@ -125,7 +125,8 @@ fn parse_expiry_duration(s: &str) -> Option<std::time::Duration> {
     Some(std::time::Duration::from_secs(secs))
 }
 
-fn build_token_policy(expiry: &crate::config::ExpiryConfig) -> TokenPolicy {
+fn build_token_policy(config: &crate::config::Configuration) -> TokenPolicy {
+    let expiry = &config.expiry;
     let mut policy = TokenPolicy::default();
     if let Some(d) = parse_expiry_duration(&expiry.refresh_token_absolute_lifetime) {
         policy.refresh_token_lifetime = d;
@@ -133,6 +134,7 @@ fn build_token_policy(expiry: &crate::config::ExpiryConfig) -> TokenPolicy {
     if let Some(d) = parse_expiry_duration(&expiry.auth_request_ttl) {
         policy.auth_request_lifetime = d;
     }
+    policy.password_connector = config.oauth2.password_connector.clone();
     policy
 }
 
@@ -163,7 +165,7 @@ async fn setup_qs_idms(
 
     // We generate a SINGLE idms only!
     let is_integration_test = config.integration_test_config.is_some();
-    let token_policy = build_token_policy(&config.expiry);
+    let token_policy = build_token_policy(config);
     let (idms, idms_delayed, idms_audit) = IdmServer::new(
         query_server.clone(),
         &config.origin,

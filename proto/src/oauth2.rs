@@ -185,6 +185,14 @@ pub enum GrantTypeReq {
         // #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
         scope: Option<BTreeSet<String>>,
     },
+    /// Resource Owner Password Credentials grant (RFC 6749 §4.3).
+    /// Disabled unless `oauth2.password_connector` is configured.
+    Password {
+        username: String,
+        password: String,
+        #[serde_as(as = "Option<StringWithSeparator::<SpaceSeparator, String>>")]
+        scope: Option<BTreeSet<String>>,
+    },
 }
 
 /// An Access Token request. This requires a set of grant-type parameters to satisfy the request.
@@ -502,6 +510,14 @@ pub enum GrantType {
     Implicit,
     #[serde(rename = "urn:ietf:params:oauth:grant-type:token-exchange")]
     TokenExchange,
+    #[serde(rename = "client_credentials")]
+    ClientCredentials,
+    #[serde(rename = "password")]
+    Password,
+    #[serde(rename = "refresh_token")]
+    RefreshToken,
+    #[serde(rename = "urn:ietf:params:oauth:grant-type:device_code")]
+    DeviceCode,
 }
 
 fn grant_types_supported_default() -> Vec<GrantType> {
