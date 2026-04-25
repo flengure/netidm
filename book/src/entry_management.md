@@ -1,100 +1,116 @@
 # Entry Management
 
-Netidm supports a SCIM based entry management/migration process. This process allows configuration management tools such
-Ansible or Salt to deploy HJSON formatted person and group records that can be imported to the server. HJSON is JSON
-that allows commenting.
+Netidm reads TOML preload files on startup and on SIGHUP reload. These files let you seed and
+maintain users, groups, WireGuard tunnels, OAuth2 clients, and social login connectors without
+touching the database directly.
 
-## Migration Path
+## Preload Path
 
-Migrations are stored in the path defined by `server.toml`:`migration_path`. The default for containers is
-`/data/migrations.d`.
+The default path is `/etc/netidm/preload.d` (or `/data/preload.d` for containers). Override it
+in `server.toml`:
 
-Files within the folder must match the pattern `xx-name.json` / `xx-name.hjson` where `xx` are numeric digits. For
-example the following are valid names:
-
-- `00-base.json`
-- `99-user.json`
-- `80-group-defines.json`
-- `99-accounts.hjson`
-
-The following are invalid:
-
-- `data.json` - missing preceeding numbers and hyphen.
-- `00base.json` - missing `-` between numbers and name.
-- `00-base.scim` - incorrect file extension.
-
-## Record Syntax
-
-Entries can be asserted to be present, and in a specific attribute state. Or they can be absent from the database.
-Attributes of an entry can be removed by setting them to `null`.
-
-```json
-{{#rustdoc_include ../../examples/migrations/00-basic.hjson}}
+```toml
+preload_path = "/etc/netidm/preload.d"
 ```
 
-This example is located in [examples/migrations](https://github.com/flengure/netidm/blob/master/examples/migrations/) in
-the repository. There are other migrations there you may find useful.
+## File Naming
 
-## Recommendations
-
-Migrations should only be deployed to a single node in your Netidm topology. Replication will ensure that all nodes have
-a consistent state. This prevents races or flip-flop conditions that could otherwise occur.
-
-## Application Details
-
-There are some important details for how Netidm applies these migrations. This is due to the fact that Netidm is a
-distributed system, and we strive to ensure that all data is consistent and correct.
-
-### Filesystem Access
-
-Since these migrations are on the filesystem of the Netidm server, this implies that access to the machine (and
-subsequently this folder) has a high level of access. As a result, these migrations can perform almost all actions that
-you would expect of the `idm_admin` or `admin` account.
-
-### Valid Attributes
-
-Not all attributes may be asserted via migrations. Examples include password hashes, OAuth2 basic secrets, and other
-credentials. Only a subset of values may be asserted on entries.
-
-### Only Once
-
-When you apply a migration, the content of the file is hashed and saved with the ID of the applied migration. If the
-file content _has not changed_ as verified by the hash, then the migration is NOT re-applied. This is to try to limit
-the "churn" on the database, but also to prevent migrations from removing user-applied changes once they are applied.
-
-If the migration is changed, then it will be re-applied exactly once.
-
-### Timing
-
-Migrations are applied during server startup, and when the server is reloaded (via the reload command, or SIGHUP).
-
-### Assertion Application Order
-
-Migrations are applied in lexical order. This allows you to assert dependencies between migrations that may exist.
-
-Assertions in migrations are applied in batches depending on the needed state that must be arrived at. For example if
-your assertion contained:
+Files must match `xx-name.toml` where `xx` are two digits. They are applied in lexicographic
+order, so numbering controls dependencies:
 
 ```
-- user that exists
-- group that must be created
-- group that exists
+00-tunnel.toml
+10-users.toml
+20-groups.toml
+30-oauth2-portainer.toml
+40-github.toml
 ```
 
-Then the migration will apply these three operations in sequential order. However, once complete, all three changes
-would be applied in a single batch to assert entry state. This has consequences for groups and group memberships.
+## Resource Types
 
-For example if you had:
+Each file may contain any mix of `[[tunnel]]`, `[[user]]`, `[[group]]`, `[[oauth2_client]]`,
+and `[[connector]]` tables.
 
+### Tunnel
+
+```toml
+[[tunnel]]
+name        = "access"
+interface   = "access"
+private_key = "..."
+endpoint    = "wg.example.com:51820"
+listen_port = 51820
+address     = ["10.64.68.0/24", "fd64:0:0:68::/64"]
 ```
-- group with member X which does exist
-- user X that does not exist
+
+### User
+
+```toml
+[[user]]
+name        = "alice"
+displayname = "Alice Smith"
+email       = "alice@example.com"
+shell       = "/bin/bash"          # omit if not a POSIX account
+ssh_keys = [
+  {label = "laptop", value = "ssh-ed25519 AAAA..."},
+]
+wg_peers = [
+  {tunnel = "access", name = "alice-laptop", pubkey = "...", address = ["10.64.68.2/32"], psk = "..."},
+]
 ```
 
-Since these would be split, the change to the group would fail since user X does not yet exist. However were both
-entries to be initially absent, they would be created together and the operation would succeed.
+### Group
 
-For this reason, it's advised that you maintain separate migrations for accounts and groups, to assert that the correct
-ordering is applied during operation.
+```toml
+[[group]]
+name    = "platform-admins"
+members = ["alice", "bob"]
 
-This is why migrations are applied in lexical order.
+[[group]]
+name    = "linux-sudo"
+posix   = true
+members = ["alice", "bob"]
+```
+
+### OAuth2 Client
+
+```toml
+[[oauth2_client]]
+name        = "portainer"
+displayname = "Portainer"
+origin      = "https://portainer.example.com"
+disable_pkce = true   # only for clients that do not support PKCE
+```
+
+The default scope map grants `idm_all_accounts` the scopes `openid profile email groups
+offline_access`. Add `scope_maps` to override.
+
+### Social Login Connector
+
+```toml
+[[connector]]
+name                = "github"
+displayname         = "GitHub"
+provider            = "github"
+client_id           = "..."
+client_secret       = "..."
+jit_provisioning    = true
+email_link_accounts = true
+org_filter          = ["MyOrg"]
+allowed_teams       = ["MyOrg:platform-users", "MyOrg:platform-admins"]
+group_mappings      = [
+  {upstream = "MyOrg:platform-admins", group = "platform-admins"},
+]
+```
+
+## Idempotency
+
+Each file's content is SHA-256 hashed. If the hash has not changed since the last apply, the
+file is skipped entirely. Modify any field in the file to force a re-apply.
+
+Removing a file from `preload.d/` stops future assertion but does **not** delete the resource
+from the database.
+
+## Timing
+
+Preload runs on startup and whenever the server receives SIGHUP (`systemctl reload netidmd`).

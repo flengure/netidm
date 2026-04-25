@@ -590,7 +590,7 @@ pub enum Attribute {
     WgTokenUsesLeft,
     WgTokenExpiry,
     WgTokenPrincipalRef,
-    /// Virtual attribute used only in migration hjson files to inline WG peer specs
+    /// Virtual attribute used in preload TOML files to inline WG peer specs
     /// on person assertions. Stripped by scim_assert() before schema validation.
     #[strum(serialize = "wg")]
     WgInlinePeer,

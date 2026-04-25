@@ -35,6 +35,7 @@ mod https;
 mod interval;
 mod ldaps;
 mod logout_worker;
+mod preload;
 mod repl;
 mod tcp;
 mod utils;
@@ -45,14 +46,9 @@ use crate::config::Configuration;
 use crate::interval::IntervalActor;
 use crate::utils::touch_file_or_quit;
 use compact_jwt::{JwsHs256Signer, JwsSigner};
-use crypto_glue::{
-    s256::{Sha256, Sha256Output},
-    traits::Digest,
-};
 use netidm_proto::backup::BackupCompression;
 use netidm_proto::config::ServerRole;
 use netidm_proto::internal::OperationError;
-use netidm_proto::scim_v1::client::ScimAssertGeneric;
 use netidmd_lib::be::{Backend, BackendConfig, BackendTransaction};
 use netidmd_lib::idm::connector::traits::ConnectorRegistry;
 use netidmd_lib::idm::ldap::LdapServer;
@@ -64,13 +60,10 @@ use netidmd_lib::value::CredentialType;
 use netidmd_wg::{
     backend::boringtun::BoringtunBackend, backend::kernel::KernelBackend, BackendKind, WgManager,
 };
-use regex::Regex;
-use std::collections::BTreeSet;
 use std::fmt::{Display, Formatter};
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::LazyLock;
 use tokio::sync::broadcast;
 use tokio::task;
 
@@ -806,145 +799,6 @@ pub fn cert_generate_core(config: &Configuration) {
     info!("certificate generation complete");
 }
 
-static MIGRATION_PATH_RE: LazyLock<Regex> = LazyLock::new(|| {
-    #[allow(clippy::expect_used)]
-    Regex::new("^\\d\\d-.*\\.h?json$").expect("Invalid SPN regex found")
-});
-
-struct ScimMigration {
-    path: PathBuf,
-    hash: Sha256Output,
-    assertions: ScimAssertGeneric,
-}
-
-#[instrument(
-    level = "info",
-    fields(uuid = ?eventid),
-    skip_all,
-)]
-async fn migration_apply(
-    eventid: Uuid,
-    server_write_ref: &'static QueryServerWriteV1,
-    migration_path: &Path,
-) {
-    if !migration_path.exists() {
-        info!(migration_path = %migration_path.display(), "Migration path does not exist - migrations will be skipped.");
-        return;
-    }
-
-    let mut dir_ents = match tokio::fs::read_dir(migration_path).await {
-        Ok(dir_ents) => dir_ents,
-        Err(err) => {
-            error!(?err, "Unable to read migration directory.");
-            let diag = netidm_lib_file_permissions::diagnose_path(migration_path);
-            info!(%diag);
-            return;
-        }
-    };
-
-    let mut migration_paths = Vec::with_capacity(8);
-
-    loop {
-        match dir_ents.next_entry().await {
-            Ok(Some(dir_ent)) => migration_paths.push(dir_ent.path()),
-            Ok(None) => {
-                // Complete,
-                break;
-            }
-            Err(err) => {
-                error!(?err, "Unable to read directory entries.");
-                return;
-            }
-        }
-    }
-
-    // Filter these.
-
-    let mut migration_paths: Vec<_> = migration_paths.into_iter()
-        .filter(|path| {
-            if !path.is_file() {
-                info!(path = %path.display(), "ignoring path that is not a file.");
-                return false;
-            }
-
-            let Some(file_name) = path.file_name().and_then(std::ffi::OsStr::to_str) else {
-                info!(path = %path.display(), "ignoring path that has no file name, or is not a valid utf-8 file name.");
-                return false;
-            };
-
-            if !MIGRATION_PATH_RE.is_match(file_name) {
-                info!(path = %path.display(), "ignoring file that does not match naming pattern.");
-                info!("expected pattern 'XX-NAME.json' where XX are two numbers, followed by a hypen, with the file extension .json");
-                return false;
-            }
-
-            true
-        })
-        .collect();
-
-    migration_paths.sort_unstable();
-    let mut migrations = Vec::with_capacity(migration_paths.len());
-
-    for migration_path in migration_paths {
-        info!(path = %migration_path.display(), "examining migration");
-
-        let migration_content = match tokio::fs::read(&migration_path).await {
-            Ok(bytes) => bytes,
-            Err(err) => {
-                error!(?err, "Unable to read migration - it will be ignored.");
-                let diag = netidm_lib_file_permissions::diagnose_path(&migration_path);
-                info!(%diag);
-                continue;
-            }
-        };
-
-        // Is it valid json?
-        let assertions: ScimAssertGeneric = match serde_hjson::from_slice(&migration_content) {
-            Ok(assertions) => assertions,
-            Err(err) => {
-                error!(?err, path = %migration_path.display(), "Invalid JSON SCIM Assertion");
-                continue;
-            }
-        };
-
-        // Hash the content.
-        let mut hasher = Sha256::new();
-        hasher.update(&migration_content);
-        let migration_hash: Sha256Output = hasher.finalize();
-
-        migrations.push(ScimMigration {
-            path: migration_path,
-            hash: migration_hash,
-            assertions,
-        });
-    }
-
-    let mut migration_ids = BTreeSet::new();
-    for migration in &migrations {
-        // BTreeSet returns false on duplicate value insertion.
-        if !migration_ids.insert(migration.assertions.id) {
-            error!(path = %migration.path.display(), uuid = ?migration.assertions.id, "Duplicate migration UUID found, refusing to proceed!!! All migrations must have a unique ID!!!");
-            return;
-        }
-    }
-
-    // Okay, we're setup to go - apply them all. Note that we do these
-    // separately, each migration occurs in its own transaction.
-    for ScimMigration {
-        path,
-        hash,
-        assertions,
-    } in migrations
-    {
-        if let Err(err) = server_write_ref
-            .handle_scim_migration_apply(eventid, assertions, hash)
-            .await
-        {
-            error!(?err, path = %path.display(), "Failed to apply migration");
-        };
-    }
-}
-
 #[derive(Clone, Debug)]
 pub enum CoreAction {
     Shutdown,
@@ -1413,15 +1267,14 @@ pub async fn create_server_core(
         info!("Stopped {}", TaskName::AuditdActor);
     });
 
-    // Run the migrations *once*, only in production though.
-    let migration_path = config
-        .migration_path
+    let preload_path = config
+        .preload_path
         .clone()
-        .unwrap_or(PathBuf::from(env!("NETIDM_SERVER_MIGRATION_PATH")));
+        .unwrap_or(PathBuf::from(env!("NETIDM_SERVER_PRELOAD_PATH")));
 
     if config.integration_test_config.is_none() {
         let eventid = Uuid::new_v4();
-        migration_apply(eventid, server_write_ref, migration_path.as_path()).await;
+        preload::preload_apply(eventid, server_write_ref, preload_path.as_path()).await;
     }
 
     // Bring up WireGuard tunnels now that migrations have run and all peer entries exist.
@@ -1508,7 +1361,7 @@ pub async fn create_server_core(
         }
     }
 
-    // Setup the Migration Reload Trigger.
+    // Setup the Preload Reload Trigger.
     let mut broadcast_rx = broadcast_tx.subscribe();
     let migration_reload_handle = task::spawn(async move {
         loop {
@@ -1517,16 +1370,14 @@ pub async fn create_server_core(
                     match action {
                         CoreAction::Shutdown => break,
                         CoreAction::Reload => {
-                            // Read the migrations.
-                            // Apply them.
                             let eventid = Uuid::new_v4();
-                            migration_apply(
+                            preload::preload_apply(
                                 eventid,
                                 server_write_ref,
-                                migration_path.as_path(),
+                                preload_path.as_path(),
                             ).await;
 
-                            info!("Migration reload complete");
+                            info!("Preload reload complete");
                         },
                     }
                 }

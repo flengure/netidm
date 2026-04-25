@@ -448,7 +448,7 @@ pub struct ServerConfigV2 {
     tls_key: Option<PathBuf>,
     tls_client_ca: Option<PathBuf>,
 
-    migration_path: Option<PathBuf>,
+    preload_path: Option<PathBuf>,
 
     #[serde_as(as = "Option<OneOrMany<_, PreferOne>>")]
     bindaddress: Option<Vec<String>>,
@@ -525,7 +525,7 @@ pub struct Configuration {
     pub db_arc_size: Option<usize>,
     pub maximum_request: usize,
 
-    pub migration_path: Option<PathBuf>,
+    pub preload_path: Option<PathBuf>,
 
     pub http_client_address_info: HttpAddressInfo,
     pub ldap_client_address_info: LdapAddressInfo,
@@ -586,7 +586,7 @@ impl Configuration {
             db_path: None,
             db_fs_type: None,
             db_arc_size: None,
-            migration_path: None,
+            preload_path: None,
             maximum_request: 256 * 1024, // 256k
             http_client_address_info: HttpAddressInfo::default(),
             ldap_client_address_info: LdapAddressInfo::default(),
@@ -620,7 +620,7 @@ impl Configuration {
             db_path: None,
             db_fs_type: None,
             db_arc_size: None,
-            migration_path: None,
+            preload_path: None,
             maximum_request: 256 * 1024, // 256k
             http_client_address_info: HttpAddressInfo::default(),
             ldap_client_address_info: LdapAddressInfo::default(),
@@ -740,7 +740,7 @@ pub struct ConfigurationBuilder {
     db_path: Option<PathBuf>,
     db_fs_type: Option<FsType>,
     db_arc_size: Option<usize>,
-    migration_path: Option<PathBuf>,
+    preload_path: Option<PathBuf>,
     maximum_request: usize,
     http_client_address_info: HttpAddressInfo,
     ldap_client_address_info: LdapAddressInfo,
@@ -1019,8 +1019,8 @@ impl ConfigurationBuilder {
             self.db_path = config.db_path;
         }
 
-        if config.migration_path.is_some() {
-            self.migration_path = config.migration_path;
+        if config.preload_path.is_some() {
+            self.preload_path = config.preload_path;
         }
 
         if config.db_fs_type.is_some() {
@@ -1129,7 +1129,7 @@ impl ConfigurationBuilder {
             db_path,
             db_fs_type,
             db_arc_size,
-            migration_path,
+            preload_path,
             maximum_request,
             http_client_address_info,
             ldap_client_address_info,
@@ -1203,7 +1203,7 @@ impl ConfigurationBuilder {
             db_path,
             db_fs_type,
             db_arc_size,
-            migration_path,
+            preload_path,
             maximum_request,
             http_client_address_info,
             ldap_client_address_info,

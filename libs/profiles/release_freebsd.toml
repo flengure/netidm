@@ -3,7 +3,7 @@
 server_admin_bind_path = "/var/run/netidmd/sock"
 server_ui_pkg_path = "/usr/local/share/netidm/ui/hpkg"
 server_config_path = "/usr/local/etc/netidm/server.toml"
-server_migration_path = "/usr/local/etc/netidm/migrations.d"
+server_preload_path = "/usr/local/etc/netidm/preload.d"
 client_config_path = "/usr/local/etc/netidm/config"
 resolver_config_path = "/usr/local/etc/netidm/unixd"
 resolver_service_account_token_path = "/usr/local/etc/netidm/token"

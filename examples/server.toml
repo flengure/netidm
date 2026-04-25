@@ -47,15 +47,14 @@ db_path = "/var/lib/private/netidm/netidm.db"
 tls_chain = "/var/lib/private/netidm/chain.pem"
 tls_key = "/var/lib/private/netidm/key.pem"
 
-#   The path where entry migrations will be read from.
-#   This path should contain files that match the pattern
-#   xx-name.json where xx are two number. For example:
-#     00-base.json
-#     10-groups.json
-#   Migrations are applied in order. Migrations that fail
-#   to apply, or have invalid syntax are skipped without
-#   preventing server start up or reload.
-# migration_path = "/etc/netidm/migrations.d"
+#   The path where TOML preload files will be read from.
+#   Files must match the pattern xx-name.toml. For example:
+#     00-tunnel.toml
+#     10-users.toml
+#     20-groups.toml
+#   Applied in lexicographic order on startup and SIGHUP reload.
+#   Removing a file does not delete the resource — preload is assert-only.
+# preload_path = "/etc/netidm/preload.d"
 
 #   The log level of the server. May be one of info, debug, trace
 #
