@@ -54,6 +54,25 @@ pub static SCHEMA_ATTR_WG_TOKEN_PRINCIPAL_REF_DL17: LazyLock<SchemaAttribute> =
 
 // ---- Classes ----
 
+pub static SCHEMA_CLASS_WG_PEER_DL17: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
+    uuid: UUID_SCHEMA_CLASS_WG_PEER,
+    name: EntryClass::WgPeer.into(),
+    description: "A WireGuard peer (server Peer section + client config derivation).".to_string(),
+    systemmust: vec![
+        Attribute::Name,
+        Attribute::WgPubkey,
+        Attribute::WgAllowedIps,
+        Attribute::WgTunnelRef,
+        Attribute::WgUserRef,
+    ],
+    systemmay: vec![
+        Attribute::WgPresharedKey,
+        Attribute::WgPersistentKeepalive,
+        Attribute::WgLastSeen,
+    ],
+    ..Default::default()
+});
+
 pub static SCHEMA_CLASS_WG_TOKEN_DL17: LazyLock<SchemaClass> = LazyLock::new(|| SchemaClass {
     uuid: UUID_SCHEMA_CLASS_WG_TOKEN,
     name: EntryClass::WgToken.into(),

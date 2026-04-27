@@ -17,7 +17,10 @@ pub fn phase_1_schema_attrs() -> Vec<EntryInitNew> {
 
 pub fn phase_2_schema_classes() -> Vec<EntryInitNew> {
     let mut classes = super::dl16::phase_2_schema_classes();
-    classes.extend([SCHEMA_CLASS_WG_TOKEN_DL17.clone().into()]);
+    classes.extend([
+        SCHEMA_CLASS_WG_PEER_DL17.clone().into(),
+        SCHEMA_CLASS_WG_TOKEN_DL17.clone().into(),
+    ]);
     classes
 }
 
