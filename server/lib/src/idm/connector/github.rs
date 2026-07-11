@@ -2601,4 +2601,143 @@ mod tests {
         );
         pw.commit().expect("commit");
     }
+
+    // T051 — quickstart.md GitHub happy path: an unknown GitHub user with JIT
+    // provisioning enabled gets a brand-new account (step 4 of the chain).
+    #[idm_test]
+    async fn test_link_or_provision_chain_jit_creates_new_account(
+        idms: &IdmServer,
+        _idms_delayed: &mut IdmServerDelayed,
+    ) {
+        let ct = std::time::Duration::from_secs(6000);
+        let provider_uuid = UUID_DOMAIN_INFO;
+
+        let claims = ExternalUserClaims {
+            sub: "42".to_string(),
+            email: Some("octocat@example.com".to_string()),
+            email_verified: Some(true),
+            display_name: Some("The Octocat".to_string()),
+            username_hint: Some("octocat".to_string()),
+            groups: vec![],
+        };
+
+        let mut pw = idms.proxy_write(ct).await.expect("proxy_write");
+        let result = link_or_provision_chain(&mut pw.qs_write, provider_uuid, &claims, true)
+            .expect("chain should not error");
+
+        let person_uuid = result.expect("JIT enabled should provision a new account");
+
+        let entry = pw
+            .qs_write
+            .internal_search_uuid(person_uuid)
+            .expect("search provisioned person");
+        assert!(entry.attribute_equality(Attribute::Name, &PartialValue::new_iname("octocat")));
+        assert!(entry.attribute_equality(
+            Attribute::OAuth2AccountUniqueUserId,
+            &PartialValue::new_utf8s("42")
+        ));
+        assert!(entry.attribute_equality(
+            Attribute::OAuth2AccountProvider,
+            &PartialValue::Refer(provider_uuid)
+        ));
+        pw.commit().expect("commit");
+    }
+
+    // T051 — quickstart.md GitHub returning user: a second login from the same
+    // GitHub account must resolve to the account created on the first login
+    // (step 1 numeric-ID match) rather than provisioning a duplicate.
+    #[idm_test]
+    async fn test_link_or_provision_chain_returning_user_no_duplicate(
+        idms: &IdmServer,
+        _idms_delayed: &mut IdmServerDelayed,
+    ) {
+        let ct = std::time::Duration::from_secs(6000);
+        let provider_uuid = UUID_DOMAIN_INFO;
+
+        let claims = ExternalUserClaims {
+            sub: "77".to_string(),
+            email: Some("returning@example.com".to_string()),
+            email_verified: Some(true),
+            display_name: Some("Returning User".to_string()),
+            username_hint: Some("returning-gh".to_string()),
+            groups: vec![],
+        };
+
+        let mut pw = idms.proxy_write(ct).await.expect("proxy_write");
+        let first_uuid = link_or_provision_chain(&mut pw.qs_write, provider_uuid, &claims, true)
+            .expect("chain should not error")
+            .expect("first login should provision a new account");
+        pw.commit().expect("commit");
+
+        // Second login: same claims, JIT could even be disabled now — the
+        // numeric-ID match from the first login must short-circuit before
+        // ever reaching the JIT-provisioning step.
+        let mut pw = idms.proxy_write(ct).await.expect("proxy_write");
+        let second_uuid = link_or_provision_chain(&mut pw.qs_write, provider_uuid, &claims, false)
+            .expect("chain should not error")
+            .expect("returning user should match the existing account");
+
+        assert_eq!(
+            first_uuid, second_uuid,
+            "returning user must resolve to the same account, not a duplicate"
+        );
+        pw.commit().expect("commit");
+    }
+
+    // T051 — quickstart.md username collision: a second GitHub user whose login
+    // collides with an existing local account name gets a numeric suffix.
+    #[idm_test]
+    async fn test_link_or_provision_chain_username_collision_appends_suffix(
+        idms: &IdmServer,
+        _idms_delayed: &mut IdmServerDelayed,
+    ) {
+        let ct = std::time::Duration::from_secs(6000);
+        let provider_uuid = UUID_DOMAIN_INFO;
+        let existing_uuid = Uuid::new_v4();
+
+        // A pre-existing local account, unrelated to this provider, that
+        // happens to share a name with the incoming GitHub login.
+        let mut pw = idms.proxy_write(ct).await.expect("proxy_write");
+        let entry = entry_init!(
+            (Attribute::Class, EntryClass::Object.to_value()),
+            (Attribute::Class, EntryClass::Account.to_value()),
+            (Attribute::Class, EntryClass::Person.to_value()),
+            (Attribute::Uuid, Value::Uuid(existing_uuid)),
+            (Attribute::Name, Value::new_iname("octocat")),
+            (Attribute::DisplayName, Value::new_utf8s("Original Octocat"))
+        );
+        pw.qs_write
+            .internal_create(vec![entry])
+            .expect("create pre-existing person");
+        pw.commit().expect("commit");
+
+        let claims = ExternalUserClaims {
+            sub: "1001".to_string(),
+            email: Some("newoctocat@example.com".to_string()),
+            email_verified: Some(false),
+            display_name: Some("New Octocat".to_string()),
+            username_hint: Some("octocat".to_string()),
+            groups: vec![],
+        };
+
+        let mut pw = idms.proxy_write(ct).await.expect("proxy_write");
+        let result = link_or_provision_chain(&mut pw.qs_write, provider_uuid, &claims, true)
+            .expect("chain should not error");
+        let person_uuid = result.expect("JIT enabled should provision a new account");
+
+        assert_ne!(
+            person_uuid, existing_uuid,
+            "collision must provision a distinct account, not reuse the existing one"
+        );
+
+        let entry = pw
+            .qs_write
+            .internal_search_uuid(person_uuid)
+            .expect("search provisioned person");
+        assert!(
+            entry.attribute_equality(Attribute::Name, &PartialValue::new_iname("octocat_2")),
+            "colliding username must resolve to the next free numeric suffix"
+        );
+        pw.commit().expect("commit");
+    }
 }

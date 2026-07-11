@@ -3428,6 +3428,7 @@ mod tests {
     use crate::idm::accountpolicy::ResolvedAccountPolicy;
     use crate::idm::audit::AuditEvent;
     use crate::idm::authentication::AuthState;
+    use crate::idm::authsession::handler_connector::ExternalUserClaims;
     use crate::idm::delayed::{AuthSessionRecord, DelayedAction};
     use crate::idm::event::{AuthEvent, AuthResult};
     use crate::idm::event::{
@@ -5511,5 +5512,139 @@ mod tests {
         _idms_delayed: &mut IdmServerDelayed,
     ) {
         idm_fallback_auth_fixture(idms, _idms_delayed, true, Some(false), Some(())).await;
+    }
+
+    // T051 — quickstart.md validation: JIT provisioning happy path via the manual
+    // `/ui/login/provision` page (the code path `view_login_provision_post` drives
+    // for Google and other non-GitHub-connector providers).
+    #[idm_test]
+    async fn test_jit_provision_oauth2_account_happy_path(
+        idms: &IdmServer,
+        _idms_delayed: &mut IdmServerDelayed,
+    ) {
+        let ct = duration_from_epoch_now();
+        // Reuses an always-present system UUID as a stand-in provider reference —
+        // `OAuth2AccountProvider` is a Refer attribute enforced by referential
+        // integrity, so it must point at a real entry.
+        let provider_uuid = UUID_DOMAIN_INFO;
+        let claims = ExternalUserClaims {
+            sub: "google-sub-12345".to_string(),
+            email: Some("newuser@example.com".to_string()),
+            email_verified: Some(true),
+            display_name: Some("New User".to_string()),
+            username_hint: Some("newuser".to_string()),
+            groups: vec![],
+        };
+
+        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
+
+        let desired_name = idms_prox_write
+            .derive_jit_username(&claims)
+            .expect("derive username");
+        assert_eq!(desired_name, "newuser", "base hint is free, no suffix");
+
+        let account_uuid = idms_prox_write
+            .jit_provision_oauth2_account(provider_uuid, &claims, &desired_name)
+            .expect("jit provision");
+
+        let account = idms_prox_write
+            .find_account_by_oauth2_provider_and_user_id(provider_uuid, &claims.sub)
+            .expect("lookup should not error")
+            .expect("account should be found");
+        assert_eq!(account.uuid, account_uuid);
+        assert_eq!(account.displayname, "New User");
+        assert_eq!(account.mail_primary.as_deref(), Some("newuser@example.com"));
+
+        idms_prox_write.commit().expect("commit");
+    }
+
+    // T051 — returning user: a second login with the same provider+sub must resolve
+    // to the already-provisioned account rather than creating a duplicate.
+    #[idm_test]
+    async fn test_jit_provision_oauth2_account_returning_user_no_duplicate(
+        idms: &IdmServer,
+        _idms_delayed: &mut IdmServerDelayed,
+    ) {
+        let ct = duration_from_epoch_now();
+        let provider_uuid = UUID_DOMAIN_INFO;
+        let claims = ExternalUserClaims {
+            sub: "google-sub-67890".to_string(),
+            email: Some("returning@example.com".to_string()),
+            email_verified: Some(true),
+            display_name: Some("Returning User".to_string()),
+            username_hint: Some("returninguser".to_string()),
+            groups: vec![],
+        };
+
+        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
+        let account_uuid = idms_prox_write
+            .jit_provision_oauth2_account(provider_uuid, &claims, "returninguser")
+            .expect("jit provision");
+        idms_prox_write.commit().expect("commit");
+
+        // Simulate the second login: the view layer looks the account up by
+        // provider+sub before ever reaching the provision page again.
+        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
+        let account = idms_prox_write
+            .find_account_by_oauth2_provider_and_user_id(provider_uuid, &claims.sub)
+            .expect("lookup should not error")
+            .expect("existing account should be found, not re-provisioned");
+        assert_eq!(
+            account.uuid, account_uuid,
+            "returning user must resolve to the same account"
+        );
+        idms_prox_write.commit().expect("commit");
+    }
+
+    // T051 — username collision: derive_jit_username must append a numeric suffix
+    // when the base candidate is already taken.
+    #[idm_test]
+    async fn test_derive_jit_username_collision_appends_suffix(
+        idms: &IdmServer,
+        _idms_delayed: &mut IdmServerDelayed,
+    ) {
+        let ct = duration_from_epoch_now();
+        let provider_uuid = UUID_DOMAIN_INFO;
+        let first_claims = ExternalUserClaims {
+            sub: "collision-sub-1".to_string(),
+            email: Some("first@example.com".to_string()),
+            email_verified: Some(true),
+            display_name: Some("First User".to_string()),
+            username_hint: Some("dupeuser".to_string()),
+            groups: vec![],
+        };
+
+        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
+        idms_prox_write
+            .jit_provision_oauth2_account(provider_uuid, &first_claims, "dupeuser")
+            .expect("jit provision first user");
+        idms_prox_write.commit().expect("commit");
+
+        let second_claims = ExternalUserClaims {
+            sub: "collision-sub-2".to_string(),
+            email: Some("second@example.com".to_string()),
+            email_verified: Some(true),
+            display_name: Some("Second User".to_string()),
+            username_hint: Some("dupeuser".to_string()),
+            groups: vec![],
+        };
+        let mut idms_prox_write = idms.proxy_write(ct).await.unwrap();
+        let suggested_name = idms_prox_write
+            .derive_jit_username(&second_claims)
+            .expect("derive username should not error");
+        assert_eq!(
+            suggested_name, "dupeuser_2",
+            "colliding hint must resolve to the next free numeric suffix"
+        );
+
+        let account_uuid = idms_prox_write
+            .jit_provision_oauth2_account(provider_uuid, &second_claims, &suggested_name)
+            .expect("jit provision second user with suggested name");
+        let account = idms_prox_write
+            .find_account_by_oauth2_provider_and_user_id(provider_uuid, &second_claims.sub)
+            .expect("lookup should not error")
+            .expect("second account should be found");
+        assert_eq!(account.uuid, account_uuid);
+        idms_prox_write.commit().expect("commit");
     }
 }
